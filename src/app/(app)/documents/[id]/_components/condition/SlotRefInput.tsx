@@ -46,7 +46,7 @@ export function slotOptions(context: ConditionContext): ComboOption[] {
   const value = context.value
     ? context.value.fields.map((f) => ({ value: currentValueRef(f.key), label: f.label, hint: currentValueRef(f.key), group: currentValueGroup(context.value!.name) }))
     : [];
-  // 범위 낱말 — 조립이 작성위치로 찍는 시스템 슬롯 (특약 「이 특별약관의」 · 대치 빈 글 · 블록 「이 보장조항의」)
+  // 범위 낱말 — 조립이 작성위치로 찍는 시스템 슬롯 (특약 「이 특별약관의」 · 대치 빈 글 · 블록 「이 보장의」)
   const scope = context.output ? [{ value: SCOPE_WORD_PATH, label: SCOPE_WORD_CHIP, hint: "특약 「이 특별약관의」 · 대치 빈 글", group: SCOPE_GROUP }] : [];
   // 표 슬롯 — 동적표 템플릿 편집기만, 그 템플릿에서 쓸 수 있는 것만
   const table = (context.table?.slots ?? []).filter(isDynTableSlotRef).map((path) => ({ value: path, label: DYN_TABLE_SLOT_LABEL[path], hint: path, group: TABLE_GROUP }));

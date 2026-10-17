@@ -54,7 +54,7 @@ describe("작성위치 — 파서", () => {
 
   it("값 셋과 범위 낱말", () => {
     expect(OUTPUT_POSITIONS).toEqual(["replace", "block", "special"]);
-    expect(SCOPE_WORDS).toEqual({ replace: "", block: "이 보장조항의", special: "이 특별약관의" });
+    expect(SCOPE_WORDS).toEqual({ replace: "", block: "이 보장의", special: "이 특별약관의" });
   });
 });
 
@@ -99,7 +99,7 @@ describe("작성위치 — 평가", () => {
   it("범위 낱말은 작성위치로 찍는 글", () => {
     expect(run("builtin.output.scope", "special")).toEqual({ kind: "value", value: "이 특별약관의" });
     expect(run("builtin.output.scope", "replace")).toEqual({ kind: "value", value: "" });
-    expect(run("builtin.output.scope", "block")).toEqual({ kind: "value", value: "이 보장조항의" });
+    expect(run("builtin.output.scope", "block")).toEqual({ kind: "value", value: "이 보장의" });
   });
 
   it("문맥이 모르면 미결 (담보약관 저장 검사 · 담보 마스터 편집)", () => {

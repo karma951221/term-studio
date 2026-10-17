@@ -68,7 +68,7 @@ function chipParts(node: InlineNode, ctx: DocCtx): { className: string; title: s
   switch (node.kind) {
     case "slot": {
       // 범위 낱말 — 조립이 작성위치로 찍는 시스템 슬롯 (ADR-0089 결정 3)
-      if (node.ref === SCOPE_WORD_PATH) return { className: "ts-doc-slot", title: "범위 낱말 — 작성위치로 찍힌다: 특약 「이 특별약관의」 · 대치(기본계약) 빈 글 · 블록 「이 보장조항의」", body: `〔${SCOPE_WORD_CHIP}〕` };
+      if (node.ref === SCOPE_WORD_PATH) return { className: "ts-doc-slot", title: "범위 낱말 — 작성위치로 찍힌다: 특약 「이 특별약관의」 · 대치(기본계약) 빈 글 · 블록 「이 보장의」", body: `〔${SCOPE_WORD_CHIP}〕` };
       return { className: "ts-doc-slot", title: `치환 슬롯 · ${node.ref}`, body: node.ref };
     }
     case "articleRef":
