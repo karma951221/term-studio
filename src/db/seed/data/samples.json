@@ -182,6 +182,24 @@
             }
           }
         ]
+      },
+      {
+        "article": "g-a4",
+        "beforeMounts": true,
+        "patch": [
+          {
+            "node": "g-a4-p1",
+            "with": {
+              "children": [
+                {
+                  "id": "g-a4-p1-gray",
+                  "kind": "text",
+                  "text": "이 상품이 잠기기 전에 고친 세부규정 문장입니다."
+                }
+              ]
+            }
+          }
+        ]
       }
     ]
   },

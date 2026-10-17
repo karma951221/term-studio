@@ -147,8 +147,9 @@ type SeedGroup = { category: Code } | { name: string; coverages: string[] };
  * 합성 표본이 쓴다: 절 형태에서 위임된 조의 항을 가리키는 조를 조 단위 참조로 고친다(ADR-0082 결정 8 · 결정 15 저작 기준 ④).
  * 블록 지정 참조(ADR-0082 결정 12)는 `with: { kind: "blockRef", mount: <탑재 code>, articleId?: <블록 조 id> }` — 그 노드를 통째로 바꾸고
  * 탑재 code 를 상품담보 id 로 바꾼다(계약 수준 조 — 내Mom 제25조 결).
+ * `beforeMounts` — 탑재 전에 저장한다: 잠기기 전에 만든 사본(뒤 탑재가 그 조를 잠가 회색 사본이 된다 — ADR-0082 결정 10)의 표본.
  */
-type SeedCopy = { article: Id; patch: { node: Id; with: Record<string, unknown> }[] };
+type SeedCopy = { article: Id; patch: { node: Id; with: Record<string, unknown> }[]; beforeMounts?: boolean };
 
 function patchedArticle(article: ArticleNode, patch: SeedCopy["patch"], mountIds: ReadonlyMap<string, Id>): ArticleNode {
   const copy = structuredClone(article);
@@ -170,6 +171,19 @@ function patchedArticle(article: ArticleNode, patch: SeedCopy["patch"], mountIds
   visit(copy);
   for (const p of patch) if (!JSON.stringify(copy).includes(`"id":"${p.node}"`)) throw new Error(`[seed:alphaPlus] 조 사본 「${article.id}」에 노드 ${p.node} 이(가) 없음`);
   return copy;
+}
+
+/** 시드 조 사본 → 저장 입력 (템플릿 조를 베끼고 고친다). */
+async function seedCopies(services: Services, generalId: Id, generalCode: string, copies: readonly SeedCopy[], mountIds: ReadonlyMap<string, Id>) {
+  if (copies.length === 0) return [];
+  const template = await services.document.get(generalId);
+  if (!template) throw new Error(`[seed:alphaPlus] 보통약관을 읽을 수 없음: ${generalCode}`);
+  const articles = articlesById(template.tree);
+  return copies.map((c) => {
+    const original = articles.get(c.article);
+    if (!original) throw new Error(`[seed:alphaPlus] 조 사본의 템플릿 조를 찾을 수 없음: ${c.article}`);
+    return { articleId: c.article, article: patchedArticle(original, c.patch, mountIds), templateHash: articleHash(original) };
+  });
 }
 
 interface EnumSeed {
@@ -405,6 +419,9 @@ export async function loadAlphaPlus(services: Services, actor: Actor): Promise<S
       unwrap(await services.product.registerPlan(actor, productId, ids as Id[]));
     }
 
+    // 잠기기 전에 만든 사본 — 탑재(기본계약 지정) 전에 저장한다 (ADR-0082 결정 10 표본)
+    const early = await seedCopies(services, generalId, specification.general, ((specification as { copies?: SeedCopy[] }).copies ?? []).filter((c) => c.beforeMounts), new Map());
+    if (early.length > 0) unwrap(await services.product.saveGeneralSettings(actor, productId, { generalDocumentId: generalId, hiddenArticles: [], overrides: [], copies: early }));
     const mountIds = new Map<string, Id>();
     for (const mount of specification.mounts) {
       const coverageId = coverageIds.get(mount.coverage);
@@ -429,15 +446,8 @@ export async function loadAlphaPlus(services: Services, actor: Actor): Promise<S
     }
     const copies = (specification as { copies?: SeedCopy[] }).copies;
     if (copies) {
-      const template = await services.document.get(generalId);
-      if (!template) throw new Error(`[seed:alphaPlus] 보통약관을 읽을 수 없음: ${specification.general}`);
-      const articles = articlesById(template.tree);
-      const list = copies.map((c) => {
-        const original = articles.get(c.article);
-        if (!original) throw new Error(`[seed:alphaPlus] 조 사본의 템플릿 조를 찾을 수 없음: ${c.article}`);
-        return { articleId: c.article, article: patchedArticle(original, c.patch, mountIds), templateHash: articleHash(original) };
-      });
-      unwrap(await services.product.saveGeneralSettings(actor, productId, { generalDocumentId: generalId, hiddenArticles: [], overrides: [], copies: list }));
+      // 탑재 전 사본까지 함께 — 저장된 사본을 그대로 다시 보내면 회색 사본으로 남는다 (상품 서비스 잠금 규칙)
+      unwrap(await services.product.saveGeneralSettings(actor, productId, { generalDocumentId: generalId, hiddenArticles: [], overrides: [], copies: [...early, ...(await seedCopies(services, generalId, specification.general, copies.filter((c) => !c.beforeMounts), mountIds))] }));
     }
   }
 
