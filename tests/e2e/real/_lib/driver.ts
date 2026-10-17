@@ -178,6 +178,11 @@ export class Editor {
     const choice = this.refs.clauseEditor ? (scope === "clause" ? "self" : "general") : scope === "general" ? "general" : "self";
     const general = choice === "general";
     if (this.refs.hasScopeSelect) await d.locator(`#${idBase}-scope`).selectOption(choice);
+    // 문서 전체 참조 — 대응 보통약관 범위 · 대상 없음 (위치 호칭, 기능/문면 §3.5)
+    if (general && node.targets.length === 0) {
+      await d.locator(`#${idBase}-whole`).check();
+      return;
+    }
     const tree = d.locator(`#${idBase}-targets`);
     // 대상 모양은 범위마다 — 조 · 조+P코드(보통약관 · 이 템플릿), P코드(이 함수조항) (ADR-0072 결정 3)
     for (const t of node.targets as { articleId?: string; code?: string; innerCode?: string }[]) {

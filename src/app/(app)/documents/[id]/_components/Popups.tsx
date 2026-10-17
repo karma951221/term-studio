@@ -23,6 +23,7 @@ import {
   currentValueRef,
   documentCodeEntries,
   indexTree,
+  isDocumentWideRef,
   isParticlePreset,
   isRepeatSource,
   loopElementType,
@@ -253,6 +254,15 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
         </div>
       ) : (
         <>
+          {!prefix && ((picked && picked.value === "general") || (!choices && ctx.docKind === "special")) && (
+            <div className="ts-form-row ts-form-full">
+              <label className="ts-form-radio" htmlFor={`${idBase}-whole`}>
+                <input type="checkbox" id={`${idBase}-whole`} name={field("wholeDocument")} defaultChecked={node !== undefined && isDocumentWideRef(node)} />
+                문서 전체 — 대상 없이 보통약관 전체를 가리킨다
+              </label>
+              <p className="ts-form-hint">준용규정 「… 보통약관을 따릅니다」 자리. 조립이 출력 위치의 호칭을 찍는다 — 특약 「보통약관」 · 기본계약 2+ 의 특약 「보통약관 제1절 일반조항」 · 블록 「제1절 일반조항」(위치 호칭). 범위는 대응 보통약관이다.</p>
+            </div>
+          )}
           <div className="ts-form-row ts-form-full">
             <label htmlFor={`${idBase}-targets`}>참조 대상 (여럿 고를 수 있다)</label>
             <RefTargetTree
@@ -352,6 +362,9 @@ function initialChoice(choices: DocCtx["articleRefChoices"], node?: Pick<Article
   const want = node.scope === "self" ? "self" : paramOfRef(node) !== undefined ? "param" : "general";
   return choices.some((c) => c.value === want) ? want : choices[0].value;
 }
+
+/** 문서 전체 참조에 대상을 같이 고름. */
+const WHOLE_DOCUMENT_MESSAGE = "「문서 전체」는 대상을 고르지 않는다 — 대상 고르기를 비우거나 「문서 전체」를 끈다.";
 
 /** 연결어 미선택 — 대상이 둘 이상이거나 펼치면 여럿이 될 수 있으면 적용 전에 고른다 (결정 14 · 기능/문면 §3.5). */
 const CONNECTOR_PICK_MESSAGE = "대상이 둘 이상이거나 반복 · 함수조항 · 값 한정으로 여러 번호가 될 수 있으면 연결어(및 · 또는)를 고른다.";
@@ -1058,6 +1071,8 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
           }
           case "articleRef": {
             const r = articleRefOf(fd);
+            // 문서 전체 참조 — 대응 보통약관 범위 · 대상 없음 · 연결어 없음 (위치 호칭, 기능/문면 §3.5)
+            if (fd.get("wholeDocument") === "on") return r.targets.length > 0 ? WHOLE_DOCUMENT_MESSAGE : b.articleRef([], "general");
             if (r.targets.length === 0) return "참조할 대상을 하나 이상 고른다.";
             if (needsConnector(ctx, r.targets) && !r.connector) return CONNECTOR_PICK_MESSAGE;
             return { ...b.articleRef(r.targets, r.scope, r.connector) };
@@ -1144,6 +1159,7 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
                   return [{ type: "setSlotRef", nodeId: node.id, ref: str(fd, "ref") }];
                 case "articleRef": {
                   const r = articleRefOf(fd);
+                  if (fd.get("wholeDocument") === "on") return r.targets.length > 0 ? WHOLE_DOCUMENT_MESSAGE : [{ type: "setArticleRef", nodeId: node.id, targets: [], connector: undefined, scope: "general" }];
                   if (needsConnector(ctx, r.targets) && !r.connector) return CONNECTOR_PICK_MESSAGE;
                   return [{ type: "setArticleRef", nodeId: node.id, ...r }];
                 }
