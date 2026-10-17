@@ -22,6 +22,7 @@ export const TITLE_INLINE: readonly NodeKind[] = ["text", "slot", "inlineCond", 
 export function titleKindMessage(kind: NodeKind): string {
   const what: Partial<Record<NodeKind, string>> = {
     articleRef: "조 참조",
+    blockRef: "블록 지정 참조",
     appendixRef: "별표 참조",
     clauseInlineRef: "문장 안 함수조항",
     structKey: "구조 표기",
@@ -141,6 +142,8 @@ function foldOne(n: InlineNode, opts: FoldOptions): string {
       return `〔${n.alias ?? repeatLabel(n.source, { ...(opts.master ? { master: opts.master } : {}), ...(opts.enumOf ? { enumOf: opts.enumOf } : {}) })}〕`;
     case "articleRef":
       return "〔조 참조〕";
+    case "blockRef":
+      return "〔블록 지정 참조〕";
     case "appendixRef":
       return "〔별표 참조〕";
     case "clauseInlineRef":

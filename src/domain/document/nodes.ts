@@ -145,6 +145,19 @@ export interface ArticleRefNode {
   scope: "self" | "general";
 }
 
+/**
+ * 블록 지정 참조 (ADR-0082 결정 12 · 기능/문면 §3.5) — **상품 조 사본 안에서만** 이 상품의 블록 전체 또는 블록 조를 가리킨다.
+ * 대상 키 = 상품담보 id(같은 담보를 두 번 탑재해도 모호하지 않다) · 블록 조면 그 담보약관의 조 id. 대상은 하나다(연결어 없음).
+ * 렌더는 「제2절 보장조항 {블록 머리} {제목}」 · 「… 제N조(제목)」. 템플릿 · 담보약관 본문에서는 저장 거부.
+ */
+export interface BlockRefNode {
+  id: Id;
+  kind: "blockRef";
+  productCoverageId: Id;
+  /** 블록 조 — 없으면 블록 전체. */
+  articleId?: Id;
+}
+
 /** 별표 참조 슬롯 — 별표 불변 코드만. 번호는 책자별 계산값 (조립). */
 export interface AppendixRefNode {
   id: Id;
@@ -182,6 +195,7 @@ export type InlineNode =
   | InlineCondNode
   | InlineForNode
   | ArticleRefNode
+  | BlockRefNode
   | AppendixRefNode
   | ClauseInlineRefNode
   | ParticleNode;
@@ -420,7 +434,7 @@ export type NodeKind = Node["kind"];
 
 // ───────────────────────────── 허용 자식 규칙 ─────────────────────────────
 
-const INLINE: readonly NodeKind[] = ["text", "structKey", "slot", "inlineCond", "inlineFor", "articleRef", "appendixRef", "clauseInlineRef", "particle"];
+const INLINE: readonly NodeKind[] = ["text", "structKey", "slot", "inlineCond", "inlineFor", "articleRef", "blockRef", "appendixRef", "clauseInlineRef", "particle"];
 
 /**
  * 종류별 `children` 자리의 허용 자식. 규칙의 확장(그룹 노드·표)은 여기만 고친다 (ADR-0012).
@@ -448,6 +462,7 @@ export const allowedChildren: Record<NodeKind, readonly NodeKind[]> = {
   inlineCond: INLINE.filter((k) => k !== "inlineCond"),
   inlineFor: [], // 투명 — 본문 · 「비었을 때」 칸은 서 있는 자리의 허용 집합에서 인라인 반복을 뺀 것 (indexTree · allowedAtSlot)
   articleRef: [],
+  blockRef: [],
   appendixRef: [],
   particle: [],
   clauseInlineRef: [],
@@ -483,6 +498,7 @@ export function slotsOf(kind: NodeKind): readonly SlotName[] {
     case "structKey":
     case "slot":
     case "articleRef":
+    case "blockRef":
     case "appendixRef":
     case "particle":
     case "clauseInlineRef":
@@ -857,6 +873,32 @@ export interface TreeEnv {
   copyCodes?: boolean;
   /** 문맥 담보(담보약관) — 조 참조 키 한정의 키 존재 검사 (ADR-0087 결정 10). 없으면 건너뛴다. */
   coverage?: Coverage;
+  /**
+   * 이 상품의 블록(상품 조 사본 검사 — `copyCodes`) — 상품담보 id → 상품담보명 · 그 담보약관의 조 id. 블록 지정 참조 대상 검사(ADR-0082 결정 12).
+   * 없으면 대상 검사를 건너뛴다(사본이 아니면 블록 지정 참조 자체가 거부된다).
+   */
+  blocks?: ReadonlyMap<Id, { name: string; articleIds: ReadonlySet<Id> }>;
+}
+
+/** 블록 지정 참조 대상 검사 — 이 상품의 블록인가 · 그 블록 담보약관의 조인가 (상품 조 사본 저장 · 편집기 같은 한 벌). */
+export function blockRefTargetIssues(n: Pick<BlockRefNode, "productCoverageId" | "articleId">, blocks: NonNullable<TreeEnv["blocks"]>, at: Coordinate): Issue[] {
+  const block = blocks.get(n.productCoverageId);
+  const here = { ...at, refPath: blockRefKey(n) };
+  if (!block) return [{ kind: "brokenRef", message: "블록 지정 참조의 대상이 이 상품의 블록이 아닙니다 — 이 상품의 블록(주계약 기본계약 2개 이상 · 독립특약 탑재 담보)만 가리킨다", at: here }];
+  if (n.articleId !== undefined && !block.articleIds.has(n.articleId)) return [{ kind: "brokenRef", message: `블록 지정 참조의 대상 조가 블록 「${block.name}」의 담보약관에 없습니다`, at: here }];
+  return [];
+}
+
+/** 블록 지정 참조의 대상 열쇠 — `상품담보id` · `상품담보id/블록조id` (오류 좌표 `refPath`). */
+export function blockRefKey(n: Pick<BlockRefNode, "productCoverageId" | "articleId">): string {
+  return n.articleId === undefined ? n.productCoverageId : `${n.productCoverageId}/${n.articleId}`;
+}
+
+/** 트리의 블록 지정 참조 — 문서 순, 그 자리의 조 id 와 함께. */
+export function blockRefsIn(tree: DocumentNode): { node: BlockRefNode; articleId?: Id; path: Id[] }[] {
+  const out: { node: BlockRefNode; articleId?: Id; path: Id[] }[] = [];
+  for (const e of indexTree(tree).nodes.values()) if (e.node.kind === "blockRef") out.push({ node: e.node, ...(e.articleId !== undefined ? { articleId: e.articleId } : {}), path: e.path });
+  return out;
 }
 
 /**
@@ -921,6 +963,9 @@ export function checkNodeRefs(e: NodeEntry, ix: TreeIndex, env: TreeEnv, atSave:
       return [];
     case "articleRef":
       return articleRefIssues(n, e, ix, env, at);
+    case "blockRef":
+      if (!env.copyCodes) return one("structure", "블록 지정 참조는 상품 조 사본 안에서만 쓴다 — 템플릿 · 담보약관 본문에서는 블록을 가리키지 않는다");
+      return env.blocks ? blockRefTargetIssues(n, env.blocks, at) : [];
     case "appendixRef":
       return env.appendixExists && !env.appendixExists(n.appendixCode) ? one("brokenRef", `별표 ${n.appendixCode} 가 별표 마스터에 없습니다`) : [];
     case "boxRef":

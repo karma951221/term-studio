@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { DocumentNode } from "@/domain/document";
 import { titleNodes } from "@/domain/document/title";
 
-import { copyLocks, grayCopyIds, lockingCoverageIds, staticLinks } from "./copyLock";
+import { blockCoverageIds, copyBlockRefIssues, copyLocks, grayCopyIds, lockingCoverageIds, staticLinks } from "./copyLock";
 
 const doc = (id: string, links: (string | undefined)[], cond = false): DocumentNode => {
   const articles = links.map((l, i) => ({ id: `${id}-a${i}`, kind: "article" as const, title: titleNodes(`조${i}`, `${id}-a${i}`), ...(l ? { linkedArticleId: l } : {}), children: [] }));
@@ -53,5 +53,24 @@ describe("grayCopyIds — 잠긴 조에 남은 사본(회색 · 쓰이지 않음
     const locks = new Map([["g1", ["상해사망"]]]);
     expect([...grayCopyIds(["g1", "g9"], locks)]).toEqual(["g1"]);
     expect([...grayCopyIds(["g9"], locks)]).toEqual([]);
+  });
+});
+
+describe("블록 지정 참조의 대상 — 이 상품의 블록 (ADR-0082 결정 12)", () => {
+  const mounts = ["pc1", "pc2", "pc3"];
+  it("blockCoverageIds — 절 형태의 블록 후보: 주계약 기본계약 2개 이상 · 독립특약 탑재 전부, 대치 형태(기본계약 1개)는 블록이 없다", () => {
+    expect([...blockCoverageIds({ standalone: false, baseContractIds: ["pc1"], mountIds: mounts })]).toEqual([]);
+    expect([...blockCoverageIds({ standalone: false, baseContractIds: ["pc1", "pc2"], mountIds: mounts })]).toEqual(["pc1", "pc2"]);
+    expect([...blockCoverageIds({ standalone: true, baseContractIds: [], mountIds: mounts })]).toEqual(mounts);
+  });
+
+  it("copyBlockRefIssues — 사본 안 블록 지정 참조마다 대상 검사(블록 아님 · 블록에 없는 조), 좌표는 그 사본 조 · 그 노드", () => {
+    const article = { id: "g1", kind: "article" as const, title: titleNodes("계약의 소멸", "g1"), children: [{ id: "p1", kind: "paragraph" as const, code: "PZ0100", children: [{ id: "r1", kind: "blockRef" as const, productCoverageId: "pc1", articleId: "x9" }, { id: "r2", kind: "blockRef" as const, productCoverageId: "pc7" }] }] };
+    const blocks = new Map([["pc1", { name: "상해사망", articleIds: new Set(["x1"]) }]]);
+    const issues = copyBlockRefIssues([{ articleId: "g1", article }], blocks, { document: "product", ownerId: "prod" });
+    expect(issues.map((i) => [i.kind, i.at.articleId, i.at.nodePath?.at(-1), i.at.refPath])).toEqual([
+      ["brokenRef", "g1", "r1", "pc1/x9"],
+      ["brokenRef", "g1", "r2", "pc7"],
+    ]);
   });
 });

@@ -8,8 +8,9 @@
  * - 잠기기 전에 있던 사본은 지우지 않고 쓰지 않는다 — 회색 사본. 조립은 그 조를 템플릿 조로 두고(`grayCopy` 경고), 담보 해제 · 조연결 해제로
  *   잠금이 풀리면 다시 쓰인다.
  */
-import { indexTree, type DocumentNode } from "../document/nodes";
-import type { Id } from "../types";
+import { blockRefsIn, blockRefTargetIssues, indexTree, type ArticleNode, type DocumentNode } from "../document/nodes";
+import { foldTitle } from "../document/title";
+import type { Coordinate, Id, Issue } from "../types";
 
 /** 담보약관 트리의 정적 조연결 — 조 자리 · 관 · 조건 블록 가지 안까지, 문서 순. */
 export function staticLinks(tree: DocumentNode): Id[] {
@@ -47,4 +48,28 @@ export function copyLocks(sources: readonly LockSource[]): Map<Id, string[]> {
 /** 사본 중 잠긴 조의 것 — 회색 사본(쓰이지 않음). */
 export function grayCopyIds(copyArticleIds: Iterable<Id>, locks: ReadonlyMap<Id, unknown>): Set<Id> {
   return new Set([...copyArticleIds].filter((id) => locks.has(id)));
+}
+
+// ───────────────────────────── 블록 지정 참조의 대상 (ADR-0082 결정 12) ─────────────────────────────
+
+/** 절 형태의 블록 후보 — 주계약 기본계약 2개 이상 · 독립특약 탑재 전부. 대치 형태(기본계약 0 · 1개)는 블록이 없다. */
+export function blockCoverageIds({ standalone, baseContractIds, mountIds }: { standalone: boolean; baseContractIds: readonly Id[]; mountIds: readonly Id[] }): Set<Id> {
+  if (standalone) return new Set(mountIds);
+  const base = baseContractIds.filter((id) => mountIds.includes(id));
+  return new Set(base.length >= 2 ? base : []);
+}
+
+/**
+ * 상품 조 사본 안의 블록 지정 참조 검사 — 대상이 이 상품의 블록이 아니거나 그 블록 담보약관에 없는 조면 brokenRef (기능/상품 §3.10 — 사본 저장 거부).
+ * 좌표 = 그 사본 조 · 참조 노드, `refPath` = 대상 열쇠. 문면 저장 검증(`validateTree` 의 `blocks`)과 같은 한 벌이다.
+ */
+export function copyBlockRefIssues(copies: Iterable<{ articleId: Id; article: ArticleNode }>, blocks: ReadonlyMap<Id, { name: string; articleIds: ReadonlySet<Id> }>, coordinate: Coordinate = {}): Issue[] {
+  const out: Issue[] = [];
+  for (const c of copies) {
+    const solo: DocumentNode = { id: "__copy", kind: "document", title: "", children: [c.article] };
+    for (const r of blockRefsIn(solo)) {
+      out.push(...blockRefTargetIssues(r.node, blocks, { ...coordinate, articleId: c.articleId, articleTitle: foldTitle(c.article.title), nodePath: r.path.filter((id) => id !== "__copy") }));
+    }
+  }
+  return out;
 }

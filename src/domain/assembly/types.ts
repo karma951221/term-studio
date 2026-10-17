@@ -189,6 +189,15 @@ export interface RArticleRef {
   at: Coordinate;
 }
 
+/** 해소 단계의 블록 지정 참조 (ADR-0082 결정 12) — 대상 그대로. 렌더가 이 상품의 블록(머리 · 제목 · 조 번호)으로 푼다. */
+export interface RBlockRef {
+  kind: "blockRef";
+  id: Id;
+  productCoverageId: Id;
+  articleId?: Id;
+  at: Coordinate;
+}
+
 export interface RAppendixRef {
   kind: "appendixRef";
   id: Id;
@@ -217,7 +226,7 @@ export interface RInlineRepeat {
 }
 
 /** 해소 단계(ResolvedDoc)의 인라인 노드. */
-export type RInline = RText | RSlot | RArticleRef | RAppendixRef | RParticle | RInlineRepeat | ErrorNode;
+export type RInline = RText | RSlot | RArticleRef | RBlockRef | RAppendixRef | RParticle | RInlineRepeat | ErrorNode;
 /** 치환 단계(SubstitutedDoc)의 인라인 노드 — 슬롯 · 인라인 반복 묶음이 사라졌다. */
 export type SInline = Exclude<RInline, RSlot | RInlineRepeat>;
 

@@ -254,6 +254,8 @@ export interface GeneralDependents {
     refs: OutsideRef[];
     /** 그 담보약관의 정적 조연결(템플릿 조 id — `staticLinks`) — 연결 조 사본 잠금의 재료 (ADR-0082 결정 10). 없으면 연결 없음. */
     links?: Id[];
+    /** 그 담보약관의 조 id — 블록 지정 참조의 블록 조 대상 검사 (ADR-0082 결정 12). 없으면 조 없음. */
+    articleIds?: Id[];
   }[];
   /** 보통약관 참조가 든 함수조항. */
   clauses: { code: Code; refs: OutsideRef[] }[];

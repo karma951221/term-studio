@@ -25,6 +25,7 @@ function issuesOf(r: { ok: boolean; rejection?: { reason: string; issues?: Issue
 
 const GENERAL = "dddddddd-0000-4000-8000-0000000000ab";
 const BASE = "aaaaaaaa-0000-4000-8000-0000000000d1";
+const BASE2 = "aaaaaaaa-0000-4000-8000-0000000000d2";
 const text = (id: string, t = "글") => ({ id, kind: "text" as const, text: t });
 const para = (id: string, code: string, t?: string): ParagraphNode => ({ id, kind: "paragraph", code, children: [text(`${id}-t`, t)] });
 
@@ -45,7 +46,18 @@ const rewritten = (id: string, t: string): ArticleNode => ({ ...original(id), ch
 const copy = (article: ArticleNode) => ({ articleId: article.id, article, templateHash: articleHash(original(article.id)) });
 
 /** 기본계약 담보약관 — 제1조(a20)에 조연결(정적). */
-const dependents = (): GeneralDependents => ({ documents: [{ coverageId: BASE, clauseCodes: [], refs: [], links: ["a20"] }], clauses: [] });
+const dependents = (): GeneralDependents => ({
+  documents: [
+    { coverageId: BASE, clauseCodes: [], refs: [], links: ["a20"], articleIds: ["b-pay"] },
+    { coverageId: BASE2, clauseCodes: [], refs: [], links: [], articleIds: ["b2-pay"] },
+  ],
+  clauses: [],
+});
+/** 제2조(계약의 소멸 — 잠기지 않은 조) 사본 — 본문에 블록 지정 참조 하나. */
+const lapseWith = (productCoverageId: string, articleId?: string): ArticleNode => ({
+  ...original("a21"),
+  children: [{ id: "a21-p", kind: "paragraph", code: "PZ0100", children: [text("a21-t", "계약은 "), { id: "a21-r", kind: "blockRef", productCoverageId, ...(articleId ? { articleId } : {}) }] }],
+});
 
 describe("ADR-0082 결정 10 — 연결 조 사본 잠금 · 회색 사본 (PGlite)", () => {
   let t: TestDb;
@@ -56,7 +68,7 @@ describe("ADR-0082 결정 10 — 연결 조 사본 잠금 · 회색 사본 (PGli
   beforeAll(async () => {
     t = await createTestDb();
     svc = createProductService(t.db, {
-      coverageMaster: { tree: async (id) => (id === BASE ? ({ id: BASE, name: "상해사망", subCoverages: [] } satisfies CoverageTree) : undefined) },
+      coverageMaster: { tree: async (id) => (id === BASE ? ({ id: BASE, name: "상해사망", subCoverages: [] } satisfies CoverageTree) : id === BASE2 ? ({ id: BASE2, name: "질병사망", subCoverages: [] } satisfies CoverageTree) : undefined) },
       generalDocuments: {
         exists: async (id) => id === GENERAL,
         articleIds: async (id) => (id === GENERAL ? ["a20", "a21"] : []),
@@ -102,5 +114,19 @@ describe("ADR-0082 결정 10 — 연결 조 사본 잠금 · 회색 사본 (PGli
     // 빼면 지운다
     unwrap(await save(p.id, { copies: [copy(rewritten("a21", "상품 소멸"))] }));
     expect((await svc.listArticleCopies(p.id)).map((c) => c.articleId)).toEqual(["a21"]);
+  });
+
+  it("블록 지정 참조 — 대상이 이 상품의 블록(기본계약 2개 이상)이 아니거나 블록에 없는 조면 거부, 블록 전체 · 블록 조는 저장", async () => {
+    const p = unwrap(await svc.createProduct(editor, { name: "블록 지정 참조", generalDocumentId: GENERAL }));
+    const pc1 = unwrap(await svc.mount(editor, p.id, BASE, [], "base"));
+    // 기본계약 1개 — 대치 형태라 블록이 없다
+    const single = issuesOf(await save(p.id, { copies: [copy(lapseWith(pc1.id))] }));
+    expect(single.map((i) => [i.kind, i.at.articleId, i.at.nodePath?.at(-1), i.at.refPath])).toEqual([["brokenRef", "a21", "a21-r", pc1.id]]);
+    expect(single[0].message).toContain("이 상품의 블록이 아닙니다");
+    const pc2 = unwrap(await svc.mount(editor, p.id, BASE2, [], "base"));
+    unwrap(await save(p.id, { copies: [copy(lapseWith(pc1.id))] }));
+    unwrap(await save(p.id, { copies: [copy(lapseWith(pc2.id, "b2-pay"))] }));
+    const missing = issuesOf(await save(p.id, { copies: [copy(lapseWith(pc2.id, "b-pay"))] }));
+    expect(missing.map((i) => [i.at.refPath, i.message])).toEqual([[`${pc2.id}/b-pay`, `블록 지정 참조의 대상 조가 블록 「${pc2.name}」의 담보약관에 없습니다`]]);
   });
 });

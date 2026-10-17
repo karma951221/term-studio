@@ -21,6 +21,7 @@
 import type { OptionSelection } from "../clause/types";
 import type { ArticleNode, BlockNode, DocumentNode, SectionNode } from "../document/nodes";
 import { refKey, withCodes } from "../document/pcode";
+import { articleRefLabel } from "../document/numbering";
 import { foldTitle } from "../document/title";
 import type { CompletenessFilter } from "../coverage/values";
 import { CONTRACT_KIND_PATH, GROUP_TITLES_PATH, isStandaloneContract, showsGroupTitles } from "../master";
@@ -36,7 +37,7 @@ import { blockHeads } from "./blockHeads";
 import { authoredEmptyArticleIds, dropEmptyArticles } from "./emptyArticle";
 import { baseKey, replaceGeneralWithBase } from "./base";
 import { judgeOmission } from "./omission";
-import { collectAppendices, locateIssues, numberDocument, renderDocument } from "./render";
+import { type BlockLabel, collectAppendices, locateIssues, numberDocument, renderDocument } from "./render";
 import { resolveDocument } from "./resolve";
 import { firstSectionRecords, planFirstSection, raisedArticles, treatBlock, type SectionBlock, type SectionEnv, type SectionPlan } from "./firstSection";
 import { blockCoordinate, fillDelegation, FIRST_SECTION_COORDINATE, type FormPlan, type JoinOption, planForm, withDelegation } from "./section";
@@ -580,9 +581,28 @@ function inSection(issues: readonly Issue[], section: NonNullable<Coordinate["se
   return issues.map((issue) => ({ ...issue, at: { ...issue.at, section } }));
 }
 
-/** 렌더한 보통약관(대치 형태) · 제1절(절 형태)과 그 오류. */
-function renderGeneral(input: AssemblyInput, general: Built, appendices: readonly BookletAppendix[], sectioned: boolean): { doc: RenderedDoc; issues: Issue[] } {
-  const r = renderDocument(general.numbered, { document: "general", ownerId: generalCoordinate(input.product, generalDocumentOf(input)).ownerId!, appendices, aliases: general.aliases, ...(general.hidden ? { hiddenArticles: general.hidden } : {}) });
+/**
+ * 블록 지정 참조의 대상 — 제2절 블록마다 표기(「{블록 머리} {제목}」)와 블록 조 번호 (ADR-0082 결정 12 · 기능/조립산출 §3.10).
+ * 블록 조는 판정 처리(생략 · 분리) 뒤 번호 — 생략된 조는 없다(그 참조는 articleGone).
+ */
+function blockLabels(sectioned: SectionedBuild | undefined): ReadonlyMap<Id, BlockLabel> {
+  const out = new Map<Id, BlockLabel>();
+  for (const g of sectioned?.groups ?? []) {
+    for (const b of g.blocks) {
+      const articles = new Map<Id, string>();
+      for (const a of articlesOf(b.numbered.doc)) {
+        const n = b.numbered.numbers.get(a.id)?.n;
+        if (n !== undefined) articles.set(a.id, articleRefLabel(n, a.title));
+      }
+      out.set(b.prepared.c.snapshot.id, { label: b.head === undefined ? b.prepared.title : `${b.head} ${b.prepared.title}`, articles });
+    }
+  }
+  return out;
+}
+
+/** 렌더한 보통약관(대치 형태) · 제1절(절 형태)과 그 오류. 사본의 블록 지정 참조는 절 형태의 블록으로 푼다. */
+function renderGeneral(input: AssemblyInput, general: Built, appendices: readonly BookletAppendix[], sectioned: SectionedBuild | undefined): { doc: RenderedDoc; issues: Issue[] } {
+  const r = renderDocument(general.numbered, { document: "general", ownerId: generalCoordinate(input.product, generalDocumentOf(input)).ownerId!, appendices, aliases: general.aliases, ...(general.hidden ? { hiddenArticles: general.hidden } : {}), blocks: blockLabels(sectioned) });
   const issues = [...locateIssues(general.issues, general.numbered), ...r.issues];
   return { doc: r.doc, issues: sectioned ? inSection(issues, FIRST_SECTION_COORDINATE) : issues };
 }
@@ -655,7 +675,7 @@ export function assemble(master: MasterBundle, product: ProductInput): Booklet {
   // 7. 참조 해소 + 렌더 (책자 순으로 issues 를 모은다)
   let renderedGeneral: RenderedDoc | undefined;
   if (general) {
-    const r = renderGeneral(input, general, appendices, sectioned !== undefined);
+    const r = renderGeneral(input, general, appendices, sectioned);
     renderedGeneral = r.doc;
     issues.push(...r.issues);
   }
@@ -749,7 +769,7 @@ export function assembleSpecial(master: MasterBundle, product: ProductInput, pro
   const issues: Issue[] = [];
   let renderedGeneral: RenderedDoc | undefined;
   if (general) {
-    const r = renderGeneral(input, general, appendices, sectioned !== undefined);
+    const r = renderGeneral(input, general, appendices, sectioned);
     renderedGeneral = r.doc;
     issues.push(...r.issues);
   }
@@ -774,7 +794,7 @@ export function assembleGeneral(master: MasterBundle, product: ProductInput): Ge
   if (!general) return undefined;
   // 별표는 보통약관이 책자 맨 앞이라 이 한 벌만 훑어도 책자와 번호가 같다 (ADR-0063)
   const appendices = collectAppendices([general.numbered], input.appendices);
-  const r = renderGeneral(input, general, appendices, sectioned !== undefined);
+  const r = renderGeneral(input, general, appendices, sectioned);
   return { doc: r.doc, issues: r.issues, replaced: general.replaced ?? new Map() };
 }
 
