@@ -24,9 +24,19 @@
               "kind": "paragraph",
               "children": [
                 {
-                  "id": "b-a3-p1-x2",
+                  "id": "b-a3-p1-x2a",
                   "kind": "text",
-                  "text": "회사는 피보험자가 보험기간 중에 상해로"
+                  "text": "회사는 피보험자가 "
+                },
+                {
+                  "id": "b-a3-p1-x2s",
+                  "kind": "slot",
+                  "ref": "builtin.output.scope"
+                },
+                {
+                  "id": "b-a3-p1-x2b",
+                  "kind": "text",
+                  "text": " 보험기간 중에 상해로"
                 },
                 {
                   "id": "b-a3-p1-x1",
@@ -34,9 +44,19 @@
                   "appendixCode": "AX000002"
                 },
                 {
-                  "id": "b-a3-p1-x3",
+                  "id": "b-a3-p1-x3a",
                   "kind": "text",
-                  "text": "에서 정한 장해지급률이 80% 이상에 해당하는 장해상태가 되었을 때에는 보험수익자에게 최초1회에 한하여 보험가입금액을 일반상해80%이상후유장해보험금으로 지급합니다."
+                  "text": "에서 정한 장해지급률이 80% 이상에 해당하는 장해상태가 되었을 때에는 보험수익자에게 최초1회에 한하여 "
+                },
+                {
+                  "id": "b-a3-p1-x3s",
+                  "kind": "slot",
+                  "ref": "builtin.output.scope"
+                },
+                {
+                  "id": "b-a3-p1-x3b",
+                  "kind": "text",
+                  "text": " 보험가입금액을 일반상해80%이상후유장해보험금으로 지급합니다."
                 }
               ],
               "code": "P0100"
@@ -122,7 +142,7 @@
                   "appendixCode": "AX000002"
                 },
                 {
-                  "id": "b-a4-p3-x4",
+                  "id": "b-a4-p3-x3",
                   "kind": "text",
                   "text": "에 해당되지 않는 후유장해는 피보험자의 직업, 연령, 신분 또는 성별 등에 관계없이 신체의 장해정도에 따라"
                 },
@@ -132,19 +152,36 @@
                   "appendixCode": "AX000002"
                 },
                 {
-                  "id": "b-a4-p3-x5",
+                  "id": "b-a4-p3-x4",
                   "kind": "text",
-                  "text": "의 구분에 준하여 지급액을 결정합니다. 다만, "
+                  "text": "의 구분에 준하여 지급액을 결정합니다."
                 },
                 {
-                  "id": "b-a4-p3-x3",
-                  "kind": "appendixRef",
-                  "appendixCode": "AX000002"
-                },
-                {
-                  "id": "b-a4-p3-x6",
-                  "kind": "text",
-                  "text": "의 각 장해분류별 최저 지급률 장해정도에 이르지 않는 후유장해에 대하여는 후유장해보험금을 지급하지 않습니다."
+                  "id": "b-a4-c1",
+                  "kind": "inlineCond",
+                  "branches": [
+                    {
+                      "id": "b-a4-c1-t",
+                      "when": "builtin.output ≠ 'special'",
+                      "children": [
+                        {
+                          "id": "b-a4-c1-t-x2",
+                          "kind": "text",
+                          "text": " 다만, "
+                        },
+                        {
+                          "id": "b-a4-c1-t-x1",
+                          "kind": "appendixRef",
+                          "appendixCode": "AX000002"
+                        },
+                        {
+                          "id": "b-a4-c1-t-x3",
+                          "kind": "text",
+                          "text": "의 각 장해분류별 최저 지급률 장해정도에 이르지 않는 후유장해에 대하여는 후유장해보험금을 지급하지 않습니다."
+                        }
+                      ]
+                    }
+                  ]
                 }
               ],
               "code": "P0300"
@@ -4427,9 +4464,46 @@
               "kind": "paragraph",
               "children": [
                 {
-                  "id": "mb-a3-p1-x1",
+                  "id": "mb-a3-p1-x1a",
                   "kind": "text",
-                  "text": "회사는 피보험자가 보험기간 중에 상해의 직접결과로써 사망한 경우(질병으로 인한 사망은 제외합니다)에는 보험수익자에게 일반상해사망 보험가입금액 전액을 사망보험금으로 지급합니다."
+                  "text": "회사는 피보험자가 "
+                },
+                {
+                  "id": "mb-a3-p1-x1s",
+                  "kind": "slot",
+                  "ref": "builtin.output.scope"
+                },
+                {
+                  "id": "mb-a3-p1-x1b",
+                  "kind": "text",
+                  "text": " 보험기간 중에 상해의 직접결과로써 사망한 경우(질병으로 인한 사망은 제외합니다)에는 보험수익자에게 "
+                },
+                {
+                  "id": "mb-a3-c1",
+                  "kind": "inlineCond",
+                  "branches": [
+                    {
+                      "id": "mb-a3-c1-t",
+                      "when": "builtin.output = 'replace'",
+                      "children": [
+                        {
+                          "id": "mb-a3-c1-t-x1",
+                          "kind": "text",
+                          "text": "일반상해사망 "
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "mb-a3-p1-x2s",
+                  "kind": "slot",
+                  "ref": "builtin.output.scope"
+                },
+                {
+                  "id": "mb-a3-p1-x2b",
+                  "kind": "text",
+                  "text": " 보험가입금액 전액을 사망보험금으로 지급합니다."
                 }
               ],
               "code": "P0100"

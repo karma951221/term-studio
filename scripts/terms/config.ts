@@ -121,6 +121,11 @@ export interface SlotOverlay {
   article: string;
   find: string;
   ref: string;
+  /**
+   * `find` 를 바꾸지 않고 그 앞에 슬롯 + 공백 하나를 넣는다 — 범위 낱말 슬롯(`builtin.output.scope`, ADR-0089 결정 3)처럼 낱말 앞자리.
+   * 대치(빈 글)면 조립이 공백 하나를 접어 원문 그대로다.
+   */
+  before?: true;
 }
 
 /**
@@ -520,6 +525,11 @@ const ALPHA_GENERAL: GeneralSpec = {
   ),
 };
 
+/** 범위 낱말 슬롯 (ADR-0089 결정 3) — 대치 빈 글 · 특약 「이 특별약관의」 · 블록 「이 보장의」. */
+const SCOPE_WORD = "builtin.output.scope";
+/** 알파Plus 기본계약 제4조 ③ 단서 — 특약판(메리츠 특약 80%)에 없는 문장. */
+const FLOOR_PROVISO = " 다만, 【별표2(장해분류표)】의 각 장해분류별 최저 지급률 장해정도에 이르지 않는 후유장해에 대하여는 후유장해보험금을 지급하지 않습니다.";
+
 const ALPHA_SPECIALS: SpecialSpec[] = [
   {
     code: "base-disability80-doc",
@@ -527,7 +537,13 @@ const ALPHA_SPECIALS: SpecialSpec[] = [
     idPrefix: "b",
     title: "일반상해80%이상후유장해 기본계약 문면",
     extractFrom: { file: "보통약관.md", articles: ["3", "4"], linkTo: ["3", "4"] },
-    slots: [],
+    // 담보약관 문면 한 벌 (ADR-0089 결정 2 · 3 · 4) — 같은 담보를 특약 · 블록으로 실어도 맞는 글: 범위 낱말 슬롯(대치 빈 글 · 특약 「이 특별약관의」 · 블록 「이 보장의」)
+    slots: [
+      { article: "3", find: "보험기간 중에", ref: SCOPE_WORD, before: true },
+      { article: "3", find: "보험가입금액을", ref: SCOPE_WORD, before: true },
+    ],
+    // 제4조 ③ 단서 「다만, … 최저 지급률 … 지급하지 않습니다」는 특약판에 없다(메리츠 특약 80% ③) — 대치 · 블록(내Mom 1-1 ③)에만
+    inlineConds: [{ article: "4", find: FLOOR_PROVISO, when: "builtin.output ≠ 'special'", then: FLOOR_PROVISO }],
   },
   {
     code: "death-doc",
@@ -669,7 +685,12 @@ const MERITZ_SPECIALS: SpecialSpec[] = [
     idPrefix: "mb",
     title: "일반상해사망 기본계약 문면",
     extractFrom: { file: "보통약관.md", articles: ["3", "4"], linkTo: ["3", "4"] },
-    slots: [],
+    // 담보약관 문면 한 벌 (ADR-0089) — 범위 낱말 슬롯 둘 · 「일반상해사망 보험가입금액」의 담보명 낱말은 대치에만(특약 · 블록은 「이 특별약관의 보험가입금액」 · 「보험가입금액」)
+    inlineConds: [{ article: "3", find: "일반상해사망 ", when: "builtin.output = 'replace'", then: "일반상해사망 " }],
+    slots: [
+      { article: "3", find: "보험기간 중에", ref: SCOPE_WORD, before: true },
+      { article: "3", find: "보험가입금액 전액을", ref: SCOPE_WORD, before: true },
+    ],
   },
   {
     code: "m-disability80-doc",

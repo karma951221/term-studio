@@ -286,7 +286,8 @@ function applySlots(built: Built, slots: SlotOverlay[], report: string[]): void 
       const node = owner.children[at] as Extract<InlineNode, { kind: "text" }>;
       const i = node.text.indexOf(slot.find);
       const before = node.text.slice(0, i);
-      const after = node.text.slice(i + slot.find.length);
+      // 앞자리 슬롯(범위 낱말) — 찾은 낱말은 남기고 그 앞에 슬롯 + 공백 하나
+      const after = slot.before ? ` ${node.text.slice(i)}` : node.text.slice(i + slot.find.length);
       const replacement: InlineNode[] = [
         ...(before ? [{ id: `${node.id}a`, kind: "text" as const, text: before }] : []),
         { id: `${node.id}s`, kind: "slot", ref: slot.ref },
@@ -972,6 +973,8 @@ function buildSpecial(spec: SpecialSpec, product: ProductTerms, generalParsed: P
     const wanted = new Set(spec.extractFrom.articles);
     const flat: ParsedDoc = { title: spec.title ?? source.title, sections: [{ title: "", articles: source.sections.flatMap((s) => s.articles).filter((a) => wanted.has(a.number)) }] };
     built = buildStructure(flat, spec.idPrefix, flat.title);
+    // 작성위치 조건 (ADR-0089 결정 4 — 한쪽에만 있는 문장 · 낱말) — 참조 변환 전에 얹는다(가지 안의 별표 · 조 참조도 슬롯이 된다)
+    applyInlineConds(built.tree, built.numberOf, spec.inlineConds ?? [], report);
     // 기본계약 문면 안의 자기 참조(제3조 → 제1조 자리)는 self 색인으로 풀린다 — 원문 번호를 그대로 쓴다
     convertText(built, general.index, product.appendixNumbers, report);
     const articles = [...articlesOf(built.tree)];
