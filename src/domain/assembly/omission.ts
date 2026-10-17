@@ -380,8 +380,10 @@ function judgeArticle(a: RArticle<SInline>, target: RArticle<SInline>, kinds: Re
 
 /**
  * @param hidden 상품이 노출을 끈 보통약관 조 id → 조 명 (기능/상품 §3.6). 준용 대상이 이 중에 있으면 오류를 내고 그 조는 `full` 로 둔다.
+ * @param delegated 기본계약 2+ 의 제1절에서 위임된 템플릿 조(위임 문구만 남은 조) — 거기 연결한 특약 조는 판정 없이 통째다(`delegated`, ADR-0082 결정 4 · ADR-0021 결정 4).
+ *   그 밖의 조는 **실제로 찍힌 제1절**(`general` — 공통 · 공통항 분리 · 전체항 합침으로 오른 글 포함)과 견준다.
  */
-export function judgeOmission(special: SubstitutedDoc, general: SubstitutedDoc | undefined, owner: OmissionOwner, hidden?: ReadonlyMap<Id, string>): OmissionOutcome {
+export function judgeOmission(special: SubstitutedDoc, general: SubstitutedDoc | undefined, owner: OmissionOwner, hidden?: ReadonlyMap<Id, string>, delegated?: ReadonlySet<Id>): OmissionOutcome {
   const generalArticles = new Map<Id, RArticle<SInline>>();
   if (general) for (const a of articlesOf(general)) generalArticles.set(a.id, a);
   const kinds = liveCodedKeys([special, general]);
@@ -399,7 +401,8 @@ export function judgeOmission(special: SubstitutedDoc, general: SubstitutedDoc |
     }
     let verdict: Verdict = { disposition: "full", pairs: [] };
     let output: RArticle<SInline> | null = a;
-    if (target && !containsErrors(a) && !containsErrors(target)) {
+    const isDelegated = delegated?.has(a.linkedArticleId) === true;
+    if (target && !isDelegated && !containsErrors(a) && !containsErrors(target)) {
       verdict = judgeArticle(a, target, kinds);
       if (verdict.disposition === "omitted") output = null;
       else if (verdict.disposition === "applied") output = { ...a, children: [applicationParagraph(a, a.linkedArticleId, owner), ...(verdict.keep ?? []).map((index) => a.children[index])] };
@@ -417,6 +420,7 @@ export function judgeOmission(special: SubstitutedDoc, general: SubstitutedDoc |
       pairs: verdict.pairs,
       excludedClauseNodeIds: target ? excludedClauseNodeIds(target) : [],
       ...(verdict.reason !== undefined ? { reason: verdict.reason } : {}),
+      ...(isDelegated ? { delegated: true as const } : {}),
     });
     return output;
   });

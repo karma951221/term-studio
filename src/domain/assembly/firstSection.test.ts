@@ -302,3 +302,26 @@ describe("위치 호칭 — 블록 (기능/조립산출 §3.10)", () => {
   });
 });
 
+describe("기본계약 2+ 의 특약 조 판정 — 실제로 찍힌 제1절과 비교 (ADR-0082 결정 4 · ADR-0021 결정 4)", () => {
+  /** 주계약 · 기본계약 둘(A · B 블록) + 특약 하나(B 와 같은 담보약관 — 일반상해사망 추가). */
+  const main = () => {
+    const input = standalone({ blocks: ["pc-base", "pc-basic", "pc-addon"] });
+    const values = new Map(input.product.values);
+    values.set("feature.contract_kind", entered("V01"));
+    return { ...input, product: { ...input.product, values, baseContractIds: ["pc-base", "pc-basic"] } };
+  };
+  const r = () => run(main());
+  const verdict = (b: Booklet, linked: Id) => b.omitted.find((o) => o.linkedArticleId === linked)!;
+
+  it("위임된 조에 연결한 특약 조는 판정 없이 통째 — 위임 표시 · 대조 · 경고 없음", () => {
+    expect(verdict(r(), "t-pay")).toMatchObject({ disposition: "full", delegated: true, pairs: [] });
+  });
+
+  it("공통 · 공통항 분리로 제1절에 오른 글과 견준다 — 오른 글과 같으면 생략, 합침으로 늘어난 조와 다르면 통째", () => {
+    const b = r();
+    expect(verdict(b, "t-lapse").disposition).toBe("omitted");
+    expect(verdict(b, "t-exempt").disposition).toBe("omitted");
+    expect(verdict(b, "t-detail").disposition).toBe("full");
+    expect(b.omitted.map((o) => o.delegated)).toEqual([true, undefined, undefined, undefined]);
+  });
+});

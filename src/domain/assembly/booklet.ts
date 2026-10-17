@@ -158,6 +158,8 @@ interface Built {
   hidden?: ReadonlyMap<Id, string>;
   /** 보통약관: 기본계약 조로 대치된 보통약관 조 id → 기본계약 상품담보 이름 (저작 화면 미리보기의 「대치」 표시). */
   replaced?: ReadonlyMap<Id, string>;
+  /** 절 형태의 제1절: 위임된 템플릿 조 — 거기 연결한 특약 조는 판정 없이 통째 (ADR-0082 결정 4). */
+  delegated?: ReadonlySet<Id>;
 }
 
 interface Prepared {
@@ -327,7 +329,7 @@ function buildFirstSection(input: AssemblyInput, contexts: AssemblyContexts, s: 
   const prepared = prepare(emptyArticles(g, new Set([...delegated, ...lifted])), contexts.general, s, { coordinate: generalCoordinate(input.product, master), overrides: input.product.overrides, ...prepareCoordinates(input, g) });
   const judged = mapArticles(withDelegation(prepared.doc, delegated), (a): RArticle<SInline> => (lifted.has(a.id) ? { ...a, children: raised.get(a.id)! } : a));
   const numbered = numberDocument(dropEmptyArticles(judged, authoredEmptyArticleIds(g)).doc);
-  return { numbered: fillDelegation(numbered, delegated), issues: [...gray, ...prepared.issues, ...plan.firstIssues], omitted: [], ...(hidden ? { hidden } : {}) };
+  return { numbered: fillDelegation(numbered, delegated), issues: [...gray, ...prepared.issues, ...plan.firstIssues], omitted: [], ...(hidden ? { hidden } : {}), delegated };
 }
 
 /**
@@ -374,7 +376,8 @@ function buildSpecial(input: AssemblyInput, contexts: AssemblyContexts, s: Share
     title: specialTitle(c.snapshot.name),
   });
   const withApplication = ensureApplicationArticle(prepared.doc, position);
-  const judged = judgeOmission(withApplication, general?.numbered.doc, { productCoverageId: c.snapshot.id, productCoverageName: c.snapshot.name }, general?.hidden);
+  // 기본계약 2+ 면 실제로 찍힌 제1절과 견주고, 위임된 조에 연결한 조는 판정 없이 통째 (ADR-0082 결정 4)
+  const judged = judgeOmission(withApplication, general?.numbered.doc, { productCoverageId: c.snapshot.id, productCoverageName: c.snapshot.name }, general?.hidden, general?.delegated);
   return { numbered: numberDocument(dropEmptyArticles(judged.doc, authoredEmptyArticleIds(doc)).doc), issues: [...prepared.issues, ...judged.issues], omitted: judged.records };
 }
 

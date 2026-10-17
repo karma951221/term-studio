@@ -124,10 +124,11 @@ export default async function ProductPreviewPage({ params, searchParams }: { par
                     {o.productCoverageName} › {o.articleTitle}{" "}
                     <span className={o.reason ? "ts-badge warning" : "ts-badge"}>{OMISSION_LABEL[o.disposition]}</span>
                     {o.reason && <span className="ts-muted"> · {o.reason}</span>}
+                    {o.delegated && <span className="ts-muted"> · 제1절에서 위임된 조 — 판정하지 않음</span>}
                   </summary>
                   <div style={{ margin: "6px 0 4px 16px" }}>
                     {o.pairs.length === 0 ? (
-                      <p className="ts-muted">항 대조 없음 — 보통약관 조가 없거나 오류 마커가 있어 비교하지 않았습니다.</p>
+                      <p className="ts-muted">{o.delegated ? "항 대조 없음 — 연결한 템플릿 조가 제1절에서 위임되어(제2절 보장조항에서 정함) 견줄 마스터가 없습니다." : "항 대조 없음 — 보통약관 조가 없거나 오류 마커가 있어 비교하지 않았습니다."}</p>
                     ) : (
                       <table className="ts-table">
                         <thead>

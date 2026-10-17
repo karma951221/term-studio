@@ -220,7 +220,7 @@ describe("제2절 보장조항 — 블록마다 제1조부터 · 블록 조는 �
     expect(lines(blocksOf(r)[0].doc)).toContain("제3조(블록 전용)");
   });
 
-  it("주계약 기본계약 2+ 의 특약은 지금처럼 판정한다 — 실제로 찍힌 제1절과 비교: 위임된 조는 통째 · 마스터로 남은 조는 생략 · 준용 (현 상태 고정 — 판정 대상 정리는 ④)", () => {
+  it("주계약 기본계약 2+ 의 특약은 실제로 찍힌 제1절과 판정한다 — 위임된 조는 통째 · 마스터로 남은 조는 생략 · 준용", () => {
     expect(b.omitted.map((o) => [o.productCoverageId, o.linkedArticleId, o.disposition])).toEqual([
       ["pc-addon", "g-art-pay", "full"],
       ["pc-addon", "g-art-exempt", "omitted"],
@@ -237,21 +237,11 @@ describe("제2절 보장조항 — 블록마다 제1조부터 · 블록 조는 �
     ]));
   });
 
-  it("주계약 기본계약 2+ 의 특약은 지금처럼 판정한다 — 실제로 찍힌 제1절과 비교: 위임된 조는 통째 · 마스터로 남은 조는 생략 · 준용 (현 상태 고정 — 판정 대상 정리는 ④)", () => {
-    expect(b.omitted.map((o) => [o.productCoverageId, o.linkedArticleId, o.disposition])).toEqual([
-      ["pc-addon", "g-art-pay", "full"],
-      ["pc-addon", "g-art-exempt", "omitted"],
-      ["pc-addon", "g-art-refund", "applied"],
-    ]);
-  });
-
-  it("기본계약 2+ 의 특약 — 위치 호칭 「보통약관 제1절 일반조항」: 준용 문장 · 조 참조 접두(덩어리마다 반복) · 준용규정 최소형 (기능/조립산출 §3.10)", () => {
-    const addon = lines(b.specials[0].docs[0]);
-    expect(addon).toEqual(expect.arrayContaining([
-      "  ① 이 특별약관의 보험금의 감액지급은 보통약관 제1절 일반조항 제6조(해약환급금)를 준용합니다.",
-      "  ② 계약일부터 24개월 이내에는 감액 지급하며, 보통약관 제1절 일반조항 제6조(해약환급금) 제1항 및 제2항을 확인합니다.",
-      "   이 특별약관에서 정하지 않은 사항은 보통약관 제1절 일반조항을 따릅니다.",
-    ]));
+  it("기본계약 2+ 의 특약 — 위임된 템플릿 조에 연결한 특약 조는 판정 없이 통째(위임 표시 · 사유 · 대조 없음), 마스터 · 특칙으로 찍힌 조는 실제로 찍힌 제1절과 판정 (ADR-0082 결정 4 · ADR-0021 결정 4)", () => {
+    const pay = b.omitted.find((o) => o.linkedArticleId === "g-art-pay")!;
+    expect(pay).toMatchObject({ disposition: "full", delegated: true, pairs: [] });
+    expect(pay.reason).toBeUndefined();
+    expect(b.omitted.filter((o) => o.linkedArticleId !== "g-art-pay").map((o) => o.delegated)).toEqual([undefined, undefined]);
   });
 
   it("별표는 제1절 → 제2절 블록 → 특약 등장 순", () => {
