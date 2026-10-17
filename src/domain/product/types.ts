@@ -248,7 +248,13 @@ export interface GeneralDocumentGate {
 /** 템플릿을 가리키는 밖의 참조 재료 (ADR-0081) — `GeneralDocumentGate.dependents`. */
 export interface GeneralDependents {
   /** 대응 보통약관이 이 템플릿인 담보약관 — 그 문서가 쓰는 함수조항 코드와 함께. */
-  documents: { coverageId: Id; clauseCodes: Code[]; refs: OutsideRef[] }[];
+  documents: {
+    coverageId: Id;
+    clauseCodes: Code[];
+    refs: OutsideRef[];
+    /** 그 담보약관의 정적 조연결(템플릿 조 id — `staticLinks`) — 연결 조 사본 잠금의 재료 (ADR-0082 결정 10). 없으면 연결 없음. */
+    links?: Id[];
+  }[];
   /** 보통약관 참조가 든 함수조항. */
   clauses: { code: Code; refs: OutsideRef[] }[];
 }

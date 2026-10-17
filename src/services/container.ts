@@ -26,7 +26,7 @@ import type { Discriminator } from "@/domain/catalog";
 import { presetUsage, validateOptionSelection } from "@/domain/clause";
 import { catalogTypeResolver, clauseGateFrom, collectRefs, indexTree, type ClauseGate } from "@/domain/document";
 import { checkTypes, parse, type TypeResolver } from "@/domain/expression";
-import { clauseGeneralRefs, outsideRefsOf, type GeneralDependents, type RequiredCoverageRef } from "@/domain/product";
+import { clauseGeneralRefs, outsideRefsOf, staticLinks, type GeneralDependents, type RequiredCoverageRef } from "@/domain/product";
 import type { Code, Id } from "@/domain/types";
 
 import * as catalogRepo from "@/db/repo/catalog";
@@ -111,7 +111,7 @@ async function generalDependentsOf(tx: Db, generalDocumentId: Id): Promise<Gener
   for (const d of await documentRepo.listDocumentRecords(tx)) {
     if (d.kind !== "special" || d.generalDocumentId !== generalDocumentId || !d.ownerId) continue;
     const clauseCodes = [...new Set(collectRefs(d.tree).flatMap((r) => (r.kind === "clause" ? [r.clauseCode] : [])))];
-    documents.push({ coverageId: d.ownerId, clauseCodes, refs: outsideRefsOf(d.tree, { document: "special", ownerId: d.ownerId, documentId: d.id, ownerName: d.title }) });
+    documents.push({ coverageId: d.ownerId, clauseCodes, refs: outsideRefsOf(d.tree, { document: "special", ownerId: d.ownerId, documentId: d.id, ownerName: d.title }), links: staticLinks(d.tree) });
   }
   const clauses = (await clauseRepo.listClauses(tx)).map((c) => ({ code: c.code, refs: clauseGeneralRefs(c) })).filter((c) => c.refs.length > 0);
   return { documents, clauses };
