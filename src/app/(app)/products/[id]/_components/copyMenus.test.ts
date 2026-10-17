@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { placeMenu, type MenuEnv } from "@/app/(app)/documents/[id]/_components/menus";
 import { indexTree, type DocumentNode } from "@/domain/document";
 
-import { COPY_REFUSAL, copyScopeMenu } from "./copyMenus";
+import { BLOCK_REF_ITEM, COPY_REFUSAL, copyScopeMenu, withBlockRefItems } from "./copyMenus";
 import { titleNodes } from "@/domain/document/title";
 
 const tree: DocumentNode = {
@@ -38,5 +38,20 @@ describe("copyScopeMenu — 조 사본은 그 조 안만", () => {
     const place = { kind: "block", id: "p1" } as const;
     const sections = copyScopeMenu(placeMenu(env, place), place, "a1");
     for (const label of ["아래에 항 추가", "삭제", "복제", "조건으로 감싸기"]) expect(state(sections, label)).toBe("열림");
+  });
+});
+
+describe("withBlockRefItems — 블록 지정 참조 넣기 줄 (ADR-0082 결정 12)", () => {
+  const textPlace = { kind: "inline", at: { parentId: "p1" } } as const;
+  it("블록이 있으면 「조 참조…」 바로 뒤에 「블록 지정 참조…」 — 같은 자리 · 같은 잠금", () => {
+    const sections = withBlockRefItems(copyScopeMenu(placeMenu(env, textPlace), textPlace, "a1"), true);
+    const labels = sections.flat().map((i) => i.label);
+    expect(labels.indexOf(BLOCK_REF_ITEM)).toBe(labels.indexOf("조 참조…") + 1);
+    const item = sections.flat().find((i) => i.label === BLOCK_REF_ITEM)!;
+    expect(item.action).toMatchObject({ do: "popup", popup: { kind: "insertInline", what: "blockRef", at: { parentId: "p1" } } });
+  });
+  it("블록이 없으면(대치 형태) 그대로", () => {
+    const sections = withBlockRefItems(copyScopeMenu(placeMenu(env, textPlace), textPlace, "a1"), false);
+    expect(sections.flat().some((i) => i.label === BLOCK_REF_ITEM)).toBe(false);
   });
 });

@@ -16,6 +16,7 @@ import type { EditOp, InlineAt, InlineNode, NodeNumber, ReferenceTarget } from "
 import { format, parse, type DisplayName, type MemberName } from "@/domain/expression";
 import type { Box } from "@/domain/document/box";
 import type { Code, Id } from "@/domain/types";
+import type { BlockRefChoice } from "@/app/_lib/blockRef";
 
 import type { ConditionContext } from "./condition/types";
 import type { Token } from "./inlineRuns";
@@ -73,6 +74,8 @@ export interface DocCtx {
    * 있으면 이 목록이 범위 고르기가 되고, 고른 범위의 후보만 트리에 선다. 없으면 문면 규칙(담보약관: 이 템플릿 · 대응 보통약관).
    */
   articleRefChoices?: readonly ArticleRefChoice[];
+  /** 블록 지정 참조 고르기 · 칩 표기 재료 — 상품 조 사본 편집기(절 형태)만 준다 (ADR-0082 결정 12). */
+  blockChoices?: readonly BlockRefChoice[];
   /** 조건 머리 줄의 변수 목록 문맥 — 노드(가지 · 조건 블록) 자리대로(반복 표 안이면 「현재 행」). 편집 모드에서만 쓴다. */
   conditionFor?: (nodeId: Id) => ConditionContext;
   /** 함수조항 블록이 본문을 그리는 재료 — 코드로 찾는다. 없으면 이름만. */

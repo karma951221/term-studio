@@ -8,6 +8,8 @@ import type { MasterForm } from "@/domain/master";
 import { buildForm, formReducer, initFormState } from "@/forms";
 
 import {
+  blockRefChoices,
+  copyLockNotice,
   attributeComboLabel,
   filterMountRows,
   mountRows,
@@ -483,5 +485,36 @@ describe("planCellShown — 세목 표의 칸을 그 행 값에 따라 비운다
   it("다른 칸은 늘 보인다", () => {
     expect(planCellShown("waiver.applies", values({}))).toBe(true);
     expect(planCellShown("no_surrender.type", values({}))).toBe(true);
+  });
+});
+
+describe("연결 조 사본 잠금 안내 (ADR-0082 결정 10 · 기능/상품 §4.6)", () => {
+  it("대치 형태(기본계약 하나) — 「기본계약 「…」의 조로 대치됩니다」", () => {
+    expect(copyLockNotice({ names: ["상해사망"], sectioned: false })).toBe("이 조는 기본계약 「상해사망」의 조로 대치됩니다 — 이 상품에서 고칠 수 없습니다. 문장을 바꾸려면 기본계약 담보약관을 고친다.");
+  });
+  it("절 형태 — 「블록 N개가 조연결한 조라 … — 이 상품 판정 = 위임 3/3」, 판정이 없으면(조건으로 빠짐) 판정 줄 없이", () => {
+    expect(copyLockNotice({ names: ["가", "나", "다"], sectioned: true, record: { result: "delegate", k: 3, n: 3 } })).toBe("블록 3개(「가」 · 「나」 · 「다」)가 조연결한 조라 이 상품에서 고칠 수 없습니다 — 이 상품 판정 = 위임 3/3");
+    expect(copyLockNotice({ names: ["가"], sectioned: true, record: { result: "special", k: 1, n: 2 } })).toBe("블록 1개(「가」)가 조연결한 조라 이 상품에서 고칠 수 없습니다 — 이 상품 판정 = 특칙 1/2");
+    expect(copyLockNotice({ names: ["가"], sectioned: true, record: { result: "commonSplit", k: 2, n: 2 } })).toContain("이 상품 판정 = 공통항 분리");
+    expect(copyLockNotice({ names: ["가"], sectioned: true })).toBe("블록 1개(「가」)가 조연결한 조라 이 상품에서 고칠 수 없습니다");
+  });
+});
+
+describe("블록 지정 참조 고르기 (ADR-0082 결정 12) — 조립의 제2절 블록에서", () => {
+  it("블록마다 「{블록 머리} {제목}」 · 블록 조 「제N조(제목)」, 블록이 없으면(대치 형태) 빈 목록", () => {
+    const doc = (ownerId: string, head: string | undefined, title: string, articles: [string, string, string][]): RenderedDoc => ({
+      kind: "document",
+      id: `d-${ownerId}`,
+      document: "special",
+      ownerId,
+      title,
+      ...(head ? { head } : {}),
+      children: articles.map(([id, label, t]) => ({ kind: "article", id, label, title: t, children: [] }) as unknown as RenderedArticle),
+    });
+    expect(blockRefChoices({ blocks: [{ id: "g", docs: [doc("pc1", "1.", "상해사망", [["a1", "제1조", "보험금의 지급사유"]]), doc("pc2", undefined, "질병사망", [])] }] })).toEqual([
+      { productCoverageId: "pc1", label: "1. 상해사망", articles: [{ id: "a1", label: "제1조(보험금의 지급사유)" }] },
+      { productCoverageId: "pc2", label: "질병사망", articles: [] },
+    ]);
+    expect(blockRefChoices({})).toEqual([]);
   });
 });

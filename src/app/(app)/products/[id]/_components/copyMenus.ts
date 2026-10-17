@@ -22,3 +22,21 @@ export function copyScopeMenu(sections: MenuSections, place: Place, articleId: I
   const refuse = (item: MenuItem): boolean => STRUCTURE.has(item.label) || item.wrapTarget === articleId || (outer && ARRANGE.has(item.label));
   return sections.map((section) => section.map((item) => (refuse(item) ? { ...item, refusal: COPY_REFUSAL } : item)));
 }
+
+/** 블록 지정 참조 넣기 줄의 이름 — 툴바 「조 참조」가 「조 참조…」와 함께 고른다. */
+export const BLOCK_REF_ITEM = "블록 지정 참조…";
+
+/**
+ * 블록 지정 참조 넣기 (ADR-0082 결정 12 · 기능/상품 §4.6) — 상품 조 사본에서만, 이 상품에 블록이 있으면(절 형태) 「조 참조…」 바로 뒤에
+ * 같은 자리 · 같은 잠금의 「블록 지정 참조…」를 더한다. 문면 편집기(템플릿 · 담보약관)에는 서지 않는다.
+ */
+export function withBlockRefItems(sections: MenuSections, hasBlocks: boolean): MenuSections {
+  if (!hasBlocks) return sections;
+  return sections.map((section) =>
+    section.flatMap((item): MenuItem[] => {
+      const a = item.action;
+      if (item.label !== "조 참조…" || a.do !== "popup" || a.popup.kind !== "insertInline") return [item];
+      return [item, { ...item, label: BLOCK_REF_ITEM, action: { ...a, popup: { ...a.popup, what: "blockRef" } } }];
+    }),
+  );
+}

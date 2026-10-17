@@ -2,6 +2,7 @@
  * 합성 표본 상품 (samples.json) — 절 형태 ① 뼈대의 세 모양 (2026-10-17 사용자 결정: 실물 원문이 없어 합성 표본).
  * 실물 대조 대상이 아니다(`real.test.ts` 와 분리). 이후 단계(② 판정 · 위임 · 일부 연결)를 칠 수 있게 조연결 구성을 갈랐다 —
  *   ⓐ 주계약 기본계약 2개 — 일반상해80%이상후유장해(지급사유 · 세부규정 조연결) + 일반상해사망보장(연결 없음) → 일부 연결 1/2 = 특칙(제1절 마스터)
+ *      ③ — 계약의 소멸 조 사본 + 블록 지정 참조 · 탑재 전에 만든 세부규정 사본(잠겨 회색)
  *   ⓑ 독립특약 블록 2개 — 일반상해80%이상후유장해 (기본) · 추가(같은 담보약관 — 둘 다 연결) → 전부 연결 2/2 · 일반 글이라 「다르다」 = 위임 · 그룹 제목 표시 켬
  *   ⓒ 독립특약 블록 1개 — 일반상해80%이상후유장해 → 위임 1/1
  * ② 판정(ADR-0082): 연결 수 k/N → 함수조항 동일 가드 → 준용하기 옵션. 옵션은 템플릿 저장(importTree)으로 넣어 다시 조립한다.
@@ -70,6 +71,21 @@ describe("합성 표본 — 절 형태 세 상품 (PGlite)", () => {
     expect(delegated(b)).toEqual([]);
     expect(verdicts(b)).toEqual(["보험금의 지급사유 special 1/2", "보험금 지급에 관한 세부규정 special 1/2"]);
     expect(b.specials.flatMap((g) => g.docs.map((d) => d.title))).toEqual(["골절(치아파절 제외)진단비Ⅱ보장 특별약관", "신화상치료비보장 특별약관"]);
+  });
+
+  it("ⓐ 계약 소멸 조 = 상품 사본 + 블록 지정 참조(ADR-0082 결정 12 · 내Mom 제25조 결) — ①은 블록 1 제1조, ②는 블록 2 전체", () => {
+    const b = booklets.get("표본 — 기본계약 2개(주계약)")!;
+    const article = (b.general?.children ?? []).flatMap((c) => (c.kind === "section" ? c.children : [c])).find((a) => a.kind === "article" && a.title === "계약의 소멸");
+    const text = article && article.kind === "article" ? article.children.flatMap((p) => (p.kind === "paragraph" ? [p.children.map((n) => (n.kind === "text" ? n.text : n.kind === "error" ? `⟦${n.issue.kind}⟧` : n.label)).join("")] : [])) : [];
+    expect(text[0]).toMatch(/^제2절 보장조항 1\. 일반상해80%이상후유장해 제1조\(보험금의 지급사유\)에서 정한 /);
+    expect(text[1]).toContain("회사는 제2절 보장조항 2. 일반상해사망보장의 해약환급금을 지급하지 않습니다");
+    expect(b.issues.filter((i) => i.kind === "articleGone")).toEqual([]);
+  });
+
+  it("ⓐ 회색 사본 — 기본계약 지정 전에 만든 세부규정(g-a4) 사본은 잠겨 쓰이지 않는다: grayCopy 경고 · 제1절은 템플릿 문장 (ADR-0082 결정 10)", () => {
+    const b = booklets.get("표본 — 기본계약 2개(주계약)")!;
+    expect(b.issues.filter((i) => i.kind === "grayCopy").map((i) => [i.severity, i.at.articleId])).toEqual([["warning", "g-a4"]]);
+    expect(JSON.stringify(b.general)).not.toContain("잠기기 전에 고친 세부규정");
   });
 
   it("ⓑ 독립특약 블록 2개 — 제목 = 상품명 · 그룹 제목 표시 「Ⅰ. 상해 관련 특별약관」 아래 「Ⅰ-1.」 「Ⅰ-2.」 · 특약 그룹 없음", () => {

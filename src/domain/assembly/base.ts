@@ -25,8 +25,9 @@ export interface BaseReplacementOutcome {
 
 /**
  * @param hidden 상품이 노출을 끈 보통약관 조 id → 조 명 (기능/상품 §3.6). 대치 대상이 이 중에 있으면 조용히 빠지지 않게 오류를 낸다.
+ * @param titles 템플릿 조 id → 조 명 — 대치 대상이 조건으로 빠졌을 때(`linkTargetGone`)의 문구 재료.
  */
-export function replaceGeneralWithBase(general: SubstitutedDoc, base: SubstitutedDoc, owner: BaseOwner, hidden?: ReadonlyMap<Id, string>): BaseReplacementOutcome {
+export function replaceGeneralWithBase(general: SubstitutedDoc, base: SubstitutedDoc, owner: BaseOwner, hidden?: ReadonlyMap<Id, string>, titles?: ReadonlyMap<Id, string>): BaseReplacementOutcome {
   const replacements = new Map<Id, RArticle<SInline>>();
   const aliases = new Map<string, string>();
   const issues: Issue[] = [];
@@ -48,6 +49,19 @@ export function replaceGeneralWithBase(general: SubstitutedDoc, base: Substitute
         kind: "articleHidden",
         severity: "error",
         message: `기본계약 조 「${node.title}」 이(가) 연결된 보통약관 조 「${hiddenTitle}」 은(는) 상품에서 노출을 껐습니다`,
+        at: { document: "special", ownerId: owner.productCoverageId, ownerName: owner.productCoverageName, articleId: node.id, articleTitle: node.title },
+      });
+      continue;
+    }
+    if (!generalArticleIds.has(node.linkedArticleId)) {
+      // 대치할 자리가 이 상품 최종 트리에 없다(조건으로 빠짐 · 템플릿에 없는 조) — 기본계약 문면이 조용히 사라지지 않게 오류 (ADR-0021 결정 3 · 기능/조립산출 §3.12)
+      const title = titles?.get(node.linkedArticleId);
+      issues.push({
+        kind: "linkTargetGone",
+        severity: "error",
+        message: title !== undefined
+          ? `기본계약 조 「${node.title}」 이(가) 조연결한 보통약관 조 「${title}」 이(가) 이 상품의 보통약관에 없습니다(조건으로 빠짐)`
+          : `기본계약 조 「${node.title}」 이(가) 조연결한 조가 이 상품의 보통약관 템플릿에 없습니다`,
         at: { document: "special", ownerId: owner.productCoverageId, ownerName: owner.productCoverageName, articleId: node.id, articleTitle: node.title },
       });
       continue;

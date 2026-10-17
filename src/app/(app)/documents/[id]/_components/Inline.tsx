@@ -12,6 +12,7 @@
  */
 import { Fragment, useEffect, useRef, type ClipboardEvent, type KeyboardEvent, type ReactNode } from "react";
 
+import { blockRefChipText } from "@/app/_lib/blockRef";
 import { STRUCT_KEY_CHIP, SWITCH_WORD } from "@/app/_lib/labels";
 import { particlePreset, referenceChunkLabel, referenceKeyIndex, refKey, type ArticleRefNode, type InlineAt, type InlineNode, type ReferenceTarget } from "@/domain/document";
 import { SCOPE_WORD_CHIP, SCOPE_WORD_PATH } from "@/domain/expression";
@@ -51,6 +52,7 @@ function articleRefText(node: ArticleRefNode, ctx: DocCtx): string {
 const CHIP_WHAT: Record<string, string> = {
   slot: "치환 슬롯",
   articleRef: "조 참조",
+  blockRef: "블록 지정 참조",
   appendixRef: "별표 참조",
   clauseInlineRef: "함수조항(문장 안)",
   inlineCond: "문장 안 조건",
@@ -71,6 +73,8 @@ function chipParts(node: InlineNode, ctx: DocCtx): { className: string; title: s
     }
     case "articleRef":
       return { className: "ts-doc-ref", title: "조 참조 슬롯 — 번호는 계산값이다", body: articleRefText(node, ctx) };
+    case "blockRef":
+      return { className: "ts-doc-ref", title: "블록 지정 참조 — 이 상품의 제2절 블록(상품 조 사본 전용)", body: blockRefChipText(ctx.blockChoices, node) };
     case "appendixRef":
       return { className: "ts-doc-ref", title: `별표 참조 · ${node.appendixCode}`, body: `【별표 ${ctx.appendixName.get(node.appendixCode) ?? `${node.appendixCode}(없는 별표)`}】` };
     case "clauseInlineRef":

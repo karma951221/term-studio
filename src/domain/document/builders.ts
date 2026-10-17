@@ -10,6 +10,7 @@ import type { ParticleNode, ParticlePresetKey } from "./particles";
 import { titleNodes } from "./title";
 import type {
   AppendixRefNode,
+  BlockRefNode,
   BoxRefNode,
   DynTableRefNode,
   ArticleNode,
@@ -145,6 +146,8 @@ export function nodeBuilders(newId: IdSource = randomIds) {
       ...(connector !== undefined ? { connector } : {}),
       scope,
     }),
+    /** 블록 지정 참조 — 상품 조 사본 전용 (ADR-0082 결정 12). 블록 조를 안 주면 블록 전체. */
+    blockRef: (productCoverageId: Id, articleId?: Id): BlockRefNode => ({ id: newId(), kind: "blockRef", productCoverageId, ...(articleId !== undefined ? { articleId } : {}) }),
     appendixRef: (appendixCode: Code): AppendixRefNode => ({ id: newId(), kind: "appendixRef", appendixCode }),
     /** 조사 칩 — 프리셋 키만. 글은 조립 렌더 끝에서 정해진다. */
     particle: (preset: ParticlePresetKey): ParticleNode => ({ id: newId(), kind: "particle", preset }),

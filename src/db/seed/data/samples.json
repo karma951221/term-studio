@@ -162,6 +162,44 @@
             }
           }
         ]
+      },
+      {
+        "article": "g-a25",
+        "patch": [
+          {
+            "node": "g-a25-p1-x1",
+            "with": {
+              "kind": "blockRef",
+              "mount": "base-disability80",
+              "articleId": "b-a3"
+            }
+          },
+          {
+            "node": "g-a25-p2-x2",
+            "with": {
+              "kind": "blockRef",
+              "mount": "base-death"
+            }
+          }
+        ]
+      },
+      {
+        "article": "g-a4",
+        "beforeMounts": true,
+        "patch": [
+          {
+            "node": "g-a4-p1",
+            "with": {
+              "children": [
+                {
+                  "id": "g-a4-p1-gray",
+                  "kind": "text",
+                  "text": "이 상품이 잠기기 전에 고친 세부규정 문장입니다."
+                }
+              ]
+            }
+          }
+        ]
       }
     ]
   },

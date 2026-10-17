@@ -38,6 +38,7 @@ import type {
   SInline,
   SubstitutedDoc,
 } from "./types";
+import { SECOND_SECTION_NAME } from "./section";
 import { articlesOf } from "./walk";
 
 // ───────────────────────────── 7. 번호 ─────────────────────────────
@@ -121,6 +122,19 @@ export interface RenderEnv {
   /** 상품이 노출을 끈 보통약관 조 id → 조 명 (기능/상품 §3.6). 사라진 참조 대상이 이 중에 있으면 `articleHidden` 오류다. */
   hiddenArticles?: ReadonlyMap<Id, string>;
   appendices: readonly BookletAppendix[];
+  /**
+   * 이 상품의 제2절 블록 (블록 지정 참조의 대상 — ADR-0082 결정 12) — 상품담보 id → 블록 표기(「{블록 머리} {제목}」) · 블록 조 id → 「제N조(제목)」.
+   * 절 형태가 아니면 비어 있다 — 그 참조는 `articleGone`.
+   */
+  blocks?: ReadonlyMap<Id, BlockLabel>;
+}
+
+/** 블록 지정 참조의 대상 블록 하나 — 렌더 표기 재료. */
+export interface BlockLabel {
+  /** 「1. 상해사망」 · 「Ⅰ-1. 암진단 특별약관」 — 블록 머리가 없으면 제목만. */
+  label: string;
+  /** 블록 조 id → 「제N조(조 제목)」 (블록 번호 뒤). */
+  articles: ReadonlyMap<Id, string>;
 }
 
 export interface RenderOutcome {
@@ -421,6 +435,18 @@ class Renderer {
       case "particle":
         // 목록 밖에서 불리면 앞 글이 없다
         return this.particle(n, []);
+      case "blockRef": {
+        // 블록 지정 참조 (ADR-0082 결정 12 · 기능/조립산출 §3.10) — 「제2절 보장조항 {블록 머리} {제목}」 · 「… 제N조(제목)」. 대상이 없으면 articleGone
+        const key = n.articleId === undefined ? n.productCoverageId : `${n.productCoverageId}/${n.articleId}`;
+        const block = this.env.blocks?.get(n.productCoverageId);
+        const article = n.articleId === undefined ? undefined : block?.articles.get(n.articleId);
+        if (!block || (n.articleId !== undefined && article === undefined)) {
+          const message = !block ? "블록 지정 참조의 대상 블록이 이 상품에 없습니다 — 탑재 해제 · 블록이 아닌 상품담보" : `블록 지정 참조의 대상 조가 블록 「${block.label}」에 없습니다 — 조건 · 판정으로 빠졌거나 지운 조`;
+          return this.error(n.id, { kind: "articleGone", message, at: { ...n.at, refPath: key } });
+        }
+        const label = `${SECOND_SECTION_NAME} ${block.label}${article !== undefined ? ` ${article}` : ""}`;
+        return { kind: "articleRef", id: n.id, targets: [{ nodeId: n.articleId ?? n.productCoverageId, label }], label };
+      }
       case "appendixRef": {
         const a = this.appendices.get(n.appendixCode);
         if (!a || a.name === "(없는 별표)") {

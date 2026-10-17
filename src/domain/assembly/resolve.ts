@@ -515,6 +515,8 @@ class Walker {
         const within = f.loops ? Object.fromEntries(Object.entries(f.loops).map(([loop, e]) => [loop, repeatElementId(e)])) : undefined;
         return [{ kind: "articleRef", id: n.id, targets: r.targets, ...(n.connector !== undefined ? { connector: n.connector } : {}), scope: refScope(n.scope, this.env.coordinate.document), ...(within ? { within } : {}), at }];
       }
+      case "blockRef":
+        return [{ kind: "blockRef", id: n.id, productCoverageId: n.productCoverageId, ...(n.articleId !== undefined ? { articleId: n.articleId } : {}), at }];
       case "appendixRef":
         return [{ kind: "appendixRef", id: n.id, appendixCode: n.appendixCode, at }];
       case "particle":

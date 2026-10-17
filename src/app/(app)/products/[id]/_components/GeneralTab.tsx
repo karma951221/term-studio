@@ -40,8 +40,10 @@ export interface GeneralTabProps {
   templateVersion?: number;
   /** 마지막 저장 뒤 템플릿이 바뀌었다 (템플릿 판 > 이 상품의 기준 판, ADR-0079). */
   templateChanged?: boolean;
-  /** 이 상품의 조 사본 — 템플릿에 자리가 남은 것만 (ADR-0079). */
+  /** 이 상품의 조 사본 — 템플릿에 자리가 남은 것만 (ADR-0079). 잠긴 조의 것(회색)도 든다 — 지우지 않는다. */
   articleCopies?: readonly ArticleCopy[];
+  /** 잠긴 조 id (ADR-0082 결정 10) — 그 조의 사본은 회색(쓰이지 않음): 모델링 · 깨짐 검사에서 빼고 목차에 회색 점. */
+  lockedArticles?: readonly Id[];
   /** 이 상품이 볼 밖의 참조 재료 — 탑재한 담보의 담보약관 · 함수조항 (ADR-0081). 참조 깨짐 목록 · 목차 줄의 재료. */
   dependents?: GeneralDependents;
   /** 편집 중 조 편집 패널의 재료(템플릿 · 트리 밖) — 별표 · 박스 · 함수조항 · 구분자 · 열거형 · 조건 문맥. */
@@ -83,6 +85,7 @@ export function GeneralTab({
   templateVersion,
   templateChanged = false,
   articleCopies = [],
+  lockedArticles = [],
   dependents,
   copyEditorData,
   generalNumbers: templateNumbers,
@@ -94,7 +97,10 @@ export function GeneralTab({
   confirmNode,
 }: GeneralTabProps) {
   // ── 이 상품의 보통약관 트리 = 템플릿 + 조 사본 (ADR-0079) — 읽기의 목차 · 모델링이 이것을 본다(미리보기는 조립 결과) ──
-  const generalTree = templateTree ? applyArticleCopies(templateTree, articleCopies) : undefined;
+  // 회색 사본(잠긴 조의 사본)은 쓰이지 않는다 — 가운데 모델은 쓰이는 사본만 (기능/상품 §4.6)
+  const locked = new Set(lockedArticles);
+  const usedCopies = articleCopies.filter((c) => !locked.has(c.articleId));
+  const generalTree = templateTree ? applyArticleCopies(templateTree, usedCopies) : undefined;
   const templateArticles = templateTree ? articlesById(templateTree) : new Map();
   // ── 약관 섹션의 좌표 — 관 하나가 세 패널의 단위다 ──────────────────────────
   const sections = generalTree ? generalSections(generalTree) : [];
@@ -108,7 +114,7 @@ export function GeneralTab({
   const references = generalTree ? referenceTargetIndex(generalTree, generalNumbers) : new Map();
   const { errorCount } = generalTabIssues(booklet?.issues ?? [], new Set());
   // 저장본의 참조 깨짐 — 템플릿이 바뀌어 깨진 상품도 여기서 드러난다. 고치기 전까지 이 탭 저장은 거부된다 (ADR-0081 결정 3)
-  const refBreakCount = templateTree ? productRefIssues({ template: templateTree, copies: articleCopies, hidden: hiddenArticles, ...(dependents ? { dependents } : {}) }).length : 0;
+  const refBreakCount = templateTree ? productRefIssues({ template: templateTree, copies: usedCopies, hidden: hiddenArticles, ...(dependents ? { dependents } : {}) }).length : 0;
   const appendixCount = booklet?.appendices.length ?? 0;
   const baseCoverageIds = new Set(baseCoverages.map((pc) => pc.id));
   // 절 형태(기본계약 2+ · 독립특약) — 미리보기는 제1절(위임 문구가 든 판정 결과)이고, 제2절 블록은 세 패널 아래에 읽기로 붙인다 (기능/상품 §4.6 · 조립산출 §3.8)
@@ -121,7 +127,7 @@ export function GeneralTab({
     articles: s.articles.map((a) => {
       const number = generalNumbers.get(a.id)?.label ?? "조";
       const original = templateArticles.get(a.id);
-      return { id: a.id, label: `${number}(${foldTitle(a.title)})`, number, templateTitle: foldTitle(original?.title ?? a.title), hidden: hidden.has(a.id), templateHash: original ? articleHash(original) : "" };
+      return { id: a.id, label: `${number}(${foldTitle(a.title)})`, number, templateTitle: foldTitle(original?.title ?? a.title), hidden: hidden.has(a.id), templateHash: original ? articleHash(original) : "", ...(locked.has(a.id) ? { locked: true } : {}) };
     }),
   }));
 
@@ -150,6 +156,7 @@ export function GeneralTab({
           boxes={boxes}
           {...(enums ? { enums } : {})}
           discriminators={discriminators}
+          {...(copyEditorData?.blockChoices ? { blockChoices: copyEditorData.blockChoices } : {})}
         />
       ),
       right: (
@@ -214,6 +221,7 @@ export function GeneralTab({
           {...(templateTree ? { template: templateTree } : {})}
           {...(dependents ? { dependents } : {})}
           clauses={clauses}
+          locked={lockedArticles}
         >
           {body}
         </GeneralEditProvider>

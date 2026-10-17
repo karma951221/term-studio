@@ -21,6 +21,7 @@
 import type { OptionSelection } from "../clause/types";
 import type { ArticleNode, BlockNode, DocumentNode, SectionNode } from "../document/nodes";
 import { refKey, withCodes } from "../document/pcode";
+import { articleRefLabel } from "../document/numbering";
 import { foldTitle } from "../document/title";
 import type { CompletenessFilter } from "../coverage/values";
 import { CONTRACT_KIND_PATH, GROUP_TITLES_PATH, isStandaloneContract, showsGroupTitles } from "../master";
@@ -30,13 +31,13 @@ import { COVERAGE_CATEGORY_ENUM, categoryGroupTitle } from "../coverage/category
 import { effectiveGroups, groupedCoverageIds, groupKey, sortInGroup } from "../product/groups";
 import type { ClauseOptionOverride, ProductCoverage } from "../product/types";
 import { type Coordinate, type Id, type Issue, ok, reject, type Result } from "../types";
-import { buildContexts, generalCoordinate, generalDocumentOf, specialCoordinate, type AssemblyContext, type AssemblyContexts } from "./context";
+import { assemblyCopyLocks, buildContexts, generalCoordinate, generalDocumentOf, specialCoordinate, type AssemblyContext, type AssemblyContexts } from "./context";
 import { ensureApplicationArticle } from "./application";
 import { blockHeads } from "./blockHeads";
 import { authoredEmptyArticleIds, dropEmptyArticles } from "./emptyArticle";
 import { baseKey, replaceGeneralWithBase } from "./base";
 import { judgeOmission } from "./omission";
-import { collectAppendices, locateIssues, numberDocument, renderDocument } from "./render";
+import { type BlockLabel, collectAppendices, locateIssues, numberDocument, renderDocument } from "./render";
 import { resolveDocument } from "./resolve";
 import { firstSectionRecords, planFirstSection, raisedArticles, treatBlock, type SectionBlock, type SectionEnv, type SectionPlan } from "./firstSection";
 import { blockCoordinate, fillDelegation, FIRST_SECTION_COORDINATE, type FormPlan, type JoinOption, planForm, withDelegation } from "./section";
@@ -238,24 +239,49 @@ function emptyArticles(doc: DocumentNode, ids: ReadonlySet<Id>): DocumentNode {
 }
 
 /** 이 상품의 보통약관 최종 트리 — 템플릿 + 조 사본(코드 채움) · 노출 끔을 뺀 것과 뺀 조의 명. 템플릿이 없으면 undefined. */
-function generalTree(input: AssemblyInput): { master: DocumentNode; tree: DocumentNode; hidden?: ReadonlyMap<Id, string> } | undefined {
+function generalTree(input: AssemblyInput): { master: DocumentNode; tree: DocumentNode; hidden?: ReadonlyMap<Id, string>; gray: Issue[] } | undefined {
   const stored = generalDocumentOf(input);
   if (!stored) return undefined;
+  const gray = grayCopyIssues(input, stored);
   // 대치 별칭(positionAliases)이 조립과 같은 P코드를 보도록 코드 없는 옛 트리는 여기서 채운다 (resolveDocument 와 같은 결정적 채번)
   const master = withCodes(stored);
   // 노출 끔 (기능/상품 §3.6) — **번호 계산 전에** 마스터에서 뺀다. 번호 순연은 numberDocument 의 귀결이다.
   // 뺀 조의 명은 남겨 둔다: 이 조를 가리키던 참조·조연결이 `articleHidden` 오류 메시지에 쓴다.
   const hiddenTitles = new Map<Id, string>();
   for (const [id, a] of masterArticles(master)) if (input.product.hiddenArticleIds.has(id)) hiddenTitles.set(id, foldTitle(a.title));
-  if (hiddenTitles.size === 0) return { master, tree: master };
-  return { master, tree: hideArticles(master, input.product.hiddenArticleIds), hidden: hiddenTitles };
+  if (hiddenTitles.size === 0) return { master, tree: master, gray };
+  return { master, tree: hideArticles(master, input.product.hiddenArticleIds), hidden: hiddenTitles, gray };
+}
+
+/**
+ * 회색 사본 경고 (ADR-0082 결정 10) — 잠긴 조(이 상품의 블록 · 기본계약이 조연결한 템플릿 조)에 남은 사본은 쓰이지 않는다.
+ * 좌표는 그 조 자리(번호는 조립이 채운다), 원천은 상품 › 보통약관 탭의 그 조. 템플릿에서 지워진 조의 사본은 말하지 않는다(쓰이지 않고 다음 저장이 지운다).
+ */
+function grayCopyIssues(input: AssemblyInput, general: DocumentNode): Issue[] {
+  const copies = input.product.articleCopies;
+  if (!copies || copies.size === 0) return [];
+  const locks = assemblyCopyLocks(input);
+  const articles = masterArticles(general);
+  return [...copies.keys()].flatMap((articleId): Issue[] => {
+    const names = locks.get(articleId);
+    const a = articles.get(articleId);
+    if (!names || !a) return [];
+    const title = foldTitle(a.title);
+    return [{
+      kind: "grayCopy",
+      severity: "warning",
+      message: `「${title}」의 사본은 쓰이지 않습니다 — ${names.join(" · ")} 이(가) 조연결한 조라 잠겼습니다. 조연결한 담보를 해제하면 다시 쓰입니다`,
+      at: { ...generalCoordinate(input.product, general), articleId, articleTitle: title },
+      source: { document: "product", ownerId: input.product.id, ownerName: input.product.name, articleId, articleTitle: title },
+    }];
+  });
 }
 
 /** 대치 형태의 보통약관 — 기본계약 하나가 조연결한 조를 그 기본계약 조로 대치한다 (ADR-0021 결정 3). 기본계약이 없으면 템플릿 그대로. */
 function buildGeneral(input: AssemblyInput, contexts: AssemblyContexts, s: Shared): Built | undefined {
   const general = generalTree(input);
   if (!general) return undefined;
-  const { master, tree: g, hidden } = general;
+  const { master, tree: g, hidden, gray } = general;
   if (input.product.baseContractIds.length === 1) {
     const base = input.coverages.find((coverage) => coverage.snapshot.id === input.product.baseContractIds[0]);
     const doc = base && input.specialDocuments.get(base.snapshot.coverageId);
@@ -269,19 +295,20 @@ function buildGeneral(input: AssemblyInput, contexts: AssemblyContexts, s: Share
       // 대치될 보통약관 본문은 실행 경로가 아니다 — 비운 뒤 해소한다
       const generalSource = emptyArticles(g, replacedArticleIds);
       const generalPrepared = prepare(generalSource, contexts.general, s, { coordinate: generalCoordinate(input.product, master), overrides: input.product.overrides, ...prepareCoordinates(input, g) });
-      const replaced = replaceGeneralWithBase(generalPrepared.doc, basePrepared.doc, { productCoverageId: base.snapshot.id, productCoverageName: base.snapshot.name }, hidden);
       const originals = masterArticles(g);
+      const titles = new Map([...masterArticles(master)].map(([id, a]) => [id, foldTitle(a.title)] as const));
+      const replaced = replaceGeneralWithBase(generalPrepared.doc, basePrepared.doc, { productCoverageId: base.snapshot.id, productCoverageName: base.snapshot.name }, hidden, titles);
       for (const baseArticle of articlesOf(basePrepared.doc)) {
         const original = baseArticle.linkedArticleId ? originals.get(baseArticle.linkedArticleId) : undefined;
         if (original) for (const [from, to] of positionAliases(original, baseArticle)) replaced.aliases.set(from, to);
       }
       const replacementIssues = replaced.issues.map((issue) => ({ ...issue, source: { document: "coverageMaster" as const, ownerId: base.snapshot.coverageId, documentId: doc.id, ownerName: base.snapshot.coverageName, articleId: issue.at.articleId, articleTitle: issue.at.articleTitle, nodePath: issue.at.articleId ? [doc.id, issue.at.articleId] : undefined } }));
       const replacedIds = new Map([...replacedArticleIds].filter((id) => originals.has(id)).map((id) => [id, base.snapshot.name] as const));
-      return { numbered: numberDocument(dropEmptyArticles(replaced.doc, authoredEmptyArticleIds(g)).doc), issues: [...generalPrepared.issues, ...basePrepared.issues, ...replacementIssues], omitted: [], aliases: replaced.aliases, ...(hidden ? { hidden } : {}), replaced: replacedIds };
+      return { numbered: numberDocument(dropEmptyArticles(replaced.doc, authoredEmptyArticleIds(g)).doc), issues: [...gray, ...generalPrepared.issues, ...basePrepared.issues, ...replacementIssues], omitted: [], aliases: replaced.aliases, ...(hidden ? { hidden } : {}), replaced: replacedIds };
     }
   }
   const prepared = prepare(g, contexts.general, s, { coordinate: generalCoordinate(input.product, master), overrides: input.product.overrides, ...prepareCoordinates(input, g) });
-  return { numbered: numberDocument(dropEmptyArticles(prepared.doc, authoredEmptyArticleIds(g)).doc), issues: prepared.issues, omitted: [], ...(hidden ? { hidden } : {}) };
+  return { numbered: numberDocument(dropEmptyArticles(prepared.doc, authoredEmptyArticleIds(g)).doc), issues: [...gray, ...prepared.issues], omitted: [], ...(hidden ? { hidden } : {}) };
 }
 
 /**
@@ -292,14 +319,14 @@ function buildGeneral(input: AssemblyInput, contexts: AssemblyContexts, s: Share
 function buildFirstSection(input: AssemblyInput, contexts: AssemblyContexts, s: Shared, plan: SectionPlan, raised: ReadonlyMap<Id, RArticle<SInline>["children"]>): Built | undefined {
   const general = generalTree(input);
   if (!general) return undefined;
-  const { master, tree: g, hidden } = general;
+  const { master, tree: g, hidden, gray } = general;
   const present = masterArticles(g);
   const delegated = new Set([...plan.verdicts].filter(([id, v]) => v.kind === "delegate" && present.has(id)).map(([id]) => id));
   const lifted = new Set([...raised.keys()].filter((id) => present.has(id)));
   const prepared = prepare(emptyArticles(g, new Set([...delegated, ...lifted])), contexts.general, s, { coordinate: generalCoordinate(input.product, master), overrides: input.product.overrides, ...prepareCoordinates(input, g) });
   const judged = mapArticles(withDelegation(prepared.doc, delegated), (a): RArticle<SInline> => (lifted.has(a.id) ? { ...a, children: raised.get(a.id)! } : a));
   const numbered = numberDocument(dropEmptyArticles(judged, authoredEmptyArticleIds(g)).doc);
-  return { numbered: fillDelegation(numbered, delegated), issues: [...prepared.issues, ...plan.firstIssues], omitted: [], ...(hidden ? { hidden } : {}) };
+  return { numbered: fillDelegation(numbered, delegated), issues: [...gray, ...prepared.issues, ...plan.firstIssues], omitted: [], ...(hidden ? { hidden } : {}) };
 }
 
 /**
@@ -556,9 +583,28 @@ function inSection(issues: readonly Issue[], section: NonNullable<Coordinate["se
   return issues.map((issue) => ({ ...issue, at: { ...issue.at, section } }));
 }
 
-/** 렌더한 보통약관(대치 형태) · 제1절(절 형태)과 그 오류. */
-function renderGeneral(input: AssemblyInput, general: Built, appendices: readonly BookletAppendix[], sectioned: boolean): { doc: RenderedDoc; issues: Issue[] } {
-  const r = renderDocument(general.numbered, { document: "general", ownerId: generalCoordinate(input.product, generalDocumentOf(input)).ownerId!, appendices, aliases: general.aliases, ...(general.hidden ? { hiddenArticles: general.hidden } : {}) });
+/**
+ * 블록 지정 참조의 대상 — 제2절 블록마다 표기(「{블록 머리} {제목}」)와 블록 조 번호 (ADR-0082 결정 12 · 기능/조립산출 §3.10).
+ * 블록 조는 판정 처리(생략 · 분리) 뒤 번호 — 생략된 조는 없다(그 참조는 articleGone).
+ */
+function blockLabels(sectioned: SectionedBuild | undefined): ReadonlyMap<Id, BlockLabel> {
+  const out = new Map<Id, BlockLabel>();
+  for (const g of sectioned?.groups ?? []) {
+    for (const b of g.blocks) {
+      const articles = new Map<Id, string>();
+      for (const a of articlesOf(b.numbered.doc)) {
+        const n = b.numbered.numbers.get(a.id)?.n;
+        if (n !== undefined) articles.set(a.id, articleRefLabel(n, a.title));
+      }
+      out.set(b.prepared.c.snapshot.id, { label: b.head === undefined ? b.prepared.title : `${b.head} ${b.prepared.title}`, articles });
+    }
+  }
+  return out;
+}
+
+/** 렌더한 보통약관(대치 형태) · 제1절(절 형태)과 그 오류. 사본의 블록 지정 참조는 절 형태의 블록으로 푼다. */
+function renderGeneral(input: AssemblyInput, general: Built, appendices: readonly BookletAppendix[], sectioned: SectionedBuild | undefined): { doc: RenderedDoc; issues: Issue[] } {
+  const r = renderDocument(general.numbered, { document: "general", ownerId: generalCoordinate(input.product, generalDocumentOf(input)).ownerId!, appendices, aliases: general.aliases, ...(general.hidden ? { hiddenArticles: general.hidden } : {}), blocks: blockLabels(sectioned) });
   const issues = [...locateIssues(general.issues, general.numbered), ...r.issues];
   return { doc: r.doc, issues: sectioned ? inSection(issues, FIRST_SECTION_COORDINATE) : issues };
 }
@@ -631,7 +677,7 @@ export function assemble(master: MasterBundle, product: ProductInput): Booklet {
   // 7. 참조 해소 + 렌더 (책자 순으로 issues 를 모은다)
   let renderedGeneral: RenderedDoc | undefined;
   if (general) {
-    const r = renderGeneral(input, general, appendices, sectioned !== undefined);
+    const r = renderGeneral(input, general, appendices, sectioned);
     renderedGeneral = r.doc;
     issues.push(...r.issues);
   }
@@ -725,7 +771,7 @@ export function assembleSpecial(master: MasterBundle, product: ProductInput, pro
   const issues: Issue[] = [];
   let renderedGeneral: RenderedDoc | undefined;
   if (general) {
-    const r = renderGeneral(input, general, appendices, sectioned !== undefined);
+    const r = renderGeneral(input, general, appendices, sectioned);
     renderedGeneral = r.doc;
     issues.push(...r.issues);
   }
@@ -750,7 +796,7 @@ export function assembleGeneral(master: MasterBundle, product: ProductInput): Ge
   if (!general) return undefined;
   // 별표는 보통약관이 책자 맨 앞이라 이 한 벌만 훑어도 책자와 번호가 같다 (ADR-0063)
   const appendices = collectAppendices([general.numbered], input.appendices);
-  const r = renderGeneral(input, general, appendices, sectioned !== undefined);
+  const r = renderGeneral(input, general, appendices, sectioned);
   return { doc: r.doc, issues: r.issues, replaced: general.replaced ?? new Map() };
 }
 

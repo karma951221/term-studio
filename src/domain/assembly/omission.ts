@@ -36,6 +36,8 @@ function serializer(refInsensitive: boolean) {
         return `t(${n.text})`;
       case "articleRef":
         return refInsensitive ? "a(?)" : `a(${n.scope}:${n.targets.map((target) => refKey(target)).join(",")}:${n.connector})`;
+      case "blockRef":
+        return `k(${n.productCoverageId}/${n.articleId ?? ""})`;
       case "appendixRef":
         return `x(${n.appendixCode})`;
       case "particle":

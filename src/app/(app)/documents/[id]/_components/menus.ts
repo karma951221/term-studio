@@ -18,7 +18,8 @@ import { afterOf, emptyNode, inlineListAt, moveOps, removeChipOps, selectionRang
 import { runsFromTokens, type Token } from "./inlineRuns";
 
 /** 문장 안에 팝업으로 넣는 칩 종류 (문장 안 조건은 팝업 없이 곧바로 선다 — `inlineCondItem`). */
-export type InlineInsertKind = "slot" | "articleRef" | "appendixRef" | "clauseInlineRef" | "structKey";
+/** `blockRef` — 블록 지정 참조(상품 조 사본 전용 — 조 편집 패널이 `withBlockRefItems` 로만 더한다, ADR-0082 결정 12). */
+export type InlineInsertKind = "slot" | "articleRef" | "blockRef" | "appendixRef" | "clauseInlineRef" | "structKey";
 
 /** 그 자리에 뜨는 팝업 — 무엇을 고치거나 넣는가. 조건식은 팝업이 없다(블록 머리 줄에서 고친다). */
 export type PopupSpec =

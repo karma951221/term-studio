@@ -20,7 +20,11 @@ import {
   applyArticleCopies,
   articlesById,
   copyCodeIssues,
+  blockCoverageIds,
+  copyBlockRefIssues,
+  copyLocks,
   liveArticleCopies,
+  lockingCoverageIds,
   newIssuesOnly,
   productRefIssues,
   type GeneralDependents,
@@ -248,6 +252,11 @@ export interface ProductService {
   saveGeneralSettings(actor: Actor, productId: Id, input: GeneralSettingsInput): Promise<Result<void>>;
   /** 상품의 조 사본 (ADR-0079) — 템플릿에서 조가 지워진 사본도 그대로 돌려준다(가리는 것은 화면 · 조립). */
   listArticleCopies(productId: Id): Promise<ArticleCopy[]>;
+  /**
+   * 사본 잠금 (ADR-0082 결정 10) — 잠긴 템플릿 조 id → 그 조에 조연결한 상품담보 이름(블록 · 기본계약, 정적 연결). 저장하지 않는 계산값.
+   * 잠긴 조는 새 사본을 저장할 수 없고, 잠기기 전 사본은 회색(쓰이지 않음)이다. 템플릿이 없으면 빈 맵.
+   */
+  copyLocks(productId: Id): Promise<Map<Id, string[]>>;
   /** 이 상품의 보통약관 설정이 기준으로 삼은 템플릿 판 — 지금 판이 더 크면 「템플릿이 바뀌었습니다」. 모르면 undefined. */
   generalBaseVersion(productId: Id): Promise<number | undefined>;
   /**
@@ -510,7 +519,32 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
    * 탑재한 담보약관 · 함수조항 본문. 좌표는 상품, 가리키는 쪽 자리(밖의 참조는 원인 조)에 붙는다.
    */
   async function referenceBreaksOf(tx: Db, productId: Id, templateId: Id, template: DocumentNode, copies: readonly ArticleCopy[], hidden: readonly Id[]): Promise<Issue[]> {
-    return productRefIssues({ template, copies, hidden, dependents: await dependentsFor(tx, productId, templateId), coordinate: { document: "product", ownerId: productId } });
+    const dependents = await dependentsFor(tx, productId, templateId);
+    // 회색 사본(잠긴 조의 사본)은 쓰이지 않는다 — 검사에서 뺀다 (ADR-0081 결정 2 · ADR-0082 결정 10)
+    const locks = await locksOf(tx, productId, dependents);
+    return productRefIssues({ template, copies: copies.filter((c) => !locks.has(c.articleId)), hidden, dependents, coordinate: { document: "product", ownerId: productId } });
+  }
+
+  /**
+   * 이 상품의 블록 (블록 지정 참조의 대상 — ADR-0082 결정 12) — 상품담보 id → 상품담보명 · 그 담보약관의 조 id.
+   * 블록 = 주계약 기본계약 2개 이상 · 독립특약 탑재 전부. 대치 형태(기본계약 0 · 1개)는 비어 있다.
+   */
+  async function blocksOf(tx: Db, productId: Id, dependents: GeneralDependents): Promise<Map<Id, { name: string; articleIds: Set<Id> }>> {
+    const [pcs, baseIds, standalone] = await Promise.all([repo.listProductCoverages(tx, productId), repo.listBaseContractIds(tx, productId), isStandalone(tx, productId)]);
+    const ids = blockCoverageIds({ standalone, baseContractIds: baseIds, mountIds: pcs.map((pc) => pc.id) });
+    const articlesOf = new Map(dependents.documents.map((d) => [d.coverageId, d.articleIds ?? []] as const));
+    return new Map(pcs.filter((pc) => ids.has(pc.id)).map((pc) => [pc.id, { name: pc.name, articleIds: new Set(articlesOf.get(pc.coverageId) ?? []) }] as const));
+  }
+
+  /**
+   * 이 상품의 사본 잠금 (ADR-0082 결정 10 · 기능/상품 §3.10) — 잠긴 템플릿 조 id → 그 조에 조연결한 상품담보 이름.
+   * 잠금을 만드는 담보 = 주계약 기본계약 · 독립특약 탑재 전부. 정적 연결(그 담보약관의 조연결 — 조건은 평가하지 않는다)로 센다.
+   */
+  async function locksOf(tx: Db, productId: Id, dependents: GeneralDependents): Promise<Map<Id, string[]>> {
+    const [pcs, baseIds, standalone] = await Promise.all([repo.listProductCoverages(tx, productId), repo.listBaseContractIds(tx, productId), isStandalone(tx, productId)]);
+    const locking = lockingCoverageIds({ standalone, baseContractIds: baseIds, mountIds: pcs.map((pc) => pc.id) });
+    const linksOf = new Map(dependents.documents.map((d) => [d.coverageId, d.links ?? []] as const));
+    return copyLocks(pcs.filter((pc) => locking.has(pc.id)).map((pc) => ({ productCoverageId: pc.id, name: pc.name, links: linksOf.get(pc.coverageId) ?? [] })));
   }
   /** 세목 선택지 값 — 같은 plan 레벨이라도 이 선택지의 세목유형 폼이 아니면 자리가 아니다 (코덱스 리뷰 Important 1). */
   function setPlanOptionValues(actor: Actor, optionId: Id, entries: readonly SlotWrite[]): Promise<Result<void>> {
@@ -1128,6 +1162,12 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
           const copies: ArticleCopy[] = [];
           const copied = new Set<Id>();
           const savedCopies = new Map((await repo.listArticleCopies(tx, productId)).map((c) => [c.articleId, c] as const));
+          // 연결 조 잠금 (ADR-0082 결정 10) — 잠긴 조의 새 사본 · 고친 사본은 거부, 잠기기 전 사본(회색)은 그대로 보내면 남는다(검사 · 조립에서 빠진다)
+          const dependents = await dependentsFor(tx, productId, templateId);
+          const locks = await locksOf(tx, productId, dependents);
+          const lockKind = (await isStandalone(tx, productId)) ? "블록" : "기본계약";
+          const lockedBy = (names: readonly string[]) => `${lockKind} ${names.map((n) => `「${n}」`).join(" · ")}`;
+          const grayKept: Id[] = [];
           for (const c of input.copies ?? []) {
             const where = at({ articleId: c.articleId });
             if (copied.has(c.articleId)) {
@@ -1145,10 +1185,19 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
               continue;
             }
             if (sameArticle(c.article, original)) continue;
+            const names = locks.get(c.articleId);
+            if (names) {
+              const was = savedCopies.get(c.articleId);
+              if (was && was.templateHash === c.templateHash && sameArticle(was.article, c.article)) grayKept.push(c.articleId);
+              else issues.push(issue("structure", `이 조는 ${lockedBy(names)}이(가) 조연결한 조라 이 상품에서 고칠 수 없습니다 — 사본을 저장하지 않습니다`, where));
+              continue;
+            }
             // 사본의 새 노드는 템플릿 원본 조가 쓰지 않는 코드여야 한다 — 저장된 사본의 노드는 그대로 둔다 (ADR-0081 결정 4)
             issues.push(...copyCodeIssues(original, c.article, savedCopies.get(c.articleId)?.article, at({})));
             copies.push({ articleId: c.articleId, article: c.article, templateHash: c.templateHash });
           }
+          // 블록 지정 참조 (ADR-0082 결정 12) — 대상은 이 상품의 블록 · 그 블록 담보약관의 조여야 한다(대치 형태는 블록이 없다)
+          issues.push(...copyBlockRefIssues(copies, await blocksOf(tx, productId, dependents), at({})));
           const effective = template ? applyArticleCopies(template.tree, copies) : undefined;
           // ②' 참조 무결성 (ADR-0081 결정 2) — 최종 트리 전체에서 템플릿 단독일 때 없던 깨짐. 사본이 든 조의 오류는 전부, 나머지 조는 새 오류만.
           if (template && effective) {
@@ -1211,7 +1260,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
           for (const o of await repo.listOverrides(tx, scope)) if (!kept.has(o.nodeId)) await repo.deleteOverride(tx, scope, o.nodeId, o.clauseCode);
           for (const w of writes) await repo.upsertOverride(tx, scope, w.nodeId, w.clauseCode, w.diff, actor.userId);
           // 조 사본 — 빠진 것은 지우고, 바뀐 것만 쓴다 (내용 · 지문이 같으면 행을 건드리지 않는다)
-          const keptCopies = new Set(copies.map((c) => c.articleId));
+          const keptCopies = new Set([...copies.map((c) => c.articleId), ...grayKept]);
           for (const id of savedCopies.keys()) if (!keptCopies.has(id)) await repo.deleteArticleCopy(tx, productId, id);
           for (const c of copies) {
             const was = savedCopies.get(c.articleId);
@@ -1223,6 +1272,11 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
         }),
       ),
     listArticleCopies: (productId) => repo.listArticleCopies(db, productId),
+    copyLocks: (productId) =>
+      db.transaction(async (tx) => {
+        const p = await repo.loadProduct(tx, productId);
+        return p?.generalDocumentId ? locksOf(tx, productId, await dependentsFor(tx, productId, p.generalDocumentId)) : new Map<Id, string[]>();
+      }),
     generalBaseVersion: (productId) => repo.loadGeneralBaseVersion(db, productId),
     generalReferenceIssues: (productId) =>
       db.transaction(async (tx) => {
@@ -1239,7 +1293,10 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
         for (const p of await repo.listProducts(tx)) {
           if (p.generalDocumentId !== templateId) continue;
           const [copies, hidden] = await Promise.all([repo.listArticleCopies(tx, p.id), repo.listHiddenArticles(tx, p.id)]);
-          const issues = productRefIssues({ template: tree, copies: liveArticleCopies(tree, copies), hidden, dependents: await dependentsFor(tx, p.id, templateId), ...(previous ? { previous } : {}) });
+          const dependents = await dependentsFor(tx, p.id, templateId);
+          // 회색 사본은 쓰이지 않아 깨질 것이 없다 (ADR-0082 결정 10)
+          const locks = await locksOf(tx, p.id, dependents);
+          const issues = productRefIssues({ template: tree, copies: liveArticleCopies(tree, copies).filter((c) => !locks.has(c.articleId)), hidden, dependents, ...(previous ? { previous } : {}) });
           for (const i of issues) out.push({ document: "product", ownerId: p.id, ownerName: p.name, ...(i.at.articleId ? { articleId: i.at.articleId } : {}), subjectName: i.message });
         }
         return out;

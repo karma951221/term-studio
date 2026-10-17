@@ -26,9 +26,10 @@ import { descendants, findNode, findNodeById, nodeName, nodesOf } from "../cover
 import type { Coverage, CoverageNode, CoverageNodeLevel } from "../coverage/types";
 import type { DocumentNode } from "../document/nodes";
 import { applyArticleCopies } from "../product/articleCopies";
+import { copyLocks, lockingCoverageIds, staticLinks } from "../product/copyLock";
 import type { EvalContext, LookupResult, OutputPosition, ValueRef } from "../expression";
 import { evaluate, parse, refPath } from "../expression";
-import { findMasterField, isMasterPathShape, type MasterFieldRef, type MasterTree } from "../master";
+import { CONTRACT_KIND_PATH, findMasterField, isMasterPathShape, isStandaloneContract, type MasterFieldRef, type MasterTree } from "../master";
 import type { RowSource } from "../structure";
 import { type AttachLevel, type Code, type Coordinate, entered, type Id, type Issue, NOT_ENTERED, type Value, type ValueSlot } from "../types";
 import { type FormPlan, planForm } from "./section";
@@ -395,13 +396,35 @@ export function specialCoordinate(c: AssemblyCoverage): Coordinate {
   return { document: "special", ownerId: c.snapshot.id, ownerName: c.snapshot.name };
 }
 
+type LockInput = Pick<AssemblyInput, "product" | "coverages" | "specialDocuments">;
+
+/**
+ * 이 상품의 사본 잠금 — 잠긴 템플릿 조 id → 그 조에 조연결한 상품담보 이름 (ADR-0082 결정 10 · 기능/상품 §3.10).
+ * 잠금을 만드는 담보 = 주계약 기본계약 · 독립특약 탑재 전부, 정적 연결(담보약관 트리의 조연결 — 조건은 평가하지 않는다).
+ */
+export function assemblyCopyLocks(input: LockInput): Map<Id, string[]> {
+  const ids = lockingCoverageIds({ standalone: isStandaloneContract(input.product.values.get(CONTRACT_KIND_PATH)), baseContractIds: input.product.baseContractIds, mountIds: input.coverages.map((c) => c.snapshot.id) });
+  return copyLocks(
+    input.coverages.flatMap((c) => {
+      const doc = ids.has(c.snapshot.id) ? input.specialDocuments.get(c.snapshot.coverageId) : undefined;
+      return doc ? [{ productCoverageId: c.snapshot.id, name: c.snapshot.name, links: staticLinks(doc) }] : [];
+    }),
+  );
+}
+
 /** 상품이 고른 보통약관 문면 — `generalDocumentId` 로 마스터 문서 맵에서. 없으면 undefined (오류 + 특약만 조립). */
-/** 이 상품의 보통약관 트리 — 템플릿에 조 사본을 갈아 끼운 것 (ADR-0079). 조립이 보통약관을 읽는 자리는 모두 이것을 본다. */
-export function generalDocumentOf(input: Pick<AssemblyInput, "product" | "generalDocuments">): DocumentNode | undefined {
+/**
+ * 이 상품의 보통약관 트리 — 템플릿에 **쓰이는** 조 사본을 갈아 끼운 것 (ADR-0079). 조립이 보통약관을 읽는 자리는 모두 이것을 본다.
+ * 잠긴 조의 사본(회색 사본 — ADR-0082 결정 10)은 갈아 끼우지 않는다: 그 조는 템플릿 조로 대치 · 판정된다.
+ */
+export function generalDocumentOf(input: Pick<AssemblyInput, "product" | "generalDocuments"> & Partial<LockInput>): DocumentNode | undefined {
   const id = input.product.generalDocumentId;
   const template = id === undefined ? undefined : input.generalDocuments.get(id);
   const copies = input.product.articleCopies;
-  return template && copies && copies.size > 0 ? applyArticleCopies(template, copies) : template;
+  if (!template || !copies || copies.size === 0) return template;
+  const locks = input.coverages && input.specialDocuments ? assemblyCopyLocks(input as LockInput) : new Map<Id, string[]>();
+  const live = locks.size === 0 ? copies : new Map([...copies].filter(([articleId]) => !locks.has(articleId)));
+  return live.size > 0 ? applyArticleCopies(template, live) : template;
 }
 
 export function generalCoordinate(product: AssemblyProduct, general: DocumentNode | undefined): Coordinate {

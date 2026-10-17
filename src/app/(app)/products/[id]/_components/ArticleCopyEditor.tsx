@@ -15,6 +15,8 @@
  * - 사본 표시 — 사본이면 「템플릿대로 되돌리기」, 사본을 만든 뒤 템플릿의 같은 조가 바뀌었으면(노랑) 「템플릿 현재 본문」 · 「이 상품 본문」을
  *   나란히 놓고 「템플릿대로 되돌리기」 · 「사본 유지」를 고른다. 자동으로 합치지 않는다.
  * - 함수조항 옵션 오버라이드는 본문 아래 「함수조항 옵션」 줄에서 고른다(이 조 안의 함수조항 자리마다 — 사본에 새로 넣은 자리도).
+ * - 잠긴 조(이 상품의 블록 · 기본계약이 조연결한 조 — ADR-0082 결정 10)는 읽기만 — 잠금 안내, 잠기기 전 사본이면 회색 본문 + 「템플릿대로 되돌리기」.
+ * - 블록 지정 참조(ADR-0082 결정 12) — 이 상품에 블록이 있으면(절 형태) 문장 넣기에 「블록 지정 참조…」(툴바 「조 참조」가 둘 중 고르기).
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 
@@ -71,7 +73,8 @@ import type { Box } from "@/domain/document/box";
 import { applyArticleCopies, articleHash, articleOnlyChange, articlesById } from "@/domain/product";
 import type { Code, Coordinate, Id, Issue, WorkMark } from "@/domain/types";
 
-import { COPY_REFUSAL, copyScopeMenu } from "./copyMenus";
+import type { BlockRefChoice } from "../../lib";
+import { COPY_REFUSAL, copyScopeMenu, withBlockRefItems } from "./copyMenus";
 import { useGeneralEdit } from "./GeneralEdit";
 import { draftCopies } from "./generalDraft";
 import { ClauseOptionPicker } from "./TemplateSource";
@@ -91,10 +94,12 @@ export interface CopyEditorData {
   /** 담보속성 코드 → 유효값 코드 (식 타입 검사). */
   attributeValues?: Readonly<Record<Code, readonly Code[]>>;
   /**
-   * 기본계약 대치 자리 — 보통약관 조 id → 그 조를 대치하는 기본계약 상품담보 이름. 조립은 이 조를 늘 기본계약 조로 찍으므로
-   * (ADR-0021) 여기서 고친 본문은 미리보기 · 산출에 나오지 않는다 — 패널이 그것을 말한다.
+   * 잠긴 조 — 보통약관 조 id → 잠금 안내 (ADR-0082 결정 10 · 기능/상품 §4.6). 이 상품의 블록 · 기본계약 담보약관이 조연결한 조라
+   * 사본을 만들 수 없다 — 편집기는 읽기만(툴바 없음), 잠기기 전 사본(회색)은 회색 본문 + 경고 + 「템플릿대로 되돌리기」.
    */
-  replacedBy?: Readonly<Record<Id, string>>;
+  locks?: Readonly<Record<Id, string>>;
+  /** 블록 지정 참조 고르기 재료 — 이 상품의 제2절 블록(조립 결과, ADR-0082 결정 12). 비면 넣기 메뉴가 서지 않는다(대치 형태). */
+  blockChoices?: readonly BlockRefChoice[];
 }
 
 const NODE_WHAT: Record<string, string> = {
@@ -249,7 +254,8 @@ export function ArticleCopyEditor({ data, articleId, label }: { data: CopyEditor
   };
   /** 지금 자리 — 고른 자리가 없거나 사라졌으면 이 조. */
   const placeIn = (ix: MenuEnv["ix"]): Place => (place && placeExists(ix, place) ? place : { kind: "article", id: articleId });
-  const scoped = (env: MenuEnv, at: Place, tokens: Token[] = []) => copyScopeMenu(placeMenu(env, at, tokens), at, articleId);
+  // 블록 지정 참조 — 상품 사본에서만, 이 상품에 블록이 있을 때(절 형태) 「조 참조…」 옆에 넣기 줄 (ADR-0082 결정 12)
+  const scoped = (env: MenuEnv, at: Place, tokens: Token[] = []) => withBlockRefItems(copyScopeMenu(placeMenu(env, at, tokens), at, articleId), (data.blockChoices ?? []).length > 0);
 
   const onContextMenu = (event: MouseEvent<HTMLElement>) => {
     event.preventDefault();
@@ -451,6 +457,7 @@ export function ArticleCopyEditor({ data, articleId, label }: { data: CopyEditor
     enumOf: (c: Code) => enumByCode.get(c),
     switchValueLabel: (clause, on, code) => switchLabelers.get(clause.code)?.(on, code),
     conditionFor: (nodeId) => withPlan(withRow(scopeOf(nodeId)), nodeId),
+    ...(data.blockChoices ? { blockChoices: data.blockChoices } : {}),
     ...(flashId ? { flashId } : {}),
   };
   const ctx: DocCtx = { ...ctxBase, edit: handlers };
@@ -533,6 +540,33 @@ export function ArticleCopyEditor({ data, articleId, label }: { data: CopyEditor
 
   if (!edit || !templateArticle || !articleIndex) return <p className="ts-muted">고른 조가 템플릿에 없다 — 목차에서 다른 조를 고른다.</p>;
 
+  const lockNotice = data.locks?.[articleId];
+  if (lockNotice !== undefined) {
+    // 잠긴 조 (ADR-0082 결정 10) — 읽기만. 잠기기 전 사본(회색)은 쓰이지 않는다 — 사람이 버리는 길은 같은 「템플릿대로 되돌리기」(기능/상품 §6.2)
+    return (
+      <div className="ts-copy-editor" aria-label={`조 편집 · ${label}`}>
+        <p className="ts-warn ts-copy-locked" role="status">
+          <b>잠김</b> — {lockNotice}
+        </p>
+        {copy && (
+          <div className="ts-copy-status is-gray" role="status">
+            <span>
+              <b>이 사본은 쓰이지 않습니다</b> — 조연결한 담보를 해제하면 다시 쓰입니다. 조립(미리보기 · 산출)은 이 조를 템플릿대로 둔다.
+            </span>
+            <span className="ts-copy-status-actions">
+              <button type="button" onClick={() => edit.dispatch({ type: "revertArticle", articleId })}>
+                템플릿대로 되돌리기
+              </button>
+            </span>
+          </div>
+        )}
+        <div className={copy ? "ts-copy-editor-body is-gray" : "ts-copy-editor-body"} aria-label={copy ? "회색 사본 본문" : "템플릿 본문"}>
+          <ArticleBody index={articleIndex} articleId={articleId} ctx={{ ...ctxBase, mode: "read" }} />
+        </div>
+      </div>
+    );
+  }
+
   const stale = copy !== undefined && copy.templateHash !== articleHash(templateArticle);
   const issues: Issue[] = [...savedIssues, ...liveIssues.filter((i) => !savedIssues.some((s) => s.message === i.message && s.at.nodePath?.at(-1) === i.at.nodePath?.at(-1)))];
   const editorBody = (
@@ -587,11 +621,6 @@ export function ArticleCopyEditor({ data, articleId, label }: { data: CopyEditor
         </div>
       ) : (
         <p className="ts-muted ts-copy-note">템플릿 조 그대로다 — 고치면 이 상품만의 사본이 된다(저장해야 반영). 조를 넣거나 옮기거나 지우는 일은 템플릿에서 한다.</p>
-      )}
-      {data.replacedBy?.[articleId] !== undefined && (
-        <p className="ts-warn ts-copy-replaced" role="status">
-          이 조는 기본계약 「{data.replacedBy[articleId]}」의 조로 대치된다 — 조립(미리보기 · 산출)에는 기본계약 본문이 찍히고, 여기서 고친 본문은 나오지 않는다. 문장을 바꾸려면 기본계약 담보약관을 고친다.
-        </p>
       )}
       {banner && (
         <p className="ts-error-banner" role="alert">

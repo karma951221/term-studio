@@ -222,7 +222,7 @@ class Substituter {
         const chosen = chooseParticle(n.preset, wasError ? "" : out);
         if (!chosen.resolved) this.issues.push({ kind: "particleUnresolved", severity: "warning", message: `조사 「${particlePreset(n.preset).label}」 — 앞 글자로 받침을 판정할 수 없어 「${chosen.text}」로 병기했습니다`, at: n.at });
         out += chosen.text;
-      } else if (n.kind === "articleRef" || n.kind === "appendixRef") {
+      } else if (n.kind === "articleRef" || n.kind === "blockRef" || n.kind === "appendixRef") {
         this.issues.push({ kind: "structure", message: titleKindMessage(n.kind), at: n.at });
       }
     }
@@ -246,6 +246,7 @@ function foldedKey(list: readonly SInline[]): string | undefined {
     if (n.kind === "text") key += n.text;
     else if (n.kind === "particle") key += `\u0000p:${n.preset}\u0000`;
     else if (n.kind === "appendixRef") key += `\u0000b:${n.appendixCode}\u0000`;
+    else if (n.kind === "blockRef") key += `\u0000k:${n.productCoverageId}/${n.articleId ?? ""}\u0000`;
     else key += `\u0000a:${JSON.stringify([n.targets, n.within ?? null, n.connector ?? null, n.scope])}\u0000`;
   }
   return key;
