@@ -73,7 +73,7 @@ const APPLICATION_HEAD = "이 특별약관에서 정하지 않은 사항은 보�
  * `guardApplicationOutput` 뒤에 부른다 — 사용처 대조는 특약 원문과 맞춘 뒤다.
  */
 export function positionApplicationHead(clauses: ClauseRecord[]): void {
-  type Node = { id: string; kind?: string; text?: string; children?: Node[]; branches?: { children: Node[] }[] };
+  type Node = { id: string; kind?: string; text?: string; targets?: unknown[]; children?: Node[]; branches?: { id: string; when?: string; children: Node[] }[] };
   const visit = (list: Node[]): boolean => {
     for (const n of list) {
       if (n.kind === "paragraph" && n.children) {
@@ -86,9 +86,9 @@ export function positionApplicationHead(clauses: ClauseRecord[]): void {
           at,
           1,
           { id: id("1"), kind: "text", text: "이 " },
-          { id: id("2"), kind: "inlineCond", branches: [{ id: `${id("2")}-b`, when: "builtin.output = 'block'", children: [{ id: `${id("2")}-b-t`, kind: "text", text: "보장조항에서" }] }, { id: `${id("2")}-e`, children: [{ id: `${id("2")}-e-t`, kind: "text", text: "특별약관에서" }] }] } as Node,
+          { id: id("2"), kind: "inlineCond", branches: [{ id: `${id("2")}-b`, when: "builtin.output = 'block'", children: [{ id: `${id("2")}-b-t`, kind: "text", text: "보장조항에서" }] }, { id: `${id("2")}-e`, children: [{ id: `${id("2")}-e-t`, kind: "text", text: "특별약관에서" }] }] },
           { id: id("3"), kind: "text", text: " 정하지 않은 사항은 " },
-          { id: id("4"), kind: "articleRef", targets: [] } as Node,
+          { id: id("4"), kind: "articleRef", targets: [] },
           { id: t.id, kind: "text", text: `을 따릅니다.${rest}` },
         );
         return true;
