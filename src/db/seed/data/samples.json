@@ -162,6 +162,26 @@
             }
           }
         ]
+      },
+      {
+        "article": "g-a25",
+        "patch": [
+          {
+            "node": "g-a25-p1-x1",
+            "with": {
+              "kind": "blockRef",
+              "mount": "base-disability80",
+              "articleId": "b-a3"
+            }
+          },
+          {
+            "node": "g-a25-p2-x2",
+            "with": {
+              "kind": "blockRef",
+              "mount": "base-death"
+            }
+          }
+        ]
       }
     ]
   },

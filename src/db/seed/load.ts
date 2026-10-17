@@ -145,16 +145,25 @@ type SeedGroup = { category: Code } | { name: string; coverages: string[] };
 /**
  * 상품 조 사본 (ADR-0079) — 템플릿 조를 통째로 베끼고 노드 몇 개의 칸만 고친다(`patch` — 노드 id → 덮어쓸 칸).
  * 합성 표본이 쓴다: 절 형태에서 위임된 조의 항을 가리키는 조를 조 단위 참조로 고친다(ADR-0082 결정 8 · 결정 15 저작 기준 ④).
+ * 블록 지정 참조(ADR-0082 결정 12)는 `with: { kind: "blockRef", mount: <탑재 code>, articleId?: <블록 조 id> }` — 그 노드를 통째로 바꾸고
+ * 탑재 code 를 상품담보 id 로 바꾼다(계약 수준 조 — 내Mom 제25조 결).
  */
 type SeedCopy = { article: Id; patch: { node: Id; with: Record<string, unknown> }[] };
 
-function patchedArticle(article: ArticleNode, patch: SeedCopy["patch"]): ArticleNode {
+function patchedArticle(article: ArticleNode, patch: SeedCopy["patch"], mountIds: ReadonlyMap<string, Id>): ArticleNode {
   const copy = structuredClone(article);
   const visit = (n: unknown): void => {
     if (Array.isArray(n)) return n.forEach(visit);
     if (!n || typeof n !== "object") return;
     const node = n as Record<string, unknown>;
     const hit = patch.find((p) => p.node === node.id);
+    if (hit && hit.with.kind === "blockRef") {
+      const productCoverageId = mountIds.get(String(hit.with.mount));
+      if (!productCoverageId) throw new Error(`[seed:alphaPlus] 블록 지정 참조의 탑재 참조를 찾을 수 없음: ${String(hit.with.mount)}`);
+      for (const key of Object.keys(node)) if (key !== "id") delete node[key];
+      Object.assign(node, { kind: "blockRef", productCoverageId, ...(typeof hit.with.articleId === "string" ? { articleId: hit.with.articleId } : {}) });
+      return;
+    }
     if (hit) Object.assign(node, hit.with);
     Object.values(node).forEach(visit);
   };
@@ -426,7 +435,7 @@ export async function loadAlphaPlus(services: Services, actor: Actor): Promise<S
       const list = copies.map((c) => {
         const original = articles.get(c.article);
         if (!original) throw new Error(`[seed:alphaPlus] 조 사본의 템플릿 조를 찾을 수 없음: ${c.article}`);
-        return { articleId: c.article, article: patchedArticle(original, c.patch), templateHash: articleHash(original) };
+        return { articleId: c.article, article: patchedArticle(original, c.patch, mountIds), templateHash: articleHash(original) };
       });
       unwrap(await services.product.saveGeneralSettings(actor, productId, { generalDocumentId: generalId, hiddenArticles: [], overrides: [], copies: list }));
     }
