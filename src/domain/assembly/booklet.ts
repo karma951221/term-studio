@@ -30,7 +30,7 @@ import { COVERAGE_CATEGORY_ENUM, categoryGroupTitle } from "../coverage/category
 import { effectiveGroups, groupedCoverageIds, groupKey, sortInGroup } from "../product/groups";
 import type { ClauseOptionOverride, ProductCoverage } from "../product/types";
 import { type Coordinate, type Id, type Issue, ok, reject, type Result } from "../types";
-import { buildContexts, generalCoordinate, generalDocumentOf, specialCoordinate, type AssemblyContext, type AssemblyContexts } from "./context";
+import { assemblyCopyLocks, buildContexts, generalCoordinate, generalDocumentOf, specialCoordinate, type AssemblyContext, type AssemblyContexts } from "./context";
 import { ensureApplicationArticle } from "./application";
 import { blockHeads } from "./blockHeads";
 import { authoredEmptyArticleIds, dropEmptyArticles } from "./emptyArticle";
@@ -236,24 +236,49 @@ function emptyArticles(doc: DocumentNode, ids: ReadonlySet<Id>): DocumentNode {
 }
 
 /** 이 상품의 보통약관 최종 트리 — 템플릿 + 조 사본(코드 채움) · 노출 끔을 뺀 것과 뺀 조의 명. 템플릿이 없으면 undefined. */
-function generalTree(input: AssemblyInput): { master: DocumentNode; tree: DocumentNode; hidden?: ReadonlyMap<Id, string> } | undefined {
+function generalTree(input: AssemblyInput): { master: DocumentNode; tree: DocumentNode; hidden?: ReadonlyMap<Id, string>; gray: Issue[] } | undefined {
   const stored = generalDocumentOf(input);
   if (!stored) return undefined;
+  const gray = grayCopyIssues(input, stored);
   // 대치 별칭(positionAliases)이 조립과 같은 P코드를 보도록 코드 없는 옛 트리는 여기서 채운다 (resolveDocument 와 같은 결정적 채번)
   const master = withCodes(stored);
   // 노출 끔 (기능/상품 §3.6) — **번호 계산 전에** 마스터에서 뺀다. 번호 순연은 numberDocument 의 귀결이다.
   // 뺀 조의 명은 남겨 둔다: 이 조를 가리키던 참조·조연결이 `articleHidden` 오류 메시지에 쓴다.
   const hiddenTitles = new Map<Id, string>();
   for (const [id, a] of masterArticles(master)) if (input.product.hiddenArticleIds.has(id)) hiddenTitles.set(id, foldTitle(a.title));
-  if (hiddenTitles.size === 0) return { master, tree: master };
-  return { master, tree: hideArticles(master, input.product.hiddenArticleIds), hidden: hiddenTitles };
+  if (hiddenTitles.size === 0) return { master, tree: master, gray };
+  return { master, tree: hideArticles(master, input.product.hiddenArticleIds), hidden: hiddenTitles, gray };
+}
+
+/**
+ * 회색 사본 경고 (ADR-0082 결정 10) — 잠긴 조(이 상품의 블록 · 기본계약이 조연결한 템플릿 조)에 남은 사본은 쓰이지 않는다.
+ * 좌표는 그 조 자리(번호는 조립이 채운다), 원천은 상품 › 보통약관 탭의 그 조. 템플릿에서 지워진 조의 사본은 말하지 않는다(쓰이지 않고 다음 저장이 지운다).
+ */
+function grayCopyIssues(input: AssemblyInput, general: DocumentNode): Issue[] {
+  const copies = input.product.articleCopies;
+  if (!copies || copies.size === 0) return [];
+  const locks = assemblyCopyLocks(input);
+  const articles = masterArticles(general);
+  return [...copies.keys()].flatMap((articleId): Issue[] => {
+    const names = locks.get(articleId);
+    const a = articles.get(articleId);
+    if (!names || !a) return [];
+    const title = foldTitle(a.title);
+    return [{
+      kind: "grayCopy",
+      severity: "warning",
+      message: `「${title}」의 사본은 쓰이지 않습니다 — ${names.join(" · ")} 이(가) 조연결한 조라 잠겼습니다. 조연결한 담보를 해제하면 다시 쓰입니다`,
+      at: { ...generalCoordinate(input.product, general), articleId, articleTitle: title },
+      source: { document: "product", ownerId: input.product.id, ownerName: input.product.name, articleId, articleTitle: title },
+    }];
+  });
 }
 
 /** 대치 형태의 보통약관 — 기본계약 하나가 조연결한 조를 그 기본계약 조로 대치한다 (ADR-0021 결정 3). 기본계약이 없으면 템플릿 그대로. */
 function buildGeneral(input: AssemblyInput, contexts: AssemblyContexts, s: Shared): Built | undefined {
   const general = generalTree(input);
   if (!general) return undefined;
-  const { master, tree: g, hidden } = general;
+  const { master, tree: g, hidden, gray } = general;
   if (input.product.baseContractIds.length === 1) {
     const base = input.coverages.find((coverage) => coverage.snapshot.id === input.product.baseContractIds[0]);
     const doc = base && input.specialDocuments.get(base.snapshot.coverageId);
@@ -275,11 +300,11 @@ function buildGeneral(input: AssemblyInput, contexts: AssemblyContexts, s: Share
       }
       const replacementIssues = replaced.issues.map((issue) => ({ ...issue, source: { document: "coverageMaster" as const, ownerId: base.snapshot.coverageId, documentId: doc.id, ownerName: base.snapshot.coverageName, articleId: issue.at.articleId, articleTitle: issue.at.articleTitle, nodePath: issue.at.articleId ? [doc.id, issue.at.articleId] : undefined } }));
       const replacedIds = new Map([...replacedArticleIds].filter((id) => originals.has(id)).map((id) => [id, base.snapshot.name] as const));
-      return { numbered: numberDocument(dropEmptyArticles(replaced.doc, authoredEmptyArticleIds(g)).doc), issues: [...generalPrepared.issues, ...basePrepared.issues, ...replacementIssues], omitted: [], aliases: replaced.aliases, ...(hidden ? { hidden } : {}), replaced: replacedIds };
+      return { numbered: numberDocument(dropEmptyArticles(replaced.doc, authoredEmptyArticleIds(g)).doc), issues: [...gray, ...generalPrepared.issues, ...basePrepared.issues, ...replacementIssues], omitted: [], aliases: replaced.aliases, ...(hidden ? { hidden } : {}), replaced: replacedIds };
     }
   }
   const prepared = prepare(g, contexts.general, s, { coordinate: generalCoordinate(input.product, master), overrides: input.product.overrides, ...prepareCoordinates(input, g) });
-  return { numbered: numberDocument(dropEmptyArticles(prepared.doc, authoredEmptyArticleIds(g)).doc), issues: prepared.issues, omitted: [], ...(hidden ? { hidden } : {}) };
+  return { numbered: numberDocument(dropEmptyArticles(prepared.doc, authoredEmptyArticleIds(g)).doc), issues: [...gray, ...prepared.issues], omitted: [], ...(hidden ? { hidden } : {}) };
 }
 
 /**
@@ -290,14 +315,14 @@ function buildGeneral(input: AssemblyInput, contexts: AssemblyContexts, s: Share
 function buildFirstSection(input: AssemblyInput, contexts: AssemblyContexts, s: Shared, plan: SectionPlan, raised: ReadonlyMap<Id, RArticle<SInline>["children"]>): Built | undefined {
   const general = generalTree(input);
   if (!general) return undefined;
-  const { master, tree: g, hidden } = general;
+  const { master, tree: g, hidden, gray } = general;
   const present = masterArticles(g);
   const delegated = new Set([...plan.verdicts].filter(([id, v]) => v.kind === "delegate" && present.has(id)).map(([id]) => id));
   const lifted = new Set([...raised.keys()].filter((id) => present.has(id)));
   const prepared = prepare(emptyArticles(g, new Set([...delegated, ...lifted])), contexts.general, s, { coordinate: generalCoordinate(input.product, master), overrides: input.product.overrides, ...prepareCoordinates(input, g) });
   const judged = mapArticles(withDelegation(prepared.doc, delegated), (a): RArticle<SInline> => (lifted.has(a.id) ? { ...a, children: raised.get(a.id)! } : a));
   const numbered = numberDocument(dropEmptyArticles(judged, authoredEmptyArticleIds(g)).doc);
-  return { numbered: fillDelegation(numbered, delegated), issues: [...prepared.issues, ...plan.firstIssues], omitted: [], ...(hidden ? { hidden } : {}) };
+  return { numbered: fillDelegation(numbered, delegated), issues: [...gray, ...prepared.issues, ...plan.firstIssues], omitted: [], ...(hidden ? { hidden } : {}) };
 }
 
 /**
