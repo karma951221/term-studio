@@ -15,6 +15,7 @@
  */
 
 import { refKey } from "../document/pcode";
+import { SCOPE_WORDS } from "../expression/output";
 import type { Id, Issue } from "../types";
 import type { ErrorNode, OmissionPair, OmissionPairKind, OmissionRecord, RArticle, RBulletList, RItem, RParagraph, RStatic, RSubitem, SInline, SubstitutedDoc } from "./types";
 import { articlesOf, mapArticles } from "./walk";
@@ -309,7 +310,8 @@ function applicationParagraph(article: RArticle<SInline>, linkedArticleId: Id, o
     kind: "paragraph",
     id,
     children: [
-      { kind: "text", id: `${id}::prefix`, text: `이 특별약관의 ${article.title}${topicParticle(article.title)} ` },
+      // 「이 특별약관의」 = 특약의 범위 낱말(ADR-0089 결정 3) · 뒤 조 참조의 접두는 렌더의 위치 호칭(대치 형태 「보통약관」 · 기본계약 2+ 「보통약관 제1절 일반조항」)
+      { kind: "text", id: `${id}::prefix`, text: `${SCOPE_WORDS.special} ${article.title}${topicParticle(article.title)} ` },
       { kind: "articleRef", id: `${id}::ref`, targets: [{ articleId: linkedArticleId }], connector: "및", scope: "general", at },
       { kind: "text", id: `${id}::suffix`, text: "를 준용합니다." },
     ],

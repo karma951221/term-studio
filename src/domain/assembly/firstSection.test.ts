@@ -135,11 +135,11 @@ describe("판정 6종 — 제1절 · 제2절 · 판정 기록", () => {
       "  ① 제1절 일반조항 제5조(보험금을 지급하지 않는 사유) 및 아래의 각 항을 따릅니다.",
       "  ② A 전용 면책",
       "제4조(A 고유 조)",
-      "   보통약관 제4조(특별약관의 소멸)에 따라 소멸합니다.",
+      "   제1절 일반조항 제4조(특별약관의 소멸)에 따라 소멸합니다.",
       "제5조(준용규정)",
-      "   이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다.",
+      "   이 보장조항에서 정하지 않은 사항은 제1절 일반조항을 따릅니다.",
     ]);
-    expect(blockLines(b, 1)).toEqual(["제1조(보험금의 지급사유)", "   B 지급사유", "제2조(준용규정)", "   이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."]);
+    expect(blockLines(b, 1)).toEqual(["제1조(보험금의 지급사유)", "   B 지급사유", "제2조(준용규정)", "   이 보장조항에서 정하지 않은 사항은 제1절 일반조항을 따릅니다."]);
   });
 
   it("판정 기록 — 템플릿 조 순 · k/N · 옵션 · 결과 · 사유 · 연결한 · 안 한 블록 · 블록별 처리 (ADR-0082 결정 11)", () => {
@@ -205,9 +205,9 @@ describe("블록 하나 · 블록 수 (결정 7 · 결정 2)", () => {
 });
 
 describe("참조 (결정 9 · C1 · C2 · C4)", () => {
-  it("C4 — 블록에 남은 조가 제1절로 오른 조를 가리키면 제1절 조 번호(지금 표기 「보통약관 제N조」 — 위치 호칭은 ④)", () => {
+  it("C4 — 블록에 남은 조가 제1절로 오른 조를 가리키면 위치 호칭 「제1절 일반조항 제N조(제목)」", () => {
     const r = run(standalone());
-    expect(blockLines(r, 0)).toContain("   보통약관 제4조(특별약관의 소멸)에 따라 소멸합니다.");
+    expect(blockLines(r, 0)).toContain("   제1절 일반조항 제4조(특별약관의 소멸)에 따라 소멸합니다.");
     expect(r.issues.filter((i) => i.kind === "articleGone")).toEqual([]);
   });
 
@@ -277,3 +277,28 @@ describe("연결 검사 (기능/조립산출 §3.12)", () => {
     expect(r.issues.filter((i) => i.kind === "linkedSpecialRule").map((i) => [i.severity, i.at.articleId])).toEqual([["warning", "a-claim"]]);
   });
 });
+
+describe("위치 호칭 — 블록 (기능/조립산출 §3.10)", () => {
+  const ref = (id: string, targets: { articleId: Id }[]) => ({ id, kind: "articleRef" as const, scope: "general" as const, targets, connector: "및" as const });
+  const t = (id: string, value: string) => ({ id, kind: "text" as const, text: value });
+  const refs = article("a-refs", "참조 표본", [
+    { id: "a-refs-p1", kind: "paragraph", children: [ref("a-refs-r1", [{ articleId: "t-def" }]), t("a-refs-t1", "에 따라 "), ref("a-refs-r2", [{ articleId: "t-claim" }]), t("a-refs-t2", "을 봅니다.")] },
+    { id: "a-refs-p2", kind: "paragraph", children: [t("a-refs-t3", "이 보장조항에서 정하지 않은 사항은 "), ref("a-refs-r3", []), t("a-refs-t4", "을 따릅니다. 다만, "), ref("a-refs-r4", [{ articleId: "t-def" }]), t("a-refs-t5", "는 제외합니다.")] },
+    { id: "a-refs-p3", kind: "paragraph", children: [ref("a-refs-r5", [{ articleId: "t-def" }]), t("a-refs-t6", "을 봅니다.")] },
+  ] as BlockNode[]);
+  const r = () => run(standalone({ a: docA([refs]) }));
+  const lines0 = () => blockLines(r(), 0);
+
+  it("블록이 제1절 조를 가리키면 「제1절 일반조항 제N조(제목)」 — 같은 항에서 앞서 밝혔으면 접두 생략, 다음 항은 다시 밝힌다", () => {
+    expect(lines0()).toEqual(expect.arrayContaining([
+      "  ① 제1절 일반조항 제1조(용어의 정의)에 따라 제3조(보험금의 청구)을 봅니다.",
+      "  ③ 제1절 일반조항 제1조(용어의 정의)을 봅니다.",
+    ]));
+  });
+
+  it("블록의 문서 전체 참조(대상 없음)는 「제1절 일반조항」 — 같은 항 뒤 조 참조는 접두 생략", () => {
+    expect(lines0()).toContain("  ② 이 보장조항에서 정하지 않은 사항은 제1절 일반조항을 따릅니다. 다만, 제1조(용어의 정의)는 제외합니다.");
+    expect(r().issues.filter((i) => i.severity !== "warning")).toEqual([]);
+  });
+});
+

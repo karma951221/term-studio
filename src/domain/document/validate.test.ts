@@ -282,3 +282,21 @@ describe("작성위치 · 범위 낱말 — 문서 저장 검사 (ADR-0089 · �
     expect(validateDocument(doc, { env: { kind: "special" }, resolve: catalogTypeResolver(catalog), scope: {} }).map((i) => i.kind)).toEqual(["brokenRef"]);
   });
 });
+
+describe("문서 전체 참조 — 대응 보통약관 범위 · 대상 없음 (위치 호칭, 기능/조립산출 §3.5 · §3.10)", () => {
+  const doc = (ref: object) => {
+    const b = nodeBuilders(sequentialIds("n"));
+    return b.document("D", [b.article("준용규정", [b.paragraph([b.text("이 특별약관에서 정하지 않은 사항은 "), { id: "r", kind: "articleRef", ...ref } as never, b.text("을 따릅니다.")])])]);
+  };
+  const run = (ref: object, kind: "general" | "special" = "special") => validateDocument(doc(ref), { env: { kind }, resolve: catalogTypeResolver(catalog), scope: {} }).map((i) => [i.kind, i.message]);
+
+  it("담보약관의 대응 보통약관 참조는 대상 없이 둘 수 있다 — 조립이 출력 위치의 호칭(「보통약관」 · 「제1절 일반조항」)을 찍는다", () => {
+    expect(run({ targets: [], scope: "general" })).toEqual([]);
+  });
+
+  it("이 문서 범위 · 연결어가 있으면 대상 0건은 그대로 거부 · 보통약관 문서는 보통약관 참조를 쓸 수 없다", () => {
+    expect(run({ targets: [], scope: "self" })).toEqual([["structure", expect.stringContaining("대상이 하나 이상")]]);
+    expect(run({ targets: [], scope: "general", connector: "및" })).toEqual([["structure", expect.stringContaining("대상이 하나 이상")]]);
+    expect(run({ targets: [], scope: "general" }, "general")).toEqual([["structure", expect.stringContaining("보통약관 문서에서는")]]);
+  });
+});

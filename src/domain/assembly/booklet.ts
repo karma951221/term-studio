@@ -37,6 +37,7 @@ import { blockHeads } from "./blockHeads";
 import { authoredEmptyArticleIds, dropEmptyArticles } from "./emptyArticle";
 import { baseKey, replaceGeneralWithBase } from "./base";
 import { judgeOmission } from "./omission";
+import type { RefPosition } from "./position";
 import { type BlockLabel, collectAppendices, locateIssues, numberDocument, renderDocument } from "./render";
 import { resolveDocument } from "./resolve";
 import { firstSectionRecords, planFirstSection, raisedArticles, treatBlock, type SectionBlock, type SectionEnv, type SectionPlan } from "./firstSection";
@@ -363,7 +364,7 @@ function sectionEnv(input: AssemblyInput, contexts: AssemblyContexts, s: Shared)
   };
 }
 
-function buildSpecial(input: AssemblyInput, contexts: AssemblyContexts, s: Shared, c: AssemblyCoverage, general: Built | undefined): Built | undefined {
+function buildSpecial(input: AssemblyInput, contexts: AssemblyContexts, s: Shared, c: AssemblyCoverage, general: Built | undefined, position: SpecialPosition): Built | undefined {
   const doc = input.specialDocuments.get(c.snapshot.coverageId);
   const ctx = contexts.specials.get(c.snapshot.id);
   if (!doc || !ctx) return undefined;
@@ -372,7 +373,7 @@ function buildSpecial(input: AssemblyInput, contexts: AssemblyContexts, s: Share
     ...prepareCoordinates(input, doc, c),
     title: specialTitle(c.snapshot.name),
   });
-  const withApplication = ensureApplicationArticle(prepared.doc);
+  const withApplication = ensureApplicationArticle(prepared.doc, position);
   const judged = judgeOmission(withApplication, general?.numbered.doc, { productCoverageId: c.snapshot.id, productCoverageName: c.snapshot.name }, general?.hidden);
   return { numbered: numberDocument(dropEmptyArticles(judged.doc, authoredEmptyArticleIds(doc)).doc), issues: [...prepared.issues, ...judged.issues], omitted: judged.records };
 }
@@ -568,7 +569,7 @@ function buildSectioned(input: AssemblyInput, contexts: AssemblyContexts, s: Sha
           const blockHead = heads.blocks.get(b.c.snapshot.id);
           const treated = treatBlock(sectionBlockOf.get(b.c.snapshot.id)!, plan, general?.numbered);
           const issues = [...b.issues, ...(plan.blockIssues.get(b.c.snapshot.id) ?? [])];
-          return { prepared: { ...b, issues }, numbered: numberDocument(ensureApplicationArticle(treated.doc)), aliases: treated.aliases, ...(blockHead !== undefined ? { head: blockHead } : {}) };
+          return { prepared: { ...b, issues }, numbered: numberDocument(ensureApplicationArticle(treated.doc, "block")), aliases: treated.aliases, ...(blockHead !== undefined ? { head: blockHead } : {}) };
         }),
       };
     }),
@@ -604,7 +605,7 @@ function blockLabels(sectioned: SectionedBuild | undefined): ReadonlyMap<Id, Blo
 
 /** 렌더한 보통약관(대치 형태) · 제1절(절 형태)과 그 오류. 사본의 블록 지정 참조는 절 형태의 블록으로 푼다. */
 function renderGeneral(input: AssemblyInput, general: Built, appendices: readonly BookletAppendix[], sectioned: SectionedBuild | undefined): { doc: RenderedDoc; issues: Issue[] } {
-  const r = renderDocument(general.numbered, { document: "general", ownerId: generalCoordinate(input.product, generalDocumentOf(input)).ownerId!, appendices, aliases: general.aliases, ...(general.hidden ? { hiddenArticles: general.hidden } : {}), blocks: blockLabels(sectioned) });
+  const r = renderDocument(general.numbered, { document: "general", position: "general", ownerId: generalCoordinate(input.product, generalDocumentOf(input)).ownerId!, appendices, aliases: general.aliases, ...(general.hidden ? { hiddenArticles: general.hidden } : {}), blocks: blockLabels(sectioned) });
   const issues = [...locateIssues(general.issues, general.numbered), ...r.issues];
   return { doc: r.doc, issues: sectioned ? inSection(issues, FIRST_SECTION_COORDINATE) : issues };
 }
@@ -612,14 +613,18 @@ function renderGeneral(input: AssemblyInput, general: Built, appendices: readonl
 /** 블록 하나의 렌더 — 문서 제목 = 블록 제목, `head` = 블록 머리. 블록 안 오류는 「제2절 {블록 머리}」 이름공간. */
 function renderBlock(block: SectionedBuild["groups"][number]["blocks"][number], general: Built | undefined, appendices: readonly BookletAppendix[], groupIssue: Issue | undefined): { doc: RenderedDoc; issues: Issue[] } {
   const { prepared, numbered, head, aliases } = block;
-  const r = renderDocument(numbered, { document: "special", ownerId: prepared.c.snapshot.id, general: general?.numbered, aliases, appendices, ...(general?.hidden ? { hiddenArticles: general.hidden } : {}) });
+  const r = renderDocument(numbered, { document: "special", position: "block", ownerId: prepared.c.snapshot.id, general: general?.numbered, aliases, appendices, ...(general?.hidden ? { hiddenArticles: general.hidden } : {}) });
   const issues = inSection([...(groupIssue ? [groupIssue] : []), ...locateIssues(prepared.issues, numbered), ...r.issues], blockCoordinate(head));
   return { doc: head === undefined ? r.doc : { ...r.doc, head }, issues };
 }
 
+/** 특약의 출력 위치 — 대치 형태 「보통약관」 · 기본계약 2+ 「보통약관 제1절 일반조항」(위치 호칭, 기능/조립산출 §3.10). */
+type SpecialPosition = Extract<RefPosition, "special" | "sectionedSpecial">;
+const specialPositionOf = (form: FormPlan): SpecialPosition => (form.form === "sectioned" ? "sectionedSpecial" : "special");
+
 /** 특약 하나의 렌더 — 보통약관(제1절) 조 참조 · 생략 별칭과 함께. */
-function renderSpecial(c: AssemblyCoverage, b: Built, general: Built | undefined, appendices: readonly BookletAppendix[]): { doc: RenderedDoc; issues: Issue[] } {
-  const r = renderDocument(b.numbered, { document: "special", ownerId: c.snapshot.id, general: general?.numbered, aliases: omissionAliases(b.omitted), ...(general?.aliases ? { generalAliases: general.aliases } : {}), appendices, ...(general?.hidden ? { hiddenArticles: general.hidden } : {}) });
+function renderSpecial(c: AssemblyCoverage, b: Built, general: Built | undefined, appendices: readonly BookletAppendix[], position: SpecialPosition): { doc: RenderedDoc; issues: Issue[] } {
+  const r = renderDocument(b.numbered, { document: "special", position, ownerId: c.snapshot.id, general: general?.numbered, aliases: omissionAliases(b.omitted), ...(general?.aliases ? { generalAliases: general.aliases } : {}), appendices, ...(general?.hidden ? { hiddenArticles: general.hidden } : {}) });
   return { doc: r.doc, issues: [...locateIssues(b.issues, b.numbered), ...r.issues] };
 }
 
@@ -665,7 +670,7 @@ export function assemble(master: MasterBundle, product: ProductInput): Booklet {
   const builtGroups = placement.groups.map((g) => ({
     ...g,
     docs: g.members.flatMap((c) => {
-      const b = buildSpecial(input, contexts, s, c, general);
+      const b = buildSpecial(input, contexts, s, c, general, specialPositionOf(form));
       return b ? [{ c, b }] : [];
     }),
   }));
@@ -708,7 +713,7 @@ export function assemble(master: MasterBundle, product: ProductInput): Booklet {
       docs: g.docs.map(({ c, b }) => {
         const groupIssue = placement.groupIssues.get(c.snapshot.id);
         if (groupIssue) issues.push(groupIssue);
-        const r = renderSpecial(c, b, general, appendices);
+        const r = renderSpecial(c, b, general, appendices, specialPositionOf(form));
         issues.push(...r.issues);
         omitted.push(...b.omitted);
         return r.doc;
@@ -764,7 +769,7 @@ export function assembleSpecial(master: MasterBundle, product: ProductInput, pro
   const trace = contexts.traces.filter((t) => t.productCoverageId === productCoverageId || input.product.baseContractIds.includes(t.productCoverageId));
   const block = sectioned?.groups.flatMap((g) => g.blocks).find((b) => b.prepared.c.snapshot.id === productCoverageId);
   if (form.form === "sectioned" && form.candidates.has(productCoverageId) && !block) return reject({ reason: "notFound", what: `상품담보 ${c.snapshot.name} 의 블록 — 조건으로 조가 모두 빠졌다` });
-  const special = block ? undefined : buildSpecial(input, contexts, s, c, general)!;
+  const special = block ? undefined : buildSpecial(input, contexts, s, c, general, specialPositionOf(form))!;
 
   // 미리보기는 보통약관 + 이 담보약관 하나만 훑는다 — 책자 전체에서는 앞 그룹의 별표가 먼저 등장해 번호가 다를 수 있다 (ADR-0063).
   const appendices = collectAppendices([...(general ? [general.numbered] : []), block ? block.numbered : special!.numbered], input.appendices);
@@ -775,7 +780,7 @@ export function assembleSpecial(master: MasterBundle, product: ProductInput, pro
     renderedGeneral = r.doc;
     issues.push(...r.issues);
   }
-  const rendered = block ? { ...renderBlock(block, general, appendices, sectioned!.groupIssues.get(productCoverageId)), omitted: [] } : { ...renderSpecial(c, special!, general, appendices), omitted: special!.omitted };
+  const rendered = block ? { ...renderBlock(block, general, appendices, sectioned!.groupIssues.get(productCoverageId)), omitted: [] } : { ...renderSpecial(c, special!, general, appendices, specialPositionOf(form)), omitted: special!.omitted };
   issues.push(...rendered.issues);
   return ok({ doc: rendered.doc, general: renderedGeneral, appendices, issues, complete: completeOf(issues), omitted: rendered.omitted, trace });
 }
