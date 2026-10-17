@@ -63,6 +63,46 @@ export function guardApplicationOutput(clauses: ClauseRecord[]): void {
   }
 }
 
+const APPLICATION_HEAD = "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다.";
+
+/**
+ * 준용규정 함수조항의 머리 문장을 출력 위치로 가른다 (위치 호칭 — 기능/조립산출 §3.5 · §3.10, 2026-10-18 ④):
+ * 「이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다.」 → 「이 〔블록이면 보장조항에서 · 아니면 특별약관에서〕 정하지 않은 사항은 〔문서 전체 참조〕을 따릅니다.」.
+ * 주어는 작성위치 조건(한쪽에만 있는 낱말 — ADR-0089 결정 4), 「보통약관」은 문서 전체 참조(대상 없음)라 조립이 「보통약관」 · 「보통약관 제1절 일반조항」 · 「제1절 일반조항」을 찍는다.
+ * 블록 문구는 내Mom 제2절 원문 「이 보장조항에서 정하지 않은 사항은 제1절 일반조항을 따릅니다.」. 머리 글이 다른 준용규정은 건드리지 않는다.
+ * `guardApplicationOutput` 뒤에 부른다 — 사용처 대조는 특약 원문과 맞춘 뒤다.
+ */
+export function positionApplicationHead(clauses: ClauseRecord[]): void {
+  type Node = { id: string; kind?: string; text?: string; children?: Node[]; branches?: { children: Node[] }[] };
+  const visit = (list: Node[]): boolean => {
+    for (const n of list) {
+      if (n.kind === "paragraph" && n.children) {
+        const at = n.children.findIndex((c) => c.kind === "text" && c.text!.startsWith(APPLICATION_HEAD));
+        if (at < 0) continue;
+        const t = n.children[at];
+        const rest = t.text!.slice(APPLICATION_HEAD.length);
+        const id = (s: string) => `${t.id}-h${s}`;
+        n.children.splice(
+          at,
+          1,
+          { id: id("1"), kind: "text", text: "이 " },
+          { id: id("2"), kind: "inlineCond", branches: [{ id: `${id("2")}-b`, when: "builtin.output = 'block'", children: [{ id: `${id("2")}-b-t`, kind: "text", text: "보장조항에서" }] }, { id: `${id("2")}-e`, children: [{ id: `${id("2")}-e-t`, kind: "text", text: "특별약관에서" }] }] } as Node,
+          { id: id("3"), kind: "text", text: " 정하지 않은 사항은 " },
+          { id: id("4"), kind: "articleRef", targets: [] } as Node,
+          { id: t.id, kind: "text", text: `을 따릅니다.${rest}` },
+        );
+        return true;
+      }
+      if (n.kind === "condBlock" && n.branches?.some((b) => visit(b.children))) return true;
+    }
+    return false;
+  };
+  for (const c of clauses) {
+    if (c.mode !== "block" || !c.label.startsWith("준용규정")) continue;
+    visit(c.body as unknown as Node[]);
+  }
+}
+
 /** 실물 변환이 내는 함수조항 유형 — 도메인 유형 넷 중 「문구」(inline) · 「항」(block). */
 export type ConvertedClauseMode = Extract<ClauseMode, "inline" | "block">;
 

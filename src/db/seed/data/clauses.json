@@ -6322,9 +6322,51 @@
                 "kind": "paragraph",
                 "children": [
                   {
+                    "id": "c-alpha-application-n2-h1",
+                    "kind": "text",
+                    "text": "이 "
+                  },
+                  {
+                    "id": "c-alpha-application-n2-h2",
+                    "kind": "inlineCond",
+                    "branches": [
+                      {
+                        "id": "c-alpha-application-n2-h2-b",
+                        "when": "builtin.output = 'block'",
+                        "children": [
+                          {
+                            "id": "c-alpha-application-n2-h2-b-t",
+                            "kind": "text",
+                            "text": "보장조항에서"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "c-alpha-application-n2-h2-e",
+                        "children": [
+                          {
+                            "id": "c-alpha-application-n2-h2-e-t",
+                            "kind": "text",
+                            "text": "특별약관에서"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c-alpha-application-n2-h3",
+                    "kind": "text",
+                    "text": " 정하지 않은 사항은 "
+                  },
+                  {
+                    "id": "c-alpha-application-n2-h4",
+                    "kind": "articleRef",
+                    "targets": []
+                  },
+                  {
                     "id": "c-alpha-application-n2",
                     "kind": "text",
-                    "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
+                    "text": "을 따릅니다. 다만, "
                   },
                   {
                     "id": "c-alpha-application-n3",
@@ -6477,9 +6519,51 @@
                 "kind": "paragraph",
                 "children": [
                   {
+                    "id": "c-meritz-application-n2-h1",
+                    "kind": "text",
+                    "text": "이 "
+                  },
+                  {
+                    "id": "c-meritz-application-n2-h2",
+                    "kind": "inlineCond",
+                    "branches": [
+                      {
+                        "id": "c-meritz-application-n2-h2-b",
+                        "when": "builtin.output = 'block'",
+                        "children": [
+                          {
+                            "id": "c-meritz-application-n2-h2-b-t",
+                            "kind": "text",
+                            "text": "보장조항에서"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "c-meritz-application-n2-h2-e",
+                        "children": [
+                          {
+                            "id": "c-meritz-application-n2-h2-e-t",
+                            "kind": "text",
+                            "text": "특별약관에서"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c-meritz-application-n2-h3",
+                    "kind": "text",
+                    "text": " 정하지 않은 사항은 "
+                  },
+                  {
+                    "id": "c-meritz-application-n2-h4",
+                    "kind": "articleRef",
+                    "targets": []
+                  },
+                  {
                     "id": "c-meritz-application-n2",
                     "kind": "text",
-                    "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
+                    "text": "을 따릅니다. 다만, "
                   },
                   {
                     "id": "c-meritz-application-n3",
@@ -6622,9 +6706,51 @@
                 "kind": "paragraph",
                 "children": [
                   {
+                    "id": "c-alpha-application-disease-n2-h1",
+                    "kind": "text",
+                    "text": "이 "
+                  },
+                  {
+                    "id": "c-alpha-application-disease-n2-h2",
+                    "kind": "inlineCond",
+                    "branches": [
+                      {
+                        "id": "c-alpha-application-disease-n2-h2-b",
+                        "when": "builtin.output = 'block'",
+                        "children": [
+                          {
+                            "id": "c-alpha-application-disease-n2-h2-b-t",
+                            "kind": "text",
+                            "text": "보장조항에서"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "c-alpha-application-disease-n2-h2-e",
+                        "children": [
+                          {
+                            "id": "c-alpha-application-disease-n2-h2-e-t",
+                            "kind": "text",
+                            "text": "특별약관에서"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c-alpha-application-disease-n2-h3",
+                    "kind": "text",
+                    "text": " 정하지 않은 사항은 "
+                  },
+                  {
+                    "id": "c-alpha-application-disease-n2-h4",
+                    "kind": "articleRef",
+                    "targets": []
+                  },
+                  {
                     "id": "c-alpha-application-disease-n2",
                     "kind": "text",
-                    "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
+                    "text": "을 따릅니다. 다만, "
                   },
                   {
                     "id": "c-alpha-application-disease-n3",
@@ -11304,9 +11430,51 @@
                 "kind": "paragraph",
                 "children": [
                   {
+                    "id": "c-auto-114-n2-h1",
+                    "kind": "text",
+                    "text": "이 "
+                  },
+                  {
+                    "id": "c-auto-114-n2-h2",
+                    "kind": "inlineCond",
+                    "branches": [
+                      {
+                        "id": "c-auto-114-n2-h2-b",
+                        "when": "builtin.output = 'block'",
+                        "children": [
+                          {
+                            "id": "c-auto-114-n2-h2-b-t",
+                            "kind": "text",
+                            "text": "보장조항에서"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "c-auto-114-n2-h2-e",
+                        "children": [
+                          {
+                            "id": "c-auto-114-n2-h2-e-t",
+                            "kind": "text",
+                            "text": "특별약관에서"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c-auto-114-n2-h3",
+                    "kind": "text",
+                    "text": " 정하지 않은 사항은 "
+                  },
+                  {
+                    "id": "c-auto-114-n2-h4",
+                    "kind": "articleRef",
+                    "targets": []
+                  },
+                  {
                     "id": "c-auto-114-n2",
                     "kind": "text",
-                    "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
+                    "text": "을 따릅니다. 다만, "
                   },
                   {
                     "id": "c-auto-114-n3",
@@ -13012,9 +13180,51 @@
                 "kind": "paragraph",
                 "children": [
                   {
+                    "id": "c-auto-125-n2-h1",
+                    "kind": "text",
+                    "text": "이 "
+                  },
+                  {
+                    "id": "c-auto-125-n2-h2",
+                    "kind": "inlineCond",
+                    "branches": [
+                      {
+                        "id": "c-auto-125-n2-h2-b",
+                        "when": "builtin.output = 'block'",
+                        "children": [
+                          {
+                            "id": "c-auto-125-n2-h2-b-t",
+                            "kind": "text",
+                            "text": "보장조항에서"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "c-auto-125-n2-h2-e",
+                        "children": [
+                          {
+                            "id": "c-auto-125-n2-h2-e-t",
+                            "kind": "text",
+                            "text": "특별약관에서"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c-auto-125-n2-h3",
+                    "kind": "text",
+                    "text": " 정하지 않은 사항은 "
+                  },
+                  {
+                    "id": "c-auto-125-n2-h4",
+                    "kind": "articleRef",
+                    "targets": []
+                  },
+                  {
                     "id": "c-auto-125-n2",
                     "kind": "text",
-                    "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
+                    "text": "을 따릅니다. 다만, "
                   },
                   {
                     "id": "c-auto-125-n3",
@@ -21811,9 +22021,51 @@
                 "kind": "paragraph",
                 "children": [
                   {
+                    "id": "c-auto-195-n2-h1",
+                    "kind": "text",
+                    "text": "이 "
+                  },
+                  {
+                    "id": "c-auto-195-n2-h2",
+                    "kind": "inlineCond",
+                    "branches": [
+                      {
+                        "id": "c-auto-195-n2-h2-b",
+                        "when": "builtin.output = 'block'",
+                        "children": [
+                          {
+                            "id": "c-auto-195-n2-h2-b-t",
+                            "kind": "text",
+                            "text": "보장조항에서"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "c-auto-195-n2-h2-e",
+                        "children": [
+                          {
+                            "id": "c-auto-195-n2-h2-e-t",
+                            "kind": "text",
+                            "text": "특별약관에서"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c-auto-195-n2-h3",
+                    "kind": "text",
+                    "text": " 정하지 않은 사항은 "
+                  },
+                  {
+                    "id": "c-auto-195-n2-h4",
+                    "kind": "articleRef",
+                    "targets": []
+                  },
+                  {
                     "id": "c-auto-195-n2",
                     "kind": "text",
-                    "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
+                    "text": "을 따릅니다. 다만, "
                   },
                   {
                     "id": "c-auto-195-n3",

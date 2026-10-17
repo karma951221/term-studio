@@ -88,6 +88,22 @@ describe("합성 표본 — 절 형태 세 상품 (PGlite)", () => {
     expect(JSON.stringify(b.general)).not.toContain("잠기기 전에 고친 세부규정");
   });
 
+  /** 문서 하나의 「제목」 조 항 글(오류 마커는 종류로). */
+  const paragraphs = (doc: { children: unknown[] } | undefined, title: string): string[] => {
+    const all = (doc?.children ?? []) as Booklet["specials"][number]["docs"][number]["children"];
+    const article = all.flatMap((c) => (c.kind === "section" ? c.children : [c])).find((a) => a.kind === "article" && a.title === title);
+    return article && article.kind === "article" ? article.children.flatMap((p) => (p.kind === "paragraph" ? [p.children.map((n) => (n.kind === "text" ? n.text : n.kind === "error" ? `⟦${n.issue.kind}⟧` : n.label)).join("")] : [])) : [];
+  };
+
+  it("ⓐ 위치 호칭 — 블록 준용규정 「이 보장조항에서 … 제1절 일반조항을 따릅니다」(같은 항 뒤 조 참조는 접두 생략) · 최소형도 같은 문구 · 특약은 「보통약관 제1절 일반조항」 (기능/조립산출 §3.10)", () => {
+    const b = booklets.get("표본 — 기본계약 2개(주계약)")!;
+    const [disability, death] = (b.blocks ?? []).flatMap((g) => g.docs);
+    expect(paragraphs(disability, "준용규정")).toEqual(["이 보장조항에서 정하지 않은 사항은 제1절 일반조항을 따릅니다."]);
+    expect(paragraphs(death, "준용규정")[0]).toMatch(/^이 보장조항에서 정하지 않은 사항은 제1절 일반조항을 따릅니다\. 다만, 제9조\(적립부분 적립이율에 관한 사항\), 제10조\(만기환급금의 지급\) 및 제\d+조\(중도인출\)은 제외/);
+    const fracture = b.specials.flatMap((g) => g.docs).find((d) => d.title.startsWith("골절"))!;
+    expect(paragraphs(fracture, "준용규정")[0]).toMatch(/^이 특별약관에서 정하지 않은 사항은 보통약관 제1절 일반조항을 따릅니다\. 다만, 보통약관 제1절 일반조항 제9조\(적립부분 적립이율에 관한 사항\)/);
+  });
+
   it("ⓑ 독립특약 블록 2개 — 제목 = 상품명 · 그룹 제목 표시 「Ⅰ. 상해 관련 특별약관」 아래 「Ⅰ-1.」 「Ⅰ-2.」 · 특약 그룹 없음", () => {
     const b = booklets.get("표본 — 독립특약 블록 2개")!;
     expect(b.title).toBe("표본 — 독립특약 블록 2개");
