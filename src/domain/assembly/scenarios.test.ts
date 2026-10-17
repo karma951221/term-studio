@@ -977,4 +977,18 @@ describe("조 노출 토글 (기능/상품 §3.6) — 숨긴 조는 빠지고 �
     expect(issue?.source).toMatchObject({ document: "coverageMaster", ownerId: "cov-base-death", documentId: "b-doc-death", articleId: "b-art-pay", nodePath: ["b-doc-death", "b-art-pay"] });
     expect(booklet.complete).toBe(false);
   });
+
+  it("대치 대상 보통약관 조가 조건으로 빠지면 linkTargetGone 오류 — 기본계약 조가 조용히 사라지지 않는다 (ADR-0021 결정 3)", () => {
+    const input = alphaPlusFixture();
+    const general = alphaGeneralDocument();
+    // 제3조(세부규정)를 거짓 조건 안에 넣는다 — 기본계약 b-art-detail 의 대치 자리가 이 상품에 없다
+    const detail = general.children.find((c) => c.kind === "article" && c.id === "g-art-detail")!;
+    general.children = general.children.map((c) => (c === detail ? { id: "g-cond-detail", kind: "condBlock", branches: [{ id: "g-cond-detail-if", when: "D0001 = true", children: [detail] }] } : c)) as typeof general.children;
+    const booklet = assembleInput({ ...input, generalDocuments: new Map([["g-doc", general]]) });
+    const gone = booklet.issues.filter((i) => i.kind === "linkTargetGone");
+    expect(gone).toHaveLength(1);
+    expect(gone[0]).toMatchObject({ severity: "error", at: { document: "special", ownerId: "pc-base", articleId: "b-art-detail" }, source: { document: "coverageMaster", ownerId: "cov-base-death", articleId: "b-art-detail" } });
+    expect(gone[0].message).toBe("기본계약 조 「보험금 지급에 관한 세부규정」 이(가) 조연결한 보통약관 조 「보험금 지급에 관한 세부규정」 이(가) 이 상품의 보통약관에 없습니다(조건으로 빠짐)");
+    expect(booklet.complete).toBe(false);
+  });
 });

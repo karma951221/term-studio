@@ -292,8 +292,9 @@ function buildGeneral(input: AssemblyInput, contexts: AssemblyContexts, s: Share
       // 대치될 보통약관 본문은 실행 경로가 아니다 — 비운 뒤 해소한다
       const generalSource = emptyArticles(g, replacedArticleIds);
       const generalPrepared = prepare(generalSource, contexts.general, s, { coordinate: generalCoordinate(input.product, master), overrides: input.product.overrides, ...prepareCoordinates(input, g) });
-      const replaced = replaceGeneralWithBase(generalPrepared.doc, basePrepared.doc, { productCoverageId: base.snapshot.id, productCoverageName: base.snapshot.name }, hidden);
       const originals = masterArticles(g);
+      const titles = new Map([...masterArticles(master)].map(([id, a]) => [id, foldTitle(a.title)] as const));
+      const replaced = replaceGeneralWithBase(generalPrepared.doc, basePrepared.doc, { productCoverageId: base.snapshot.id, productCoverageName: base.snapshot.name }, hidden, titles);
       for (const baseArticle of articlesOf(basePrepared.doc)) {
         const original = baseArticle.linkedArticleId ? originals.get(baseArticle.linkedArticleId) : undefined;
         if (original) for (const [from, to] of positionAliases(original, baseArticle)) replaced.aliases.set(from, to);
