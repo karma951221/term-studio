@@ -8,7 +8,8 @@ import { Confirm } from "@/app/_components/Confirm";
 import { ErrorBanner } from "@/app/_components/ErrorBanner";
 import { ENTITY_LABEL } from "@/app/_lib/labels";
 import { previewOutcome, rejectionMessage } from "@/app/_lib/rejection";
-import { articleRefLabel, collectRefs, indexTree, type NodeNumber } from "@/domain/document";
+import { bookletForm } from "@/domain/assembly";
+import { articleRefLabel, collectRefs, type NodeNumber } from "@/domain/document";
 import type { Id } from "@/domain/types";
 import { CATEGORY_TITLE_FIELD, COVERAGE_CATEGORY_ENUM } from "@/domain/coverage";
 import { CONTRACT_KIND_PATH, findForm, isStandaloneContract } from "@/domain/master";
@@ -24,7 +25,7 @@ import { ProductEditProvider, ProductHeadActions, ProductPath } from "./_compone
 import { ProductTabs } from "./_components/ProductTabs";
 import { SpecialPreviewTab } from "./_components/SpecialPreviewTab";
 import { confirmProductGeneralDocumentAction, deleteProductAction, removePlanAction, removePlanOptionAction } from "../actions";
-import { legacyProductTabRedirect, productDetailPath, productTabOf, resolveSpecialSelection, specialCoverageGroups } from "../lib";
+import { blockRefChoices, copyLockNotice, legacyProductTabRedirect, productDetailPath, productTabOf, resolveSpecialSelection, specialCoverageGroups } from "../lib";
 
 export const dynamic = "force-dynamic";
 
@@ -134,18 +135,23 @@ export default async function ProductDetailPage({
   const [appendices, discriminators, boxes] =
     gid || tab === "special" ? await Promise.all([services.document.listAppendices(), services.catalog.list(), services.document.listBoxes()]) : [[], [], []];
   // 편집 중 조 편집 패널(문면 편집기)의 재료 — 문면 화면(`documents/[id]/page.tsx`)과 같은 것 (ADR-0079)
-  // 기본계약 대치 자리 — 기본계약 담보약관의 조연결 대상 (조립은 그 조를 늘 기본계약 조로 찍는다, ADR-0021)
-  const replacedBy: Record<Id, string> = {};
-  if (gid) {
-    for (const pc of baseCoverages) {
-      const doc = await services.document.findByCoverage(pc.coverageId);
-      if (!doc) continue;
-      for (const e of indexTree(doc.tree).nodes.values()) if (e.node.kind === "article" && e.node.linkedArticleId) replacedBy[e.node.linkedArticleId] = pc.name;
-    }
-  }
+  // 연결 조 사본 잠금 (ADR-0082 결정 10) — 이 상품의 블록 · 기본계약 담보약관이 조연결한 조(정적 연결). 조 편집 패널 안내 · 회색 사본
+  const bookletForLocks = bookletResult?.ok ? bookletResult.value : undefined;
+  const sectionedProduct = bookletForLocks !== undefined && bookletForm(bookletForLocks) === "sectioned";
+  const lockMap = gid ? await services.product.copyLocks(id) : new Map<Id, string[]>();
+  const locks: Record<Id, string> = Object.fromEntries(
+    [...lockMap].map(([articleId, names]) => {
+      const record = bookletForLocks?.firstSection?.find((r) => r.articleId === articleId);
+      return [articleId, copyLockNotice({ names, sectioned: sectionedProduct, ...(record ? { record } : {}) })];
+    }),
+  );
+  const lockedArticles = [...lockMap.keys()];
+  // 블록 지정 참조 고르기 — 저장된 조립의 제2절 블록 (ADR-0082 결정 12). 대치 형태는 비어 넣기 메뉴가 서지 않는다
+  const blockChoices = bookletForLocks ? blockRefChoices(bookletForLocks) : [];
   const copyEditorData = gid
     ? {
-        replacedBy,
+        locks,
+        blockChoices,
         appendices,
         boxes,
         clauses,
@@ -317,6 +323,7 @@ export default async function ProductDetailPage({
           {...(generalDoc ? { templateVersion: generalDoc.version } : {})}
           templateChanged={templateChanged}
           articleCopies={articleCopies}
+          lockedArticles={lockedArticles}
           {...(generalDependents ? { dependents: generalDependents } : {})}
           {...(copyEditorData ? { copyEditorData } : {})}
           generalNumbers={generalNumbers}

@@ -11,6 +11,7 @@ import { useState, type FocusEvent, type FormEvent, type ReactNode } from "react
 
 import { Combobox, type ComboOption } from "@/app/_components/Combobox";
 import { IconButton, IconTrash } from "@/app/_components/icons";
+import { blockRefChipText, blockRefValue, parseBlockRefValue, type BlockRefChoice } from "@/app/_lib/blockRef";
 import { DOC_KIND_LABEL, REPEAT_DEPTH_LABEL, STRUCT_KEY_CHIP, SWITCH_WORD } from "@/app/_lib/labels";
 import { bindingLabel, bindingOptions, constBindingOfText, planFormChoices, staleBindingOption, type LoopChoice, type NodeTree } from "@/app/(app)/functions/_components/params";
 import type { EnumDef } from "@/domain/catalog";
@@ -573,7 +574,7 @@ function hasArticleRefParam(clauses: readonly Clause[], code: Code): boolean {
   return (clauses.find((c) => c.code === code)?.params ?? []).some((p) => p.type.kind === "articleRef");
 }
 
-const INSERT_TITLE = { slot: "치환 슬롯 넣기", articleRef: "조 참조 넣기", appendixRef: "별표 참조 넣기", clauseInlineRef: "함수조항(문장 안) 넣기", structKey: "구조 표기 넣기" } as const;
+const INSERT_TITLE = { slot: "치환 슬롯 넣기", articleRef: "조 참조 넣기", blockRef: "블록 지정 참조 넣기", appendixRef: "별표 참조 넣기", clauseInlineRef: "함수조항(문장 안) 넣기", structKey: "구조 표기 넣기" } as const;
 
 /**
  * 문장 안 조건 — 가지마다 머리 줄(`CondRows`, 그 자리에서 고친다) · 그 가지 문장(그 자리 편집기) · 가지 삭제, 아래에 가지 추가.
@@ -999,6 +1000,10 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
             if (needsConnector(ctx, r.targets) && !r.connector) return CONNECTOR_PICK_MESSAGE;
             return { ...b.articleRef(r.targets, r.scope, r.connector) };
           }
+          case "blockRef": {
+            const target = parseBlockRefValue(str(fd, "blockTarget"));
+            return target ? b.blockRef(target.productCoverageId, target.articleId) : "가리킬 블록 · 블록 조를 고른다.";
+          }
           case "appendixRef": {
             const code = str(fd, "appendixCode");
             return code ? b.appendixRef(code) : "별표를 고른다.";
@@ -1035,6 +1040,7 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
               </div>
             )}
             {spec.what === "articleRef" && <ArticleRefFields ctx={ctx} restrict={restrictAt("tableId" in spec.at ? undefined : spec.at.parentId)} />}
+            {spec.what === "blockRef" && <BlockRefSelect choices={ctx.blockChoices ?? []} />}
             {spec.what === "appendixRef" && <AppendixSelect appendices={env.appendices} />}
             {spec.what === "clauseInlineRef" && <ClauseFields clauses={env.clauses} condition={env.condition} {...(env.enumOf ? { enumOf: env.enumOf } : {})} loops={"tableId" in spec.at ? [] : loopsAt(spec.at.parentId)} {...("tableId" in spec.at ? {} : treeProp(spec.at.parentId))} refs={{ ctx, restrict: restrictAt("tableId" in spec.at ? undefined : spec.at.parentId) }} />}
             {spec.what === "structKey" && (
@@ -1062,7 +1068,7 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
       if (node.kind === "inlineCond") return <InlineCondPopup env={env} nodeId={node.id} anchor={anchor} onClose={onClose} />;
       if (node.kind === "inlineFor") return <InlineRepeatPopup env={env} spec={{ kind: "editChip", nodeId: node.id }} anchor={anchor} onClose={onClose} />;
       const title =
-        node.kind === "slot" ? "치환 슬롯" : node.kind === "articleRef" ? "조 참조" : node.kind === "appendixRef" ? "별표 참조" : node.kind === "particle" ? "조사" : node.kind === "clauseInlineRef" || node.kind === "clauseBlockRef" ? (env.clauses.find((c) => c.code === node.clauseCode)?.params?.length ? "함수조항 옵션 · 인자" : "함수조항 옵션") : "고치기";
+        node.kind === "slot" ? "치환 슬롯" : node.kind === "articleRef" ? "조 참조" : node.kind === "blockRef" ? "블록 지정 참조" : node.kind === "appendixRef" ? "별표 참조" : node.kind === "particle" ? "조사" : node.kind === "clauseInlineRef" || node.kind === "clauseBlockRef" ? (env.clauses.find((c) => c.code === node.clauseCode)?.params?.length ? "함수조항 옵션 · 인자" : "함수조항 옵션") : "고치기";
       return (
         <Popover anchor={anchor} label={title} onClose={onClose} wide={node.kind === "articleRef" || ((node.kind === "clauseInlineRef" || node.kind === "clauseBlockRef") && hasArticleRefParam(env.clauses, node.clauseCode))}>
           <PopForm
@@ -1101,6 +1107,7 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
             )}
             {node.kind === "articleRef" && <ArticleRefFields ctx={ctx} node={node} restrict={restrictAt(node.id)} />}
             {node.kind === "appendixRef" && <AppendixSelect appendices={env.appendices} value={node.appendixCode} />}
+            {node.kind === "blockRef" && <p className="ts-form-hint">{blockRefChipText(ctx.blockChoices, node)} — 대상을 바꾸려면 이 칩을 지우고 다시 넣는다.</p>}
             {node.kind === "particle" && (
               <div className="ts-form-row">
                 <span className="ts-form-label">조사</span>
@@ -1331,4 +1338,26 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
       );
     }
   }
+}
+
+/** 블록 지정 참조 고르기 (ADR-0082 결정 12) — 블록마다 「블록 전체」 줄과 블록 조 줄. 값은 `blockRefValue`. */
+function BlockRefSelect({ choices }: { choices: readonly BlockRefChoice[] }) {
+  return (
+    <div className="ts-form-row">
+      <label htmlFor="pop-block-ref">대상 블록</label>
+      <select id="pop-block-ref" name="blockTarget" defaultValue="">
+        <option value="">— 블록 · 블록 조를 고른다 —</option>
+        {choices.map((c) => (
+          <optgroup key={c.productCoverageId} label={c.label}>
+            <option value={blockRefValue(c.productCoverageId)}>{c.label} — 블록 전체</option>
+            {c.articles.map((a) => (
+              <option key={a.id} value={blockRefValue(c.productCoverageId, a.id)}>
+                {c.label} {a.label}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </div>
+  );
 }

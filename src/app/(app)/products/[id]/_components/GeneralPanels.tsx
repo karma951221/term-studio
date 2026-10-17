@@ -126,7 +126,7 @@ export function GeneralPanels({
         <section className="ts-terms-panel ts-terms-panel-edit" aria-label="조 편집">
           <div className="ts-terms-panel-head">
             <h3 className="ts-terms-panel-title">조 편집 — {articleLabel}</h3>
-            {entry && <CopyDots state={copyStateOf(copy, entry.templateHash)} label={articleLabel} />}
+            {entry && <CopyDots state={copyStateOf(copy, entry.templateHash, entry.locked)} label={articleLabel} />}
             <span className="ts-terms-panel-hint">저장하면 이 상품의 보통약관에 반영됩니다</span>
           </div>
           <RefBreakList productId={productId} issues={edit?.breaks ?? []} onSelect={select} />

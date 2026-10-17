@@ -16,6 +16,7 @@
  * - 앵커는 `art-<조 id>` — 오른쪽 조립 결과의 `node-<조 id>` 와 짝이다 (`PanelScrollSync`).
  *   표·박스에는 id 를 심지 않는다 — 오른쪽 패널의 `node-<id>` 와 겹쳐 오류 패널의 이동이 엉킨다.
  */
+import { blockRefChipText, type BlockRefChoice } from "@/app/_lib/blockRef";
 import { BoxView } from "@/app/_components/BoxView";
 import { ClauseModel } from "@/app/_components/ClauseModel";
 import { IconButton, IconRevert } from "@/app/_components/icons";
@@ -54,10 +55,14 @@ export interface TemplateSourceProps {
    * (특별약관 탭 가운데 · 기능/상품 §4.7 — 담보약관 옵션은 담보가 소유한다, 고치는 곳은 담보약관 템플릿 화면).
    */
   readOnly?: boolean;
+  /** 이 상품의 제2절 블록 — 사본의 블록 지정 참조 표기 (ADR-0082 결정 12). */
+  blockChoices?: readonly BlockRefChoice[];
 }
 
 interface Ctx {
   productId: Id;
+  /** 블록 지정 참조 표기 재료 (ADR-0082 결정 12). */
+  blockChoices?: readonly BlockRefChoice[];
   appendixName: (code: Code) => string | undefined;
   boxOf: (code: Code) => Box | undefined;
   exprText: (source: string) => string;
@@ -135,6 +140,13 @@ function Inline({ node, ctx }: { node: InlineNode; ctx: Ctx }) {
         </span>
       );
     }
+
+    case "blockRef":
+      return (
+        <span className="ts-doc-ref" title="블록 지정 참조 — 이 상품의 제2절 블록(상품 조 사본 전용)">
+          {blockRefChipText(ctx.blockChoices, node)}
+        </span>
+      );
 
     case "appendixRef":
       return (
@@ -607,7 +619,7 @@ function ArticleNodes({ nodes, ctx }: { nodes: readonly Node[]; ctx: Ctx }) {
   });
 }
 
-export function TemplateSource({ productId, nodes, numbers, hidden, references, clauses, overrides, overrideTargets, appendices = [], discriminators = [], boxes = [], enums = [], readOnly = false }: TemplateSourceProps) {
+export function TemplateSource({ productId, nodes, numbers, hidden, references, clauses, overrides, overrideTargets, appendices = [], discriminators = [], boxes = [], enums = [], readOnly = false, blockChoices }: TemplateSourceProps) {
   const boxByCode = new Map(boxes.map((x) => [x.code, x] as const));
   const clauseByCode = new Map(clauses.map((c) => [c.code, c] as const));
   const appendixByCode = new Map(appendices.map((a) => [a.code, a.name] as const));
@@ -627,6 +639,7 @@ export function TemplateSource({ productId, nodes, numbers, hidden, references, 
     enums,
     discriminatorLabel: (code) => labelOf.get(code),
     readOnly,
+    ...(blockChoices ? { blockChoices } : {}),
   };
   if (nodes.length === 0) return <p className="ts-muted">이 관에는 조가 없다.</p>;
   return (

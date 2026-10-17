@@ -1,11 +1,12 @@
 /** 상품 화면·서버 액션이 함께 쓰는 순수 함수 — 탭 좌표 · 보통약관의 관 묶기 · 조 수. `*.test.ts` 로 검증. */
-import type { OmissionPairKind, OmissionRecord, RenderedDoc } from "@/domain/assembly";
+import type { Booklet, FirstSectionRecord, OmissionPairKind, OmissionRecord, RenderedDoc } from "@/domain/assembly";
 import { indexTree, type ArticleNode, type CondBlockNode, type DocumentNode, type Node, type NodeNumber } from "@/domain/document";
 import { findAttributeValue, normalizeSelections, planCombinationKey, type AttributeKind, type AttributeSelection, type ProductCoverage } from "@/domain/product";
 import type { Code, Id, Issue } from "@/domain/types";
 import type { FormState } from "@/forms";
 import { isDirty } from "@/app/_lib/edit";
 import { includesQuery } from "@/app/_lib/list";
+import type { BlockRefChoice } from "@/app/_lib/blockRef";
 
 export function str(fd: FormData, key: string): string {
   return String(fd.get(key) ?? "").trim();
@@ -440,4 +441,33 @@ export function filterMountRows(rows: readonly MountRow[], query: string): Mount
 export function planCellShown(path: string, valueOf: (path: string) => unknown): boolean {
   if (path === "waiver.reasons") return valueOf("waiver.applies") === true;
   return true;
+}
+
+// ───────────────────────────── 연결 조 사본 잠금 · 블록 지정 참조 (ADR-0082 결정 10 · 12) ─────────────────────────────
+
+const VERDICT_WORD: Record<FirstSectionRecord["result"], string> = { master: "마스터", special: "특칙", common: "공통", delegate: "위임", commonSplit: "공통항 분리", joinAll: "전체항 합침" };
+
+/**
+ * 잠긴 조의 조 편집 패널 안내 (기능/상품 §4.6) — 대치 형태는 「기본계약 「…」의 조로 대치됩니다」, 절 형태는 「블록 N개가 조연결한 조라 …」 + 이 상품 판정.
+ * 판정은 조건 해소 뒤라 정적으로 연결했지만 조건으로 빠진 조는 판정 기록이 없을 수 있다 — 그러면 판정 줄을 붙이지 않는다.
+ */
+export function copyLockNotice({ names, sectioned, record }: { names: readonly string[]; sectioned: boolean; record?: Pick<FirstSectionRecord, "result" | "k" | "n"> }): string {
+  if (!sectioned) return `이 조는 기본계약 ${names.map((n) => `「${n}」`).join(" · ")}의 조로 대치됩니다 — 이 상품에서 고칠 수 없습니다. 문장을 바꾸려면 기본계약 담보약관을 고친다.`;
+  const head = `블록 ${names.length}개(${names.map((n) => `「${n}」`).join(" · ")})가 조연결한 조라 이 상품에서 고칠 수 없습니다`;
+  if (!record) return head;
+  const counted = record.result === "special" || record.result === "common" || record.result === "delegate";
+  return `${head} — 이 상품 판정 = ${VERDICT_WORD[record.result]}${counted ? ` ${record.k}/${record.n}` : ""}`;
+}
+
+export type { BlockRefChoice } from "@/app/_lib/blockRef";
+
+/** 조립의 제2절 블록 → 블록 지정 참조 고르기 재료 (블록 순서). 블록이 없으면(대치 형태) 빈 목록 — 넣기 메뉴가 서지 않는다. */
+export function blockRefChoices(booklet: Pick<Booklet, "blocks">): BlockRefChoice[] {
+  return (booklet.blocks ?? []).flatMap((g) =>
+    g.docs.map((d) => ({
+      productCoverageId: d.ownerId,
+      label: d.head === undefined ? d.title : `${d.head} ${d.title}`,
+      articles: d.children.flatMap((c) => (c.kind === "article" ? [{ id: c.id, label: `${c.label}(${c.title})` }] : c.kind === "section" ? c.children.flatMap((a) => (a.kind === "article" ? [{ id: a.id, label: `${a.label}(${a.title})` }] : [])) : [])),
+    })),
+  );
 }

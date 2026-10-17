@@ -36,17 +36,22 @@ export interface TocSection {
     hidden: boolean;
     /** 지금 템플릿 조의 지문 — 사본의 지문과 다르면 「템플릿이 바뀜」(노랑). */
     templateHash: string;
+    /** 잠긴 조 (ADR-0082 결정 10) — 사본이 있으면 회색 점(쓰이지 않는 사본). */
+    locked?: boolean;
   }[];
 }
 
 /** 조 하나의 사본 표시 — 초안(읽기면 저장본)의 사본과 지금 템플릿 지문으로. */
-export function copyStateOf(copy: { templateHash: string } | undefined, templateHash: string): "copied" | "stale" | undefined {
-  return copy ? (copy.templateHash === templateHash ? "copied" : "stale") : undefined;
+export function copyStateOf(copy: { templateHash: string } | undefined, templateHash: string, locked = false): "copied" | "stale" | "gray" | undefined {
+  if (!copy) return undefined;
+  if (locked) return "gray";
+  return copy.templateHash === templateHash ? "copied" : "stale";
 }
 
 /** 빨강(사본) · 노랑(템플릿이 바뀜) 점 — 목차 · 조 편집 패널 머리가 같이 쓴다. */
-export function CopyDots({ state, label }: { state: "copied" | "stale" | undefined; label: string }) {
+export function CopyDots({ state, label }: { state: "copied" | "stale" | "gray" | undefined; label: string }) {
   if (!state) return null;
+  if (state === "gray") return <span className="ts-copy-dot is-gray" role="img" aria-label={`쓰이지 않는 사본 · ${label}`} title="회색 사본 — 블록 · 기본계약이 조연결한 조라 잠겨 이 사본은 쓰이지 않는다. 조연결한 담보를 해제하면 다시 쓰인다" />;
   return (
     <>
       <span className="ts-copy-dot" role="img" aria-label={`이 상품 사본 · ${label}`} title="이 상품 사본 — 템플릿과 다른 본문(템플릿을 따라가지 않는다)" />
@@ -80,7 +85,7 @@ export function GeneralToc({
             const errors = [...new Set([...(edit?.errors.articles.get(a.id) ?? []), ...(edit?.breaks ?? []).filter((i) => i.at.articleId === a.id).map((i) => i.message)])];
             const copy = edit?.current.copies[a.id];
             const label = copy ? `${a.number}(${foldTitle(copy.article.title)})` : edit ? `${a.number}(${a.templateTitle})` : a.label;
-            const state = edit ? copyStateOf(copy, a.templateHash) : undefined;
+            const state = edit ? copyStateOf(copy, a.templateHash, a.locked) : undefined;
             return (
               <div key={a.id} id={`toc-${a.id}`} className={hidden ? "ts-toc-row is-hidden-article" : "ts-toc-row"}>
                 {edit?.editing ? (

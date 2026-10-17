@@ -5269,6 +5269,11 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-copy-note { margin: 0 0 8px; font-size: 12px; }
 .ts-copy-status { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin: 0 0 8px; padding: 6px 10px; border: 1px solid var(--ts-rule); border-left: 3px solid var(--ts-error); border-radius: 4px; background: var(--ts-surface-2); }
 .ts-copy-status.is-stale { border-left-color: var(--ts-warn); }
+/* 잠긴 조 · 회색 사본 (ADR-0082 결정 10) — 쓰이지 않는 사본은 회색 본문 · 회색 점 */
+.ts-copy-locked { margin: 0 0 8px; font-size: 13px; }
+.ts-copy-status.is-gray { border-left-color: var(--ts-ink-3); }
+.ts-copy-editor-body.is-gray { color: var(--ts-ink-3); opacity: 0.75; }
+.ts-copy-dot.is-gray { background: var(--ts-ink-3); }
 .ts-copy-status-actions { display: inline-flex; gap: 8px; margin-left: auto; }
 .ts-copy-status-actions > button:where(:not([data-slot])) { height: 28px; padding: 0 10px; border-radius: 4px; font-size: 13px; }
 /* 깨지는 참조 목록 — 조 편집 패널 위 (ADR-0081) */

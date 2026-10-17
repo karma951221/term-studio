@@ -81,6 +81,7 @@ export function GeneralEditProvider({
   template,
   dependents,
   clauses,
+  locked,
   children,
 }: {
   productId: Id;
@@ -97,6 +98,8 @@ export function GeneralEditProvider({
   dependents?: GeneralDependents;
   /** 함수조항 정의 — 깨짐 문구의 번호를 함수조항 펼침 수로 센다(목차 · 원문 모델과 같은 번호). */
   clauses?: readonly Clause[];
+  /** 잠긴 조 id (ADR-0082 결정 10) — 그 조의 사본은 회색(쓰이지 않음)이라 깨짐 검사에서 뺀다. */
+  locked?: readonly Id[];
   children: ReactNode;
 }) {
   const { editing, register } = useProductEdit();
@@ -116,10 +119,12 @@ export function GeneralEditProvider({
   const current = editing ? draft : saved;
   const breaks = useMemo(() => {
     if (!template) return NO_BREAKS;
-    const copyList = draftCopies(current);
+    // 회색 사본(잠긴 조)은 쓰이지 않는다 — 서버 저장 검사와 같이 뺀다 (ADR-0082 결정 10)
+    const lockedSet = new Set(locked);
+    const copyList = draftCopies(current).filter((c) => !lockedSet.has(c.articleId));
     const numbers = numberTree(applyArticleCopies(template, copyList), { clauseSpan: clauseSpanBy((code) => clauses?.find((c) => c.code === code)) });
     return productRefIssues({ template, copies: copyList, hidden: current.hidden, ...(dependents ? { dependents } : {}), numbers, coordinate: { document: "product", ownerId: productId } });
-  }, [template, current, dependents, clauses, productId]);
+  }, [template, current, dependents, clauses, productId, locked]);
   const save = async (): Promise<"done" | "stay"> => {
     // 깨진 참조가 남으면 서버에 보내지 않는다 — 고칠 곳은 목록 · 목차 줄이 이미 보인다 (ADR-0081 결정 2)
     const refusal = refBreakRefusal(breaks);

@@ -106,11 +106,35 @@ describe("편집 — 목차 + 조 편집 두 패널", () => {
   });
 });
 
-describe("기본계약 대치 자리 (ADR-0021) — 조립에는 기본계약 조가 찍힌다", () => {
-  it("기본계약 조가 조연결된 조를 열면 고친 본문이 조립에 나오지 않는다고 말한다", () => {
-    const html = render(true, "A3", { ...data, replacedBy: { A3: "상해사망(기본계약)" } });
-    expect(html).toContain("기본계약 「상해사망(기본계약)」의 조로 대치된다");
-    expect(render(true, "A1", { ...data, replacedBy: { A3: "상해사망(기본계약)" } })).not.toContain("대치된다");
+describe("잠긴 조 · 회색 사본 (ADR-0082 결정 10 · 기능/상품 §4.6)", () => {
+  const notice = "이 조는 기본계약 「상해사망(기본계약)」의 조로 대치됩니다 — 이 상품에서 고칠 수 없습니다. 문장을 바꾸려면 기본계약 담보약관을 고친다.";
+  it("잠긴 조를 열면 잠금 안내 · 편집기는 읽기만(툴바 없음) — 잠기지 않은 조는 그대로 편집", () => {
+    const html = render(true, "A3", { ...data, locks: { A3: notice } });
+    expect(html).toContain("<b>잠김</b> — 이 조는 기본계약 「상해사망(기본계약)」의 조로 대치됩니다");
+    expect(html).not.toContain("ts-doc-toolbar");
+    expect(html).toContain("템플릿 A3");
+    expect(render(true, "A1", { ...data, locks: { A3: notice } })).not.toContain("<b>잠김</b>");
+  });
+
+  it("잠기기 전 사본(회색) — 회색 본문 · 「이 사본은 쓰이지 않습니다」 · 「템플릿대로 되돌리기」", () => {
+    const html = render(true, "A1", { ...data, locks: { A1: notice } });
+    expect(html).toContain("<b>이 사본은 쓰이지 않습니다</b> — 조연결한 담보를 해제하면 다시 쓰입니다");
+    expect(html).toContain('class="ts-copy-editor-body is-gray"');
+    expect(html).toContain("이 상품 A1");
+    expect(html).toContain(">템플릿대로 되돌리기</button>");
+  });
+
+  it("목차 — 잠긴 조의 사본은 회색 점(빨강 대신)", () => {
+    const lockedToc: TocSection[] = toc.map((sec) => ({ ...sec, articles: sec.articles.map((a) => (a.id === "A1" ? { ...a, locked: true } : a)) }));
+    const html = renderToStaticMarkup(
+      <ProductEditProvider canEdit initialEditing={false}>
+        <GeneralEditProvider productId="p1" generalDocumentId="g" templateVersion={4} hiddenArticles={[]} overrides={[]} copies={copies}>
+          <GeneralPanels productId="p1" toc={lockedToc} panes={panes} initialArticleId="A3" copyEditor={data} />
+        </GeneralEditProvider>
+      </ProductEditProvider>,
+    );
+    expect(html).toMatch(/<span class="ts-copy-dot is-gray" role="img" aria-label="쓰이지 않는 사본 · 제1조\(목적\)"/);
+    expect(html).not.toMatch(/aria-label="이 상품 사본 · 제1조\(목적\)"/);
   });
 });
 
