@@ -12,7 +12,8 @@ import { useState, type FocusEvent, type FormEvent, type ReactNode } from "react
 import { Combobox, type ComboOption } from "@/app/_components/Combobox";
 import { IconButton, IconTrash } from "@/app/_components/icons";
 import { blockRefChipText, blockRefValue, parseBlockRefValue, type BlockRefChoice } from "@/app/_lib/blockRef";
-import { DOC_KIND_LABEL, REPEAT_DEPTH_LABEL, STRUCT_KEY_CHIP, SWITCH_WORD } from "@/app/_lib/labels";
+import { InfoTip } from "@/app/_components/InfoTip";
+import { DOC_KIND_LABEL, JOIN_MODE_INFO, REPEAT_DEPTH_LABEL, STRUCT_KEY_CHIP, SWITCH_WORD } from "@/app/_lib/labels";
 import { bindingLabel, bindingOptions, constBindingOfText, planFormChoices, staleBindingOption, type LoopChoice, type NodeTree } from "@/app/(app)/functions/_components/params";
 import type { EnumDef } from "@/domain/catalog";
 import { unfoldPreset, type Bindings, type Clause, type ParamDef } from "@/domain/clause";
@@ -52,6 +53,7 @@ import {
   type RefRestrict,
   type RefTarget,
   type RepeatSource,
+  isJoinMode,
 } from "@/domain/document";
 import type { Box } from "@/domain/document/box";
 import { ATTACH_LEVEL_LABEL, INLINE_REPEAT_CONNECTORS, REFERENCE_CONNECTORS, isInlineRepeatConnector, isReferenceConnector, type Code, type Id, type InlineRepeatConnector, type ReferenceConnector } from "@/domain/types";
@@ -1391,6 +1393,37 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
               />
             </div>
             {ctx.references.general.size === 0 && <p className="ts-muted">대응 보통약관을 먼저 고른다 — 더보기 › 대응 보통약관.</p>}
+            <PopActions onCancel={onClose} />
+          </PopForm>
+        </Popover>
+      );
+    }
+
+    case "joinMode": {
+      // 준용하기 옵션 (ADR-0082 결정 5 · 기능/문면 §3.10) — 보통약관 템플릿 조의 속성. 적용은 편집본에만, 저장은 바의 〔저장〕 하나
+      const a = ix.nodes.get(spec.articleId)?.node;
+      if (!a || a.kind !== "article") return null;
+      return (
+        <Popover anchor={anchor} label="준용하기" onClose={onClose}>
+          <PopForm
+            env={env}
+            onClose={onClose}
+            build={(fd) => {
+              const mode = str(fd, "joinMode");
+              return [{ type: "joinMode", articleId: a.id, mode: isJoinMode(mode) ? mode : "none" }];
+            }}
+          >
+            <div className="ts-form-row">
+              <label htmlFor="pop-join-mode">
+                준용하기
+                <InfoTip text={JOIN_MODE_INFO} />
+              </label>
+              <select id="pop-join-mode" name="joinMode" defaultValue={a.joinMode ?? "none"}>
+                <option value="none">없음</option>
+                <option value="common">공통항 모으기</option>
+                <option value="all">전체항 모으기</option>
+              </select>
+            </div>
             <PopActions onCancel={onClose} />
           </PopForm>
         </Popover>

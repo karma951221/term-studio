@@ -44,6 +44,8 @@ export type PopupSpec =
   | { kind: "code"; nodeId: Id; suggest?: boolean }
   | { kind: "repeat"; tableId: Id }
   | { kind: "link"; articleId: Id }
+  /** 준용하기 옵션 — 보통약관 템플릿 조만(없음 · 공통항 모으기 · 전체항 모으기, ADR-0082 결정 5 · 기능/문면 §4 노드별 폼). */
+  | { kind: "joinMode"; articleId: Id }
   | { kind: "docTitle" }
   | { kind: "general" };
 
@@ -304,6 +306,7 @@ export function articleMenu(env: MenuEnv, articleId: Id, title = true): MenuSect
 
   const own: MenuItem[] = [];
   if (env.docKind === "special") own.push({ label: "조연결…", action: { do: "popup", popup: { kind: "link", articleId } } });
+  if (env.docKind === "general") own.push({ label: "준용하기…", action: { do: "popup", popup: { kind: "joinMode", articleId } } });
   if (title && e.allowed.includes("condBlock")) own.push(wrapItem(env, articleId));
   if (!title) own.push(condBlockItem(env, { parentId: articleId }, ["paragraph"]));
   return [add, own, arrangeItems(ix, articleId)];

@@ -10,6 +10,7 @@
  * - 읽기 · 편집은 보통약관 탭의 편집 상태(`useGeneralEdit`)를 따른다 (기능/상품 §3.8): 읽기는 선택을 글로만, 편집은
  *   옵션마다 고르기 + 되돌리기(↺) — 고른 것은 초안에만 쌓이고 모델의 ✓ 도 초안을 따른다. 바뀐 자리에 「변경」, 저장 거부는 그 상자에.
  *   편집 상태 밖(특별약관 탭 · 단독 렌더)이면 저장본 읽기다.
+ * - 조 머리에 판정 배지 · 「잠김」, 템플릿 조의 준용하기 옵션(「없음」이 아닐 때) — 일부 연결이면 옵션 옆에 경고 아이콘 (기능/상품 §3.12 · §4.6).
  * - 끈 조는 자리에 남되 흐리게 + 「노출 끔」 (켜고 끄는 것은 목차에서, 편집 중이면 초안을 따른다).
  * - **조를 감싼 조건 블록도 그대로 그린다** — 목차는 조건 블록을 펴지만(조는 어디 있든 한 줄),
  *   원문에서 조상 조건식을 잃으면 조건부인 조가 무조건 있는 것처럼 보인다 (코덱스 리뷰 2026-09-15 Important-3).
@@ -23,12 +24,17 @@ import { IconButton, IconRevert } from "@/app/_components/icons";
 import { STRUCT_KEY_CHIP } from "@/app/_lib/labels";
 import type { EnumDef } from "@/domain/catalog";
 import { presetUsage, switchValueLabeler, type Bindings, type Clause } from "@/domain/clause";
-import { foldTitle, particlePreset, refChunkText, repeatLabel, referenceChunkLabel, referenceKeyIndex, refKey, type ArticleNode, type Box, type CondBlockNode, type InlineNode, type Node, type NodeNumber, type ReferenceTarget, type TableNode } from "@/domain/document";
+import { foldTitle, particlePreset, type JoinMode, refChunkText, repeatLabel, referenceChunkLabel, referenceKeyIndex, refKey, type ArticleNode, type Box, type CondBlockNode, type InlineNode, type Node, type NodeNumber, type ReferenceTarget, type TableNode } from "@/domain/document";
 import { format, parse, refPath } from "@/domain/expression";
 import type { ClauseOptionOverride } from "@/domain/product";
 import type { Code, Id } from "@/domain/types";
 
+import { JOIN_MODE_LABEL, type ArticleMark } from "../../verdictView";
 import { useGeneralEdit, type OverrideOption, type OverrideTarget } from "./GeneralEdit";
+import { PartialLinkIcon, VerdictMarks } from "./VerdictMarks";
+
+/** 조 머리의 표지 — 판정 배지 · 「잠김」 · 일부 연결 경고 + 템플릿 조의 준용하기 옵션(「없음」이 아닐 때, 기능/상품 §4.6). */
+export type SourceArticleMark = ArticleMark & { joinMode?: JoinMode };
 
 export interface TemplateSourceProps {
   productId: Id;
@@ -57,10 +63,13 @@ export interface TemplateSourceProps {
   readOnly?: boolean;
   /** 이 상품의 제2절 블록 — 사본의 블록 지정 참조 표기 (ADR-0082 결정 12). */
   blockChoices?: readonly BlockRefChoice[];
+  /** 조 머리의 판정 배지 · 잠김 · 준용하기 옵션 · 일부 연결 경고 (§3.12). 없으면 그리지 않는다(특별약관 탭). */
+  marks?: ReadonlyMap<Id, SourceArticleMark>;
 }
 
 interface Ctx {
   productId: Id;
+  marks?: ReadonlyMap<Id, SourceArticleMark>;
   /** 블록 지정 참조 표기 재료 (ADR-0082 결정 12). */
   blockChoices?: readonly BlockRefChoice[];
   appendixName: (code: Code) => string | undefined;
@@ -599,10 +608,18 @@ function ArticleNodes({ nodes, ctx }: { nodes: readonly Node[]; ctx: Ctx }) {
     if (node.kind === "article") {
       const isHidden = edit ? edit.current.hidden.includes(node.id) : ctx.hidden.has(node.id);
       const label = `${ctx.numbers.get(node.id)?.label ?? "조"}(${foldTitle(node.title)})`;
+      const mark = ctx.marks?.get(node.id);
       return (
         <section key={node.id} id={`art-${node.id}`} className={isHidden ? "ts-doc-article is-hidden-article" : "ts-doc-article"}>
+          {mark?.joinMode && (
+            <p className="ts-doc-cond-head ts-join-mode" title="준용하기 옵션 — 보통약관 템플릿 조의 속성. 모든 블록이 이 조에 조연결했을 때만 작동한다">
+              준용하기 — {JOIN_MODE_LABEL[mark.joinMode]}
+              {mark.warning && <PartialLinkIcon warning={mark.warning} label={label} />}
+            </p>
+          )}
           <h4 className="ts-doc-article-title">
             {label} {isHidden && <span className="ts-dim">— 노출 끔</span>}
+            <VerdictMarks mark={mark} label={label} withWarning={!mark?.joinMode} />
           </h4>
           <Block nodes={node.children} ctx={ctx} />
         </section>
@@ -619,7 +636,7 @@ function ArticleNodes({ nodes, ctx }: { nodes: readonly Node[]; ctx: Ctx }) {
   });
 }
 
-export function TemplateSource({ productId, nodes, numbers, hidden, references, clauses, overrides, overrideTargets, appendices = [], discriminators = [], boxes = [], enums = [], readOnly = false, blockChoices }: TemplateSourceProps) {
+export function TemplateSource({ productId, nodes, numbers, hidden, references, clauses, overrides, overrideTargets, appendices = [], discriminators = [], boxes = [], enums = [], readOnly = false, blockChoices, marks }: TemplateSourceProps) {
   const boxByCode = new Map(boxes.map((x) => [x.code, x] as const));
   const clauseByCode = new Map(clauses.map((c) => [c.code, c] as const));
   const appendixByCode = new Map(appendices.map((a) => [a.code, a.name] as const));
@@ -640,6 +657,7 @@ export function TemplateSource({ productId, nodes, numbers, hidden, references, 
     discriminatorLabel: (code) => labelOf.get(code),
     readOnly,
     ...(blockChoices ? { blockChoices } : {}),
+    ...(marks ? { marks } : {}),
   };
   if (nodes.length === 0) return <p className="ts-muted">이 관에는 조가 없다.</p>;
   return (

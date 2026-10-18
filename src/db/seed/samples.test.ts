@@ -129,6 +129,21 @@ describe("합성 표본 — 절 형태 세 상품 (PGlite)", () => {
     expect(verdicts(b)).toEqual(["보험금의 지급사유 delegate 1/1", "보험금 지급에 관한 세부규정 delegate 1/1"]);
   });
 
+  it("판정 변화 영향 — ⓑ 블록 하나를 탑재 해제하면 확인 모달에 「위임 2/2 → 위임 1/1」(저장 전후를 세이브포인트에서 조립해 견준다 · ADR-0082 결정 11)", async () => {
+    const product = (await services.product.listProducts()).find((p) => p.name === "표본 — 독립특약 블록 2개")!;
+    const pcs = await services.product.listProductCoverages(product.id);
+    const r = await services.product.saveCoverages(admin, product.id, { added: [], updated: [], removed: [pcs[1]!.id] });
+    if (r.ok || r.rejection.reason !== "needsConfirmation") throw new Error(JSON.stringify(r));
+    expect(r.rejection.impact.judgment?.verdicts.map((v) => `${v.label} ${v.before} → ${v.after}`)).toEqual([
+      expect.stringMatching(/^제\d+조\(보험금의 지급사유\) 위임 2\/2 → 위임 1\/1$/),
+      expect.stringMatching(/^제\d+조\(보험금 지급에 관한 세부규정\) 위임 2\/2 → 위임 1\/1$/),
+    ]);
+    // 1차는 되돌린다 — 탑재 그대로 · 판정 그대로
+    expect(await services.product.listProductCoverages(product.id)).toHaveLength(pcs.length);
+    const again = await services.assembly.preview(product.id);
+    expect(again.ok && again.value.firstSection?.map((x) => `${x.result} ${x.k}/${x.n}`)).toEqual(["delegate 2/2", "delegate 2/2"]);
+  });
+
   it("템플릿 세부규정 조에 준용하기 옵션 「공통항 모으기」 저장 — ⓐ 일부 연결이라 옵션 미적용 경고(partialLinkOption) · ⓑ 공통 항 없음 = 위임 · ⓒ 블록 하나 = 위임(경고 없음)", async () => {
     const general = (await services.document.list("general")).find((d) => d.title === "무배당 알파Plus보장보험2604 보통약관")!;
     const record = (await services.document.get(general.id))!;

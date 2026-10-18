@@ -27,7 +27,7 @@ import type { Discriminator } from "@/domain/catalog";
 import { presetUsage, validateOptionSelection } from "@/domain/clause";
 import { catalogTypeResolver, clauseGateFrom, collectRefs, dynTableGateFrom, indexTree, type ClauseGate, type DynTableGate } from "@/domain/document";
 import { checkTypes, parse, type TypeResolver } from "@/domain/expression";
-import { articlesById, clauseGeneralRefs, outsideRefsOf, staticLinks, type GeneralDependents, type RequiredCoverageRef } from "@/domain/product";
+import { articlesById, clauseGeneralRefs, outsideRefsOf, staticLinkLabels, staticLinks, type GeneralDependents, type RequiredCoverageRef } from "@/domain/product";
 import type { Code, Id } from "@/domain/types";
 
 import * as catalogRepo from "@/db/repo/catalog";
@@ -131,7 +131,7 @@ async function generalDependentsOf(tx: Db, generalDocumentId: Id): Promise<Gener
   for (const d of await documentRepo.listDocumentRecords(tx)) {
     if (d.kind !== "special" || d.generalDocumentId !== generalDocumentId || !d.ownerId) continue;
     const clauseCodes = [...new Set(collectRefs(d.tree).flatMap((r) => (r.kind === "clause" ? [r.clauseCode] : [])))];
-    documents.push({ coverageId: d.ownerId, clauseCodes, refs: outsideRefsOf(d.tree, { document: "special", ownerId: d.ownerId, documentId: d.id, ownerName: d.title }), links: staticLinks(d.tree), articleIds: [...articlesById(d.tree).keys()] });
+    documents.push({ coverageId: d.ownerId, clauseCodes, refs: outsideRefsOf(d.tree, { document: "special", ownerId: d.ownerId, documentId: d.id, ownerName: d.title }), links: staticLinks(d.tree), articleIds: [...articlesById(d.tree).keys()], documentId: d.id, linkLabels: staticLinkLabels(d.tree) });
   }
   const clauses = (await clauseRepo.listClauses(tx)).map((c) => ({ code: c.code, refs: clauseGeneralRefs(c) })).filter((c) => c.refs.length > 0);
   return { documents, clauses };
@@ -213,6 +213,13 @@ export function createServices(root: Db, opts: ContainerOptions = {}): Services 
       },
     },
     attributeRefs: attributeRefSource(db),
+    // 판정 변화 견주기 (ADR-0082 결정 11) — 조립을 지금 열린 트랜잭션(문맥 Db)에서 돌려 판정 기록을 읽는다. product → assembly 라 지연 참조
+    judgment: {
+      firstSection: async (productId) => {
+        const r = await services.assembly.preview(productId);
+        return r.ok ? r.value.firstSection : undefined;
+      },
+    },
   });
   const auth = createAuthService(db, opts.auth);
   const master = createMasterService(db, { refs, catalog, coverage, product });

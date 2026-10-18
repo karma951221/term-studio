@@ -408,3 +408,18 @@ describe("블록 반복의 「비었을 때」 칸 — 본문 아래 접을 수 
     expect(renderToStaticMarkup(<Block nodes={none.nodes} ctx={ctxOf(none.tree, false)} />)).not.toContain("칸 있음");
   });
 });
+
+describe("조의 준용하기 옵션 — 조 바로 위 평문 (보통약관 템플릿 · ADR-0082 결정 5)", () => {
+  const withMode = (mode?: "common" | "all") => {
+    const b = nodeBuilders(sequentialIds("j"));
+    const article = { ...b.article("지급사유", [b.paragraph([b.text("본문")])]), ...(mode ? { joinMode: mode } : {}) };
+    return b.document("D", [article]);
+  };
+  const html = (tree: DocumentNode, edit: boolean) => renderToStaticMarkup(<Block nodes={tree.children} ctx={ctxOf(tree, edit)} />);
+
+  it("없음이면 아무것도 없고, 공통항 · 전체항이면 「준용하기 — …」(읽기는 글, 편집은 고치기 버튼)", () => {
+    expect(html(withMode(), false)).not.toContain("준용하기 —");
+    expect(html(withMode("common"), false)).toMatch(/<p class="ts-doc-cond-head"[^>]*>준용하기 — 공통항 모으기<\/p>/);
+    expect(html(withMode("all"), true)).toMatch(/<button type="button" class="ts-doc-cond-head ts-doc-cond-btn" title="준용하기 고치기">준용하기 — 전체항 모으기<\/button>/);
+  });
+});

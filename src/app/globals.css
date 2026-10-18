@@ -3102,6 +3102,11 @@ label.ts-field > textarea:where(:not([data-slot])) {
   padding: 1px 0;
 }
 
+/* 판정 변화 묶음 (ADR-0082 결정 11) — 묶음 제목 한 줄 + 들여쓴 줄들 */
+.ts-confirm-group { padding-top: 4px; }
+.ts-confirm-group-title { font-weight: 600; color: var(--ts-ink); }
+.ts-confirm-group ul { list-style: none; margin: 0; padding-left: 12px; }
+
 .ts-confirm-actions {
   display: flex;
   gap: 8px;
@@ -5274,6 +5279,20 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-copy-status.is-gray { border-left-color: var(--ts-ink-3); }
 .ts-copy-editor-body.is-gray { color: var(--ts-ink-3); opacity: 0.75; }
 .ts-copy-dot.is-gray { background: var(--ts-ink-3); }
+/* 판정 배지 · 잠김 · 일부 연결 경고 (기능/상품 §3.12) — 목차 줄 · 모델링 조 머리. 배지는 같은 규격(.ts-badge), 경고는 아이콘 하나 */
+.ts-verdict-badge { color: var(--ts-ink); }
+.ts-doc-article-title .ts-badge { margin-left: 6px; font-family: var(--sans); font-weight: 400; vertical-align: 2px; }
+.ts-verdict-warn { display: inline-flex; flex: none; align-items: center; color: var(--ts-warn); cursor: help; }
+.ts-toc-row > .ts-verdict-warn { align-self: center; }
+.ts-join-mode .ts-verdict-warn { margin-left: 6px; vertical-align: -2px; }
+/* 조연결 현황 — 보통약관 탭 안 패널(세 패널 아래, 기능/상품 §4.6). 열이 많으면 표만 가로로 민다 */
+.ts-link-status { margin-top: 12px; }
+.ts-link-status .ts-table-wrap { overflow-x: auto; }
+.ts-link-status-table th[scope="row"] { font-weight: 400; white-space: nowrap; }
+.ts-link-status-table td { white-space: nowrap; }
+.ts-link-status-table .ts-link-excluded { color: var(--ts-warn); }
+.ts-link-status-table .ts-link-none a:where(:not([data-slot])) { color: var(--ts-ink-3); }
+.ts-link-status-table .ts-verdict-warn { margin-left: 6px; vertical-align: -2px; }
 .ts-copy-status-actions { display: inline-flex; gap: 8px; margin-left: auto; }
 .ts-copy-status-actions > button:where(:not([data-slot])) { height: 28px; padding: 0 10px; border-radius: 4px; font-size: 13px; }
 /* 깨지는 참조 목록 — 조 편집 패널 위 (ADR-0081) */

@@ -185,6 +185,9 @@ export const LEVEL_OPTIONS = ATTACH_LEVELS.map((value) => ({ value, label: LEVEL
 export const ROLE_LABEL = { admin: "관리자", editor: "편집자" } as const;
 
 /** 값별 분기(switch) 화면 단어 (화면단어 — 「switch」 · 「케이스」 · 「default」는 쓰지 않는다). */
+/** 준용하기 옵션 ⓘ (기능/문면 §4 노드별 폼 · ADR-0082 결정 5 · 15 저작 기준) — 문면 편집기 조 속성 팝업. */
+export const JOIN_MODE_INFO = "기본은 없음 · 남발하지 않는다 · 전체항은 함수조항으로 · 모든 블록이 조연결할 때만 작동";
+
 export const SWITCH_WORD = { switch: "값별 분기", inlineSwitch: "문장 안 값별 분기", case: "칸", empty: "문구 없음", unassigned: "칸 없는 값" } as const;
 
 export const REFERENCE_VIA_LABEL = {

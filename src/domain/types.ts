@@ -297,6 +297,16 @@ export interface Impact {
   cascade: string[];
   /** 탑재 상품담보 — 구조 정정이 미치는 상품 (ADR-0075 결정 2). 담보 구조 계획의 영향에만 실린다. */
   mounts?: MountImpact[];
+  /** 판정 변화 (ADR-0082 결정 11) — 판정이 바뀌는 조 · 회색이 되는 사본 · 다시 쓰이는 사본 · 깨지는 블록 지정 참조. 상품담보 탭 저장의 영향에만 실린다. */
+  judgment?: JudgmentImpact;
+}
+
+/** 저장 전후 판정을 견준 결과 (ADR-0082 결정 11 · 기능/상품 §3.8) — `domain/product/judgment.ts` `judgmentImpact`. 줄의 이름은 템플릿 번호 「제N조(제목)」. */
+export interface JudgmentImpact {
+  verdicts: { articleId: Id; label: string; before: string; after: string }[];
+  grayed: { articleId: Id; label: string }[];
+  revived: { articleId: Id; label: string }[];
+  brokenRefs: { articleId: Id; label: string; message: string }[];
 }
 
 /** 여러 삭제 대상의 영향을 확인 한 번으로 — 저장 한 번에 값 행 여럿을 뺄 때 (점검 2026-09-27 D2). */

@@ -5,17 +5,19 @@ import { RenderedBlocksView, RenderedDoc } from "@/app/_components/RenderedDoc";
 import { bookletForm, type Booklet } from "@/domain/assembly";
 import type { EnumDef } from "@/domain/catalog";
 import type { Clause } from "@/domain/clause";
-import { clauseSpanBy, foldTitle, numberTree, referenceTargetIndex, type Box, type DocumentNode, type NodeNumber } from "@/domain/document";
+import { clauseSpanBy, foldTitle, numberTree, referenceTargetIndex, type ArticleNode, type Box, type DocumentNode, type NodeNumber } from "@/domain/document";
 import { applyArticleCopies, articleHash, articlesById, productRefIssues, type ArticleCopy, type ClauseOptionOverride, type GeneralDependents, type ProductCoverage } from "@/domain/product";
 import type { Id } from "@/domain/types";
 
+import { articleMarks, linkMatrix, type LinkColumn } from "../../verdictView";
 import { currentGeneralArticle, generalIssueLink, generalSections, generalSectionLabel, generalTabIssues, renderedNodeIds, sectionPreviewDoc } from "../../lib";
 import type { CopyEditorData } from "./ArticleCopyEditor";
 import { GeneralEditProvider, type OverrideTarget } from "./GeneralEdit";
 import { GeneralPanels, type GeneralPane } from "./GeneralPanels";
 import { GeneralTemplateLine } from "./GeneralTemplateLine";
+import { LinkStatusButton, LinkStatusPanel, LinkStatusProvider } from "./LinkStatus";
 import type { TocSection } from "./GeneralToc";
-import { TemplateSource } from "./TemplateSource";
+import { TemplateSource, type SourceArticleMark } from "./TemplateSource";
 
 export interface GeneralTabProps {
   productId: Id;
@@ -51,6 +53,8 @@ export interface GeneralTabProps {
   /** 템플릿 번호 (원천 노드 id 키) — 목차·원문이 쓰는 「끄기 전」 번호. */
   generalNumbers: ReadonlyMap<Id, NodeNumber>;
   hiddenArticles: readonly Id[];
+  /** 조연결 현황의 열 — 블록(대치 형태면 기본계약) · 정적 조연결 (`linkColumns`). 비면 `[조연결 현황]` 이 서지 않는다. */
+  linkColumns?: readonly LinkColumn[];
   /** 조립 결과 — 오른쪽 미리보기 · 오류 · 별표 카운트. */
   booklet: Booklet | undefined;
   /** 조립이 안 된 사유 한 줄 (booklet 이 없을 때). */
@@ -90,6 +94,7 @@ export function GeneralTab({
   copyEditorData,
   generalNumbers: templateNumbers,
   hiddenArticles,
+  linkColumns = [],
   booklet,
   bookletNote,
   articleId,
@@ -101,7 +106,7 @@ export function GeneralTab({
   const locked = new Set(lockedArticles);
   const usedCopies = articleCopies.filter((c) => !locked.has(c.articleId));
   const generalTree = templateTree ? applyArticleCopies(templateTree, usedCopies) : undefined;
-  const templateArticles = templateTree ? articlesById(templateTree) : new Map();
+  const templateArticles: Map<Id, ArticleNode> = templateTree ? articlesById(templateTree) : new Map();
   // ── 약관 섹션의 좌표 — 관 하나가 세 패널의 단위다 ──────────────────────────
   const sections = generalTree ? generalSections(generalTree) : [];
   // 원문 모델 번호 — 함수조항 참조는 펼칠 항 · 호 · 목 수만큼 센다(뒤 형제 · 조 참조 표기가 조립과 같게, 2026-10-03 사용자 QA)
@@ -119,6 +124,25 @@ export function GeneralTab({
   const baseCoverageIds = new Set(baseCoverages.map((pc) => pc.id));
   // 절 형태(기본계약 2+ · 독립특약) — 미리보기는 제1절(위임 문구가 든 판정 결과)이고, 제2절 블록은 세 패널 아래에 읽기로 붙인다 (기능/상품 §4.6 · 조립산출 §3.8)
   const sectioned = booklet !== undefined && bookletForm(booklet) === "sectioned";
+  // 판정 배지 · 잠김 · 일부 연결 경고 (§3.12) — 배지는 저장된 조립의 판정 기록, 잠김은 정적 연결. 모델링 패널은 템플릿 조의 준용하기 옵션도
+  const marks = articleMarks(booklet?.firstSection, lockedArticles);
+  const sourceMarks = new Map<Id, SourceArticleMark>();
+  for (const [id, article] of templateArticles) {
+    const mark = marks.get(id);
+    const joinMode = article.joinMode;
+    if (mark || joinMode) sourceMarks.set(id, { ...mark, ...(joinMode ? { joinMode } : {}) });
+  }
+
+  // 조연결 현황 (§3.12) — 행 = 판정 대상 조 + 옵션 조 + 정적 연결 조(템플릿 순), 열 = 블록. 블록 · 기본계약이 없으면 서지 않는다
+  const linkRows =
+    linkColumns.length > 0
+      ? linkMatrix({
+          articles: [...templateArticles.values()].map((a) => ({ id: a.id, label: `${templateNumbers.get(a.id)?.label ?? "조"}(${foldTitle(a.title)})`, ...(a.joinMode ? { joinMode: a.joinMode } : {}) })),
+          columns: linkColumns,
+          sectioned,
+          ...(booklet?.firstSection ? { records: booklet.firstSection } : {}),
+        })
+      : [];
 
   // ── 목차 — 관 제목 · 조(템플릿 번호 + 제목 · 노출) ─────────────────────────
   const toc: TocSection[] = sections.map((s, i) => ({
@@ -127,7 +151,7 @@ export function GeneralTab({
     articles: s.articles.map((a) => {
       const number = generalNumbers.get(a.id)?.label ?? "조";
       const original = templateArticles.get(a.id);
-      return { id: a.id, label: `${number}(${foldTitle(a.title)})`, number, templateTitle: foldTitle(original?.title ?? a.title), hidden: hidden.has(a.id), templateHash: original ? articleHash(original) : "", ...(locked.has(a.id) ? { locked: true } : {}) };
+      return { id: a.id, label: `${number}(${foldTitle(a.title)})`, number, templateTitle: foldTitle(original?.title ?? a.title), hidden: hidden.has(a.id), templateHash: original ? articleHash(original) : "", ...(locked.has(a.id) ? { locked: true } : {}), ...(marks.has(a.id) ? { mark: marks.get(a.id) } : {}) };
     }),
   }));
 
@@ -157,6 +181,7 @@ export function GeneralTab({
           {...(enums ? { enums } : {})}
           discriminators={discriminators}
           {...(copyEditorData?.blockChoices ? { blockChoices: copyEditorData.blockChoices } : {})}
+          marks={sourceMarks}
         />
       ),
       right: (
@@ -183,7 +208,15 @@ export function GeneralTab({
   const templateTitle = generalDocumentId ? generals.find((g) => g.id === generalDocumentId)?.title : undefined;
   const body = (
     <>
-      <GeneralTemplateLine productId={productId} generalDocumentId={generalDocumentId} templateTitle={templateTitle} generals={generals} summary={summary} templateChanged={templateChanged} />
+      <GeneralTemplateLine
+        productId={productId}
+        generalDocumentId={generalDocumentId}
+        templateTitle={templateTitle}
+        generals={generals}
+        summary={summary}
+        templateChanged={templateChanged}
+        {...(linkColumns.length > 0 && generalTree ? { tools: <LinkStatusButton /> } : {})}
+      />
       {/* 교체로 조 노출·오버라이드를 잃으면 액션이 `?confirm=template:<새 id>` 로 보낸다 (코덱스 리뷰 Important-6). */}
       {confirm?.startsWith("template:") && confirmNode}
       {generalTree === undefined ? (
@@ -198,6 +231,7 @@ export function GeneralTab({
           {...(copyEditorData && generalDocumentId && templateTree ? { copyEditor: { ...copyEditorData, templateId: generalDocumentId, template: templateTree } } : {})}
         />
       )}
+      {linkColumns.length > 0 && generalTree !== undefined && <LinkStatusPanel columns={linkColumns} rows={linkRows} sectioned={sectioned} />}
       {sectioned && generalTree !== undefined && (
         <section className="ts-section ts-general-blocks" aria-label="제2절 보장조항 미리보기">
           <RenderedBlocksView groups={booklet.blocks ?? []} />
@@ -207,27 +241,29 @@ export function GeneralTab({
   );
 
   return (
-    <div className="ts-terms-focus">
-      {generalDocumentId ? (
-        // 템플릿이 바뀌면 초안을 새로 — 옛 템플릿의 노드 id 가 남지 않게
-        <GeneralEditProvider
-          key={generalDocumentId}
-          productId={productId}
-          generalDocumentId={generalDocumentId}
-          {...(templateVersion !== undefined ? { templateVersion } : {})}
-          hiddenArticles={hiddenArticles}
-          overrides={overrides}
-          copies={articleCopies}
-          {...(templateTree ? { template: templateTree } : {})}
-          {...(dependents ? { dependents } : {})}
-          clauses={clauses}
-          locked={lockedArticles}
-        >
-          {body}
-        </GeneralEditProvider>
-      ) : (
-        body
-      )}
-    </div>
+    <LinkStatusProvider>
+      <div className="ts-terms-focus">
+        {generalDocumentId ? (
+          // 템플릿이 바뀌면 초안을 새로 — 옛 템플릿의 노드 id 가 남지 않게
+          <GeneralEditProvider
+            key={generalDocumentId}
+            productId={productId}
+            generalDocumentId={generalDocumentId}
+            {...(templateVersion !== undefined ? { templateVersion } : {})}
+            hiddenArticles={hiddenArticles}
+            overrides={overrides}
+            copies={articleCopies}
+            {...(templateTree ? { template: templateTree } : {})}
+            {...(dependents ? { dependents } : {})}
+            clauses={clauses}
+            locked={lockedArticles}
+          >
+            {body}
+          </GeneralEditProvider>
+        ) : (
+          body
+        )}
+      </div>
+    </LinkStatusProvider>
   );
 }

@@ -10,6 +10,7 @@
  * - plans.ts        : 세목유형·선택지·유효 조합 규칙
  * - mount.ts        : 조합 키·선택 검증·스냅샷 구조 대조(diffStructure)
  * - groups.ts       : 특약 그룹 — 상품 그룹 목록(기본 그룹 = 담보분류 · 사용자 그룹) · 저장 계획 · 그룹 안 자동 정렬 (ADR-0090)
+ * - judgment.ts   : 판정 배지 표기 · 판정 변화 영향(저장 전후 견주기) (ADR-0082 결정 11)
  * - completeness.ts : 노출 구분자 · 미입력 목록 · 기본계약 부착 검사
  */
 export * from "./articleCopies";
@@ -18,6 +19,7 @@ export * from "./completeness";
 export * from "./copyLock";
 export * from "./copyRefIntegrity";
 export * from "./groups";
+export * from "./judgment";
 export * from "./mount";
 export * from "./naming";
 export * from "./plans";

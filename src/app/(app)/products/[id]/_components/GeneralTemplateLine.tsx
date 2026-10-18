@@ -29,6 +29,7 @@ export function GeneralTemplateLine({
   generals,
   summary,
   templateChanged = false,
+  tools,
 }: {
   productId: Id;
   generalDocumentId: Id | undefined;
@@ -38,6 +39,8 @@ export function GeneralTemplateLine({
   summary?: ReactNode;
   /** 마지막 저장 뒤 템플릿이 바뀌었다 — 경고 한 줄. */
   templateChanged?: boolean;
+  /** 집계 앞 작은 조작 — 「조연결 현황」 펴고 접기 (기능/상품 §4.6). */
+  tools?: ReactNode;
 }) {
   const { editing, end } = useProductEdit();
   const edit = useGeneralEdit();
@@ -90,6 +93,7 @@ export function GeneralTemplateLine({
           </button>
         )}
         <span className="ts-terms-template-end">
+          {tools}
           {summary && <span className="ts-count ts-terms-template-count">{summary}</span>}
           <ProductEditButtons />
         </span>
