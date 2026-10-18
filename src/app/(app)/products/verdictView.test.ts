@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { FirstSectionRecord } from "@/domain/assembly";
 
-import { articleMarks, JOIN_MODE_LABEL, linkMatrix, type LinkColumn } from "./verdictView";
+import { articleMarks, JOIN_MODE_LABEL, linkColumns, linkMatrix, type LinkColumn } from "./verdictView";
 
 /** 판정 기록 한 줄 — 필요한 칸만 채운다. */
 function record(articleId: string, over: Partial<FirstSectionRecord>): FirstSectionRecord {
@@ -104,5 +104,29 @@ describe("linkMatrix — 조연결 현황 표 (기능/상품 §3.12 · §4.6)", 
       ["a7", "마스터", undefined],
     ]);
     expect(rows[0].cells).toEqual([{ kind: "linked", label: "제1조(보험금의 지급사유)" }]);
+  });
+});
+
+describe("linkColumns — 조연결 현황의 열: 잠금을 만드는 상품담보(블록 · 기본계약), 절 형태면 블록 순서 · 블록 머리", () => {
+  const locking = [
+    { id: "pc-b", name: "상해후유", coverageId: "cov-b" },
+    { id: "pc-a", name: "상해사망", coverageId: "cov-a" },
+  ];
+  const documents = [
+    { coverageId: "cov-a", documentId: "doc-a", links: ["a3", "a4"], linkLabels: { a3: "제1조(지급사유)", a4: "제2조(세부)" } },
+    { coverageId: "cov-b", documentId: "doc-b", links: ["a3"] },
+  ];
+
+  it("절 형태 — 제2절 블록 순서 · 머리, 담보약관 문서 · 칸 글(표기가 없으면 「연결」)", () => {
+    const cols = linkColumns({ locking, documents, blocks: [{ productCoverageId: "pc-a", head: "1." }, { productCoverageId: "pc-b", head: "2." }] });
+    expect(cols).toEqual([
+      { productCoverageId: "pc-a", name: "상해사망", head: "1.", documentId: "doc-a", links: { a3: "제1조(지급사유)", a4: "제2조(세부)" } },
+      { productCoverageId: "pc-b", name: "상해후유", head: "2.", documentId: "doc-b", links: { a3: "연결" } },
+    ]);
+  });
+
+  it("대치 형태 — 블록이 없으면 받은 순 · 머리 없음, 담보약관이 없는 상품담보도 빈 열", () => {
+    const cols = linkColumns({ locking: [{ id: "pc-x", name: "기본", coverageId: "cov-x" }], documents });
+    expect(cols).toEqual([{ productCoverageId: "pc-x", name: "기본", links: {} }]);
   });
 });

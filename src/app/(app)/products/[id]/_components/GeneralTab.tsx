@@ -9,12 +9,13 @@ import { clauseSpanBy, foldTitle, numberTree, referenceTargetIndex, type Article
 import { applyArticleCopies, articleHash, articlesById, productRefIssues, type ArticleCopy, type ClauseOptionOverride, type GeneralDependents, type ProductCoverage } from "@/domain/product";
 import type { Id } from "@/domain/types";
 
-import { articleMarks } from "../../verdictView";
+import { articleMarks, linkMatrix, type LinkColumn } from "../../verdictView";
 import { currentGeneralArticle, generalIssueLink, generalSections, generalSectionLabel, generalTabIssues, renderedNodeIds, sectionPreviewDoc } from "../../lib";
 import type { CopyEditorData } from "./ArticleCopyEditor";
 import { GeneralEditProvider, type OverrideTarget } from "./GeneralEdit";
 import { GeneralPanels, type GeneralPane } from "./GeneralPanels";
 import { GeneralTemplateLine } from "./GeneralTemplateLine";
+import { LinkStatusButton, LinkStatusPanel, LinkStatusProvider } from "./LinkStatus";
 import type { TocSection } from "./GeneralToc";
 import { TemplateSource, type SourceArticleMark } from "./TemplateSource";
 
@@ -52,6 +53,8 @@ export interface GeneralTabProps {
   /** 템플릿 번호 (원천 노드 id 키) — 목차·원문이 쓰는 「끄기 전」 번호. */
   generalNumbers: ReadonlyMap<Id, NodeNumber>;
   hiddenArticles: readonly Id[];
+  /** 조연결 현황의 열 — 블록(대치 형태면 기본계약) · 정적 조연결 (`linkColumns`). 비면 `[조연결 현황]` 이 서지 않는다. */
+  linkColumns?: readonly LinkColumn[];
   /** 조립 결과 — 오른쪽 미리보기 · 오류 · 별표 카운트. */
   booklet: Booklet | undefined;
   /** 조립이 안 된 사유 한 줄 (booklet 이 없을 때). */
@@ -91,6 +94,7 @@ export function GeneralTab({
   copyEditorData,
   generalNumbers: templateNumbers,
   hiddenArticles,
+  linkColumns = [],
   booklet,
   bookletNote,
   articleId,
@@ -128,6 +132,17 @@ export function GeneralTab({
     const joinMode = article.joinMode;
     if (mark || joinMode) sourceMarks.set(id, { ...mark, ...(joinMode ? { joinMode } : {}) });
   }
+
+  // 조연결 현황 (§3.12) — 행 = 판정 대상 조 + 옵션 조 + 정적 연결 조(템플릿 순), 열 = 블록. 블록 · 기본계약이 없으면 서지 않는다
+  const linkRows =
+    linkColumns.length > 0
+      ? linkMatrix({
+          articles: [...templateArticles.values()].map((a) => ({ id: a.id, label: `${templateNumbers.get(a.id)?.label ?? "조"}(${foldTitle(a.title)})`, ...(a.joinMode ? { joinMode: a.joinMode } : {}) })),
+          columns: linkColumns,
+          sectioned,
+          ...(booklet?.firstSection ? { records: booklet.firstSection } : {}),
+        })
+      : [];
 
   // ── 목차 — 관 제목 · 조(템플릿 번호 + 제목 · 노출) ─────────────────────────
   const toc: TocSection[] = sections.map((s, i) => ({
@@ -193,7 +208,15 @@ export function GeneralTab({
   const templateTitle = generalDocumentId ? generals.find((g) => g.id === generalDocumentId)?.title : undefined;
   const body = (
     <>
-      <GeneralTemplateLine productId={productId} generalDocumentId={generalDocumentId} templateTitle={templateTitle} generals={generals} summary={summary} templateChanged={templateChanged} />
+      <GeneralTemplateLine
+        productId={productId}
+        generalDocumentId={generalDocumentId}
+        templateTitle={templateTitle}
+        generals={generals}
+        summary={summary}
+        templateChanged={templateChanged}
+        {...(linkColumns.length > 0 && generalTree ? { tools: <LinkStatusButton /> } : {})}
+      />
       {/* 교체로 조 노출·오버라이드를 잃으면 액션이 `?confirm=template:<새 id>` 로 보낸다 (코덱스 리뷰 Important-6). */}
       {confirm?.startsWith("template:") && confirmNode}
       {generalTree === undefined ? (
@@ -208,6 +231,7 @@ export function GeneralTab({
           {...(copyEditorData && generalDocumentId && templateTree ? { copyEditor: { ...copyEditorData, templateId: generalDocumentId, template: templateTree } } : {})}
         />
       )}
+      {linkColumns.length > 0 && generalTree !== undefined && <LinkStatusPanel columns={linkColumns} rows={linkRows} sectioned={sectioned} />}
       {sectioned && generalTree !== undefined && (
         <section className="ts-section ts-general-blocks" aria-label="제2절 보장조항 미리보기">
           <RenderedBlocksView groups={booklet.blocks ?? []} />
@@ -217,27 +241,29 @@ export function GeneralTab({
   );
 
   return (
-    <div className="ts-terms-focus">
-      {generalDocumentId ? (
-        // 템플릿이 바뀌면 초안을 새로 — 옛 템플릿의 노드 id 가 남지 않게
-        <GeneralEditProvider
-          key={generalDocumentId}
-          productId={productId}
-          generalDocumentId={generalDocumentId}
-          {...(templateVersion !== undefined ? { templateVersion } : {})}
-          hiddenArticles={hiddenArticles}
-          overrides={overrides}
-          copies={articleCopies}
-          {...(templateTree ? { template: templateTree } : {})}
-          {...(dependents ? { dependents } : {})}
-          clauses={clauses}
-          locked={lockedArticles}
-        >
-          {body}
-        </GeneralEditProvider>
-      ) : (
-        body
-      )}
-    </div>
+    <LinkStatusProvider>
+      <div className="ts-terms-focus">
+        {generalDocumentId ? (
+          // 템플릿이 바뀌면 초안을 새로 — 옛 템플릿의 노드 id 가 남지 않게
+          <GeneralEditProvider
+            key={generalDocumentId}
+            productId={productId}
+            generalDocumentId={generalDocumentId}
+            {...(templateVersion !== undefined ? { templateVersion } : {})}
+            hiddenArticles={hiddenArticles}
+            overrides={overrides}
+            copies={articleCopies}
+            {...(templateTree ? { template: templateTree } : {})}
+            {...(dependents ? { dependents } : {})}
+            clauses={clauses}
+            locked={lockedArticles}
+          >
+            {body}
+          </GeneralEditProvider>
+        ) : (
+          body
+        )}
+      </div>
+    </LinkStatusProvider>
   );
 }

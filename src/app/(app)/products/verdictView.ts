@@ -59,6 +59,36 @@ export interface LinkColumn {
   links: Readonly<Record<Id, string>>;
 }
 
+/**
+ * 조연결 현황의 열 — 잠금을 만드는 상품담보(주계약 기본계약 · 독립특약 탑재 전부, `lockingCoverageIds`). 절 형태면 제2절 블록 순서 · 블록 머리를 따르고
+ * (블록에 없는 것은 뒤), 대치 형태면 받은 순(기본계약 하나). 칸 글은 담보약관의 정적 조연결 표기(`staticLinkLabels`).
+ */
+export function linkColumns({
+  locking,
+  documents,
+  blocks = [],
+}: {
+  locking: readonly { id: Id; name: string; coverageId: Id }[];
+  documents: readonly { coverageId: Id; documentId?: Id; links?: readonly Id[]; linkLabels?: Readonly<Record<Id, string>> }[];
+  /** 저장된 조립의 제2절 블록(블록 순서) — 상품담보 id · 블록 머리. */
+  blocks?: readonly { productCoverageId: Id; head?: string }[];
+}): LinkColumn[] {
+  const rank = (id: Id) => {
+    const i = blocks.findIndex((b) => b.productCoverageId === id);
+    return i < 0 ? Number.MAX_SAFE_INTEGER : i;
+  };
+  return [...locking]
+    .map((pc, i) => ({ pc, i }))
+    .sort((x, y) => rank(x.pc.id) - rank(y.pc.id) || x.i - y.i)
+    .map(({ pc }): LinkColumn => {
+      const doc = documents.find((d) => d.coverageId === pc.coverageId);
+      const head = blocks.find((b) => b.productCoverageId === pc.id)?.head;
+      const links: Record<Id, string> = {};
+      for (const t of doc?.links ?? []) links[t] = doc?.linkLabels?.[t] ?? "연결";
+      return { productCoverageId: pc.id, name: pc.name, ...(head !== undefined ? { head } : {}), ...(doc?.documentId ? { documentId: doc.documentId } : {}), links };
+    });
+}
+
 export type LinkCell = { kind: "linked"; label?: string } | { kind: "none" } | { kind: "excluded"; label?: string };
 
 export interface LinkRow {

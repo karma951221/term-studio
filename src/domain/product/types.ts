@@ -256,6 +256,10 @@ export interface GeneralDependents {
     links?: Id[];
     /** 그 담보약관의 조 id — 블록 지정 참조의 블록 조 대상 검사 (ADR-0082 결정 12). 없으면 조 없음. */
     articleIds?: Id[];
+    /** 그 담보약관 문서 id — 조연결 현황의 빈칸이 담보 문면 편집기로 간다 (기능/상품 §3.12). */
+    documentId?: Id;
+    /** 정적 조연결의 블록 조 표기 — 템플릿 조 id → 「제N조(제목)」 (`staticLinkLabels`, 조연결 현황의 칸 글). */
+    linkLabels?: Record<Id, string>;
   }[];
   /** 보통약관 참조가 든 함수조항. */
   clauses: { code: Code; refs: OutsideRef[] }[];

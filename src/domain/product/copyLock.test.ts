@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { DocumentNode } from "@/domain/document";
 import { titleNodes } from "@/domain/document/title";
 
-import { blockCoverageIds, copyBlockRefIssues, copyLocks, grayCopyIds, lockingCoverageIds, staticLinks } from "./copyLock";
+import { blockCoverageIds, copyBlockRefIssues, copyLocks, grayCopyIds, lockingCoverageIds, staticLinkLabels, staticLinks } from "./copyLock";
 
 const doc = (id: string, links: (string | undefined)[], cond = false): DocumentNode => {
   const articles = links.map((l, i) => ({ id: `${id}-a${i}`, kind: "article" as const, title: titleNodes(`조${i}`, `${id}-a${i}`), ...(l ? { linkedArticleId: l } : {}), children: [] }));
@@ -23,6 +23,12 @@ describe("staticLinks — 조연결은 조건 가지 안까지(평가하지 않�
   it("조 자리 · 조건 블록 가지 안의 조연결을 문서 순으로", () => {
     expect(staticLinks(doc("d", ["g1", undefined, "g2"]))).toEqual(["g1", "g2"]);
     expect(staticLinks(doc("d", ["g3"], true))).toEqual(["g3"]);
+  });
+});
+
+describe("staticLinkLabels — 조연결 현황의 칸 글: 템플릿 조 id → 연결한 블록 조 「제N조(제목)」", () => {
+  it("조연결한 조만 · 같은 템플릿 조에 둘이면 앞의 것(duplicateLink 는 조립 오류)", () => {
+    expect(staticLinkLabels(doc("d", ["g1", undefined, "g2", "g1"]))).toEqual({ g1: "제1조(조0)", g2: "제3조(조2)" });
   });
 });
 

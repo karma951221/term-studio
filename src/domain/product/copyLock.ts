@@ -9,6 +9,7 @@
  *   잠금이 풀리면 다시 쓰인다.
  */
 import { blockRefsIn, blockRefTargetIssues, indexTree, type ArticleNode, type DocumentNode } from "../document/nodes";
+import { articleRefLabel, numberTree } from "../document/numbering";
 import { foldTitle } from "../document/title";
 import type { Coordinate, Id, Issue } from "../types";
 
@@ -16,6 +17,22 @@ import type { Coordinate, Id, Issue } from "../types";
 export function staticLinks(tree: DocumentNode): Id[] {
   const out: Id[] = [];
   for (const e of indexTree(tree).nodes.values()) if (e.node.kind === "article" && e.node.linkedArticleId) out.push(e.node.linkedArticleId);
+  return out;
+}
+
+/**
+ * 정적 조연결의 블록 조 표기 — 템플릿 조 id → 연결한 담보약관 조 「제N조(제목)」(접은 제목). 조연결 현황 표의 칸 글 (기능/상품 §3.12).
+ * 한 담보약관의 두 조가 같은 템플릿 조에 연결했으면(조립 오류 `duplicateLink`) 앞의 것.
+ */
+export function staticLinkLabels(tree: DocumentNode): Record<Id, string> {
+  const numbers = numberTree(tree);
+  const out: Record<Id, string> = {};
+  for (const e of indexTree(tree).nodes.values()) {
+    const a = e.node;
+    if (a.kind !== "article" || !a.linkedArticleId || out[a.linkedArticleId] !== undefined) continue;
+    const n = numbers.get(a.id)?.n;
+    out[a.linkedArticleId] = n === undefined ? foldTitle(a.title) : articleRefLabel(n, foldTitle(a.title));
+  }
   return out;
 }
 

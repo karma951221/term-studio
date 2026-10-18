@@ -5280,6 +5280,14 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-verdict-warn { display: inline-flex; flex: none; align-items: center; color: var(--ts-warn); cursor: help; }
 .ts-toc-row > .ts-verdict-warn { align-self: center; }
 .ts-join-mode .ts-verdict-warn { margin-left: 6px; vertical-align: -2px; }
+/* 조연결 현황 — 보통약관 탭 안 패널(세 패널 아래, 기능/상품 §4.6). 열이 많으면 표만 가로로 민다 */
+.ts-link-status { margin-top: 12px; }
+.ts-link-status .ts-table-wrap { overflow-x: auto; }
+.ts-link-status-table th[scope="row"] { font-weight: 400; white-space: nowrap; }
+.ts-link-status-table td { white-space: nowrap; }
+.ts-link-status-table .ts-link-excluded { color: var(--ts-warn); }
+.ts-link-status-table .ts-link-none a:where(:not([data-slot])) { color: var(--ts-ink-3); }
+.ts-link-status-table .ts-verdict-warn { margin-left: 6px; vertical-align: -2px; }
 .ts-copy-status-actions { display: inline-flex; gap: 8px; margin-left: auto; }
 .ts-copy-status-actions > button:where(:not([data-slot])) { height: 28px; padding: 0 10px; border-radius: 4px; font-size: 13px; }
 /* 깨지는 참조 목록 — 조 편집 패널 위 (ADR-0081) */

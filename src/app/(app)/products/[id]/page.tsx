@@ -13,7 +13,7 @@ import { articleRefLabel, collectRefs, type NodeNumber } from "@/domain/document
 import type { Id } from "@/domain/types";
 import { CATEGORY_TITLE_FIELD, COVERAGE_CATEGORY_ENUM } from "@/domain/coverage";
 import { CONTRACT_KIND_PATH, findForm, isStandaloneContract } from "@/domain/master";
-import { applyArticleCopies, defaultCoverageName, liveArticleCopies, planOptionLabel, planTypeOptions, type ProductCoverage } from "@/domain/product";
+import { applyArticleCopies, defaultCoverageName, liveArticleCopies, lockingCoverageIds, planOptionLabel, planTypeOptions, type ProductCoverage } from "@/domain/product";
 import { buildForm } from "@/forms";
 import { currentActor, getServices } from "@/lib/services";
 
@@ -25,6 +25,7 @@ import { ProductEditProvider, ProductHeadActions, ProductPath } from "./_compone
 import { ProductTabs } from "./_components/ProductTabs";
 import { SpecialPreviewTab } from "./_components/SpecialPreviewTab";
 import { confirmProductGeneralDocumentAction, deleteProductAction, removePlanAction, removePlanOptionAction } from "../actions";
+import { linkColumns } from "../verdictView";
 import { blockRefChoices, copyLockNotice, legacyProductTabRedirect, productDetailPath, productTabOf, resolveSpecialSelection, specialCoverageGroups } from "../lib";
 
 export const dynamic = "force-dynamic";
@@ -162,6 +163,16 @@ export default async function ProductDetailPage({
       }
     : undefined;
   const booklet = bookletResult?.ok ? bookletResult.value : undefined;
+  // 조연결 현황의 열 (기능/상품 §3.12) — 잠금을 만드는 상품담보(주계약 기본계약 · 독립특약 탑재 전부), 절 형태면 제2절 블록 순서 · 머리
+  const standaloneProduct = isStandaloneContract(productValues.get(CONTRACT_KIND_PATH));
+  const lockingIds = gid ? lockingCoverageIds({ standalone: standaloneProduct, baseContractIds, mountIds: productCoverages.map((pc) => pc.id) }) : new Set<Id>();
+  const statusColumns = gid
+    ? linkColumns({
+        locking: productCoverages.filter((pc) => lockingIds.has(pc.id)),
+        documents: generalDependents?.documents ?? [],
+        blocks: (booklet?.blocks ?? []).flatMap((g) => g.docs.map((d) => ({ productCoverageId: d.ownerId, ...(d.head !== undefined ? { head: d.head } : {}) }))),
+      })
+    : [];
   const bookletNote = bookletResult && !bookletResult.ok ? `조립할 수 없다 — ${rejectionMessage(bookletResult)}` : undefined;
 
   // 보통약관 문면의 함수조항 참조 자리(block · inline 둘 다 노드 id 로 오버라이드된다) = 고를 수 있는 자리 (리뷰 #7).
@@ -302,7 +313,7 @@ export default async function ProductDetailPage({
           suggestedNames={suggestedNames}
           mountSearch={{ base: { query: sp.bq, page: sp.bpage }, special: { query: sp.mq, page: sp.mpage } }}
           baseCheck={baseCheck}
-          standalone={isStandaloneContract(productValues.get(CONTRACT_KIND_PATH))}
+          standalone={standaloneProduct}
         />
       )}
 
@@ -328,6 +339,7 @@ export default async function ProductDetailPage({
           {...(copyEditorData ? { copyEditorData } : {})}
           generalNumbers={generalNumbers}
           hiddenArticles={hiddenArticles}
+          linkColumns={statusColumns}
           booklet={booklet}
           bookletNote={bookletNote}
           articleId={sp.art}
