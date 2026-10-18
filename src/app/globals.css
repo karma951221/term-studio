@@ -5274,6 +5274,12 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-copy-status.is-gray { border-left-color: var(--ts-ink-3); }
 .ts-copy-editor-body.is-gray { color: var(--ts-ink-3); opacity: 0.75; }
 .ts-copy-dot.is-gray { background: var(--ts-ink-3); }
+/* 판정 배지 · 잠김 · 일부 연결 경고 (기능/상품 §3.12) — 목차 줄 · 모델링 조 머리. 배지는 같은 규격(.ts-badge), 경고는 아이콘 하나 */
+.ts-verdict-badge { color: var(--ts-ink); }
+.ts-doc-article-title .ts-badge { margin-left: 6px; font-family: var(--sans); font-weight: 400; vertical-align: 2px; }
+.ts-verdict-warn { display: inline-flex; flex: none; align-items: center; color: var(--ts-warn); cursor: help; }
+.ts-toc-row > .ts-verdict-warn { align-self: center; }
+.ts-join-mode .ts-verdict-warn { margin-left: 6px; vertical-align: -2px; }
 .ts-copy-status-actions { display: inline-flex; gap: 8px; margin-left: auto; }
 .ts-copy-status-actions > button:where(:not([data-slot])) { height: 28px; padding: 0 10px; border-radius: 4px; font-size: 13px; }
 /* 깨지는 참조 목록 — 조 편집 패널 위 (ADR-0081) */

@@ -335,3 +335,26 @@ describe("TemplateSource — 호 목록 자리의 조건 블록 (hydration, 2026
     expect(html).not.toMatch(/<li class="ts-doc-cond">(?:(?!<\/li>|<ol)[\s\S])*<li/);
   });
 });
+
+describe("TemplateSource — 조 머리의 판정 배지 · 잠김 · 준용하기 옵션 · 일부 연결 경고 (기능/상품 §3.12 · §4.6)", () => {
+  const plain: ArticleNode = { id: "A1", kind: "article", title: titleNodes("지급사유", "A1"), children: [] };
+  const render = (marks: Parameters<typeof TemplateSource>[0]["marks"]) =>
+    renderToStaticMarkup(<TemplateSource productId="p1" nodes={[plain]} numbers={numbers} hidden={new Set()} references={new Map()} clauses={[]} overrides={[]} overrideTargets={[]} readOnly marks={marks} />);
+
+  it("배지 · 잠김 — 배지 tip 은 조연결한 담보", () => {
+    const html = render(new Map([["A1", { verdict: { text: "위임 2/2", tip: "조연결한 담보: 갑 · 을" }, locked: true as const }]]));
+    expect(html).toContain('title="조연결한 담보: 갑 · 을">위임 2/2</span>');
+    expect(html).toContain(">잠김</span>");
+    expect(html).not.toContain("준용하기 —");
+  });
+
+  it("준용하기 옵션 조 — 조 머리 위에 옵션 이름, 일부 연결이면 그 옆에 경고 아이콘(마우스를 올리면 문구)", () => {
+    const html = render(new Map([["A1", { verdict: { text: "특칙 1/2", tip: "t" }, warning: "담보 1개가 이 조에 조연결되지 않아 …", joinMode: "common" as const }]]));
+    expect(html).toMatch(/준용하기 — 공통항 모으기<span class="ts-verdict-warn" role="img" aria-label="일부 연결 경고 · 제1조\(지급사유\)" title="담보 1개가 이 조에 조연결되지 않아 …">/);
+    expect(html.split("ts-verdict-warn").length - 1).toBe(1);
+  });
+
+  it("표지가 없으면 아무것도 더하지 않는다(특별약관 탭)", () => {
+    expect(render(undefined)).not.toContain("ts-badge");
+  });
+});
