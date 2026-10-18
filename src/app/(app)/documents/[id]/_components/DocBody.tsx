@@ -783,12 +783,34 @@ function ArticleLink({ article, ctx }: { article: ArticleNode; ctx: DocCtx }) {
   );
 }
 
+/** 준용하기 옵션 (보통약관 템플릿 조 · ADR-0082 결정 5) — 「없음」이 아니면 조 바로 위 평문. 편집 모드면 눌러서 고친다(조연결과 같은 자리 · 같은 모양). */
+function ArticleJoinMode({ article, ctx }: { article: ArticleNode; ctx: DocCtx }) {
+  const text = `준용하기 — ${article.joinMode === "all" ? "전체항 모으기" : "공통항 모으기"}`;
+  const title = "준용하기 옵션 — 절 형태 상품에서 모든 블록이 이 조에 조연결했을 때만 작동한다";
+  if (!ctx.edit) {
+    return (
+      <p className="ts-doc-cond-head" title={title}>
+        {text}
+      </p>
+    );
+  }
+  const edit = ctx.edit;
+  return (
+    <p>
+      <button type="button" className="ts-doc-cond-head ts-doc-cond-btn" title="준용하기 고치기" onClick={(e) => edit.popup({ kind: "joinMode", articleId: article.id }, anchorOf(e.currentTarget))}>
+        {text}
+      </button>
+    </p>
+  );
+}
+
 function Article({ node, ctx }: { node: ArticleNode; ctx: DocCtx }) {
   const num = ctx.numbers.get(node.id);
   const label = num?.label ?? "조";
   return (
     <section id={`art-${node.id}`} className="ts-doc-article" data-article={node.id}>
       {node.linkedArticleId !== undefined && <ArticleLink article={node} ctx={ctx} />}
+      {node.joinMode !== undefined && <ArticleJoinMode article={node} ctx={ctx} />}
       <h3 className={`ts-doc-article-title${flash(ctx, node.id)}`} data-article-title={node.id} data-node={node.id}>
         {label}(<InlineSlot at={{ parentId: node.id, slot: "title" }} nodes={node.title} ctx={ctx} placeholder="조 제목" />)
         <BlockActs id={node.id} what={label} ctx={ctx} />

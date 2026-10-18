@@ -29,7 +29,8 @@ describe("copyScopeMenu — 조 사본은 그 조 안만", () => {
   it("조 제목 자리 — 조 · 관 넣기 · 조 옮기기 · 복제 · 삭제 · 조 감싸기는 잠그고, 조 안에 넣기는 연다", () => {
     const place = { kind: "articleTitle", id: "a1" } as const;
     const sections = copyScopeMenu(placeMenu(env, place), place, "a1");
-    for (const label of ["아래에 조 추가", "아래에 관 추가", "아래로", "복제", "삭제", "조건으로 감싸기"]) expect(state(sections, label)).toBe("잠김");
+    // 준용하기 옵션은 템플릿 조의 속성이다 — 사본에서 바꾸지 않는다 (ADR-0082 결정 5)
+    for (const label of ["아래에 조 추가", "아래에 관 추가", "아래로", "복제", "삭제", "조건으로 감싸기", "준용하기…"]) expect(state(sections, label)).toBe("잠김");
     for (const label of ["항 추가", "함수조항 참조 추가…", "박스 추가…"]) expect(state(sections, label)).toBe("열림");
     expect(sections.flat().find((i) => i.label === "삭제")?.refusal).toBe(COPY_REFUSAL);
   });

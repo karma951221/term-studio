@@ -69,6 +69,12 @@ describe("오른쪽 클릭 메뉴 — 허용 자식 규칙대로 (기능/문면 
     expect(labels(articleMenu(env(top), top.children[0].id)).slice(0, 5)).toEqual(["아래에 조 추가", "아래에 관 추가", "항 추가", "함수조항 참조 추가…", "박스 추가…"]);
   });
 
+  it("조 제목 — 보통약관 템플릿이면 「준용하기…」(조 속성 팝업 — ADR-0082 결정 5), 담보약관에는 없다", () => {
+    const item = articleMenu(env(tree()), "n4").flat().find((i) => i.label === "준용하기…");
+    expect(item?.action).toEqual({ do: "popup", popup: { kind: "joinMode", articleId: "n4" } });
+    expect(labels(articleMenu(env(tree(), "special"), "n4"))).not.toContain("준용하기…");
+  });
+
   it("조 제목 — 조 끝에 함수조항(조 단위)을 넣는 팝업 (첫 자리가 함수조항인 조 · 2026-09-28)", () => {
     const item = articleMenu(env(tree(), "special"), "n4").flat().find((i) => i.label === "함수조항 참조 추가…");
     expect(item?.action).toEqual({ do: "popup", popup: { kind: "clauseBlock", at: { parentId: "n4" } } });

@@ -53,6 +53,7 @@ export type ToolId =
   | "edit"
   | "repeat"
   | "link"
+  | "joinMode"
   | "up"
   | "down"
   | "duplicate"
@@ -194,6 +195,7 @@ export const DOC_TOOLS: ToolGroup[] = [
       { id: "edit", label: "속성", title: "속성 — 고른 칩 · 함수조항 참조(옵션 · 인자) · 동적표(인자) · 표 · 반복 블록(무엇마다 · 이름) · 항 · 호 · 목(코드)의 속성 창", match: oneOf("고치기…", "옵션 고치기…", "인자 연결 고치기…", "표 속성…", "반복 원천…", "코드 고치기…"), at: "context" },
       { id: "repeat", label: "행 반복", title: "행 반복 — 고른 표의 행을 무엇마다 되풀이할지(담보약관)", match: oneOf("행 반복…"), at: "context" },
       { id: "link", label: "보통약관 조 연결", title: "보통약관 조 연결 — 고른 조가 대응 보통약관의 어느 조를 따라가는가(담보약관)", match: oneOf("조연결…"), at: "context" },
+      { id: "joinMode", label: "준용하기", title: "준용하기 — 고른 조의 준용하기 옵션(보통약관 템플릿 — 없음 · 공통항 모으기 · 전체항 모으기, 모든 블록이 조연결할 때만 작동)", match: oneOf("준용하기…"), at: "context" },
     ],
   },
   {
@@ -209,7 +211,7 @@ export const DOC_TOOLS: ToolGroup[] = [
 ];
 
 /** 함수조항 본문에 없는 도구 — 함수조항 툴바에서 빠진다 (기능/함수조항 §4.3). 조 · 관 · 함수조항은 남고 잠긴다(사유 tooltip). */
-const CLAUSE_HIDDEN = new Set<ToolId>(["table", "structKey", "repeat", "link", "forBlock", "forFallback", "inlineFor", "dynTable"]);
+const CLAUSE_HIDDEN = new Set<ToolId>(["table", "structKey", "repeat", "link", "joinMode", "forBlock", "forFallback", "inlineFor", "dynTable"]);
 
 export const CLAUSE_TOOLS: ToolGroup[] = DOC_TOOLS.map((g) => ({ ...g, tools: g.tools.filter((t) => !CLAUSE_HIDDEN.has(t.id)) })).filter((g) => g.tools.length > 0);
 
