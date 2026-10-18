@@ -98,6 +98,13 @@ describe("상품담보 탭 저장의 판정 변화 영향 (PGlite)", () => {
     expect(await svc.listBaseContractIds(p.id)).toHaveLength(2);
   });
 
+  it("대치 형태끼리 — 첫 기본계약 탑재는 잠금만 생기고 판정 · 회색 사본 줄이 없어 묻지 않고 저장된다", async () => {
+    const p = unwrap(await svc.createProduct(editor, { name: "판정 변화 0", generalDocumentId: GENERAL }));
+    records = [undefined, undefined];
+    unwrap(await svc.saveCoverages(editor, p.id, { added: [{ key: "k0", coverageId: BASE, attributes: [], section: "base", plans: [] }], updated: [], removed: [] }));
+    expect(await svc.listBaseContractIds(p.id)).toHaveLength(1);
+  });
+
   it("판정이 그대로인 저장(이름 고치기)은 묻지 않고 저장된다", async () => {
     const p = unwrap(await svc.createProduct(editor, { name: "판정 변화 2", generalDocumentId: GENERAL }));
     const pc = unwrap(await svc.mount(editor, p.id, BASE, [], "base"));

@@ -30,6 +30,8 @@ export const REPLACED_TEXT = "대치";
 export interface JudgmentSnapshot {
   /** 판정 대상 조 → 표기(「위임 2/2」 · 「대치」). 없는 조는 마스터. */
   verdicts: ReadonlyMap<Id, string>;
+  /** 절 형태 판정 기록이 있다 — 저장 전후 둘 다 대치 형태면 판정 줄을 내지 않는다. */
+  sectioned: boolean;
   /** 회색 사본 — 쓰이는 자리(템플릿에 남은 조)의 사본 중 잠긴 조의 것. */
   grayCopies: ReadonlySet<Id>;
   /** 사본의 블록 지정 참조 깨짐 (`copyBlockRefIssues`). */
@@ -56,7 +58,7 @@ export function judgmentSnapshot({
   } else {
     for (const id of locks.keys()) verdicts.set(id, REPLACED_TEXT);
   }
-  return { verdicts, grayCopies: new Set([...copyIds].filter((id) => locks.has(id))), blockRefIssues };
+  return { verdicts, sectioned: records !== undefined, grayCopies: new Set([...copyIds].filter((id) => locks.has(id))), blockRefIssues };
 }
 
 const issueKey = (i: Issue) => `${i.at.articleId ?? ""}|${(i.at.nodePath ?? []).join("/")}|${i.message}`;
@@ -64,7 +66,8 @@ const issueKey = (i: Issue) => `${i.at.articleId ?? ""}|${(i.at.nodePath ?? []).
 /** 저장 전후 견주기 — 바뀐 것이 없으면 undefined. 조 순서는 판정 기록 순(전 → 후 차례로 처음 본 순)이다. */
 export function judgmentImpact(before: JudgmentSnapshot, after: JudgmentSnapshot, labelOf: (articleId: Id) => string): JudgmentImpact | undefined {
   const verdicts: JudgmentImpact["verdicts"] = [];
-  const ids = [...new Set([...before.verdicts.keys(), ...after.verdicts.keys()])];
+  // 판정 줄은 절 형태가 낀 저장만 — 대치 형태끼리(기본계약 0 → 1 등)의 「대치」는 ADR-0082 판정이 아니다. 잠금이 낳는 회색 사본은 아래 줄로 본다
+  const ids = before.sectioned || after.sectioned ? [...new Set([...before.verdicts.keys(), ...after.verdicts.keys()])] : [];
   for (const id of ids) {
     const b = before.verdicts.get(id) ?? VERDICT_WORD.master;
     const a = after.verdicts.get(id) ?? VERDICT_WORD.master;

@@ -62,6 +62,12 @@ describe("judgmentImpact — 저장 전후 견주기", () => {
     ]);
   });
 
+  it("대치 형태끼리(기본계약 0 → 1 · 1 → 다른 1)는 판정 줄을 내지 않는다 — 절 형태 판정이 아니다(대치는 잠금 · 회색 사본 줄로만)", () => {
+    const before = judgmentSnapshot({ locks: new Map(), copyIds: [], blockRefIssues: [] });
+    const after = judgmentSnapshot({ locks: new Map([["a3", ["갑"]]]), copyIds: [], blockRefIssues: [] });
+    expect(judgmentImpact(before, after, label)).toBeUndefined();
+  });
+
   it("회색이 되는 사본 · 다시 쓰이는 사본", () => {
     const before = judgmentSnapshot({ locks: new Map([["a4", ["갑"]]]), copyIds: ["a4", "a7"], blockRefIssues: [] });
     const after = judgmentSnapshot({ locks: new Map([["a7", ["을"]]]), copyIds: ["a4", "a7"], blockRefIssues: [] });
