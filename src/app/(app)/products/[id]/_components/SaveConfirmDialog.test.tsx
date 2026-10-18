@@ -26,4 +26,25 @@ describe("SaveConfirmDialog", () => {
     expect(html).not.toContain("입력한 값");
     expect(html.match(/<li>/g)).toHaveLength(1);
   });
+
+  it("판정 변화 (ADR-0082 결정 11) — 판정이 바뀌는 조(전 → 후) · 회색이 되는 사본 · 다시 쓰이는 사본 · 깨지는 참조 묶음", () => {
+    const html = render({
+      valueRowsLost: 0,
+      brokenRefs: [],
+      cascade: [],
+      judgment: {
+        verdicts: [{ articleId: "a3", label: "제3조(지급사유)", before: "위임 2/2", after: "위임 1/1" }],
+        grayed: [{ articleId: "a4", label: "제4조(세부규정)" }],
+        revived: [],
+        brokenRefs: [{ articleId: "a25", label: "제25조(계약의 소멸)", message: "블록 「갑」이 이 상품의 블록이 아닙니다" }],
+      },
+    });
+    expect(html).toContain("판정이 바뀌는 조");
+    expect(html).toContain("<li>제3조(지급사유) — 위임 2/2 → 위임 1/1</li>");
+    expect(html).toContain("회색이 되는 사본");
+    expect(html).toContain("<li>제4조(세부규정) — 사본이 쓰이지 않습니다(지우지 않는다)</li>");
+    expect(html).not.toContain("다시 쓰이는 사본");
+    expect(html).toContain("깨지는 참조");
+    expect(html).toContain("<li>제25조(계약의 소멸) — 블록 「갑」이 이 상품의 블록이 아닙니다</li>");
+  });
 });

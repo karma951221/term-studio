@@ -3102,6 +3102,11 @@ label.ts-field > textarea:where(:not([data-slot])) {
   padding: 1px 0;
 }
 
+/* 판정 변화 묶음 (ADR-0082 결정 11) — 묶음 제목 한 줄 + 들여쓴 줄들 */
+.ts-confirm-group { padding-top: 4px; }
+.ts-confirm-group-title { font-weight: 600; color: var(--ts-ink); }
+.ts-confirm-group ul { list-style: none; margin: 0; padding-left: 12px; }
+
 .ts-confirm-actions {
   display: flex;
   gap: 8px;

@@ -14,7 +14,7 @@
 import { can, destructive, type DestructiveAction } from "@/domain/auth";
 import { countedSlotsOf, slotType, validateValue, type Discriminator, type SlotPath } from "@/domain/catalog";
 import { COVERAGE_CATEGORY_ENUM, categoryGroupTitle, validateSlotValue } from "@/domain/coverage";
-import { blockingIssues, indexTree, type ArticleNode, type DocumentNode } from "@/domain/document";
+import { articleRefLabel, blockingIssues, foldTitle, indexTree, numberTree, type ArticleNode, type DocumentNode } from "@/domain/document";
 import {
   addAttributeValue,
   applyArticleCopies,
@@ -80,6 +80,10 @@ import {
   planProductGroups,
   type ProductGroupSetting,
   type ProductGroupsInput,
+  judgmentImpact,
+  judgmentSnapshot,
+  type JudgmentSnapshot,
+  type VerdictResult,
 } from "@/domain/product";
 import { CONTRACT_KIND_PATH, findForm, findMasterField, formRuleIssues, formsOfLevel, isStandaloneContract, type MasterForm } from "@/domain/master";
 import type { Actor, AttachLevel, Code, Coordinate, Id, Impact, Issue, Result, Value, ValueSlot } from "@/domain/types";
@@ -105,6 +109,11 @@ export interface ProductServiceDeps {
   optionValidator?: OptionValidator;
   /** 담보속성의 식 참조 사용처 (C1). 기본: 없음. */
   attributeRefs?: AttributeRefSource;
+  /**
+   * 이 상품의 제1절 판정 기록 (ADR-0082 결정 11) — 상품담보 탭 저장의 판정 변화 견주기 재료(조립 `Booklet.firstSection`).
+   * 지금 열린 트랜잭션에서 읽어야 한다(저장을 세이브포인트에서 해 본 뒤 부른다). 없거나 undefined 면 대치 형태로 보고 잠긴 조를 「대치」로 둔다.
+   */
+  judgment?: { firstSection(productId: Id): Promise<readonly { articleId: Id; result: VerdictResult; k: number; n: number }[] | undefined> };
 }
 
 export interface Confirmable {
@@ -303,6 +312,9 @@ export interface ProductService {
    * 기본계약 하나(MVP) · 독립특약은 기본계약 없음. 기본계약 수는 지우는 것을 뺀 최종 상태로 센다(지우고 새로 넣으면 교체).
    * 탑재 해제 · 세목 부착 해제는 파괴적이다(`product.unmount` · `product.detachPlan`) — 편집자면 그 행의 이슈로 거부,
    * 관리자 1차는 `needsConfirmation`(값 행 · 줄), `{ confirm: true }` 면 실행.
+   * 판정 · 잠금이 바뀌는 저장(탑재 · 해제 · 기본계약 지정 — 블록 1 ↔ 2 포함)은 저장을 세이브포인트에서 해 보고 전후를 견줘 영향 `judgment`
+   * (판정이 바뀌는 조 · 회색이 되는 사본 · 다시 쓰이는 사본 · 깨지는 블록 지정 참조)를 싣는다 — 잃는 것이 없으면 편집자도 확인 2단만
+   * (ADR-0082 결정 11 · 기능/상품 §3.8). 바뀐 것이 없으면 묻지 않는다.
    */
   saveCoverages(actor: Actor, productId: Id, input: ProductCoveragesInput, opts?: Confirmable): Promise<Result<void>>;
   /** 상품의 특약 그룹 설정 — 저장된 그룹 목록(순서) + 사용자 그룹 소속 (ADR-0090). 저장한 적 없으면 빈 목록(기본 그룹만 열거값 순). */
@@ -546,6 +558,35 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
     const linksOf = new Map(dependents.documents.map((d) => [d.coverageId, d.links ?? []] as const));
     return copyLocks(pcs.filter((pc) => locking.has(pc.id)).map((pc) => ({ productCoverageId: pc.id, name: pc.name, links: linksOf.get(pc.coverageId) ?? [] })));
   }
+  /**
+   * 판정 변화 견주기의 한쪽 (ADR-0082 결정 11) — 판정 기록(없으면 잠긴 조 = 대치) · 회색 사본 · 사본의 블록 지정 참조 깨짐과 조 표기.
+   * 템플릿이 없으면 견줄 것이 없다(undefined).
+   */
+  async function judgmentOf(tx: Db, productId: Id): Promise<{ snapshot: JudgmentSnapshot; labelOf: (articleId: Id) => string } | undefined> {
+    const p = await repo.loadProduct(tx, productId);
+    const template = p?.generalDocumentId ? (await gate.template(p.generalDocumentId))?.tree : undefined;
+    if (!p?.generalDocumentId || !template) return undefined;
+    const dependents = await dependentsFor(tx, productId, p.generalDocumentId);
+    const [locks, blocks, saved] = await Promise.all([locksOf(tx, productId, dependents), blocksOf(tx, productId, dependents), repo.listArticleCopies(tx, productId)]);
+    const copies = liveArticleCopies(template, saved);
+    const records = deps.judgment ? await deps.judgment.firstSection(productId) : undefined;
+    const numbers = numberTree(template);
+    const articles = articlesById(template);
+    const labelOf = (id: Id) => {
+      const a = articles.get(id);
+      const n = numbers.get(id)?.n;
+      return a && n !== undefined ? articleRefLabel(n, foldTitle(a.title)) : (a ? foldTitle(a.title) : id);
+    };
+    const snapshot = judgmentSnapshot({
+      ...(records ? { records } : {}),
+      locks,
+      copyIds: copies.map((c) => c.articleId),
+      // 회색 사본은 쓰이지 않아 그 안의 참조도 깨지지 않는다 (ADR-0082 결정 10)
+      blockRefIssues: copyBlockRefIssues(copies.filter((c) => !locks.has(c.articleId)), blocks),
+    });
+    return { snapshot, labelOf };
+  }
+
   /** 세목 선택지 값 — 같은 plan 레벨이라도 이 선택지의 세목유형 폼이 아니면 자리가 아니다 (코덱스 리뷰 Important 1). */
   function setPlanOptionValues(actor: Actor, optionId: Id, entries: readonly SlotWrite[]): Promise<Result<void>> {
     return db.transaction(async (tx) => {
@@ -816,8 +857,27 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
         if (groupsChanged) await repo.replaceProductGroups(tx, productId, nextGroups, actor.userId);
         return ok(undefined);
       };
-      if (removed.size === 0 && detaching.length === 0) return execute();
       if (opts.confirm) return execute();
+      const losing = removed.size > 0 || detaching.length > 0;
+      // 판정 변화 (ADR-0082 결정 11 · ADR-0081 결정 3) — 저장을 세이브포인트에서 해 보고 전후 판정 · 잠금 · 블록 지정 참조를 견준다.
+      // 바뀐 것도 잃는 것도 없으면 그 저장을 그대로 남긴다(다시 하지 않는다). 판정 변화만이면 잃는 값이 없어 역할 관문 없이 확인 2단만 —
+      // 편집자도 확인하고 저장한다(독립특약 전환의 기본계약 해제와 같은 결, 기능/상품 §6.2)
+      const before = await judgmentOf(tx, productId);
+      let judgment: Impact["judgment"];
+      if (before) {
+        const probe = await rollbackUnless(
+          tx,
+          async () => {
+            await execute();
+            const after = await judgmentOf(tx, productId);
+            return after ? judgmentImpact(before.snapshot, after.snapshot, after.labelOf) : undefined;
+          },
+          (changed) => !losing && changed === undefined,
+        );
+        if (!losing && probe === undefined) return ok(undefined);
+        judgment = probe;
+      }
+      if (!losing) return judgment ? reject({ reason: "needsConfirmation", impact: { valueRowsLost: 0, brokenRefs: [], cascade: [], judgment } }) : execute();
       // 1차 — 영향만. 줄마다 무엇이 되는지(탑재 해제 · 세목 부착 해제)를 싣는다
       const owners: ValueOwner[] = [];
       const cascade: string[] = [];
@@ -831,7 +891,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
         cascade.push(`탑재 해제 · ${byId.get(id)!.name} — ${parts.join(" · ")}`);
       }
       for (const u of detaching) cascade.push(`세목 부착 해제 · ${u.pc.name} — ${u.detach.map((planId) => planCombinationLabel(plans.get(planId)?.options ?? [])).join(" · ")}`);
-      return reject({ reason: "needsConfirmation", impact: { valueRowsLost: await countSlots(tx, owners), brokenRefs: [], cascade } });
+      return reject({ reason: "needsConfirmation", impact: { valueRowsLost: await countSlots(tx, owners), brokenRefs: [], cascade, ...(judgment ? { judgment } : {}) } });
     }));
   }
 
