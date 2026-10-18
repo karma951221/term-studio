@@ -17,6 +17,19 @@ describe("3차 S4 — 준용규정 자동 생성", () => {
     ]);
   });
 
+  it("절 형태는 위치 호칭으로 찍는다 — 블록 「이 보장조항에서 … 제1절 일반조항을 따릅니다.」 · 기본계약 2+ 의 특약 「… 보통약관 제1절 일반조항을 따릅니다.」 (기능/조립산출 §3.5)", () => {
+    const doc: SubstitutedDoc = { kind: "document", id: "s", title: "특약", children: [] };
+    const sentence = (out: SubstitutedDoc) => {
+      const a = out.children[0];
+      const p = a.kind === "article" ? a.children[0] : undefined;
+      const t = p?.kind === "paragraph" ? p.children[0] : undefined;
+      return t?.kind === "text" ? t.text : undefined;
+    };
+    expect(sentence(ensureApplicationArticle(doc, "block"))).toBe("이 보장조항에서 정하지 않은 사항은 제1절 일반조항을 따릅니다.");
+    expect(sentence(ensureApplicationArticle(doc, "sectionedSpecial"))).toBe("이 특별약관에서 정하지 않은 사항은 보통약관 제1절 일반조항을 따릅니다.");
+    expect(sentence(ensureApplicationArticle(doc, "special"))).toBe("이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다.");
+  });
+
   it("문면에 준용규정 조가 있으면 중복 생성하지 않는다", () => {
     const doc: SubstitutedDoc = { kind: "document", id: "s", title: "특약", children: [{ kind: "article", id: "manual", title: "준용규정", children: [] }] };
     expect(ensureApplicationArticle(doc)).toBe(doc);

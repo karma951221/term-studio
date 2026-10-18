@@ -74,7 +74,8 @@ describe("알파Plus2607 함수조항 — 더한 것은 맨 뒤 코드, 앞 상�
 
   it("준용규정(알파Plus 질병)도 「1종 … 제외」를 납입면제 있음 조건으로 감싼다(납입면제 없는 상품이면 빠진다)", () => {
     const c = clauses.find((x) => x.label === "준용규정(알파Plus 질병)")!;
-    const conds = all(c.body, (x) => x.kind === "inlineCond");
+    // 머리 문장의 주어 조건(작성위치 = 블록이면 「보장조항에서」 — 위치 호칭, 기능/조립산출 §3.5)은 따로 센다
+    const conds = all(c.body, (x) => x.kind === "inlineCond" && !JSON.stringify(x).includes("builtin.output"));
     expect(conds).toHaveLength(1);
     const branches = conds[0].branches as { when?: string; children: Json[] }[];
     expect(branches.map((b) => b.when)).toEqual(["arg.납입면제_있음 = true", undefined]);

@@ -16,7 +16,7 @@
 import { Fragment, type ReactNode } from "react";
 
 import type { ArticleRefNode, Block, BulletListNode, Clause, Inline, ItemBodyNode, SubitemBodyNode } from "@/domain/clause";
-import { clauseBodyToTree, clauseInlineToTree, clauseModelNumbers, clausePositions, clauseScopedRefLabel, particlePreset, referenceChunkLabel, referenceKeyIndex, refKey, type NodeNumber, type ReferenceTarget } from "@/domain/document";
+import { clauseBodyToTree, clauseInlineToTree, clauseModelNumbers, clausePositions, clauseScopedRefLabel, DOCUMENT_WIDE_CHIP, isDocumentWideRef, particlePreset, referenceChunkLabel, referenceKeyIndex, refKey, type NodeNumber, type ReferenceTarget } from "@/domain/document";
 import type { Box } from "@/domain/document/box";
 import type { Code, Id } from "@/domain/types";
 
@@ -128,6 +128,8 @@ function articleRefText(node: ArticleRefNode, ctx: Ctx): string {
   // 제 항 · 사용처 위치 참조 — 본문 안 순번으로 (사용처에서는 펼친 자리의 계산 번호로 찍힌다)
   const scoped = clauseScopedRefLabel(clauseInlineToTree(node), ctx.positions);
   if (scoped !== undefined) return scoped;
+  // 문서 전체 참조(범위 생략 · 대상 없음) — 사용처의 출력 위치 호칭으로 찍힌다(위치 호칭, 기능/조립산출 §3.10)
+  if (isDocumentWideRef(node)) return DOCUMENT_WIDE_CHIP;
   const alive: ReferenceTarget[] = [];
   let broken = 0;
   const byKey = referenceKeyIndex(ctx.references);

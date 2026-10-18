@@ -515,6 +515,8 @@ export interface OmissionRecord {
   excludedClauseNodeIds: Id[];
   /** 미합의 사유 문구 (기능/조립산출 §3.5 표) — `full` 이고 자동 판정을 보류했을 때만. */
   reason?: string;
+  /** 기본계약 2+ 의 제1절에서 위임된 템플릿 조에 연결한 조 — 판정 없이 통째(`full`, 대조 없음 · ADR-0082 결정 4). */
+  delegated?: true;
 }
 
 /** 문면 없는 담보의 탑재분 — 문서를 내지 않았다 (오류 아님 · D-P6-9). */

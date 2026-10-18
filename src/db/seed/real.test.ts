@@ -843,3 +843,68 @@ describe("★ 실물 재현 변형 — 메리츠 특약 8 은 납입면제가 �
     expect(referenceNumberIssues(lines, articleTitles(renderedToLines(booklet.general!)))).toEqual([]);
   });
 });
+
+/**
+ * 담보 하나 · 문면 한 벌 (ADR-0089 결정 1 · 2 · 8) — 기본계약 전용 담보(알파 `base-disability80` · 메리츠 `m-base-death`)의 문면을 범위 낱말 슬롯 ·
+ * 작성위치 조건으로 다시 썼다. 시드에는 한 상품 안에 같은 보장의 기본계약판 · 특약판이 둘 다 있는 곳이 없어(담보는 상품마다 따로 — 메리츠 모델명세 §3)
+ * 병합할 담보는 없다. 대신 같은 담보를 같은 상품에 담보속성 조합을 달리해 특약으로 하나 더 실어(ADR-0089 결정 6) 특약판 문구가 나오는지 본다 —
+ * 대치 출력은 위 실물 대조가 그대로 본다(불변).
+ */
+describe("★ 문면 한 벌 — 기본계약 전용 담보를 특약으로도 실으면 특약 문구가 나온다 (ADR-0089)", () => {
+  let db: TestDb;
+  const booklets = new Map<string, Booklet>();
+  const special = (product: string, title: string) => {
+    const docs = booklets.get(product)!.specials.flatMap((g) => g.docs);
+    const d = docs.find((x) => x.title === title);
+    if (!d) throw new Error(`특약 「${title}」 없음 — 있는 것: ${docs.map((x) => x.title).join(" · ")}`);
+    return renderedToLines(d);
+  };
+
+  beforeAll(async () => {
+    db = await seededDb();
+    const services = createServices(db.db);
+    const admin = await services.auth.ensureSeedAdmin();
+    const actor: Actor = { userId: admin.id, role: admin.role };
+    const coverages = await services.coverage.list();
+    const products = await services.product.listProducts();
+    for (const [productName, coverageName, attributes] of [
+      [ALPHA, "일반상해80%이상후유장해", [{ kindCode: "A0002", valueCode: "2" }]],
+      [MERITZ, "일반상해사망", [{ kindCode: "A0001", valueCode: "2" }]],
+    ] as const) {
+      const product = products.find((p) => p.name === productName)!;
+      const coverage = coverages.find((c) => c.name === coverageName)!;
+      const mounted = await services.product.mount(actor, product.id, coverage.id, [...attributes], "special");
+      if (!mounted.ok) throw new Error(JSON.stringify(mounted.rejection));
+      const r = await services.assembly.preview(product.id);
+      if (!r.ok) throw new Error(JSON.stringify(r.rejection));
+      booklets.set(productName, r.value);
+    }
+  }, 300_000);
+
+  afterAll(async () => {
+    await db.close();
+  });
+
+  it("오류 0 · 대치(기본계약)는 그대로 원문과 같다", () => {
+    for (const [name, b] of booklets) {
+      // 특약판 조도 조연결(대치 자리)을 가져 ADR-0020 판정을 탄다 — 대치된 같은 조와 견줘 참조를 품은 항은 미합의 경고(완성본은 그대로)
+      expect(b.issues.filter((i) => i.severity !== "warning"), name).toEqual([]);
+      const dir = PRODUCTS.find((p) => p.name === name)!.dir;
+      expect(diffArticlesUnordered(source(dir, "보통약관.md"), renderedToLines(b.general!))).toEqual(clean);
+    }
+  });
+
+  it("알파 80% 후유장해 특약판 — 「이 특별약관의 보험기간」 · 「이 특별약관의 보험가입금액」 · 제2조 ③ 단서 없음 · 준용규정 최소형", () => {
+    const lines = special(ALPHA, "일반상해80%이상후유장해 추가 특별약관");
+    expect(articleLines(lines, "보험금의 지급사유")[1]).toMatch(/^= 회사는 피보험자가 이 특별약관의 보험기간 중에 상해로【별표\d+\(장해분류표\)】에서 정한 장해지급률이 80% 이상에 해당하는 장해상태가 되었을 때에는 보험수익자에게 최초1회에 한하여 이 특별약관의 보험가입금액을 일반상해80%이상후유장해보험금으로 지급합니다\.$/);
+    const detail = articleLines(lines, "보험금 지급에 관한 세부규정");
+    expect(detail[3]).toMatch(/구분에 준하여 지급액을 결정합니다\.$/);
+    expect(detail.join("\n")).not.toContain("최저 지급률");
+    expect(articleLines(lines, "준용규정").slice(1)).toEqual(["= 이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."]);
+  });
+
+  it("메리츠 일반상해사망 특약판 — 「이 특별약관의 보험기간」 · 담보명 낱말 없이 「이 특별약관의 보험가입금액 전액」 (알파 일반상해사망보장 특약 원문과 「보험증권에 기재된」만 다르다 — 허용 차이)", () => {
+    const lines = special(MERITZ, "갱신형 일반상해사망 특별약관");
+    expect(articleLines(lines, "보험금의 지급사유")[1]).toBe("= 회사는 피보험자가 이 특별약관의 보험기간 중에 상해의 직접결과로써 사망한 경우(질병으로 인한 사망은 제외합니다)에는 보험수익자에게 이 특별약관의 보험가입금액 전액을 사망보험금으로 지급합니다.");
+  });
+});

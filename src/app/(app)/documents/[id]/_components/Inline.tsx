@@ -14,7 +14,7 @@ import { Fragment, useEffect, useRef, type ClipboardEvent, type KeyboardEvent, t
 
 import { blockRefChipText } from "@/app/_lib/blockRef";
 import { STRUCT_KEY_CHIP, SWITCH_WORD } from "@/app/_lib/labels";
-import { particlePreset, referenceChunkLabel, referenceKeyIndex, refKey, type ArticleRefNode, type InlineAt, type InlineNode, type ReferenceTarget } from "@/domain/document";
+import { DOCUMENT_WIDE_CHIP, isDocumentWideRef, particlePreset, referenceChunkLabel, referenceKeyIndex, refKey, type ArticleRefNode, type InlineAt, type InlineNode, type ReferenceTarget } from "@/domain/document";
 import { SCOPE_WORD_CHIP, SCOPE_WORD_PATH } from "@/domain/expression";
 import type { Id, WorkMark } from "@/domain/types";
 
@@ -33,6 +33,8 @@ function keyHead(node: ArticleRefNode, path: string, ctx: DocCtx): string {
 
 function articleRefText(node: ArticleRefNode, ctx: DocCtx): string {
   // 편집기 미리보기 — 조립과 같은 덩어리 규칙(기능/문면 §3.5). 전체 뷰 번호라 분기 결과는 반영되지 않는다.
+  // 문서 전체 참조(대상 없음) — 조립이 출력 위치의 호칭을 찍는다(위치 호칭, 기능/조립산출 §3.10)
+  if (isDocumentWideRef(node)) return DOCUMENT_WIDE_CHIP;
   const index = node.scope === "general" ? ctx.references.general : ctx.references.self;
   const alive: ReferenceTarget[] = [];
   let broken = 0;
@@ -68,7 +70,7 @@ function chipParts(node: InlineNode, ctx: DocCtx): { className: string; title: s
   switch (node.kind) {
     case "slot": {
       // 범위 낱말 — 조립이 작성위치로 찍는 시스템 슬롯 (ADR-0089 결정 3)
-      if (node.ref === SCOPE_WORD_PATH) return { className: "ts-doc-slot", title: "범위 낱말 — 작성위치로 찍힌다: 특약 「이 특별약관의」 · 대치(기본계약) 빈 글 · 블록 「이 보장조항의」", body: `〔${SCOPE_WORD_CHIP}〕` };
+      if (node.ref === SCOPE_WORD_PATH) return { className: "ts-doc-slot", title: "범위 낱말 — 작성위치로 찍힌다: 특약 「이 특별약관의」 · 대치(기본계약) 빈 글 · 블록 「이 보장의」", body: `〔${SCOPE_WORD_CHIP}〕` };
       return { className: "ts-doc-slot", title: `치환 슬롯 · ${node.ref}`, body: node.ref };
     }
     case "articleRef":

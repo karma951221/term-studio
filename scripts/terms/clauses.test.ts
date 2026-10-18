@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ArticleNode, DocumentNode, InlineNode, ParagraphNode } from "../../src/domain/document/nodes";
 
-import { applyClauseUse, articleRefParamsOf, clauseFromSource, inlineBody, parameterize, placeOptions, reId, renderings, replaceInlineRun, toClauseInline, type ClauseRecord } from "./clauses";
+import { applyClauseUse, articleRefParamsOf, clauseFromSource, inlineBody, parameterize, placeOptions, positionApplicationHead, reId, renderings, replaceInlineRun, toClauseInline, type ClauseRecord } from "./clauses";
 import { titleNodes } from "../../src/domain/document/title";
 
 const text = (id: string, t: string): InlineNode => ({ id, kind: "text", text: t });
@@ -31,6 +31,38 @@ const INLINE: ClauseRecord = {
     },
   ],
 };
+
+describe("준용규정 머리 — 작성위치 조건 · 문서 전체 참조 (위치 호칭, 기능/조립산출 §3.5 · §3.10)", () => {
+  const record = (): ClauseRecord => ({
+    code: "C0068",
+    label: "준용규정(알파Plus)",
+    mode: "block",
+    description: "",
+    body: [{ id: "a-out", kind: "condBlock", branches: [{ id: "a-out-b", when: "builtin.output ≠ 'replace'", children: [{ id: "a-p", kind: "paragraph", code: "P0100", children: [{ id: "a-t", kind: "text", text: "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, " }, { id: "a-r", kind: "articleRef", targets: [{ articleId: "g-a9" }] }] }] }] }] as never,
+    options: [],
+  });
+
+  it("첫 문장을 「이 {블록이면 보장조항에서 · 아니면 특별약관에서} 정하지 않은 사항은 {문서 전체 참조}을 따릅니다.」로 — 뒤 글 · 참조는 그대로", () => {
+    const c = record();
+    positionApplicationHead([c]);
+    const p = (c.body as never as { branches: { children: { children: unknown[] }[] }[] }[])[0].branches[0].children[0];
+    expect(p.children).toEqual([
+      { id: "a-t-h1", kind: "text", text: "이 " },
+      { id: "a-t-h2", kind: "inlineCond", branches: [{ id: "a-t-h2-b", when: "builtin.output = 'block'", children: [{ id: "a-t-h2-b-t", kind: "text", text: "보장조항에서" }] }, { id: "a-t-h2-e", children: [{ id: "a-t-h2-e-t", kind: "text", text: "특별약관에서" }] }] },
+      { id: "a-t-h3", kind: "text", text: " 정하지 않은 사항은 " },
+      { id: "a-t-h4", kind: "articleRef", targets: [] },
+      { id: "a-t", kind: "text", text: "을 따릅니다. 다만, " },
+      { id: "a-r", kind: "articleRef", targets: [{ articleId: "g-a9" }] },
+    ]);
+  });
+
+  it("머리 글이 다른 준용규정(「… 보통약관 및 해당 특별약관을 따릅니다」) · 준용규정이 아닌 함수조항은 건드리지 않는다", () => {
+    const other: ClauseRecord = { ...record(), body: [{ id: "o-p", kind: "paragraph", children: [{ id: "o-t", kind: "text", text: "이 특별약관에 정하지 않은 사항은 보통약관 및 해당 특별약관을 따릅니다." }] }] as never };
+    const before = JSON.stringify(other);
+    positionApplicationHead([other, { ...INLINE }]);
+    expect(JSON.stringify(other)).toBe(before);
+  });
+});
 
 function article(children: InlineNode[]): ArticleNode {
   return { id: "s-a3", kind: "article", title: titleNodes("특별약관의 소멸", "s-a3"), children: [{ id: "s-a3-p2", kind: "paragraph", children }] };

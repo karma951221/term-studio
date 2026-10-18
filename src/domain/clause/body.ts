@@ -307,6 +307,8 @@ export function analyzeBody(
           else if (p.type?.kind !== "articleRef") report("typeMismatch", `인자 ${t.param} 은(는) 조 참조 인자가 아닙니다 — 조 참조 슬롯은 타입 「조 참조」 인자만 가리킨다`, here, `arg.${t.param}`);
           return;
         }
+        // 문서 전체 참조 — 범위 생략 · 대상 없음 · 연결어 없음: 사용처의 출력 위치 호칭(「보통약관」 · 「제1절 일반조항」)으로 찍힌다 (기능/조립산출 §3.5)
+        if (Array.isArray(node.targets) && node.targets.length === 0 && node.scope === undefined && node.connector === undefined) return;
         if (!Array.isArray(node.targets) || node.targets.length === 0) {
           report("structure", "조 참조 슬롯에는 대상이 하나 이상 있어야 합니다", here);
           return;

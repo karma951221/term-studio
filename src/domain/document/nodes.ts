@@ -1052,14 +1052,26 @@ export function articleRefsOf(n: Node): Pick<ArticleRefNode, "targets" | "connec
   return Object.values(n.bindings ?? {}).filter((b): b is Extract<typeof b, { kind: "articleRef" }> => b.kind === "articleRef");
 }
 
+/** 문서 전체 참조의 편집기 표기 — 조립이 출력 위치로 「보통약관」 · 「보통약관 제1절 일반조항」 · 「제1절 일반조항」을 찍는다. */
+export const DOCUMENT_WIDE_CHIP = "보통약관(문서 전체 · 위치 호칭)";
+
+/** 문서 전체 참조인가 — 대응 보통약관 범위(함수조항 본문은 범위 생략) · 대상 없음 · 연결어 없음 (위치 호칭, 기능/조립산출 §3.5 · §3.10). */
+export function isDocumentWideRef(n: { targets: readonly unknown[]; connector?: unknown; scope?: string }): boolean {
+  return n.targets.length === 0 && n.connector === undefined && (n.scope === undefined || n.scope === "general");
+}
+
 /**
- * 조 참조 하나의 검사 — 대상 ≥1 · 연결어(둘 이상 · 여러 번호가 될 수 있는 대상) · 범위 · 대상 존재 · 값 한정 (기능/문면 §3.5).
+ * 조 참조 하나의 검사 — 대상 ≥1(문서 전체 참조는 0) · 연결어(둘 이상 · 여러 번호가 될 수 있는 대상) · 범위 · 대상 존재 · 값 한정 (기능/문면 §3.5).
  * 문면 조 참조 슬롯과 함수조항 참조의 조 참조 인자 연결(ADR-0083 결정 4 — 같은 모양 · 같은 규칙)이 같이 쓴다. `e` 는 그 자리(감싼 반복 · 조).
  */
 function articleRefIssues(n: Pick<ArticleRefNode, "targets" | "connector" | "scope">, e: NodeEntry, ix: TreeIndex, env: TreeEnv, at: Coordinate): Issue[] {
   const gate = env.clauseGate ?? PERMISSIVE_GATE;
   const one = (kind: Issue["kind"], message: string): Issue[] => [{ kind, message, at }];
-  if (n.targets.length === 0) return one("structure", "조 참조 슬롯에는 대상이 하나 이상 있어야 합니다");
+  if (n.targets.length === 0) {
+    // 문서 전체 참조 — 대응 보통약관 범위 · 대상 없음 · 연결어 없음. 조립이 출력 위치의 호칭(위치 호칭 — 「보통약관」 · 「제1절 일반조항」)을 찍는다 (기능/조립산출 §3.10)
+    if (isDocumentWideRef(n) && env.kind !== "general") return [];
+    if (!isDocumentWideRef(n)) return one("structure", "조 참조 슬롯에는 대상이 하나 이상 있어야 합니다");
+  }
   if (n.connector === undefined) {
     if (n.targets.length >= 2) return one("structure", CONNECTOR_REQUIRED_MESSAGE);
     // 반복 블록 안 대상 · 반복 블록 · 함수조항 참조 · 값 한정은 하나여도 여러 번호가 될 수 있다 (결정 14 확장 · ADR-0077 결정 7)

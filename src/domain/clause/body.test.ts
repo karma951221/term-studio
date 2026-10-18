@@ -210,10 +210,16 @@ describe("함수조항 S1 — 조 참조 · 별표 참조 검사 (기능/함수�
     expect(analyzeBody("inline", [칩("eul-reul")], []).ok).toBe(true);
   });
 
-  it("조 참조 슬롯에 대상이 없으면 거부한다 (structure)", () => {
+  it("조 참조 슬롯에 대상이 없고 연결어가 있으면 거부한다 (structure)", () => {
     const issues = issuesOf(analyzeBody("inline", [조참조([])], []));
     expect(issues.map((i) => i.kind)).toEqual(["structure"]);
     expect(issues[0]!.message).toContain("대상이 하나 이상");
+  });
+
+  it("문서 전체 참조 — 범위 생략 · 대상 없음 · 연결어 없음은 받는다 (준용 함수조항 「… 보통약관을 따릅니다」, 위치 호칭이 출력 위치마다 찍는다)", () => {
+    expect(analyzeBody("inline", [조참조([], null)], []).ok).toBe(true);
+    const clauseScope = { id: "a1", kind: "articleRef", targets: [], scope: "clause" } as unknown as Inline;
+    expect(issuesOf(analyzeBody("inline", [clauseScope], [])).map((i) => i.kind)).toEqual(["structure"]);
   });
 
   it("조 참조 연결어가 「및」·「또는」이 아니면 거부한다 (structure)", () => {

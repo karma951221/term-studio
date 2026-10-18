@@ -38,6 +38,7 @@ import type {
   SInline,
   SubstitutedDoc,
 } from "./types";
+import { DOCUMENT_NAME, omitsStatedPrefix, type RefPosition } from "./position";
 import { SECOND_SECTION_NAME } from "./section";
 import { articlesOf } from "./walk";
 
@@ -127,6 +128,11 @@ export interface RenderEnv {
    * 절 형태가 아니면 비어 있다 — 그 참조는 `articleGone`.
    */
   blocks?: ReadonlyMap<Id, BlockLabel>;
+  /**
+   * 출력 위치 (위치 호칭 — `position.ts`, 기능/조립산출 §3.10) — 보통약관 조 참조의 접두 · 문서 전체 참조(대상 없음)의 호칭을 정한다.
+   * 없으면 문서 종류대로(보통약관 · 대치 형태의 특약).
+   */
+  position?: RefPosition;
 }
 
 /** 블록 지정 참조의 대상 블록 하나 — 렌더 표기 재료. */
@@ -299,6 +305,9 @@ class Renderer {
   private readonly own: TargetIndex;
   private readonly general: TargetIndex;
   private readonly appendices: Map<Code, BookletAppendix>;
+  private readonly position: RefPosition;
+  /** 이 항에서 위치 호칭을 이미 밝혔는가 — 블록은 같은 항 뒤 조 참조의 접두를 생략한다 (기능/조립산출 §3.10). 항 · 조 직속 블록마다 새로 센다. */
+  private stated = false;
 
   constructor(
     private readonly numbered: NumberedDoc,
@@ -308,6 +317,14 @@ class Renderer {
     this.self = this.own.byId;
     this.general = targetIndex(env.general);
     this.appendices = new Map(env.appendices.map((a) => [a.code, a]));
+    this.position = env.position ?? (env.document === "general" ? "general" : "special");
+  }
+
+  /** 찍힌 글 · 참조가 위치 호칭을 밝혔는가 — 블록만 센다(특약은 덩어리마다 반복). */
+  private note(n: RenderedInline | undefined): void {
+    if (!n || !omitsStatedPrefix(this.position)) return;
+    const name = DOCUMENT_NAME[this.position];
+    if ((n.kind === "text" && n.text.includes(name)) || (n.kind === "articleRef" && n.label.startsWith(name))) this.stated = true;
   }
 
   error(id: Id, issue: Issue): ErrorNode {
@@ -323,7 +340,10 @@ class Renderer {
   /** 인라인 목록 — 왼쪽부터 렌더하고, 조사 칩은 앞서 찍힌 글로 고른다 (기능/문면 §3.11). */
   inlines(list: readonly SInline[], source: ReferenceTarget): RenderedInline[] {
     const out: RenderedInline[] = [];
-    for (const n of list) out.push(n.kind === "particle" ? this.particle(n, out) : this.inline(n, source));
+    for (const n of list) {
+      out.push(n.kind === "particle" ? this.particle(n, out) : this.inline(n, source));
+      this.note(out.at(-1));
+    }
     return out;
   }
 
@@ -344,6 +364,8 @@ class Renderer {
       case "error":
         return n;
       case "articleRef": {
+        // 문서 전체 참조(대상 없음) — 출력 위치의 호칭 「보통약관」 · 「보통약관 제1절 일반조항」 · 「제1절 일반조항」 (위치 호칭, 기능/조립산출 §3.10)
+        if (n.targets.length === 0) return { kind: "articleRef", id: n.id, targets: [], label: DOCUMENT_NAME[this.position] };
         // 담보약관의 보통약관 참조인데 템플릿이 없으면 통째로 해소 불가 — 대상 단위 판단 이전의 문제다
         // (보통약관 문서 안의 scope general 참조 — 함수조항 본문 — 는 자기 문서에서 찾는다)
         if (n.scope === "general" && this.env.document !== "general" && !this.env.general) {
@@ -428,7 +450,8 @@ class Renderer {
           id: n.id,
           targets,
           ...(n.connector !== undefined ? { connector: n.connector } : {}),
-          label: `${generalPrefix ? "보통약관 " : ""}${label}`,
+          // 접두 = 출력 위치의 호칭 — 블록은 같은 항에서 앞서 밝혔으면 생략한다 (위치 호칭)
+          label: `${generalPrefix && !(omitsStatedPrefix(this.position) && this.stated) ? `${DOCUMENT_NAME[this.position]} ` : ""}${label}`,
           ...(dropped.length > 0 ? { dropped: dropped.map((d) => d.key) } : {}),
         };
       }
@@ -484,6 +507,7 @@ class Renderer {
   }
 
   paragraph(n: RParagraph<SInline>): RenderedParagraph {
+    this.stated = false;
     return {
       kind: "paragraph",
       id: n.id,
@@ -500,7 +524,10 @@ class Renderer {
       ...this.number(a.id),
       title: a.title,
       ...(a.linkedArticleId !== undefined ? { linkedArticleId: a.linkedArticleId } : {}),
-      children: a.children.map((p) => (p.kind === "paragraph" ? this.paragraph(p) : p.kind === "error" ? p : this.static(p, this.self.get(a.id)!))),
+      children: a.children.map((p) => {
+        this.stated = false;
+        return p.kind === "paragraph" ? this.paragraph(p) : p.kind === "error" ? p : this.static(p, this.self.get(a.id)!);
+      }),
     };
   }
 
