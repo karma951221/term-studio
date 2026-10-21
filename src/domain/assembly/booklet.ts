@@ -43,7 +43,7 @@ import { resolveDocument } from "./resolve";
 import { firstSectionRecords, planFirstSection, raisedArticles, treatBlock, type SectionBlock, type SectionEnv, type SectionPlan } from "./firstSection";
 import { blockCoordinate, fillDelegation, FIRST_SECTION_COORDINATE, type FormPlan, type JoinOption, planForm, withDelegation } from "./section";
 import { substituteSlots } from "./substitute";
-import type { AssemblyCoverage, AssemblyInput, Booklet, FirstSectionRecord, BookletAppendix, BookletForm, MasterBundle, NumberedDoc, OmissionRecord, ProductInput, RArticle, RenderedDoc, RenderedGroup, SInline, SpecialPreview, SubstitutedDoc, UndocumentedCoverage } from "./types";
+import type { AssemblyCoverage, AssemblyInput, Booklet, FirstSectionRecord, PendingBranch, BookletAppendix, BookletForm, MasterBundle, NumberedDoc, OmissionRecord, ProductInput, RArticle, RenderedDoc, RenderedGroup, SInline, SpecialPreview, SubstitutedDoc, UndocumentedCoverage } from "./types";
 import { articlesOf, mapArticles } from "./walk";
 
 /**
@@ -135,10 +135,30 @@ interface Shared {
   catalog: Map<string, AssemblyInput["catalog"][number]>;
   enums: Map<string, AssemblyInput["enums"][number]>;
   master?: AssemblyInput["master"];
+  /**
+   * 막힌 분기 — 그 원인 오류의 열쇠(`blockedKey`) → 분기 노드 id. 한 조립 실행 안에서만 쓰는 모음이다(전역 아님 — 결정성).
+   * 버리는 해소(제1절 판정의 뼈대 해소 등)의 것도 모이지만, `pendingOf` 가 책자에 남은 오류와 짝지어 거른다.
+   */
+  blocked: Map<string, Id>;
+}
+
+/** 막힌 분기 원인 오류의 열쇠 — 해소 뒤 단계가 덧붙이는 번호 · 절 · 원천은 넣지 않는다(같은 오류를 해소 때와 책자에서 짝짓는다). */
+function blockedKey(issue: Issue): string {
+  const at = issue.at;
+  return [issue.kind, issue.message, at.document ?? "", at.ownerId ?? "", at.articleId ?? "", (at.nodePath ?? []).join("/"), at.refPath ?? ""].join("|");
+}
+
+/** 책자 오류 중 막힌 분기의 원인인 것 → 평가 대기 줄 (책자 등장 순, ADR-0092 결정 6). */
+function pendingOf(issues: readonly Issue[], s: Shared): PendingBranch[] {
+  return issues.flatMap((issue): PendingBranch[] => {
+    const nodeId = s.blocked.get(blockedKey(issue));
+    return nodeId === undefined ? [] : [{ nodeId, at: issue.at, ...(issue.source ? { source: issue.source } : {}), message: issue.message }];
+  });
 }
 
 function shared(input: AssemblyInput): Shared {
   return {
+    blocked: new Map(),
     clauses: new Map(input.clauses.map((c) => [c.code, c])),
     boxes: new Map((input.boxes ?? []).map((x) => [x.code, x])),
     dynTables: new Map((input.dynTables ?? []).map((t) => [t.code, t])),
@@ -177,7 +197,7 @@ function prepare(
   s: Shared,
   opts: { coordinate: ReturnType<typeof specialCoordinate>; overrides?: readonly ClauseOptionOverride[]; source: Coordinate; valueSource: Coordinate; title?: string },
 ): Prepared {
-  const resolved = resolveDocument({ ...doc, ...(opts.title !== undefined ? { title: opts.title } : {}) }, ctx, { clauses: s.clauses, boxes: s.boxes, dynTables: s.dynTables, overrides: overrideMap(opts.overrides ?? []), coordinate: opts.coordinate, enums: s.enums, ...(s.master ? { master: s.master } : {}) });
+  const resolved = resolveDocument({ ...doc, ...(opts.title !== undefined ? { title: opts.title } : {}) }, ctx, { clauses: s.clauses, boxes: s.boxes, dynTables: s.dynTables, overrides: overrideMap(opts.overrides ?? []), coordinate: opts.coordinate, enums: s.enums, ...(s.master ? { master: s.master } : {}), onBlocked: (nodeId, issue) => s.blocked.set(blockedKey(issue), nodeId) });
   const substituted = substituteSlots(resolved.doc, ctx, { catalog: s.catalog, enums: s.enums, master: s.master });
   const issues = [...resolved.issues, ...substituted.issues].map((issue): Issue => {
     if (issue.source) return issue;
@@ -740,6 +760,7 @@ export function assemble(master: MasterBundle, product: ProductInput): Booklet {
     baseContracts: placement.baseContracts,
     trace: contexts.traces,
     ...(sectioned ? { firstSection: sectioned.firstSection } : {}),
+    pending: pendingOf(issues, s),
   };
 }
 
@@ -785,7 +806,7 @@ export function assembleSpecial(master: MasterBundle, product: ProductInput, pro
   }
   const rendered = block ? { ...renderBlock(block, general, appendices, sectioned!.groupIssues.get(productCoverageId)), omitted: [] } : { ...renderSpecial(c, special!, general, appendices, specialPositionOf(form)), omitted: special!.omitted };
   issues.push(...rendered.issues);
-  return ok({ doc: rendered.doc, general: renderedGeneral, appendices, issues, complete: completeOf(issues), omitted: rendered.omitted, trace });
+  return ok({ doc: rendered.doc, general: renderedGeneral, appendices, issues, complete: completeOf(issues), omitted: rendered.omitted, trace, pending: pendingOf(issues, s) });
 }
 
 /** 보통약관 미리보기 — 그 상품의 보통약관 한 벌만 조립한다 (문면 저작 화면 미리보기, 기능/문면 §3.9). 템플릿을 고르지 않았으면 undefined. 절 형태면 제1절. */

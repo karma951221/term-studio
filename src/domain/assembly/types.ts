@@ -582,6 +582,24 @@ export interface Booklet {
   trace: ContextTrace[];
   /** 절 형태의 제1절 판정 기록 — 판정 대상 템플릿 조마다(템플릿 조 순). 저장하지 않는 계산값이다(ADR-0082 결정 11). 대치 형태 · 옛 산출본엔 없다. */
   firstSection?: FirstSectionRecord[];
+  /**
+   * 막힌 분기 — 조건 평가 오류로 어느 가지도 고르지 못한 분기, 책자 등장 순 (ADR-0092 결정 6 · 기능/조립산출 §3.7).
+   * 조립 검사 한 줄의 「평가 대기 c」와 그 목록의 재료다. 옛 산출본엔 없다(없으면 고정 문구) — 새 조립은 없어도 빈 목록을 싣는다.
+   */
+  pending?: PendingBranch[];
+}
+
+/**
+ * 막힌 분기 한 줄 (ADR-0092 결정 6) — 조건 분기 · 인라인 조건 · 값별 분기가 평가 오류로 어느 가지도 고르지 못했다.
+ * `at` · `source` · `message` 는 그 원인 오류(`issues` 의 한 줄)와 같다 — 결과 자리(「미리보기에서 보기」) · 고치러 갈 곳(「고치러 가기」).
+ * 막힌 분기 안쪽은 평가하지 않으므로 안쪽의 막힌 분기는 없다. 칸 없는 값(`unassignedValue`)은 막힘이 아니다(값은 정해졌다).
+ */
+export interface PendingBranch {
+  /** 분기 노드 id — 반복 복제본이면 `@원소` 접미사, 펼친 함수조항 안이면 `참조노드id/안쪽id` (오류 좌표 키와 같은 체계, §3.4). */
+  nodeId: Id;
+  at: Coordinate;
+  source?: Coordinate;
+  message: string;
 }
 
 /**
@@ -616,4 +634,6 @@ export interface SpecialPreview {
   complete: boolean;
   omitted: OmissionRecord[];
   trace: ContextTrace[];
+  /** 막힌 분기 — 보통약관 + 이 담보약관 한 벌 (`Booklet.pending` 과 같은 뜻). */
+  pending?: PendingBranch[];
 }

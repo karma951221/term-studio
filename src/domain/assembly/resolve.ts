@@ -93,6 +93,11 @@ export interface ResolveEnv {
   enums?: ReadonlyMap<Code, EnumDef>;
   /** 마스터 트리 — 함수조항 원천 인자(세목 폼) · 합치기 필드 타입. 없으면 MVP 정본. */
   master?: MasterTree;
+  /**
+   * 막힌 분기 알림 — 조건 분기 · 값별 분기가 평가 오류로 어느 가지도 고르지 못했을 때(노드 id · 그 원인 오류, ADR-0092 결정 6).
+   * 막힌 분기 안쪽은 평가하지 않으므로 안쪽의 막힌 분기는 알리지 않는다. 칸 없는 값(`unassignedValue`)은 막힘이 아니다.
+   */
+  onBlocked?: (nodeId: Id, issue: Issue) => void;
 }
 
 export interface ResolveOutcome {
@@ -229,6 +234,12 @@ class Walker {
   error(id: Id, issue: Issue): ErrorNode {
     this.issues.push(issue);
     return { kind: "error", id, issue };
+  }
+
+  /** 막힌 분기 — 조건(값별 분기의 대상 값) 평가 오류로 어느 가지도 고르지 못했다. 오류 마커 + 평가 대기 알림 (ADR-0092 결정 6). */
+  blocked(id: Id, issue: Issue): ErrorNode {
+    this.env.onBlocked?.(id, issue);
+    return this.error(id, issue);
   }
 
   /** 프레임의 평가 문맥 — 반복 표 행이면 행 노드 문맥, 블록 반복의 종 안이면 그 종을 커서로 세운 문맥, 아니면 문서 문맥. */
@@ -418,7 +429,7 @@ class Walker {
   /** 값별 분기 → 고른 칸의 본문(「문구 없음」이면 빈 목록) 을 자리 규칙(`each`)으로. 오류면 마커 하나. */
   switchOf<T>(n: SwitchLike, f: Frame, each: (children: readonly unknown[], g: Frame) => T[]): (T | ErrorNode)[] {
     const r = this.choose(n, f);
-    if (r.kind === "error") return [this.error(n.id, r.issue)];
+    if (r.kind === "error") return [r.issue.kind === "unassignedValue" ? this.error(n.id, r.issue) : this.blocked(n.id, r.issue)];
     if (r.case.empty) return [];
     return each(r.case.children, { ...f, path: [...f.path, n.id, r.case.id] });
   }
@@ -523,7 +534,7 @@ class Walker {
         return [{ kind: "particle", id: n.id, preset: n.preset, at }];
       case "inlineCond": {
         const r = this.select(n.branches, f, n.id);
-        if (r.kind === "error") return [this.error(n.id, r.issue)];
+        if (r.kind === "error") return [this.blocked(n.id, r.issue)];
         if (r.kind === "none") return [];
         return this.inlines(r.branch.children as AnyInline[], { ...f, path: [...f.path, n.id, r.branch.id] });
       }
@@ -558,7 +569,7 @@ class Walker {
       }
       if (n.kind === "switchBlock") return this.switchOf(n, f, (children, g) => this.subitems(children as AnySubitemSlot[], g));
       const r = this.select(n.branches, f, n.id);
-      if (r.kind === "error") return [this.error(n.id, r.issue)];
+      if (r.kind === "error") return [this.blocked(n.id, r.issue)];
       if (r.kind === "none") return [];
       return this.subitems(r.branch.children as AnySubitemSlot[], { ...f, path: [...f.path, n.id, r.branch.id] });
     });
@@ -590,7 +601,7 @@ class Walker {
           if (b.kind === "bullet") return [{ id: b.id, children: this.inlines(b.children, { ...g, path: [...g.path, b.id] }) }];
           const r = this.select(b.branches, g, b.id);
           if (r.kind === "error") {
-            errors.push(this.error(b.id, r.issue));
+            errors.push(this.blocked(b.id, r.issue));
             return [];
           }
           if (r.kind === "none") return [];
@@ -721,7 +732,7 @@ class Walker {
       // 호 목록 자리의 블록 반복 — 원소마다 호 · 「호」 함수조항을 편다 (사유마다, ADR-0077)
       if (n.kind === "forBlock") return this.repeat(n, f, (children, g) => this.items(children as AnyItemSlot[], g));
       const r = this.select(n.branches, f, n.id);
-      if (r.kind === "error") return [this.error(n.id, r.issue)];
+      if (r.kind === "error") return [this.blocked(n.id, r.issue)];
       if (r.kind === "none") return [];
       return this.items(r.branch.children as AnyItemSlot[], { ...f, path: [...f.path, n.id, r.branch.id] });
     });
@@ -757,7 +768,7 @@ class Walker {
           return [this.dynTable(n, f)];
         case "condBlock": {
           const r = this.select(n.branches, f, n.id);
-          if (r.kind === "error") return [this.error(n.id, r.issue)];
+          if (r.kind === "error") return [this.blocked(n.id, r.issue)];
           if (r.kind === "none") return [];
           return this.blocks(r.branch.children as AnyBlock[], { ...f, path: [...f.path, n.id, r.branch.id] }, excludeFromComparison);
         }
@@ -795,7 +806,7 @@ class Walker {
     return list.flatMap((n): (RArticle<RInline> | ErrorNode)[] => {
       if (n.kind === "article") return [this.article(n, f)];
       const r = this.select(n.branches, f, n.id);
-      if (r.kind === "error") return [this.error(n.id, r.issue)];
+      if (r.kind === "error") return [this.blocked(n.id, r.issue)];
       if (r.kind === "none") return [];
       return this.articlesIn(r.branch.children as (ArticleNode | CondBlockNode)[], { ...f, path: [...f.path, n.id, r.branch.id] });
     });
@@ -823,7 +834,7 @@ class Walker {
       if (n.kind === "section") return [{ kind: "section", id: n.id, title: n.title, children: this.articlesIn(n.children, { ...f, path: [...f.path, n.id] }) }];
       if (n.kind === "article") return [this.article(n, f)];
       const r = this.select(n.branches, f, n.id);
-      if (r.kind === "error") return [this.error(n.id, r.issue)];
+      if (r.kind === "error") return [this.blocked(n.id, r.issue)];
       if (r.kind === "none") return [];
       return this.articles(r.branch.children as DocumentNode["children"], { ...f, path: [...f.path, n.id, r.branch.id] });
     });
