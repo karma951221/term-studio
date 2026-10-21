@@ -1323,21 +1323,73 @@ button:where(:not([data-slot])).danger:focus-visible {
   vertical-align: -2px;
 }
 
-/* ── 동적표 상세 — 2단: 왼쪽 견본 표, 오른쪽 템플릿 패널 · 칸 ↔ 필드 강조 (기능/동적표 §4.2) ──
- * 영역마다 --rc(영역 색). 표 칸 강조 = 옅은 바탕 + 안쪽 띠 + 굵게, 필드 강조 = 왼쪽 띠 + 라벨 색 + 굵게. 좁으면 세로로 쌓는다.
+/* ── 동적표 상세 — 위→아래: 기본 정보 줄 → 인자(전체 폭) → 2단(왼쪽 미리보기 · 오른쪽 영역별 템플릿) · 칸 ↔ 필드 강조 (기능/동적표 §4.2) ──
+ * 영역마다 --rc(영역 색). 표 칸 강조 = 옅은 바탕 + 안쪽 띠 + 굵게, 필드 강조 = 왼쪽 띠 + 라벨 색 + 굵게.
+ * 2단 기준은 창이 아니라 본문 폭(.ts-dyn-page 컨테이너) — 앱 오른쪽 브라우저 창 정도(본문 400~640px)에서도 2단을 지키고 오른쪽을 줄인다.
+ * 본문 400px 미만에서만 세로로 쌓는다. 왼쪽 미리보기는 오른쪽이 길어 스크롤돼도 화면 안에 머문다(sticky — 스크롤 칸은 .ts-l3-body).
  */
+.ts-dyn-page {
+  container: dyn / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1440px;
+}
+
+.ts-dyn-basics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 28px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ts-rule);
+}
+
+.ts-dyn-basic {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ts-dyn-basic > .ts-form-label {
+  flex: none;
+  padding: 0;
+}
+
+.ts-dyn-basic.is-name > .ts-clause-meta-value {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ts-dyn-basic.is-name > input:where(:not([data-slot])) {
+  width: min(360px, 100%);
+}
+
+/* 편집 중 열 기준 — 고르는 칸 둘이 한 줄을 다 쓴다 */
+.ts-dyn-basic.is-basis:has(.ts-clause-mode) {
+  flex-basis: 100%;
+  align-items: start;
+}
+
+.ts-dyn-basics-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 .ts-dyn-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 440px);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
   gap: 24px;
   align-items: start;
-  max-width: 1440px;
 }
 
 .ts-dyn-sample {
   position: sticky;
   top: 0;
   min-width: 0;
+  max-height: calc(100vh - 72px);
+  overflow-y: auto;
 }
 
 .ts-dyn-panel {
@@ -1347,13 +1399,23 @@ button:where(:not([data-slot])).danger:focus-visible {
   gap: 16px;
 }
 
-@media (max-width: 960px) {
+/* 본문이 좁으면 2단은 지키고 오른쪽 패널을 줄인다 — 왼쪽 표는 가로 스크롤 */
+@container dyn (max-width: 759px) {
+  .ts-dyn-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 46%);
+    gap: 14px;
+  }
+}
+
+@container dyn (max-width: 399px) {
   .ts-dyn-layout {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .ts-dyn-sample {
     position: static;
+    max-height: none;
+    overflow: visible;
   }
 }
 
@@ -1372,9 +1434,17 @@ button:where(:not([data-slot])).danger:focus-visible {
   margin-bottom: 4px;
 }
 
+.ts-dyn-sample-pick > .ts-form-label {
+  flex: none;
+  padding: 0;
+  white-space: nowrap;
+}
+
 .ts-dyn-sample-pick select:where(:not([data-slot])) {
+  flex: 0 1 auto;
   min-width: 0;
   max-width: 100%;
+  text-overflow: ellipsis;
 }
 
 .ts-dyn-sample-desc,
@@ -1396,7 +1466,8 @@ button:where(:not([data-slot])).danger:focus-visible {
 
 .ts-dyn-table {
   width: 100%;
-  min-width: 480px;
+  /* 열 수만큼 — 좁은 2단에서 열이 적은 표는 다 보이고, 많은 표는 가로 스크롤 */
+  min-width: calc(var(--dyn-cols, 5) * 96px);
   border-collapse: collapse;
 }
 
@@ -5945,4 +6016,11 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   height: 22px;
   min-height: 22px;
   font-size: 12px;
+}
+
+/* 동적표 상세 — 좁은 L3(앱 오른쪽 브라우저 창 등)에선 본문 여백을 줄여 2단 폭을 번다 (기능/동적표 §4.2) */
+@container l3 (max-width: 699px) {
+  .ts-l3-body.ts-clause-page:has(> .ts-dyn-page) {
+    padding: 12px 12px 32px;
+  }
 }
