@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { Booklet } from "@/domain/assembly";
 import type { BlockNode, DocumentNode } from "@/domain/document/nodes";
+import { tableShape } from "@/domain/dyntable/shape";
 import type { Actor } from "@/domain/types";
 
 import { createTestDb, type TestDb } from "@/db/test-utils";
@@ -46,11 +47,11 @@ describe("합성 표본 — 절 형태 세 상품 (PGlite)", () => {
       .flatMap((c) => (c.kind === "section" ? c.children : [c]))
       .flatMap((a) => (a.kind === "article" && a.children.some((p) => p.kind === "paragraph" && p.children.some((n) => n.kind === "text" && n.text.endsWith("는 제2절 보장조항에서 정합니다."))) ? [a.title] : []));
 
-  it("동적표 둘 — 감액 지급금액 표 A(DT000001 · 열 기준 감액 구간 · 인자 갱신형) · (갱신) 지급금액 표 R(DT000002 · 열 기준 없음)", async () => {
+  it("동적표 둘 — 감액 지급금액 표 A(DT000001 · 감액 구간형 · 인자 갱신형) · (갱신) 지급금액 표 R(DT000002 · 단일형)", async () => {
     const tables = await services.dynTable.list();
-    expect(tables.map((t) => [t.code, t.label, t.columnBasis, t.params.map((p) => p.name)])).toEqual([
-      ["DT000001", "감액 지급금액 표", "reduction", ["갱신형"]],
-      ["DT000002", "(갱신) 지급금액 표", "none", []],
+    expect(tables.map((t) => [t.code, t.label, tableShape(t.headers), t.params.map((p) => p.name)])).toEqual([
+      ["DT000001", "감액 지급금액 표", "split", ["갱신형"]],
+      ["DT000002", "(갱신) 지급금액 표", "single", []],
     ]);
   });
 

@@ -10,7 +10,6 @@
         }
       }
     ],
-    "columnBasis": "reduction",
     "rowHeader": "구 분",
     "headers": {
       "first": [
@@ -234,7 +233,6 @@
     "code": "DT000002",
     "label": "(갱신) 지급금액 표",
     "params": [],
-    "columnBasis": "none",
     "rowHeader": "구 분",
     "headers": {
       "first": [],

@@ -483,3 +483,33 @@ describe("0034_drop_claim_name", () => {
     expect(await read()).toEqual(after);
   });
 });
+
+describe("0035_drop_dyn_table_column_basis", () => {
+  const apply0035 = async () =>
+    client.transaction(async (tx) => {
+      for (const s of statementsOf(tagOf(35))) await tx.exec(s);
+    });
+  const h = (t: string) => JSON.stringify([{ id: `${t}-t`, kind: "text", text: t }]);
+
+  it("열 기준 「없음」이던 정의는 첫 · 가운데 · 마지막을 비우고(펼친 표 그대로 — 단일형) 컬럼을 지운다 · 두 번 돌려도 같다", async () => {
+    for (let idx = 6; idx <= 34; idx++) for (const s of statementsOf(tagOf(idx))) await client.exec(s);
+    const headers = JSON.stringify({ first: JSON.parse(h("첫")), middle: JSON.parse(h("가운데")), last: JSON.parse(h("끝")), single: JSON.parse(h("지급금액")) });
+    await client.query(
+      `INSERT INTO dyn_tables (code, label, column_basis, row_header, headers, cell) VALUES
+        ('DT000001', '감액 표', 'reduction', '구 분', $1::jsonb, '[]'::jsonb),
+        ('DT000002', '없음으로 바꾼 표', 'none', '구 분', $1::jsonb, '[]'::jsonb)`,
+      [headers],
+    );
+    const read = async () => (await client.query<{ code: string; headers: Record<string, unknown[]> }>(`SELECT code, headers FROM dyn_tables ORDER BY code`)).rows;
+    await apply0035();
+    const after = await read();
+    expect(after.map((r) => [r.code, r.headers.first.length, r.headers.middle.length, r.headers.last.length, r.headers.single.length])).toEqual([
+      ["DT000001", 1, 1, 1, 1],
+      ["DT000002", 0, 0, 0, 1],
+    ]);
+    const cols = await client.query<{ column_name: string }>(`SELECT column_name FROM information_schema.columns WHERE table_name = 'dyn_tables'`);
+    expect(cols.rows.map((r) => r.column_name)).not.toContain("column_basis");
+    await apply0035();
+    expect(await read()).toEqual(after);
+  });
+});
