@@ -83,7 +83,7 @@ describe("assembly 서비스 (PGlite) — 관통 1 통합", () => {
 
     // 카탈로그 — 구분자는 전부 식 하나다 (ADR-0037). 값 자리는 MVP 마스터가 정한다.
     // D0001 갱신여부(담보 boolean) · D0002 고지유형(상품 리터럴) · D0003 지급률(급부) ·
-    // D0004 평균공시이율(상품 리터럴) · D0005 면책여부합(담보 집계) · D0006 감액기간문구(담보 투영)
+    // D0004 평균공시이율(상품 리터럴) · D0005 면책여부합(담보 집계) · D0006 감액기간문구(담보 리터럴 — 담보 레벨 폼은 없다, 보험금명 2026-10-21 삭제)
     unwrap(await catalog.createEnum(editor, { label: "고지유형", values: [{ label: "일반심사" }, { label: "간편심사" }] }));
     unwrap(await catalog.createEnum(editor, { label: "무저해지유형", values: [{ label: "지급형" }, { label: "무저해지형" }] })); // E0002 — 세목 no_surrender.type
     // E0003 ~ E0008 자리 — 아홉째가 「담보분류」(E0009, ADR-0090). 코드는 채번이라 순서로 맞춘다
@@ -95,26 +95,24 @@ describe("assembly 서비스 (PGlite) — 관통 1 통합", () => {
         values: [{ label: "상해", fields: { title: "상해 관련 특별약관" } }, { label: "질병", fields: { title: "질병 관련 특별약관" } }],
       }),
     );
-    unwrap(await catalog.create(editor, { label: "갱신여부", level: "coverage", expression: "coverage_basic.claim_name = '갱신'", resultType: { kind: "boolean" } }));
+    unwrap(await catalog.create(editor, { label: "갱신여부", level: "coverage", expression: "builtin.coverage.name = '갱신'", resultType: { kind: "boolean" } }));
     unwrap(await catalog.create(editor, { label: "고지유형", level: "product", expression: "'간편심사'", resultType: { kind: "string" } }));
     unwrap(await catalog.create(editor, { label: "지급률", level: "benefit", expression: "pay.rate", resultType: { kind: "number" } }));
     unwrap(await catalog.create(editor, { label: "평균공시이율", level: "product", expression: "'2.5%'", resultType: { kind: "string" } }));
-    unwrap(await catalog.create(editor, { label: "면책여부합", level: "coverage", expression: "any(pay.exempt)", resultType: { kind: "boolean" } }));
-    unwrap(await catalog.create(editor, { label: "감액기간문구", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } }));
+    unwrap(await catalog.create(editor, { label: "면책여부합", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } }));
+    unwrap(await catalog.create(editor, { label: "감액기간문구", level: "coverage", expression: "'24개월'", resultType: { kind: "string" } }));
 
     // 담보 마스터 — 일반상해사망 (세부보장 1 · 급부 1) + 값
     const tree = unwrap(await coverage.create(editor, { name: "일반상해사망", benefitName: "사망보험금" }));
     covDeath = tree.id;
     trees.set(covDeath, tree);
     const ben = tree.subCoverages[0].benefits[0];
-    unwrap(await coverage.writeValue(editor, { level: "coverage", id: covDeath }, "coverage_basic.claim_name", "24개월"));
-    unwrap(await coverage.writeValue(editor, { level: "benefit", id: ben.id }, "pay.exempt", true));
+    unwrap(await coverage.writeValue(editor, { level: "benefit", id: ben.id }, "exemption.months", 3)); // 면책 특성 — 면책여부합 = 예
     unwrap(await coverage.writeValue(editor, { level: "benefit", id: ben.id }, "pay.rate", 100));
 
     const baseTree = unwrap(await coverage.create(editor, { name: "상해사망(기본계약)", benefitName: "사망보험금" }));
     covBase = baseTree.id;
     trees.set(covBase, baseTree);
-    unwrap(await coverage.writeValue(editor, { level: "coverage", id: covBase }, "coverage_basic.claim_name", "기본"));
 
     // 별표 · 함수조항 (C0001 소멸 block + 옵션 O01{V01 일반, V02 사망} · C0002 준용 inline)
     unwrap(await documents.createAppendix(editor, { name: "장해분류표" }));
@@ -306,13 +304,13 @@ describe("assembly 서비스 (PGlite) — 관통 1 통합", () => {
     expect(r.doc.title).toBe("일반상해사망 추가 특별약관");
     expect(r.omitted).toHaveLength(1);
     // 실행 기반 필터: 면책 폼(exemption)은 어떤 문서도 읽지 않으므로 마스터에서 열고 비워 둬도 이 상품의 미입력이 아니다
-    // (pay.rate · pay.exempt 는 선택 필드라 비우면 아예 세지 않는다 — 2026-09-27)
+    // (pay.rate 는 선택 필드라 비우면 아예 세지 않는다 — 2026-09-27)
     const booklet = unwrap(await svc.preview(productId));
     const ben = (await coverage.get(covDeath))!.subCoverages[0].benefits[0];
     unwrap(await coverage.writeValue(editor, { level: "benefit", id: ben.id }, "exemption.new_only", true));
     const filtered = createCoverageService(t.db, { completenessFilter: executionBasedFilter(booklet) });
     expect(unwrap(await filtered.completeness(covDeath))).toEqual([]);
-    expect(unwrap(await coverage.completeness(covDeath)).map((m) => m.path)).toEqual(["exemption.months", "exemption.age15_only"]);
+    expect(unwrap(await coverage.completeness(covDeath)).map((m) => m.path)).toEqual(["exemption.age15_only"]);
   });
 
   it("기본계약 미지정 → noBaseContract 오류를 남기고 특약은 그대로 부분 조립", async () => {

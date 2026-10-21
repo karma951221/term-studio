@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { changedQuery, formatDateTime, includesQuery, paginate, queryOf } from "./list";
+import { changedQuery, formatDateTime, groupSpans, includesQuery, latestAudit, paginate, queryOf } from "./list";
 
 describe("L1 목록 순수 함수", () => {
   it("검색은 공백을 없애고 대소문자와 한글을 부분 일치시킨다", () => {
@@ -31,5 +31,17 @@ describe("L1 목록 순수 함수", () => {
     expect(queryOf({ q: "소멸", page: "2" })).toBe("?q=%EC%86%8C%EB%A9%B8&page=2");
     expect(queryOf({ type: ["inline", "block"], none: undefined })).toBe("?type=inline&type=block");
     expect(queryOf({})).toBe("");
+  });
+
+  it("묶음 칸 rowSpan — 같은 키가 이어지면 첫 행에 길이, 이어지는 행은 0 · 떨어진 같은 키는 따로 묶는다 (2026-10-21)", () => {
+    expect(groupSpans(["A", "A", "B", "C", "C", "C", "A"])).toEqual([2, 0, 1, 3, 0, 0, 1]);
+    expect(groupSpans([])).toEqual([]);
+  });
+
+  it("묶음의 최종수정 — 가장 최근 값 하나, 수정 기록이 없으면 undefined (2026-10-21)", () => {
+    const a = { updatedAt: new Date("2026-10-01T00:00:00Z"), updatedBy: "u1" };
+    const b = { updatedAt: new Date("2026-10-20T00:00:00Z"), updatedBy: "u2" };
+    expect(latestAudit([a, undefined, b])).toBe(b);
+    expect(latestAudit([undefined])).toBeUndefined();
   });
 });

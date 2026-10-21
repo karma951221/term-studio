@@ -89,7 +89,7 @@ describe("catalog lib — 결과 타입 폼 ↔ DiscriminatorResultType (기능/
   });
 
   it("inferResultTypeForm — 식의 추론 타입을 폼 모양으로 (카탈로그로 구분자 참조를 푼다) · 안 서면 undefined", () => {
-    const catalog = new Map([["D0001", { code: "D0001", label: "담보명", description: "", level: "coverage" as const, expression: "coverage_basic.claim_name", resultType: { kind: "string" as const } }]]);
+    const catalog = new Map([["D0001", { code: "D0001", label: "담보명", description: "", level: "coverage" as const, expression: "builtin.coverage.name", resultType: { kind: "string" as const } }]]);
     expect(inferResultTypeForm("D0001 ≠ ''", "coverage", catalog)).toEqual({ kind: "boolean", multi: false, enumCode: "" });
     expect(inferResultTypeForm(" no_surrender.type ", "plan", catalog)).toEqual({ kind: "enum", multi: false, enumCode: "E0002" });
     expect(inferResultTypeForm("any(", "coverage", catalog)).toBeUndefined();
@@ -179,7 +179,7 @@ describe("catalog lib — 넣기 패널 (기능/구분자 §4.3)", () => {
   });
 
   it("referenceToken — 같은 레벨은 경로 그대로 · 하위는 참거짓 any(…) · 숫자 sum(…) · 그 밖(문자열 · 목록값 · 모름)은 exist(…) · 상위는 undefined", () => {
-    expect(referenceToken("coverage_basic.claim_name", "coverage", "coverage")).toBe("coverage_basic.claim_name");
+    expect(referenceToken("pay.rate", "benefit", "benefit")).toBe("pay.rate");
     expect(referenceToken("pay.exempt", "benefit", "coverage", "boolean")).toBe("any(pay.exempt)");
     expect(referenceToken("pay.rate", "benefit", "coverage", "number")).toBe("sum(pay.rate)");
     // any/all 은 boolean 경로만 받는다 (typecheck) — 문자열 · 목록값을 any 로 감싸면 늘 거부되는 토큰이다

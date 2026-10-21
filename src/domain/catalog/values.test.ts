@@ -79,14 +79,13 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
       "conversion.converts",
       "business_type.applies",
     ]);
-    expect(valueSlotsOf("coverage")).toEqual(["coverage_basic.claim_name"]);
+    expect(valueSlotsOf("coverage")).toEqual([]); // 담보 레벨 폼은 없다 — 보험금명(coverage_basic.claim_name)은 2026-10-21 뺐다
   });
 
   it("마스터가 비어 있는 레벨은 값 자리가 없다", () => {
     expect(valueSlotsOf("product")).toEqual(["disclosure.avg_rate", "feature.contract_kind", "feature.renewable", "feature.fetal", "feature.group_contract", "feature.notice_kind", "feature.review_scope", "feature.review_type", "feature.notice_type", "booklet.group_titles"]);
     expect(valueSlotsOf("subCoverage")).toEqual([]);
     expect(valueSlotsOf("benefit")).toEqual([
-      "pay.exempt",
       "pay.rate",
       "reduction.periods",
       "reduction.after_rate",
@@ -99,8 +98,8 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
 
   it("자리의 타입을 경로로 찾는다 — 레벨이 다르면 못 찾는다", () => {
     expect(slotType("plan", "waiver.applies")).toEqual({ kind: "boolean" });
-    expect(slotType("coverage", "coverage_basic.claim_name")).toEqual({ kind: "string" });
-    expect(slotType("plan", "coverage_basic.claim_name")).toBeUndefined();
+    expect(slotType("benefit", "pay.rate")).toEqual({ kind: "number" });
+    expect(slotType("plan", "pay.rate")).toBeUndefined();
     expect(slotType("plan", "plan.waiver.nope")).toBeUndefined();
   });
 });
@@ -114,7 +113,7 @@ describe("폼입력 S1 — 기본값 프리필: 저장 전에는 미입력", () 
 
   it("저장소가 비어 있으면 그 레벨 자리가 전부 미입력이다", () => {
     const empty = () => undefined;
-    expect(missingSlots("coverage", empty)).toEqual(["coverage_basic.claim_name"]);
+    expect(missingSlots("coverage", empty)).toEqual([]); // 담보 레벨은 자리가 없다
     expect(missingSlots("plan", empty)).toHaveLength(5);
   });
 });
@@ -134,8 +133,14 @@ describe("폼입력 S2 — 미입력 상태로 중간 저장", () => {
   });
 
   it("전부 입력되면 미입력 없음", () => {
-    const store: Record<string, ValueSlot> = { "coverage_basic.claim_name": entered("사망보험금") };
-    expect(missingSlots("coverage", (p) => store[p])).toEqual([]);
+    const store: Record<string, ValueSlot> = {
+      "waiver.applies": entered(true),
+      "waiver.reasons": entered(["V01"]),
+      "no_surrender.type": entered("V01"),
+      "conversion.converts": entered(false),
+      "business_type.applies": entered(false),
+    };
+    expect(missingSlots("plan", (p) => store[p])).toEqual([]);
   });
 });
 
@@ -216,9 +221,8 @@ describe("선택 필드(MasterField.optional) — 값이 없으면 세지 않는
   it("값 자리 목록(valueSlotsOf)에는 그대로 있다 — 자리는 늘 있고 보이는 방식만 다르다", () => {
     expect(valueSlotsOf("benefit", master)).toEqual(["pay.exempt", "pay.rate", "pay.note"]);
   });
-  it("정본 마스터 — 보험금지급의 면책여부 · 지급률이 선택 필드다", () => {
-    expect(slotType("benefit", "pay.exempt")).toEqual({ kind: "boolean" });
-    expect(countedSlotsOf("benefit", () => undefined).filter((p) => p.startsWith("pay."))).not.toContain("pay.exempt");
+  it("정본 마스터 — 보험금지급의 지급률이 선택 필드다 · 면책여부 자리는 없다(면책 특성으로만, 2026-10-21)", () => {
+    expect(slotType("benefit", "pay.exempt")).toBeUndefined();
     expect(countedSlotsOf("benefit", () => undefined).filter((p) => p.startsWith("pay."))).not.toContain("pay.rate");
   });
 });

@@ -13,7 +13,7 @@ import { condMenu, type MenuItem } from "./menus";
 
 const defs: Discriminator[] = [
   { code: "D0009", label: "감액여부", level: "coverage", expression: "any(D0002)", description: "" },
-  { code: "D0001", label: "담보명", level: "coverage", expression: "coverage_basic.claim_name", description: "" },
+  { code: "D0001", label: "담보명", level: "coverage", expression: "builtin.coverage.name", description: "" },
 ];
 const condition = buildConditionContext({ discriminators: defs, enums: [] });
 

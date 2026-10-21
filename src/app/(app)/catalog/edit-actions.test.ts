@@ -33,15 +33,15 @@ describe("saveDiscriminatorEditAction — 부분 저장 없음", () => {
   });
 
   it("구분자명 · 주석을 바꾸고 식이 거부되면 구분자명 · 주석도 저장되지 않는다", async () => {
-    const def = unwrap(await s.catalog.create(editor, { label: "면책여부", level: "benefit", expression: "any(pay.exempt)", resultType: { kind: "boolean" } }));
-    const r = await saveDiscriminatorEditAction(def.code, { label: "면책 여부", description: "메모", expression: "any(pay.exempt", resultTypeKind: "boolean", resultTypeMulti: false, resultTypeEnum: "" });
+    const def = unwrap(await s.catalog.create(editor, { label: "면책여부", level: "benefit", expression: "exist(exemption.months)", resultType: { kind: "boolean" } }));
+    const r = await saveDiscriminatorEditAction(def.code, { label: "면책 여부", description: "메모", expression: "exist(exemption.months", resultTypeKind: "boolean", resultTypeMulti: false, resultTypeEnum: "" });
     expect(r.ok).toBe(false);
     expect(await s.catalog.get(def.code)).toEqual(def);
   });
 
   it("결과 타입과 식을 함께 고칠 때 식이 순환으로 거부되면 — 구분자명 · 결과 타입 모두 그대로다", async () => {
-    const def = unwrap(await s.catalog.create(editor, { label: "면책구분", level: "benefit", expression: "any(pay.exempt)", resultType: { kind: "boolean" } }));
-    const r = await saveDiscriminatorEditAction(def.code, { label: "면책구분2", description: "", expression: `${def.code} and any(pay.exempt)`, resultTypeKind: "number", resultTypeMulti: false, resultTypeEnum: "" });
+    const def = unwrap(await s.catalog.create(editor, { label: "면책구분", level: "benefit", expression: "exist(exemption.months)", resultType: { kind: "boolean" } }));
+    const r = await saveDiscriminatorEditAction(def.code, { label: "면책구분2", description: "", expression: `${def.code} and exist(exemption.months)`, resultTypeKind: "number", resultTypeMulti: false, resultTypeEnum: "" });
     expect(r.ok).toBe(false);
     expect(await s.catalog.get(def.code)).toEqual(def);
   });

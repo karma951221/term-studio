@@ -3,8 +3,8 @@
  * 제목은 메뉴 이름 「열거형」, 오른쪽 `+` 는 새 열거형변수.
  */
 import { EmptyState } from "@/app/_components/EmptyState";
-import { ListPage, codeCol, nameCol, type ListColumn } from "@/app/_components/ListPage";
-import { formatDate, includesQuery, paginate } from "@/app/_lib/list";
+import { ListPage, auditCol, identCol, type ListColumn } from "@/app/_components/ListPage";
+import { includesQuery, paginate } from "@/app/_lib/list";
 import { ENTITY_LABEL, FIELD_LABEL, NAME_LABEL, newLabel, searchPlaceholder } from "@/app/_lib/labels";
 import { ENUMS_MENU } from "@/app/_lib/menu";
 import type { EnumDef } from "@/domain/catalog";
@@ -41,11 +41,9 @@ export default async function EnumListPage({ searchParams }: { searchParams: Pro
   const { rows, total, page } = paginate(filtered, sp.page, PAGE_SIZE);
 
   const columns: readonly ListColumn<Row>[] = [
-    codeCol((r) => r.item.code),
-    nameCol(NAME_LABEL.enum, (r) => r.item.label, (r) => `/enums/${r.item.code}`),
+    identCol(ENTITY_LABEL.enum, (r) => ({ code: r.item.code, name: r.item.label }), (r) => `/enums/${r.item.code}`),
     { header: FIELD_LABEL.values, width: "values", cell: (r) => <ValueChips item={r.item} /> },
-    { header: FIELD_LABEL.updatedAt, width: "md", mono: true, cell: (r) => { const audit = audits.get(r.item.code); return audit ? formatDate(audit.updatedAt) : "—"; } },
-    { header: FIELD_LABEL.updatedBy, width: "md", cell: (r) => { const by = audits.get(r.item.code)?.updatedBy; return (by && userName.get(by)) ?? "—"; } },
+    auditCol((r) => audits.get(r.item.code), userName),
   ];
 
   return (

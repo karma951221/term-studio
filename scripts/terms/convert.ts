@@ -8,7 +8,7 @@
  * 3. 담보속성 조건 오버레이(`inlineConds`)를 얹고, 항·호·목 텍스트의 조·별표 참조 평문을 `inlinesFromText` 로
  *    참조 슬롯으로 바꾼다 — 조건 가지 안의 참조도 같이 풀린다.
  * 4. 보통약관의 기본계약 대치 조는 제목만 남기고, 기본계약 문면은 그 조들을 뽑아 조연결한다.
- * 5. 슬롯 오버레이(담보명 등)를 얹는다.
+ * 5. 슬롯 오버레이(보험금명 자리표 등)를 얹는다 — 보험금명 자리표는 출력 직전에 글자 · 상수 연결이 된다(`claim.ts`).
  * 6. 함수조항 · 박스를 만든다 — 조 · 여러 항 함수조항(`CLAUSES`, 원문 한 자리 `from` 에서 또는 평문에서, `clauses.ts`)과
  *    정적 마스터 박스(원문의 박스 전부, 같은 박스는 하나 · 낱말만 달라도 따로, `boxes.ts`). 적재 순서로 코드를 매기고,
  *    박스 자리는 박스 참조로 · 설정의 쓰임 자리는 함수조항 참조로 바꾼다.
@@ -29,6 +29,7 @@ import { clauseCodeEntries, withClauseCodes } from "../../src/domain/clause/pcod
 import type { ArticleRefNode as ClauseArticleRef } from "../../src/domain/clause/nodes";
 import type { Id } from "../../src/domain/types";
 import { boxSites, planBoxes, replaceBox, type BoxPlan } from "./boxes";
+import { CLAIM_CATALOG_ENTRY, CLAIM_SLOT, inlineClaimNames } from "./claim";
 import type { Discriminator } from "../../src/domain/catalog/types";
 import { applyClauseUse, articleRefParamsOf, guardApplicationOutput, INNER_TARGETS, positionApplicationHead, clauseFromSource, inlineBody, optionCode, parameterize, placeOptions, reId, valueCode, type ClauseRecord } from "./clauses";
 import { articlesDeep, canonicalArticle, claimOf, collapseRenewal, coverageNameOf, localPaths, mergeRenewal, textNodesOf, wordClusters } from "./auto";
@@ -50,7 +51,7 @@ export interface Built {
   numberOf: Map<Id, string>;
   /** 통합형 특약의 특약 자체 납입면제 소제목 자리 — 조 직속 블록(머리 박스 · 항 · 표) id (`restartGroups`). 납입면제 없는 상품이면 빠진다(`guardOwnWaiver`). */
   waiverBlocks?: Set<Id>;
-  /** 자동 탑재 특약 — 원문 제목(갱신형 짝이면 갱신형 쪽도) · 소멸 조에서 읽은 보험금명(담보 값 D0001). */
+  /** 자동 탑재 특약 — 원문 제목(갱신형 짝이면 갱신형 쪽도) · 소멸 조에서 읽은 보험금명(보험금명 자리표 — claim.ts). */
   auto?: { title: string; renewalTitle?: string; claim?: string };
 }
 
@@ -519,9 +520,15 @@ function main(): void {
   checkClauseOrder(clauses, generals);
 
   // ── 쓰지 않는 박스를 빼고 코드를 다시 매긴다 — 같은 상품군의 판(2607) 보통약관의 박스 중 2604 함수조항이 대신하는 자리(납입면제 정의 · 그림)의 것
-  const catalog = JSON.parse(readFileSync(path.join(root, SEED_DIR, "discriminators.json"), "utf8")) as Discriminator[];
+  // 보험금명 자리표(claim.ts)는 카탈로그에 없다 — 변환 안에서만 인자로 바꿀 수 있게 더한다
+  const catalog = [...(JSON.parse(readFileSync(path.join(root, SEED_DIR, "discriminators.json"), "utf8")) as Discriminator[]), CLAIM_CATALOG_ENTRY];
   const generalIndexes = products.map((p) => indexTree(p.general.tree));
-  const finalClauses = clauses.map((c) => codeClauseTargets(parameterize(c, catalog), generalIndexes));
+  const parameterized = clauses.map((c) => codeClauseTargets(parameterize(c, catalog), generalIndexes));
+  // 보험금명 자리표 → 담보약관의 글자 · 사용처 상수 연결 (ADR-0091). 보통약관에 자리표가 있으면 멈춘다(보험금명을 모른다)
+  inlineClaimNames(generals, parameterized, new Map());
+  const claimed = inlineClaimNames(documents, parameterized, claimNames(products));
+  const finalClauses = claimed.clauses;
+  documents.splice(0, documents.length, ...claimed.documents);
   const generalClauseCodes = new Set(generals.flatMap((g) => [...JSON.stringify(g.tree).matchAll(/"clauseCode":"(C\d+)"/g)].map((m) => m[1])));
   const plannedFront = new Set(boxes.filter((b) => b.sites.some((x) => x.general)).map((b) => b.record.code));
   const boxRecords = compactBoxes(boxes.map((b) => b.record), [generals, documents, finalClauses], [generals, finalClauses.filter((c) => generalClauseCodes.has(c.code))], plannedFront);
@@ -545,7 +552,7 @@ function main(): void {
   const all = [...generals, ...documents];
   for (const g of generals) console.log(`[general] ${g.tree.title}: ${stats(g.tree)}`);
   for (const d of documents) console.log(`[special] ${d.tree.title}: ${stats(d.tree)}`);
-  for (const b of boxRecords) console.log(`[box] ${b.code} ${b.name}`);
+  for (const b of boxRecords) console.log(`[box] ${b.code} ${b.title ? `【${b.title}】` : "(제목 없음)"}`);
   for (const c of clauses) console.log(`[clause] ${c.code} ${c.label} (${c.mode}) — 쓰임 ${all.reduce((n, d) => n + JSON.stringify(d.tree).split(`"clauseCode":"${c.code}"`).length - 1, 0)}`);
   console.log(`[auto] 특약 ${autoStats.docs} · 기존 함수조항 쓰임 ${autoStats.existingUses} · 새 함수조항 ${autoStats.created.length}(쓰임 ${autoStats.createdUses}) · 조 일부 쓰임 ${autoStats.partialUses} · 갱신형 짝 가지 합침 ${autoStats.hoisted}`);
   for (const line of report) console.log(`[report] ${line}`);
@@ -740,8 +747,27 @@ function guardClauseWaiver(record: ClauseRecord, isWaiver: (id: Id) => boolean):
 }
 
 /**
+ * 담보약관 코드 → 보험금명 (ADR-0091) — 손으로 설정한 특약은 보험금명 자리표 슬롯 오버레이의 `find`(같은 문서는 한 이름),
+ * 자동 탑재 특약은 소멸 조에서 읽은 것. 출력 직전에 자리표를 이 글자 · 상수 연결로 바꾼다(`inlineClaimNames`).
+ */
+function claimNames(products: readonly BuiltProduct[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const p of products) {
+    for (const spec of p.product.specials) {
+      const found = new Set(spec.slots.filter((x) => x.ref === CLAIM_SLOT).map((x) => x.find));
+      const auto = p.specials.get(spec.code)?.auto?.claim;
+      if (auto !== undefined) found.add(auto);
+      if (found.size > 1) throw new Error(`${spec.code}: 보험금명이 둘 이상이다 — ${[...found].join(" · ")}`);
+      const [claim] = found;
+      if (claim !== undefined) out.set(spec.code, claim);
+    }
+  }
+  return out;
+}
+
+/**
  * 자동 탑재 특약의 담보 · 탑재 시드 — `coverages.json` 은 손으로 쓴 것 뒤에(코드는 이어서), `products.json` 은 그 상품의 손으로 쓴 탑재 뒤에.
- * 담보명 · 갱신유형은 원문 제목, 보험금명은 소멸 조에서 읽은 것(없으면 담보명), 담보분류 · 특약 그룹은 원문 파일(특별약관 Ⅰ ~ Ⅴ) —
+ * 담보명 · 갱신유형은 원문 제목, 급부명은 소멸 조에서 읽은 보험금명(없으면 담보명), 담보분류 · 특약 그룹은 원문 파일(특별약관 Ⅰ ~ Ⅴ) —
  * 기본 그룹(담보분류)과 맞지 않는 파일은 그 상품의 사용자 그룹이고, 상품의 그룹 목록(`groups`)은 원문 파일 순서다 (ADR-0090).
  * 갱신형 짝은 담보 하나 · 탑재 둘(갱신유형 비갱신형 · 갱신형), 갱신형만 있는 특약은 탑재 하나(갱신형).
  */
@@ -773,7 +799,7 @@ function writeAutoSeeds(products: readonly BuiltProduct[], out: (file: string, d
         name,
         benefitName: benefit,
         category: spec.auto!.category,
-        coverageValues: [{ path: "coverage_basic.claim_name", value: benefit }],
+        coverageValues: [],
         benefitValues: [],
         auto: true,
       });
@@ -926,7 +952,7 @@ function buildClause(spec: (typeof CLAUSES)[number], built: Map<string, Built>, 
 
 /**
  * 자동 탑재 특약의 보험금명 슬롯 — 「특별약관의 소멸」 조(갱신형 짝이면 두 가지 모두)의 첫 항 「[제1조(보험금의 지급사유)]에서 정한 ○○ 지급사유가 …」의 ○○ 를
- * 담보 값 슬롯(D0001)으로 바꾼다 — 함수조항 「특별약관의 소멸(지급사유 발생)」 본문의 슬롯과 맞는다. 처음 읽은 보험금명을 돌려준다(담보 값이 된다).
+ * 보험금명 자리표 슬롯(`CLAIM_SLOT`)으로 바꾼다 — 함수조항 「특별약관의 소멸(지급사유 발생)」 본문의 자리와 맞는다. 처음 읽은 보험금명을 돌려준다(급부명 · 출력 때 글자가 된다).
  */
 function applyClaimSlots(tree: DocumentNode, report: string[], where: string): string | undefined {
   let claim: string | undefined;
@@ -944,7 +970,7 @@ function applyClaimSlots(tree: DocumentNode, report: string[], where: string): s
     }
     claim = found;
     const i = node.text.indexOf(found);
-    p.children.splice(at, 1, { id: `${node.id}a`, kind: "text", text: node.text.slice(0, i) }, { id: `${node.id}s`, kind: "slot", ref: "D0001" }, { id: `${node.id}b`, kind: "text", text: node.text.slice(i + found.length) });
+    p.children.splice(at, 1, { id: `${node.id}a`, kind: "text", text: node.text.slice(0, i) }, { id: `${node.id}s`, kind: "slot", ref: CLAIM_SLOT }, { id: `${node.id}b`, kind: "text", text: node.text.slice(i + found.length) });
   }
   return claim;
 }

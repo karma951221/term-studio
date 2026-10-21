@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { AssemblyCheckLine } from "@/app/_components/AssemblyCheckLine";
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
@@ -50,12 +51,12 @@ export default async function ProductCoverageDetailPage({ params }: { params: Pr
   const slotAnchor = (ownerId: string) => `#own-${ownerId}-values`;
 
   /** 노드 하나의 값 폼 — 앵커 자리 포함. 필드가 없는 레벨(지금 세부보장)은 폼 자리 없이 이름만. */
-  const valueForm = (level: "coverage" | "subCoverage" | "benefit", ownerId: string, kind: "productCoverage" | "productSubCoverage" | "productBenefit", masterLabel: string) => {
+  const valueForm = (level: "coverage" | "subCoverage" | "benefit", ownerId: string, kind: "productCoverage" | "productSubCoverage" | "productBenefit", masterLabel: string, cardHead?: ReactNode) => {
     const model = buildForm(level, enumLookup, values.get(ownerId) ?? new Map(), snapshotContextOf(ownerId, masterLabel));
-    if (model.fields.length === 0) return null;
+    if (model.fields.length === 0) return cardHead ? <div className="ts-cov-card-head">{cardHead}</div> : null;
     return (
       <div id={`own-${ownerId}-values`}>
-        <ValueForm model={model} flat action={writeSnapshotValuesAction.bind(null, pcId, { kind, id: ownerId })} />
+        <ValueForm model={model} flat cardHead={cardHead} action={writeSnapshotValuesAction.bind(null, pcId, { kind, id: ownerId })} />
       </div>
     );
   };
@@ -102,11 +103,13 @@ export default async function ProductCoverageDetailPage({ params }: { params: Pr
                   <div className="ts-cov-benefits">
                     {s.benefits.map((b) => (
                       <section key={b.id} className="ts-cov-card" data-level="benefit" aria-label={`급부 ${b.name}`}>
-                        <div className="ts-cov-card-head">
-                          <span className="ts-cov-card-level">급부 {b.key}</span>
-                          <span className="ts-cov-card-name">{b.name}</span>
-                        </div>
-                        <div className="ts-cov-card-body">{valueForm("benefit", b.id, "productBenefit", `${b.name} (마스터)`)}</div>
+                        {/* 급부 카드는 값 폼이 머리 줄째 그린다 — 지급률이 이름 줄 오른쪽 「지급률 ⊕」(담보 상세와 같다, 2026-10-21) */}
+                        {valueForm("benefit", b.id, "productBenefit", `${b.name} (마스터)`, (
+                          <>
+                            <span className="ts-cov-card-level">급부 {b.key}</span>
+                            <span className="ts-cov-card-name">{b.name}</span>
+                          </>
+                        ))}
                       </section>
                     ))}
                   </div>

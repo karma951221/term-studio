@@ -52,11 +52,12 @@ test(
       await page.getByRole("button", { name: "편집", exact: true }).click();
       await expect(page.getByRole("button", { name: "저장", exact: true })).toBeVisible();
       const benefit = page.locator("section.ts-cov-card[data-level='benefit']").first();
-      // 선택 필드 지급률 — 「⊕ 지급률」 로 칸을 만들고 100
-      await benefit.getByRole("button", { name: "지급률", exact: true }).click();
+      // 선택 필드 지급률 — 급부 이름 줄의 「지급률 ⊕」 로 칸을 만들고 100
+      await benefit.getByTitle("지급률 추가").click();
       await benefit.locator('input[name="pay.rate"]').fill("100");
-      // 선택 폼 감액 — 「⊕ 감액」 으로 열고 구간 표에 행 하나 (1Y · 50)
-      await benefit.getByRole("button", { name: "감액", exact: true }).click();
+      // 특성 감액 — 「특성 ⊕」 메뉴에서 감액을 골라 열고 구간 표에 행 하나 (1Y · 50)
+      await benefit.getByRole("button", { name: "특성 추가", exact: true }).click();
+      await benefit.getByRole("menuitem", { name: "감액", exact: true }).click();
       const reduction = benefit.getByRole("group", { name: "감액" });
       await expect(reduction).toBeVisible();
       await reduction.getByRole("button", { name: "+ 행", exact: true }).click();

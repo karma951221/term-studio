@@ -414,17 +414,94 @@ button:where(:not([data-slot])) {
 
 /* ── 3. 입력 · 버튼 ───────────────────────────────────────────────────────── */
 
+/*
+ * 값 입력칸은 밑줄 하나 (2026-10-21, 사용자 결정 — outline → underline, 전 폼 공통).
+ * 사방 테두리 · 바탕 상자 · 모서리를 걷고 아래 1px 선만 둔다. 좌우 여백을 줄여 글자가 라벨 열에 맞는다.
+ * 기본 옅은 선 → hover 조금 진하게 → focus 주칠 선(+ box-shadow 1px, 레이아웃 그대로) · 오류 오류색 · disabled 점선.
+ * 상자로 남는 것: 검색칸(type=search · 아이콘과 한 몸) · 목록 필터 줄 · JSON 칸(코드 편집 상자) — 아래 「상자 유지」.
+ * shadcn 위젯(Input · Textarea · NativeSelect · SelectTrigger)도 같은 문법이다 — src/components/ui.
+ */
 input:where(:not([data-slot])),
 select:where(:not([data-slot])),
 textarea:where(:not([data-slot])) {
   font-family: inherit;
   font-size: 13px;
-  padding: 3px 6px;
+  padding: 3px 2px;
   min-height: 24px;
+  border: 0;
+  border-bottom: 1px solid var(--ts-rule-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ts-ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:where(:not([data-slot])):hover,
+select:where(:not([data-slot])):hover,
+textarea:where(:not([data-slot])):hover {
+  border-bottom-color: var(--ts-ink-3);
+}
+
+input:where(:not([data-slot])):focus-visible,
+select:where(:not([data-slot])):focus-visible,
+textarea:where(:not([data-slot])):focus-visible {
+  outline: none;
+  border-bottom-color: var(--ts-mark);
+  box-shadow: 0 1px 0 var(--ts-mark);
+}
+
+input:where(:not([data-slot]))[aria-invalid="true"],
+select:where(:not([data-slot]))[aria-invalid="true"],
+textarea:where(:not([data-slot]))[aria-invalid="true"] {
+  border-bottom-color: var(--ts-error);
+}
+
+input:where(:not([data-slot]))[aria-invalid="true"]:focus-visible,
+select:where(:not([data-slot]))[aria-invalid="true"]:focus-visible,
+textarea:where(:not([data-slot]))[aria-invalid="true"]:focus-visible {
+  box-shadow: 0 1px 0 var(--ts-error);
+}
+
+input:where(:not([data-slot])):disabled,
+select:where(:not([data-slot])):disabled,
+textarea:where(:not([data-slot])):disabled {
+  border-bottom-style: dashed;
+  border-bottom-color: var(--ts-rule-strong);
+  color: var(--ts-ink-3);
+  cursor: not-allowed;
+}
+
+input:where(:not([data-slot]))[readonly],
+textarea:where(:not([data-slot]))[readonly] {
+  border-bottom-style: dashed;
+  border-bottom-color: var(--ts-rule-strong);
+  box-shadow: none;
+}
+
+/* 상자 유지 — 검색칸은 돋보기 · 지우기 ✕ 와 한 몸인 상자가 뜻을 가진다. 목록 필터 줄은 폼이 아니라 도구 줄이다. */
+input:where(:not([data-slot]))[type="search"],
+.ts-filterbar input:where(:not([data-slot])),
+.ts-filterbar select:where(:not([data-slot])),
+textarea:where(:not([data-slot])).ts-json {
+  padding: 3px 6px;
   border: 1px solid var(--ts-rule-strong);
   border-radius: 3px;
   background: var(--ts-surface);
-  color: var(--ts-ink);
+}
+
+input:where(:not([data-slot]))[type="search"]:hover,
+.ts-filterbar input:where(:not([data-slot])):hover,
+.ts-filterbar select:where(:not([data-slot])):hover,
+textarea:where(:not([data-slot])).ts-json:hover {
+  border-color: var(--ts-ink-3);
+}
+
+input:where(:not([data-slot]))[type="search"]:focus-visible,
+.ts-filterbar input:where(:not([data-slot])):focus-visible,
+.ts-filterbar select:where(:not([data-slot])):focus-visible,
+textarea:where(:not([data-slot])).ts-json:focus-visible {
+  border-color: var(--ts-mark);
+  box-shadow: none;
 }
 
 input:where(:not([data-slot]))[type="checkbox"],
@@ -434,6 +511,14 @@ input:where(:not([data-slot]))[type="radio"] {
   border: 0;
   margin: 0 4px 0 0;
   vertical-align: -1px;
+}
+
+/* 체크 · 라디오는 밑줄 문법 밖 — 포커스는 전역 주칠 outline 그대로 */
+input:where(:not([data-slot]))[type="checkbox"]:focus-visible,
+input:where(:not([data-slot]))[type="radio"]:focus-visible {
+  outline: 2px solid var(--ts-mark);
+  outline-offset: 1px;
+  box-shadow: none;
 }
 
 textarea:where(:not([data-slot])) {
@@ -2513,6 +2598,58 @@ td.col-act {
   text-align: right;
 }
 
+/* 두 줄 칸 (§2 L1, 2026-10-21) — 짝으로 다니는 두 열을 한 열에. 코드 · 이름은 1줄째 코드(옅은 mono) · 2줄째 이름,
+ * 최종수정은 1줄째 날짜 · 2줄째 수정자. 줄마다 끊기지 않게 nowrap — 넘치면 말줄임. */
+.ts-two-line {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.ts-two-line > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ts-table .ts-ident-code {
+  font-size: 11px;
+  color: var(--ts-ink-3);
+}
+
+.ts-ident-name {
+  font-weight: 600;
+}
+
+.ts-audit-by {
+  font-size: 12px;
+  color: var(--ts-ink-3);
+}
+
+/* 코드 · 이름 칸이 가변 열이 아닐 때(담보속성 — 남는 폭은 값 이름이 먹는다) */
+th.col-ident,
+td.col-ident {
+  width: 180px;
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.ts-table td.ts-nowrap {
+  white-space: nowrap;
+}
+
+/* 묶음 칸 — 한 대상이 여러 행에 걸치면 그 대상 칸은 한 번만(rowSpan). 위에서부터 읽히게 위 정렬,
+ * 괘선은 묶음 사이에만 — 묶음 안의 행은 아래 괘선을 지운다(묶음 칸은 제 아래 괘선이 곧 묶음 경계). */
+.ts-table td.ts-group-cell {
+  vertical-align: top;
+  padding-top: 6px;
+}
+
+.ts-table tr.ts-group-inner > td:not(.ts-group-cell) {
+  border-bottom-color: transparent;
+}
+
 /* 「총 N건 · 1/1」 + 앞뒤 이동 (§2 L1 — 무한 스크롤을 쓰지 않는다) */
 .ts-pager {
   position: sticky;
@@ -2704,13 +2841,7 @@ td.col-act {
  * 값의 출처 문법 — §1.2. 색을 주지 않는다. 형태가 말한다.
  * 요소 선택자는 shadcn 위젯(data-slot)을 뺀다 — 맨 `.ts-field-direct` 로 두면 레이어 밖이라 Input · Textarea · NativeSelect 의 테두리를 덮는다.
  */
-input:where(:not([data-slot])).ts-field-direct,
-select:where(:not([data-slot])).ts-field-direct,
-textarea:where(:not([data-slot])).ts-field-direct {
-  border: 1px solid var(--ts-rule-strong);
-  border-radius: 3px;
-  background: var(--ts-surface);
-}
+/* 직접 입력(.ts-field-direct)은 §3 입력의 기본 밑줄 그대로다 — 따로 덮지 않아야 hover · focus · 오류 · disabled 가 산다 (2026-10-21). */
 
 .ts-field-derived,
 .ts-field-const,
@@ -4529,15 +4660,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   white-space: nowrap;
 }
 
-.ts-cov-add {
-  color: var(--ts-ink-2);
-  text-decoration: none;
-}
-
-.ts-cov-add:hover {
-  color: var(--ts-ink);
-}
-
 .ts-detach {
   margin: 2px 0 0;
 }
@@ -4657,16 +4779,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   background: var(--ts-surface-2);
 }
 
-/* 「+ 급부」 — 세부보장 카드 맨 아래 작은 링크 버튼 */
-.ts-cov-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-top: 6px;
-  font-size: 12px;
-}
-
-.ts-cov-add .ts-icon,
 .ts-cov-add-tile .ts-icon {
   width: 12px;
   height: 12px;
@@ -4675,6 +4787,104 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-cov-card-note {
   margin: 0 0 6px;
   font-size: 12px;
+}
+
+/* 담보 카드는 머리 줄이 없다 — 본문 첫 행 「담보 [이름]」이 담보분류 · 값 행과 같은 라벨 열에 선다 (2026-10-21) */
+.ts-cov-card[data-level="coverage"] > .ts-cov-card-body {
+  margin-top: 0;
+}
+
+.ts-cov-name-row .ts-cov-card-input {
+  flex: 1 1 240px;
+  max-width: 420px;
+}
+
+/* 「라벨 ⊕」 — 라벨 옆 작은 파란 ⊕. 누르면 그 아래 목록 끝에 박스가 생긴다 (세부보장 · 급부 · 특성, 2026-10-21) */
+.ts-form-label-cell .ts-iconbtn.ts-label-add {
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  vertical-align: -4px;
+  color: var(--ts-work-blue);
+}
+
+.ts-form-label-cell .ts-iconbtn.ts-label-add[disabled] {
+  color: var(--ts-ink-3);
+}
+
+.ts-cov-add-row {
+  min-height: 22px;
+}
+
+/* 급부 이름 줄 오른쪽 — 「지급률 ⊕」 · 「지급률 [__]% ⊖」 · 읽기 「지급률 80%」 */
+.ts-cov-head-extra {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.ts-cov-head-extra + .ts-row-actions {
+  margin-left: 4px;
+}
+
+.ts-head-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ts-head-field .ts-form-label {
+  padding: 0;
+}
+
+.ts-head-field input:where(:not([data-slot]))[type="number"] {
+  width: 56px;
+  min-width: 0;
+}
+
+.ts-head-field .ts-iconbtn.ts-form-field-remove {
+  width: 16px;
+  height: 16px;
+  color: var(--ts-error);
+}
+
+.ts-head-add .ts-icon {
+  color: var(--ts-work-blue);
+}
+
+/* 특성 박스 — 「특성 ⊕」 메뉴로 붙인 감액 · 면책. 왼쪽 위 ⊖ 로 닫는다 */
+.ts-trait-box {
+  border: 1px solid var(--ts-rule);
+  border-radius: 6px;
+  padding: 4px 8px 2px;
+  margin-top: 6px;
+}
+
+.ts-trait-box .ts-form-group-title .ts-iconbtn.ts-form-card-remove {
+  margin: 0 4px 0 -4px;
+}
+
+.ts-trait-menu {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ts-trait-menu-item {
+  padding: 1px 8px;
+  border: 1px solid var(--ts-rule-strong);
+  border-radius: 4px;
+  background: var(--ts-surface);
+  color: var(--ts-ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ts-trait-menu-item:hover {
+  background: var(--ts-surface-2);
 }
 
 /* 카드 머리가 이름이라 값 폼의 레벨 제목 · 구획 괘선은 겹친다 */
@@ -4737,6 +4947,8 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-form-read select:where(:not([data-slot])).ts-field-direct,
 .ts-form-read textarea:where(:not([data-slot])).ts-field-direct {
   border-color: transparent;
+  border-radius: 3px;
+  padding-inline: 6px;
   background: var(--ts-surface-2);
   color: var(--ts-ink-2);
 }
@@ -5367,7 +5579,7 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-basic-name > span:first-child { font-weight: 600; line-height: 32px; }
 .ts-basic-name-control { display: grid; gap: 4px; }
 .ts-basic-name input:where(:not([data-slot])) { width: 100%; min-height: 32px; box-sizing: border-box; }
-.ts-basic-name input:where(:not([data-slot]))[readonly] { background: var(--ts-surface-2); border-color: var(--ts-rule); color: var(--ts-ink); }
+.ts-basic-name input:where(:not([data-slot]))[readonly] { background: var(--ts-surface-2); border-bottom-color: transparent; border-radius: 3px; padding-inline: 6px; color: var(--ts-ink); }
 .ts-basic-product-values { margin-bottom: 32px; }
 .ts-basic-product-values > h3,
 .ts-basic-plans > h3 { font-size: 15px; margin: 0 0 12px; }
@@ -5444,7 +5656,7 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 /* ── 상품 상세 「안 2」 (2026-09-28) — 기본정보 › 상품정보 표 · 상품담보 표 묶음 · 보통약관 탭 ── */
 .ts-basic-info th[scope="row"] { width: 160px; font-weight: 600; text-align: left; }
 .ts-basic-info input:where(:not([data-slot]))[type="text"] { width: 100%; min-height: 32px; box-sizing: border-box; }
-.ts-basic-info input:where(:not([data-slot]))[readonly] { background: var(--ts-surface-2); border-color: var(--ts-rule); color: var(--ts-ink); }
+.ts-basic-info input:where(:not([data-slot]))[readonly] { background: var(--ts-surface-2); border-bottom-color: transparent; border-radius: 3px; padding-inline: 6px; color: var(--ts-ink); }
 .ts-basic-group th { padding-top: 12px; font-size: 12px; color: var(--ts-ink-3); font-weight: 600; text-align: left; }
 
 /* 같은 담보의 둘째 상품담보부터 — 코드 · 담보명 칸이 비고 윗줄 괘선을 흐리게 해 한 묶음으로 읽힌다 */
@@ -5456,7 +5668,7 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-mount-section tfoot td { border-bottom: 0; }
 .ts-mount-add-row .ts-combo { width: 280px; }
 /* 옆 속성 select(레거시, min-height 24px)와 같은 높이 — 오른쪽 여백(pr-5)은 위젯 것을 둔다 */
-.ts-mount-add-row .ts-combo [data-slot="input"] { height: 24px; padding-left: 6px; }
+.ts-mount-add-row .ts-combo [data-slot="input"] { height: 24px; padding-left: 2px; }
 .ts-mount-section tr.ts-row-error > td { border-top-color: transparent; padding-top: 0; }
 
 /* 보통약관 · 특별약관 탭 — 위 한 줄 뒤 화면 높이를 채우는 패널 */

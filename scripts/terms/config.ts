@@ -8,6 +8,7 @@
  * 이름을 모르는 번호는 「(미확인 별표 N)」 자리표시로 두고 실물 별표 목록을 확인하면 이름만 고친다 (코드는 불변).
  */
 
+import { CLAIM_SLOT } from "./claim";
 import type { ConvertedClauseMode } from "./clauses";
 import { BASIS_DATE, BASIS_DATE_COVERAGE_PRESET } from "./renewal";
 
@@ -284,7 +285,7 @@ export type CoverageCategory = "V01" | "V02" | "V03" | "V04" | "V05";
  *   사망            : ① 사망 시 소멸 (항 하나 — 조째)
  *   지급사유         : ① 제1조 지급사유 발생 시 소멸 ② 제1항에 따라 해약환급금 미지급 ③ 사망 시 소멸
  *   사망보험금       : ③ 이 「제1항 이외의 사유로」 사망 — 사망이 곧 지급사유인 담보
- *   생활자금         : ① 이 「제1조 제1항에서 정한 … 생활자금」 (보험금명이 담보 값과 띄어쓰기가 달라 슬롯이 아니다)
+ *   생활자금         : ① 이 「제1조 제1항에서 정한 … 생활자금」 (보험금명이 제1조와 띄어쓰기가 달라 보험금명 자리가 아니다)
  *   중증화상및부식    : ① 사망 시 소멸 ②③ 세부보장 하나의 소멸 · 해약환급금 미지급
  */
 type ClauseDraft = ClauseSpec;
@@ -338,8 +339,8 @@ const CLAUSE_DRAFTS: ClauseDraft[] = [
   generalArticle("g-first-premium", "제1회 보험료 및 회사의 보장개시", "27"),
   // ── 담보약관 — 같은 담보의 두 상품 조
   specialArticle("burn-scope", "보장의 범위(신화상치료비)", "burn-doc", "1", "신화상치료비의 세 보장 — 두 상품이 같은 글이다(뒤 박스는 사용처 소유)"),
-  specialArticle("fracture-cause", "보험금의 지급사유(골절진단비)", "fracture-doc", "1", "골절(치아파절 제외)진단비의 지급사유 — 두 상품이 같은 글이다. 보험금명은 담보 값(D0001)"),
-  specialArticle("fracture-surgery-cause", "보험금의 지급사유(골절수술비)", "fracture-surgery-doc", "1", "골절수술비의 지급사유 — 두 상품이 같은 글이다. 보험금명은 담보 값(D0001)"),
+  specialArticle("fracture-cause", "보험금의 지급사유(골절진단비)", "fracture-doc", "1", "골절(치아파절 제외)진단비의 지급사유 — 두 상품이 같은 글이다. 보험금명은 사용처가 상수로 연결한다"),
+  specialArticle("fracture-surgery-cause", "보험금의 지급사유(골절수술비)", "fracture-surgery-doc", "1", "골절수술비의 지급사유 — 두 상품이 같은 글이다. 보험금명은 사용처가 상수로 연결한다"),
   specialArticle("fracture-detail", "보험금 지급에 관한 세부규정(골절진단비)", "fracture-doc", "2", "골절 여럿이면 1회 · 제3자 판정 — 두 상품이 같은 글이다. 「제1조」는 사용처 위치"),
   specialArticle("fracture-surgery-detail", "보험금 지급에 관한 세부규정(골절수술비)", "fracture-surgery-doc", "2", "골절 수술 여럿이면 하나 · 제3자 판정 — 두 상품이 같은 글이다. 「제1조」는 사용처 위치"),
   specialArticle("living-detail", "보험금 지급에 관한 세부규정(생활자금)", "living80-doc", "2", "알파Plus 후유장해 생활자금 두 담보의 장해지급률 · 합산 · 가중 규정 — 분류표 외 후유장해로 정하는 것(지급액 · 장해지급률)만 다르다", {
@@ -372,7 +373,7 @@ const CLAUSE_DRAFTS: ClauseDraft[] = [
   }),
   // ── 담보약관 — 특별약관의 소멸 (담보 구조별)
   specialArticle("lapse-death", "특별약관의 소멸(사망)", "fracture-doc", "4", "소멸 급부가 없는 담보 — 피보험자 사망으로 소멸하고 계약자적립액 · 미경과보험료를 지급한다"),
-  specialArticle("lapse-claim", "특별약관의 소멸(지급사유 발생)", "major-injury-surgery-doc", "4", "소멸 급부가 담보 전체 — 제1조의 지급사유가 생기면 소멸 · 해약환급금 미지급 · 사망 시 소멸. 보험금명은 담보 값(D0001), 「그 때부터」 유무가 상품마다 다르다", {
+  specialArticle("lapse-claim", "특별약관의 소멸(지급사유 발생)", "major-injury-surgery-doc", "4", "소멸 급부가 담보 전체 — 제1조의 지급사유가 생기면 소멸 · 해약환급금 미지급 · 사망 시 소멸. 보험금명은 사용처가 상수로 연결한다, 「그 때부터」 유무가 상품마다 다르다", {
     options: [{ label: "소멸 표현", values: values(["그 때부터 소멸", "그 때부터 소멸됩니다"], ["소멸", "소멸됩니다"]) }],
     place: [{ option: "O01", text: "그 때부터 소멸됩니다" }],
   }),
@@ -550,8 +551,8 @@ const ALPHA_SPECIALS: SpecialSpec[] = [
     ownerCoverage: "death",
     idPrefix: "s1",
     file: "일반상해사망보장.md",
-    // 제3조 ①의 보험금명은 담보 값(D0001 = 사망보험금) — 소멸 급부가 곧 사망이라 ③ 앞에 「제1항 이외의 사유로 」(T2 사망형)
-    slots: [{ article: "3", find: "사망보험금", ref: "D0001" }],
+    // 제3조 ①의 보험금명은 보험금명 자리(사망보험금 — claim.ts) — 소멸 급부가 곧 사망이라 ③ 앞에 「제1항 이외의 사유로 」(T2 사망형)
+    slots: [{ article: "3", find: "사망보험금", ref: CLAIM_SLOT }],
     // 갱신형 탑재분(알파Plus2607 「갱신형 일반상해사망보장」)은 소멸 앞에 보험기간 조가 선다 — 2607 갱신형 원문의 조를 갱신형 조건으로 넣는다
     extraArticles: [{ file: "알파2607/갱신형_일반상해사망보장.md", article: "3", before: "3" }],
     articleConds: [{ article: "x3", when: RENEWAL }],
@@ -562,8 +563,8 @@ const ALPHA_SPECIALS: SpecialSpec[] = [
     ownerCoverage: "living80",
     idPrefix: "s2",
     file: "일반상해80%이상후유장해_생활자금보장.md",
-    slots: [{ article: "1", find: "일반상해80%이상후유장해 생활자금", ref: "D0001" }],
-    // 제3조 ①의 보험금명은 원문이 「일반상해 80%…」로 띄어 써 담보 값과 달라 평문으로 둔다
+    slots: [{ article: "1", find: "일반상해80%이상후유장해 생활자금", ref: CLAIM_SLOT }],
+    // 제3조 ①의 보험금명은 원문이 「일반상해 80%…」로 띄어 써 제1조와 달라 평문으로 둔다
     clauses: [whole("2", "living-detail", "V01"), whole("3", "lapse-living", "V01"), whole("4", "alpha-application")],
   },
   {
@@ -571,7 +572,7 @@ const ALPHA_SPECIALS: SpecialSpec[] = [
     ownerCoverage: "fracture",
     idPrefix: "s3",
     file: "골절(치아파절_제외)진단비Ⅱ보장.md",
-    slots: [{ article: "1", find: "골절(치아파절 제외)진단비", ref: "D0001" }],
+    slots: [{ article: "1", find: "골절(치아파절 제외)진단비", ref: CLAIM_SLOT }],
     // 갱신형 탑재분(알파Plus2607 「갱신형 골절(치아파절 제외)진단비Ⅱ보장」)은 소멸 앞에 보험기간 조가 선다
     extraArticles: [{ file: "알파2607/갱신형_골절(치아파절_제외)진단비Ⅱ보장.md", article: "4", before: "4" }],
     articleConds: [{ article: "x4", when: RENEWAL }],
@@ -582,7 +583,7 @@ const ALPHA_SPECIALS: SpecialSpec[] = [
     ownerCoverage: "living50",
     idPrefix: "s4",
     file: "일반상해50%이상후유장해_생활자금보장.md",
-    slots: [{ article: "1", find: "일반상해50%이상후유장해 생활자금", ref: "D0001" }],
+    slots: [{ article: "1", find: "일반상해50%이상후유장해 생활자금", ref: CLAIM_SLOT }],
     clauses: [whole("2", "living-detail", "V02"), whole("3", "lapse-living", "V02"), whole("4", "alpha-application")],
   },
   {
@@ -590,7 +591,7 @@ const ALPHA_SPECIALS: SpecialSpec[] = [
     ownerCoverage: "fracture-surgery",
     idPrefix: "s5",
     file: "골절수술비Ⅱ보장.md",
-    slots: [{ article: "1", find: "골절수술비", ref: "D0001" }],
+    slots: [{ article: "1", find: "골절수술비", ref: CLAIM_SLOT }],
     clauses: [whole("1", "fracture-surgery-cause"), whole("2", "fracture-surgery-detail"), whole("5", "lapse-death"), whole("6", "alpha-application")],
   },
   {
@@ -599,8 +600,8 @@ const ALPHA_SPECIALS: SpecialSpec[] = [
     idPrefix: "s6",
     file: "중대한특정상해수술비보장.md",
     slots: [
-      { article: "1", find: "중대한특정상해수술비", ref: "D0001" },
-      { article: "4", find: "중대한특정상해수술비", ref: "D0001" },
+      { article: "1", find: "중대한특정상해수술비", ref: CLAIM_SLOT },
+      { article: "4", find: "중대한특정상해수술비", ref: CLAIM_SLOT },
     ],
     clauses: [whole("4", "lapse-claim", "V01"), whole("5", "alpha-application")],
   },
@@ -613,7 +614,7 @@ const ALPHA_SPECIALS: SpecialSpec[] = [
     idPrefix: "s7",
     title: "수술비(1-7종, 연간3회한)[상해]보장 특별약관",
     file: "갱신형_수술비(1-7종,_연간3회한)[상해]보장.md",
-    slots: [{ article: "1", find: "수술비", ref: "D0001" }],
+    slots: [{ article: "1", find: "수술비", ref: CLAIM_SLOT }],
     // ① 제1조 제2항 · ②③ 예시표 (1)(2) 의 행 머리 — 「최초계약일」 ↔ 「계약일」은 문구 함수조항 「기준일 문구」 프리셋 ‘담보’(갱신 ← 갱신형 담보, ADR-0086 결정 6)
     inlineClauses: [1, 2, 3].map(() => ({ article: "1", find: "최초계약일", clause: BASIS_DATE, preset: BASIS_DATE_COVERAGE_PRESET })),
     inlineConds: [
@@ -639,8 +640,8 @@ const ALPHA_SPECIALS: SpecialSpec[] = [
     // 3보장 중 화상진단비 급부의 지급명만 담보 레벨 값이 된다 — 두 번 등장하므로 오버레이도 두 벌.
     // 나머지 두 지급명(화상수술비 · 중증화상및부식진단비)은 급부 레벨 지급명 자리가 없어 문면에 굳어 있다.
     slots: [
-      { article: "2", find: "화상진단비", ref: "D0001" },
-      { article: "2", find: "화상진단비", ref: "D0001" },
+      { article: "2", find: "화상진단비", ref: CLAIM_SLOT },
+      { article: "2", find: "화상진단비", ref: CLAIM_SLOT },
     ],
     // 소멸 — 세부보장 셋 중 중증화상및부식진단비만 소멸 급부(①사망 · ②③ 그 세부보장)
     clauses: [whole("1", "burn-scope"), whole("6", "burn-definition", { O01: "V01", O02: "V01" }), whole("7", "lapse-burn"), whole("8", "alpha-application")],
@@ -699,8 +700,8 @@ const MERITZ_SPECIALS: SpecialSpec[] = [
     file: "갱신형_일반상해80%이상후유장해(통합간편가입)보장.md",
     title: "일반상해80%이상후유장해(통합간편가입)보장 특별약관",
     slots: [
-      { article: "1", find: "일반상해80%이상후유장해보험금", ref: "D0001" },
-      { article: "3", find: "일반상해80%이상후유장해보험금", ref: "D0001" },
+      { article: "1", find: "일반상해80%이상후유장해보험금", ref: CLAIM_SLOT },
+      { article: "3", find: "일반상해80%이상후유장해보험금", ref: CLAIM_SLOT },
     ],
     clauses: [whole("2", "disability-detail", { O01: "V01", O02: "V01", O03: "V02" }), whole("3", "lapse-claim", "V02"), whole("4", "meritz-application")],
   },
@@ -710,7 +711,7 @@ const MERITZ_SPECIALS: SpecialSpec[] = [
     idPrefix: "m2",
     file: "갱신형_수술비(1-7종,_연간3회한)[상해](통합간편가입)보장.md",
     title: "수술비(1-7종, 연간3회한)[상해](통합간편가입)보장 특별약관",
-    slots: [{ article: "1", find: "수술비", ref: "D0001" }],
+    slots: [{ article: "1", find: "수술비", ref: CLAIM_SLOT }],
     clauses: [whole("6", "lapse-death"), whole("7", "meritz-application")],
   },
   {
@@ -719,7 +720,7 @@ const MERITZ_SPECIALS: SpecialSpec[] = [
     idPrefix: "m3",
     file: "갱신형_골절(치아파절_제외)진단비Ⅱ(통합간편가입)보장.md",
     title: "골절(치아파절 제외)진단비Ⅱ(통합간편가입)보장 특별약관",
-    slots: [{ article: "1", find: "골절(치아파절 제외)진단비", ref: "D0001" }],
+    slots: [{ article: "1", find: "골절(치아파절 제외)진단비", ref: CLAIM_SLOT }],
     clauses: [whole("1", "fracture-cause"), whole("2", "fracture-detail"), whole("4", "lapse-death"), whole("5", "meritz-application")],
   },
   {
@@ -729,8 +730,8 @@ const MERITZ_SPECIALS: SpecialSpec[] = [
     file: "갱신형_신화상치료비(통합간편가입)보장.md",
     title: "신화상치료비(통합간편가입)보장 특별약관",
     slots: [
-      { article: "2", find: "화상진단비", ref: "D0001" },
-      { article: "2", find: "화상진단비", ref: "D0001" },
+      { article: "2", find: "화상진단비", ref: CLAIM_SLOT },
+      { article: "2", find: "화상진단비", ref: CLAIM_SLOT },
     ],
     // 알파Plus 신화상과 같은 조 셋(보장의 범위 · 소멸 · 중증화상 정의 — 정의는 조사 두 곳이 다르다)
     clauses: [whole("1", "burn-scope"), whole("6", "burn-definition", { O01: "V02", O02: "V02" }), whole("7", "lapse-burn"), whole("8", "meritz-application")],
@@ -741,7 +742,7 @@ const MERITZ_SPECIALS: SpecialSpec[] = [
     idPrefix: "m5",
     file: "갱신형_골절수술비Ⅱ(통합간편가입)보장.md",
     title: "골절수술비Ⅱ(통합간편가입)보장 특별약관",
-    slots: [{ article: "1", find: "골절수술비", ref: "D0001" }],
+    slots: [{ article: "1", find: "골절수술비", ref: CLAIM_SLOT }],
     clauses: [whole("1", "fracture-surgery-cause"), whole("2", "fracture-surgery-detail"), whole("5", "lapse-death"), whole("6", "meritz-application")],
   },
   {
@@ -751,8 +752,8 @@ const MERITZ_SPECIALS: SpecialSpec[] = [
     file: "갱신형_질병사망(통합간편가입)보장.md",
     title: "질병사망(통합간편가입)보장 특별약관",
     slots: [
-      { article: "1", find: "질병사망보험금", ref: "D0001" },
-      { article: "3", find: "질병사망보험금", ref: "D0001" },
+      { article: "1", find: "질병사망보험금", ref: CLAIM_SLOT },
+      { article: "3", find: "질병사망보험금", ref: CLAIM_SLOT },
     ],
     // 소멸은 사망보험금형(③ 「제1항 이외의 사유로」). 준용규정은 제5조까지 빼는 다른 글이라 담보약관에 직접 둔다
     clauses: [whole("3", "lapse-claim-death", { O01: "V02", O02: "V02" })],
@@ -764,8 +765,8 @@ const MERITZ_SPECIALS: SpecialSpec[] = [
     file: "갱신형_질병80%이상후유장해(통합간편가입)보장.md",
     title: "질병80%이상후유장해(통합간편가입)보장 특별약관",
     slots: [
-      { article: "1", find: "질병80%이상후유장해보험금", ref: "D0001" },
-      { article: "3", find: "질병80%이상후유장해보험금", ref: "D0001" },
+      { article: "1", find: "질병80%이상후유장해보험금", ref: CLAIM_SLOT },
+      { article: "3", find: "질병80%이상후유장해보험금", ref: CLAIM_SLOT },
     ],
     clauses: [whole("2", "disability-detail", { O01: "V02", O02: "V02", O03: "V01" }), whole("3", "lapse-claim", "V02"), whole("4", "meritz-application")],
   },
@@ -775,7 +776,7 @@ const MERITZ_SPECIALS: SpecialSpec[] = [
     idPrefix: "m8",
     file: "갱신형_수술비(1-7종,_연간3회한)[질병](통합간편가입)보장.md",
     title: "수술비(1-7종, 연간3회한)[질병](통합간편가입)보장 특별약관",
-    slots: [{ article: "1", find: "수술비", ref: "D0001" }],
+    slots: [{ article: "1", find: "수술비", ref: CLAIM_SLOT }],
     clauses: [whole("6", "lapse-death"), whole("7", "meritz-application")],
   },
 ];
@@ -828,8 +829,8 @@ const disease = (key: string, file: string, claim: string, slotCount: number, ar
   ownerCoverage: `a7-${key}`,
   idPrefix: `a7${key}`,
   file,
-  // 보험금명은 담보 값(D0001) — 제1조의 자리마다, 소멸 조 ① 은 함수조항 「특별약관의 소멸(지급사유 발생)」 본문의 슬롯과 맞춘다
-  slots: [...Array.from({ length: slotCount }, () => ({ article: "1", find: claim, ref: "D0001" })), { article: articles[1], find: claim, ref: "D0001" }],
+  // 보험금명 자리(claim.ts) — 제1조의 자리마다, 소멸 조 ① 은 함수조항 「특별약관의 소멸(지급사유 발생)」 본문의 슬롯과 맞춘다
+  slots: [...Array.from({ length: slotCount }, () => ({ article: "1", find: claim, ref: CLAIM_SLOT })), { article: articles[1], find: claim, ref: CLAIM_SLOT }],
   clauses: [whole(articles[0], "third-party"), whole(articles[1], "lapse-claim", "V01"), whole(articles[2], "alpha-application-disease")],
 });
 

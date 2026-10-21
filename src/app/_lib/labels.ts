@@ -37,7 +37,6 @@ export const NAME_LABEL = {
   enum: "열거형변수 이름",
   clause: "함수조항명",
   appendix: "별표 이름",
-  box: "박스 이름",
   dynTable: "동적표명",
   coverage: "담보명",
   product: "상품명",
@@ -106,6 +105,9 @@ export function chooseLabel(entity: string): string {
 export function addLabel(target: string): string {
   return `${target} 추가`;
 }
+
+/** 박스의 줄 칸 — 사용자 말로 「본문」 (기능/박스 §4.2, 2026-10-21). */
+export const BOX_BODY_LABEL = "본문";
 
 export function searchPlaceholder(...fields: string[]): string {
   return fields.join(" · ");

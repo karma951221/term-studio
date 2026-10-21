@@ -1,10 +1,11 @@
 /**
- * 정적 마스터 박스 한 개의 읽기 표시 — 머리 띠 「박스 이름(코드)」 + 【제목】 + 줄 (최종 결정 9 · 기능/박스 §4).
+ * 정적 마스터 박스 한 개의 읽기 표시 — 머리 띠 「박스 · 코드」 + 【제목】 + 줄 (최종 결정 9 · 기능/박스 §4.4).
+ * 박스 이름 칸은 없다(2026-10-21) — 【제목】이 곧 이름이라 머리 띠에는 코드만 둔다(제목을 두 번 쓰지 않게).
  * 문면 편집기 · 함수조항 모델 · 상품 템플릿 원문이 박스 참조를 같은 모양으로 그린다. 내용은 박스 화면에서만 고친다.
  */
 import Link from "next/link";
 
-import type { Box } from "@/domain/document/box";
+import { boxHeading, boxLabel, type Box } from "@/domain/document/box";
 import type { Code } from "@/domain/types";
 
 export function BoxView({ code, box, link = true }: { code: Code; box: Box | undefined; link?: boolean }) {
@@ -17,11 +18,11 @@ export function BoxView({ code, box, link = true }: { code: Code; box: Box | und
     );
   }
   return (
-    <aside className="ts-doc-box" data-box={code} aria-label={`박스 ${box.name}`}>
+    <aside className="ts-doc-box" data-box={code} aria-label={`박스 ${boxLabel(box)}`}>
       <p className="ts-doc-box-ref ts-muted">
-        박스 · {link ? <Link href={`/boxes/${encodeURIComponent(code)}`}>{box.name}</Link> : box.name} <span className="ts-mono">({code})</span>
+        박스 · {link ? <Link href={`/boxes/${encodeURIComponent(code)}`} className="ts-mono">{code}</Link> : <span className="ts-mono">{code}</span>}
       </p>
-      {box.title !== "" && <p className="ts-doc-box-title">【{box.title}】</p>}
+      {box.title !== "" && <p className="ts-doc-box-title">{boxHeading(box.title)}</p>}
       {box.lines.map((line, i) => (
         <p key={i} className="ts-doc-box-line">
           {line}

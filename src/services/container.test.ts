@@ -38,6 +38,7 @@ describe("container — createServices 관통 (PGlite)", () => {
   let special: DocumentRecord;
   let productId: Id;
   let pcId: Id;
+  let snapBenefitId: Id; // 상품담보 스냅샷의 급부 — 담보 레벨 값 자리는 없어(보험금명 2026-10-21 삭제) 값 복사는 급부 지급률로 본다
   const b = nodeBuilders();
   const artPay = b.article("보험금의 지급사유", [
     b.paragraph([
@@ -73,22 +74,20 @@ describe("container — createServices 관통 (PGlite)", () => {
     unwrap(await s.catalog.createEnum(editor, { label: "고지유형", values: [{ label: "일반심사" }, { label: "간편심사" }, { label: "건강고지" }] }));
     unwrap(await s.catalog.createEnum(editor, { label: "간편심사구분", values: [{ label: "단일심사" }, { label: "통합간편심사" }] }));
     unwrap(await s.catalog.createEnum(editor, { label: "계약형태", values: [{ label: "주계약" }, { label: "독립특약" }] })); // E0007
-    expect(unwrap(await s.catalog.create(editor, { label: "갱신여부", level: "coverage", expression: "coverage_basic.claim_name = '갱신'", resultType: { kind: "boolean" } })).code).toBe("D0001");
-    expect(unwrap(await s.catalog.create(editor, { label: "수술급여기준", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } })).code).toBe("D0002");
+    expect(unwrap(await s.catalog.create(editor, { label: "갱신여부", level: "coverage", expression: "builtin.coverage.name = '갱신'", resultType: { kind: "boolean" } })).code).toBe("D0001");
+    expect(unwrap(await s.catalog.create(editor, { label: "수술급여기준", level: "coverage", expression: "builtin.coverage.name", resultType: { kind: "string" } })).code).toBe("D0002");
     unwrap(await s.catalog.create(editor, { label: "지급률", level: "benefit", expression: "pay.rate", resultType: { kind: "number" } }));
     unwrap(await s.catalog.create(editor, { label: "평균공시이율", level: "product", expression: "'2.5%'", resultType: { kind: "string" } }));
-    unwrap(await s.catalog.create(editor, { label: "면책여부합", level: "coverage", expression: "any(pay.exempt)", resultType: { kind: "boolean" } }));
+    unwrap(await s.catalog.create(editor, { label: "면책여부합", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } }));
     // 구분자 → 구분자 참조는 마스터 필드와 같은 레벨 규칙이다 (기능/구분자 §3.2) — 상위(상품 D0004) · 집계 없는 하위(급부 D0003)는 거부
     expect(rejection(await s.catalog.create(editor, { label: "상위참조", level: "coverage", expression: "(D0004)", resultType: { kind: "string" } })).reason).toBe("invalid");
     expect(rejection(await s.catalog.create(editor, { label: "하위직접", level: "coverage", expression: "D0003 > 0", resultType: { kind: "boolean" } })).reason).toBe("invalid");
     unwrap(await s.catalog.create(editor, { label: "무저해지유형", level: "plan", expression: "no_surrender.type", resultType: { kind: "enum", enumCode: "E0002" } }));
   });
 
-  it("담보트리·담보값입력 — 담보 「일반상해사망」 생성 · 담보 값 · 급부 값", async () => {
+  it("담보트리·담보값입력 — 담보 「일반상해사망」 생성 · 급부 값 (담보 레벨 값 자리는 없다)", async () => {
     death = unwrap(await s.coverage.create(editor, { name: "일반상해사망", benefitName: "사망보험금" }));
-    unwrap(await s.coverage.writeValue(editor, { level: "coverage", id: death.id }, "coverage_basic.claim_name", "사망보험금"));
     const benefit = death.subCoverages[0].benefits[0];
-    unwrap(await s.coverage.writeValue(editor, { level: "benefit", id: benefit.id }, "pay.exempt", false));
     unwrap(await s.coverage.writeValue(editor, { level: "benefit", id: benefit.id }, "pay.rate", 100));
     expect(unwrap(await s.coverage.completeness(death.id))).toEqual([]);
   });
@@ -129,8 +128,8 @@ describe("container — createServices 관통 (PGlite)", () => {
     const check = unwrap(await s.clause.checkReference("C0001", { kind: "coverage", id: death.id }));
     expect(check.missing).toEqual([]);
     expect(check.broken).toEqual([]);
-    expect(unwrap(await s.coverage.form({ level: "coverage", id: death.id })).fields.map((f) => f.path)).toEqual(["coverage_basic.claim_name"]);
-    unwrap(await s.coverage.writeValue(editor, { level: "coverage", id: death.id }, "coverage_basic.claim_name", "기준A"));
+    expect(unwrap(await s.coverage.form({ level: "coverage", id: death.id })).fields.map((f) => f.path)).toEqual([]); // 담보 레벨 폼은 없다
+    unwrap(await s.coverage.writeValue(editor, { level: "benefit", id: death.subCoverages[0].benefits[0].id }, "pay.rate", 80));
     // 옵션 미선택 참조는 저장 시점에 거부된다 (기능/함수조항 §3.2) — 게이트가 함수조항 정의로 검사
     const unselected = b.article("y", [b.clauseBlock("C0001", {})]);
     const r = await s.document.apply(editor, special.id, [{ type: "insert", node: unselected, at: { parentId: special.tree.id } }]);
@@ -161,7 +160,8 @@ describe("container — createServices 관통 (PGlite)", () => {
     expect(pc.name).toBe("갱신형 일반상해사망");
     const snap = unwrap(await s.product.getSnapshot(pcId));
     expect(snap.subCoverages[0].benefits[0].name).toBe("사망보험금");
-    expect((await s.product.getSnapshotValues(pcId)).get(pcId)?.get("coverage_basic.claim_name")).toEqual({ entered: true, value: "기준A" });
+    snapBenefitId = snap.subCoverages[0].benefits[0].id;
+    expect((await s.product.getSnapshotValues(pcId)).get(snapBenefitId)?.get("pay.rate")).toEqual({ entered: true, value: 80 });
     // 기본계약 지정 — 보통약관이 요구하는 구분자 D0001 이 카탈로그에 있으므로 통과
     expect(unwrap(await s.product.designateBaseContract(editor, productId, pcId)).issues).toEqual([]);
     // 옵션 오버라이드 — 유효 집합 안에서만
@@ -207,7 +207,7 @@ describe("container — createServices 관통 (PGlite)", () => {
       { document: "special", ownerId: death.id, ownerName: "일반상해사망 특별약관" },
       { document: "special", ownerId: pcId, ownerName: "갱신형 일반상해사망" },
     ]);
-    expect(cov.valueRowsLost).toBe(3); // 담보명 + 급부 면책여부·지급률
+    expect(cov.valueRowsLost).toBe(1); // 급부 지급률 (담보 레벨 값 자리는 없다)
     // 급부 삭제는 최소 구조 위반 — 관리자도 거부
     expect(rejection(await s.coverage.removeBenefit(admin, death.subCoverages[0].benefits[0].id)).reason).toBe("minimumStructure");
     // 함수조항 삭제 → 참조 문서 (참조 노드 좌표)
@@ -233,7 +233,7 @@ describe("container — createServices 관통 (PGlite)", () => {
     unwrap(await s.catalog.remove(admin, "D0002", { confirm: true }));
     expect(await s.catalog.get("D0002")).toBeUndefined();
     // 값은 마스터 자리에 있으므로 구분자를 지워도 남는다 — 사라진 것은 문면이 부를 이름이다
-    expect((await s.product.getSnapshotValues(pcId)).get(pcId)?.has("coverage_basic.claim_name")).toBe(true);
+    expect((await s.product.getSnapshotValues(pcId)).get(snapBenefitId)?.has("pay.rate")).toBe(true);
     const { broken, issues } = await s.refs.integrity();
     expect(broken.map((e) => [e.via, e.at.ownerId])).toEqual([["defaultBinding", "C0001"]]);
     expect(issues[0]).toMatchObject({ kind: "brokenRef", at: { document: "clause", ownerId: "C0001", refPath: "arg.기준" } });

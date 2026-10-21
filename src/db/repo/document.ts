@@ -241,11 +241,11 @@ export async function nextBoxSeq(db: Db): Promise<number> {
 type BoxRow = typeof boxes.$inferSelect;
 
 function toBox(r: BoxRow): Box {
-  return { code: r.code, name: r.name, title: r.title, lines: r.lines };
+  return { code: r.code, title: r.title, lines: r.lines };
 }
 
 export async function insertBox(db: Db, x: Box, who: Id): Promise<void> {
-  await db.insert(boxes).values({ code: x.code, name: x.name, title: x.title, lines: x.lines, createdBy: who, updatedBy: who });
+  await db.insert(boxes).values({ code: x.code, title: x.title, lines: x.lines, createdBy: who, updatedBy: who });
 }
 
 export async function loadBox(db: Db, code: Code): Promise<Box | undefined> {
@@ -262,7 +262,7 @@ export async function listBoxes(db: Db): Promise<Box[]> {
 export async function saveBox(db: Db, x: Box, who: Id): Promise<void> {
   const [row] = await db
     .update(boxes)
-    .set({ name: x.name, title: x.title, lines: x.lines, updatedAt: new Date(), updatedBy: who })
+    .set({ title: x.title, lines: x.lines, updatedAt: new Date(), updatedBy: who })
     .where(eq(boxes.code, x.code))
     .returning({ id: boxes.id });
   if (!row) throw new Error(`저장 대상 박스가 없습니다: ${x.code}`);

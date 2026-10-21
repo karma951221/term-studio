@@ -46,6 +46,12 @@ describe("renderDynTableSample — 글", () => {
     expect(out.rows.map((r) => r.map(cellText))).toEqual([["항암치료비", "보험가입금액의 20%"]]);
     expect(renderDynTableSample(dynTableFixtureR(), [], {}).rows).toEqual([]);
   });
+
+  it("지급률 미입력 급부는 100% 로 읽는다 — 사유가 서지 않는다", () => {
+    const out = renderDynTableSample(dynTableFixtureR(), [benefit("S", "급부", undefined)], {});
+    expect(out.rows.map((r) => r.map(cellText))).toEqual([["급부", "보험가입금액의 100%"]]);
+    expect(out.issues.some((m) => m.includes("지급률"))).toBe(false);
+  });
 });
 
 describe("renderDynTableSample — 영역 · 조각", () => {

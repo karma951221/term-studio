@@ -3,9 +3,9 @@ import { NO_COORD, arrive, login, open, saveEdit } from "./_lib/app";
 import { HUMAN, SEED } from "./_lib/seed";
 
 /**
- * ★ 실물 재현(화면) ② 담보 9 — 담보 › 세부보장 › 급부 구조와 담보 값(보험금명). 모델명세 §3.1.
- * 생성 화면에서 담보명 · 첫 세부보장명 · 첫 급부명, 세부보장이 여럿이면 상세 편집의 「+ 세부보장」으로 나머지를 더한다.
- * 담보분류(열거형 E0009 값 — 필수, ADR-0090)는 생성 화면에서 고르고, 보험금명(`coverage_basic.claim_name`)은 상세 편집에서 — 편집 한 번 = 저장 한 번.
+ * ★ 실물 재현(화면) ② 담보 9 — 담보 › 세부보장 › 급부 구조. 모델명세 §3.1. 담보 값은 없다(보험금명은 담보약관 글자 — ADR-0091).
+ * 생성 화면에서 담보명 · 첫 세부보장명 · 첫 급부명, 세부보장이 여럿이면 상세 편집의 「세부보장 ⊕」로 나머지를 더한다 — 편집 한 번 = 저장 한 번.
+ * 담보분류(열거형 E0009 값 — 필수, ADR-0090)는 생성 화면에서 고른다.
  */
 
 test.describe.serial("실물 재현(화면) ② 담보", () => {
@@ -28,7 +28,8 @@ test.describe.serial("실물 재현(화면) ② 담보", () => {
         await expect(page.locator(".ts-count code").first()).toHaveText(spec.code);
       });
 
-      await ev.action("실물화면#2.3", `편집 — 세부보장 ${rest.length}개 더하기 · 보험금명 「${spec.coverageValues[0]?.value}」 · 저장 한 번`, async () => {
+      // 담보 값이 없어(보험금명 삭제 — ADR-0091) 세부보장이 하나뿐이면 편집할 것이 없다 — 저장 버튼이 켜지지 않는다
+      if (rest.length > 0) await ev.action("실물화면#2.3", `편집 — 세부보장 ${rest.length}개 더하기 · 저장 한 번`, async () => {
         await page.getByRole("button", { name: "편집", exact: true }).click();
         for (const [i, sub] of rest.entries()) {
           const n = i + 2;
@@ -37,11 +38,10 @@ test.describe.serial("실물 재현(화면) ② 담보", () => {
           await card.getByRole("textbox", { name: `세부보장명 · ${String(n).padStart(2, "0")}`, exact: true }).fill(sub.name);
           await card.getByRole("textbox", { name: "급부명 · 1", exact: true }).fill(sub.benefitName);
         }
-        for (const value of spec.coverageValues) await page.locator(`section.ts-cov-card[data-level='coverage'] input[name="${value.path}"]`).fill(value.value);
         await saveEdit(page);
       });
 
-      await ev.action("실물화면#2.4", "읽기 모드 — 세부보장 · 급부 이름과 보험금명이 저장돼 있다", async () => {
+      await ev.action("실물화면#2.4", "읽기 모드 — 세부보장 · 급부 이름이 저장돼 있다", async () => {
         await page.reload();
         const subs = [first, ...rest];
         await expect(page.locator("section.ts-cov-card[data-level='subCoverage']")).toHaveCount(subs.length);
@@ -50,7 +50,6 @@ test.describe.serial("실물 재현(화면) ② 담보", () => {
           await expect(page.locator(".ts-cov-card-name", { hasText: sub.name }).first()).toBeVisible();
           await expect(page.locator(".ts-cov-card-name", { hasText: sub.benefitName }).first()).toBeVisible();
         }
-        for (const value of spec.coverageValues) await expect(page.locator(`input[name="${value.path}"]`)).toHaveValue(value.value);
         await expect(page.locator('[data-path="category"] .ts-form-control')).toHaveText(categoryLabel);
       });
     });

@@ -424,8 +424,10 @@ describe("refs 그래프 — 정적 마스터 박스 (최종 결정 9)", () => {
   };
 
   it("박스는 선언된 실체(box:코드)이고, 문서 · 함수조항 본문의 박스 참조가 boxRef 간선을 낸다", () => {
-    const g = buildGraph({ boxes: [{ code: "BX000001", name: "암 정의 박스", title: "", lines: ["x"] }, { code: "BX000002", name: "예시", title: "", lines: ["y"] }], clauses: [박스조항], documents: [doc] });
-    expect(g.nodes.get("box:BX000001")?.label).toBe("암 정의 박스");
+    const g = buildGraph({ boxes: [{ code: "BX000001", title: "암 정의", lines: ["x"] }, { code: "BX000002", title: "", lines: ["y"] }], clauses: [박스조항], documents: [doc] });
+    // 표시 이름 = 【제목】, 제목 없는 박스는 「(제목 없음) 본문 앞머리」 (기능/박스 §3.1, 2026-10-21)
+    expect(g.nodes.get("box:BX000001")?.label).toBe("【암 정의】");
+    expect(g.nodes.get("box:BX000002")?.label).toBe("(제목 없음) y");
     expect(edgesTo(g, "box:BX000001").map((e) => [e.from.kind, e.via, e.at.nodePath?.at(-1)])).toEqual([
       ["clause", "boxRef", "bx-in"],
       ["article", "boxRef", "bx-doc"],
@@ -552,7 +554,7 @@ describe("상품 조 사본 안 박스 · 별표 참조 (ADR-0079 · 기능/박�
       ],
     } as unknown as NonNullable<ProductInput["articleCopies"]>[number]["article"];
     const product: ProductInput = { id: "P1", name: "상품", coverages: [], overrides: [], articleCopies: [{ articleId: "a10", article }] };
-    const g = buildGraph({ boxes: [{ code: "BX000001", name: "박스", title: "", lines: ["줄"] }], appendices: [{ code: "AX000001", name: "별표" } as never], products: [product] });
+    const g = buildGraph({ boxes: [{ code: "BX000001", title: "", lines: ["줄"] }], appendices: [{ code: "AX000001", name: "별표" } as never], products: [product] });
     const edges = g.edges.filter((e) => e.from.kind === "product" && (e.via === "boxRef" || e.via === "appendixRef")).map((e) => [e.via, nodeKey(e.to), e.at]);
     expect(edges).toEqual([
       ["appendixRef", "appendix:AX000001", { document: "product", ownerId: "P1", ownerName: "상품", subjectName: "보통약관 조 사본", articleId: "a10", articleTitle: "지급사유" }],

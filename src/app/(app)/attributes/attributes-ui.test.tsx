@@ -43,33 +43,45 @@ async function listHtml(q?: string) {
 }
 
 const headers = (html: string) => [...html.matchAll(/<th[^>]*>(.*?)<\/th>/g)].map((m) => m[1]!.replace(/<[^>]+>/g, "").trim());
-const bodyRows = (html: string) => [...(html.match(/<tbody>(.*?)<\/tbody>/)?.[1] ?? "").matchAll(/<tr>(.*?)<\/tr>/g)].map((m) => [...m[1]!.matchAll(/<td[^>]*>(.*?)<\/td>/g)].map((c) => c[1]!.replace(/<[^>]+>/g, "")));
+// 두 줄 칸(코드 · 이름)은 줄 사이를 「/」로 이어 읽는다 — 「A0001/갱신유형」
+const cellText = (html: string) => html.replace(/<\/(code|a|span)><(a|span)[^>]*>/g, "/").replace(/<[^>]+>/g, "");
+const bodyRows = (html: string) => [...(html.match(/<tbody>(.*?)<\/tbody>/)?.[1] ?? "").matchAll(/<tr[^>]*>(.*?)<\/tr>/g)].map((m) => [...m[1]!.matchAll(/<td[^>]*>(.*?)<\/td>/g)].map((c) => cellText(c[1]!)));
 
 describe("담보속성 조회 — 한 행 = 유효값 하나", () => {
   it("유형마다 값 수만큼 행, 값 없는 유형은 한 행 · 유형 순 → 코드 순", () => {
     expect(attributeValueRows(KINDS).map((r) => `${r.kind.code}/${r.value?.code ?? "-"}`)).toEqual(["A0001/1", "A0001/2", "A0002/1", "A0002/2", "A0003/-"]);
   });
 
-  it("컬럼 — 담보속성 코드 · 담보속성명 · 값 코드 · 값 이름 · 상품담보명 표기 · 최종수정 · 수정자 (「수」 · 「값」 미리보기 없음)", async () => {
+  it("컬럼 — 담보속성(코드 · 이름 두 줄) · 값 코드 · 값 이름 · 상품담보명 표기 · 최종수정(일자 · 수정자 두 줄) (「수」 · 「값」 미리보기 없음, 2026-10-21)", async () => {
     const html = await listHtml();
-    expect(headers(html)).toEqual(["담보속성 코드", "담보속성명", "값 코드", "값 이름", "상품담보명 표기", "최종수정", "수정자"]);
+    expect(headers(html)).toEqual(["담보속성", "값 코드", "값 이름", "상품담보명 표기", "최종수정"]);
     expect(headers(html)).not.toContain("수");
     expect(html).not.toContain("명명");
+    // 담보속성 칸 · 최종수정 칸은 유형마다 한 번만(rowSpan) — 이어지는 값 행에는 그 칸이 없다
     const rows = bodyRows(html);
-    expect(rows.map((r) => r.slice(0, 5))).toEqual([
-      ["A0001", "갱신유형", "1", "비갱신형", "—"],
-      ["A0001", "갱신유형", "2", "갱신형", "갱신형"],
-      ["A0002", "부가유형", "1", "기본", "—"],
-      ["A0002", "부가유형", "2", "추가", "추가"],
-      ["A0003", "심사유형", "—", "값 없음", "—"],
+    expect(rows).toEqual([
+      ["A0001/갱신유형", "1", "비갱신형", "—", "—"],
+      ["2", "갱신형", "갱신형"],
+      ["A0002/부가유형", "1", "기본", "—", "—"],
+      ["2", "추가", "추가"],
+      ["A0003/심사유형", "—", "값 없음", "—", "—"],
     ]);
+    expect(html.match(/rowSpan="2"|rowspan="2"/g)).toHaveLength(4);
+    // 괘선은 묶음 사이에만 — 묶음 안의 행(다음 행이 같은 유형)에 표시
+    expect(html.match(/<tr class="ts-group-inner">/g)).toHaveLength(2);
+    // 짧은 값 이름이 「비갱\n신형」으로 쪼개지지 않게
+    expect(html).toMatch(/<td class="col-flex ts-nowrap">비갱신형<\/td>/);
     // 행의 담보속성명은 유형 상세로 간다
     expect(html).toContain('href="/attributes/A0001"');
   });
 
   it("검색 — 유형 이름이면 그 유형의 값 행 전부, 값 이름이면 그 값 행만", async () => {
-    expect(bodyRows(await listHtml("갱신유형")).map((r) => r[3])).toEqual(["비갱신형", "갱신형"]);
-    expect(bodyRows(await listHtml("비갱신")).map((r) => r[3])).toEqual(["비갱신형"]);
+    // 값 이름 칸 — 묶음 첫 행은 앞에 담보속성 칸이 하나 더 있다
+    const valueNames = async (q: string) => bodyRows(await listHtml(q)).map((r) => (r.length === 5 ? r[2] : r[1]));
+    expect(await valueNames("갱신유형")).toEqual(["비갱신형", "갱신형"]);
+    expect(await valueNames("비갱신")).toEqual(["비갱신형"]);
+    // 코드로도 이름으로도 걸린다
+    expect(await valueNames("A0002")).toEqual(["기본", "추가"]);
     expect(matchesAttributeRow("A0002", { kind: KINDS[1]!, value: KINDS[1]!.values[0] })).toBe(true);
   });
 });
