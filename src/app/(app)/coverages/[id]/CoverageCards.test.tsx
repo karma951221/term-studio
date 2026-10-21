@@ -4,7 +4,7 @@
  * - 담보약관 템플릿 띠 · 옵션 미결정 배지가 없다 (07b93ba).
  * - 카드는 접지 않는다 — 형제가 3개 이상이어도 모두 늘 보인다 (aaf753c).
  * - 세부보장 카드는 그리드(`.ts-cov-grid`) 안에, 급부 카드는 제 세부보장 카드 안(`.ts-cov-benefits`)에 선다.
- * - 편집 모드에만 구조 조작(⊖ · ↑↓ · 「+ 세부보장」 점선 타일 · 「+ 급부」)이 있다. 읽기 모드에는 하나도 없다.
+ * - 편집 모드에만 구조 조작(⊖ · ↑↓ · 라벨 행 「세부보장 ⊕」 · 「급부 ⊕」 · 「특성 ⊕」 · 「지급률 ⊕」)이 있다. 읽기 모드에는 하나도 없다 (2026-10-21).
  *
  * `EditShell.initialMode` 로 편집/읽기를 정적으로 고정해 `renderToStaticMarkup` 으로 본다
  * (같은 패턴: `EditShell.test.tsx`).
@@ -140,19 +140,23 @@ describe("CoverageCards — 편집 모드 구조 조작 (aaf753c)", () => {
     for (const tag of unlocked) expect(tag).not.toMatch(/disabled=""/);
   });
 
-  it("편집 모드: 점선 타일 「+ 세부보장」(aria-label=세부보장 추가) 이 그리드의 마지막 세부보장 카드 뒤에 온다", () => {
+  it("편집 모드: 담보 본문의 라벨 행 「세부보장 ⊕」(aria-label=세부보장 추가)이 세부보장 그리드 앞에 온다 — 점선 타일은 없다 (2026-10-21)", () => {
     const html = render("edit", 2);
-    expect(html).toContain('class="ts-cov-add-tile" aria-label="세부보장 추가"');
-    const lastSubIndex = html.lastIndexOf(`data-node="${encodeNodeKey("subCoverage", "s2")}"`);
-    const tileIndex = html.indexOf("ts-cov-add-tile");
-    expect(lastSubIndex).toBeGreaterThan(0);
-    expect(tileIndex).toBeGreaterThan(lastSubIndex);
+    expect(html).not.toContain("ts-cov-add-tile");
+    const row = html.indexOf("ts-cov-add-row");
+    expect(row).toBeGreaterThan(0);
+    expect(html.slice(row, html.indexOf("ts-cov-grid"))).toContain('aria-label="세부보장 추가"');
+    expect(html.slice(row, html.indexOf("ts-cov-grid"))).toContain(">세부보장<");
   });
 
-  it("편집 모드: 세부보장마다 「+ 급부」 작은 버튼이 있다", () => {
+  it("편집 모드: 세부보장 박스마다 라벨 행 「급부 ⊕」 — 급부 박스 목록 앞, 아래쪽 「+ 급부」 링크는 없다", () => {
     const html = render("edit", 2);
     const addBenefit = html.match(/aria-label="[^"]*에 급부 추가"/g) ?? [];
     expect(addBenefit.length).toBe(2);
+    const sub1 = html.indexOf(`data-node="${encodeNodeKey("subCoverage", "s1")}"`);
+    const add = html.indexOf("세부보장1에 급부 추가", sub1);
+    expect(add).toBeLessThan(html.indexOf("ts-cov-benefits", sub1));
+    expect(html).not.toContain("ts-cov-add\"");
   });
 
   it("읽기 모드: ⊖ · ↑↓ · 「+ 세부보장」 · 「+ 급부」 조작이 전혀 없다", () => {
@@ -165,27 +169,56 @@ describe("CoverageCards — 편집 모드 구조 조작 (aaf753c)", () => {
   });
 });
 
-describe("CoverageCards — 담보 기본은 담보 카드 본문에 바로 선다 (2026-09-27)", () => {
-  const formByNode = () => ({
-    [COVERAGE_KEY]: buildForm("coverage", () => undefined, new Map([["coverage_basic.claim_name", entered("수술급여금")]])),
-  });
-
+describe("CoverageCards — 담보 본문은 라벨 열 하나 (2026-10-21)", () => {
   for (const mode of ["read", "edit"] as const) {
-    it(`${mode} — 「담보 기본」 폼 상자(fieldset · legend) · 제목이 없고, 보험금명 행이 담보 카드 본문에 있다`, () => {
-      const html = render(mode, 1, formByNode());
-      // EditShell 자신의 <fieldset class="ts-edit-fields"> 는 상자가 아니다 — 폼 카드만 본다
-      expect(html).not.toContain('<fieldset class="ts-form-card"');
-      expect(html).not.toContain("<legend");
-      expect(html).not.toContain("ts-form-card");
-      expect(html).not.toContain("ts-form-group-title");
-      const body = html.indexOf("ts-cov-card-body");
-      const row = html.indexOf('data-path="coverage_basic.claim_name"');
-      const grid = html.indexOf("ts-cov-grid");
-      expect(body).toBeGreaterThan(0);
-      expect(row).toBeGreaterThan(body);
-      expect(row).toBeLessThan(grid);
+    it(`${mode} — 담보 카드는 머리 줄 대신 본문 첫 행 「담보 [이름]」 — 담보분류와 같은 ts-form-row 라벨 열, 보험금명 행은 없다`, () => {
+      const structure = subs(1);
+      const html = renderToStaticMarkup(
+        <EditShell initial={{ label: "수술비", category: "V01", structure, values: {} }} title="수술비" path={[{ label: "담보", href: "/coverages" }]} saveAction={async () => ({ ok: true })} initialMode={mode}>
+          <CoverageCards coverageKey={COVERAGE_KEY} formByNode={{}} original={savedOf(structure)} attributeValueLabels={[]} categories={[{ code: "V01", label: "상해" }]} />
+        </EditShell>,
+      );
+      const coverage = html.slice(html.indexOf('data-level="coverage"'), html.indexOf("ts-cov-grid"));
+      expect(coverage).not.toContain("ts-cov-card-head");
+      const nameRow = coverage.indexOf("ts-cov-name-row");
+      const categoryRow = coverage.indexOf('data-path="category"');
+      expect(nameRow).toBeGreaterThan(-1);
+      expect(categoryRow).toBeGreaterThan(nameRow);
+      expect(coverage.match(/class="ts-form-row[^"]*"/g)?.length).toBeGreaterThanOrEqual(2);
+      expect(coverage).toContain(">담보<");
+      expect(html).not.toContain("보험금명");
     });
   }
+});
+
+describe("CoverageCards — 급부 박스: 이름 줄 「지급률 ⊕」 · 본문 「특성 ⊕」 (2026-10-21)", () => {
+  const BEN = encodeNodeKey("benefit", "b1");
+  const forms = (rate?: number) => ({ [BEN]: buildForm("benefit", () => undefined, new Map(rate === undefined ? [] : [["pay.rate", entered(rate)]])) });
+  const head = (html: string) => {
+    const at = html.indexOf(`data-node="${BEN}"`);
+    return html.slice(at, html.indexOf("ts-cov-card-body", at));
+  };
+
+  it("편집 — 지급률은 급부 이름 줄 오른쪽 「지급률 ⊕」, 본문에는 「특성 ⊕」 라벨 행 · 「⊕ 감액」「⊕ 면책」 줄 · 「미입력」 배지가 없다", () => {
+    const html = render("edit", 1, forms());
+    expect(head(html)).toContain('title="지급률 추가"');
+    expect(html).toContain('aria-label="특성 추가"');
+    expect(html).not.toContain('title="감액 추가"');
+    expect(html).not.toContain('title="면책 추가"');
+    expect(html).not.toContain("미입력");
+  });
+
+  it("편집 — 지급률 값이 있으면 이름 줄에 칸이 열린 채 + ⊖", () => {
+    const h = head(render("edit", 1, forms(80)));
+    expect(h).toContain('name="pay.rate"');
+    expect(h).toContain('value="80"');
+    expect(h).toContain("지급률 빼기");
+  });
+
+  it("읽기 — 값이 있을 때만 「지급률 80%」, 없으면 지급률 자리가 없다", () => {
+    expect(head(render("read", 1, forms(80)))).toContain("80%");
+    expect(render("read", 1, forms())).not.toContain("지급률");
+  });
 });
 
 describe("CoverageCards — 담보 카드의 「담보분류」 칸 (ADR-0090 · 기능/담보 §3.1 · §4)", () => {

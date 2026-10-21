@@ -7,21 +7,24 @@
  *   값 폼은 `flat` — 폼마다 상자를 두르지 않고 필드 행이 카드 본문에 바로 선다(「담보 기본」 상자 없음, 2026-09-27).
  * - **접지 않는다** (2026-09-27) — 모든 카드가 늘 보인다. 세부보장 카드는 담보 카드 안에서 반응형 그리드(넓으면 2열)로 서고,
  *   급부 카드는 제 세부보장 카드 안에 쌓인다.
- * - **편집 모드의 구조 조작** — 카드 머리 왼쪽 ⊖(빼기, 마지막 하나면 잠김 · 최소 구조) · 오른쪽 ↑ ↓(순서) · 이름 인라인.
- *   「+ 세부보장」은 그리드 마지막 칸의 점선 타일, 「+ 급부」는 세부보장 카드 맨 아래 작은 버튼. 읽기 모드에는 구조 조작이 하나도 없다.
+ * - **라벨 ⊕ → 아래에 박스, 박스 왼쪽 위 ⊖ (2026-10-21)** — 모든 단계에 같은 규칙: 담보 본문의 라벨 행 「세부보장 ⊕」 → 세부보장 박스가 목록 끝에,
+ *   세부보장 박스 안 「급부 ⊕」 → 급부 박스, 급부 박스 안 「특성 ⊕」 → 감액 · 면책 메뉴(StructForm). 박스 머리 왼쪽 ⊖(빼기, 마지막 하나면 잠김 · 최소 구조) ·
+ *   오른쪽 ↑ ↓(순서) · 이름 인라인. 급부 이름 줄 오른쪽 「지급률 ⊕」(안 적으면 100%). 읽기 모드에는 구조 조작이 하나도 없다.
+ * - **담보 본문은 라벨 열 하나** — 「담보」(이름) · 「담보분류」 · 값 폼 행 · 「세부보장 ⊕」가 같은 라벨 열(`ts-form-row`)이라 입력칸이 한 세로줄에서 시작한다.
  *   빈 이름 · 형제 중복은 이름 옆에. 새 카드는 값 폼이 없다 — 저장 뒤에야 값 자리가 생긴다. ⊖ 로 뺀 기존 노드는 초안에서 사라진다(되돌리려면 편집 취소).
  * - **진입 좌표** — 필드 좌표가 있으면 그 행을(StructForm), 없으면 `target` 카드를 스크롤 · 강조한다.
  * - **담보분류** (ADR-0090) — 담보 카드 맨 위 한 줄. 읽기는 값 이름, 편집은 열거형 「담보분류」 값 select(필수 — 「없음」이 없다).
  *   미입력(옛 데이터)은 「—」 + 「고르세요」, 지운 값은 「없는 값 V03」 + 「다른 값을 고르세요」.
  *   값 폼(StructForm)의 필드가 아니라 담보의 뼈대 칸이다 — 스냅샷되지 않는다. 기본 특약 그룹이고, 상품은 사용자 그룹으로만 다르게 묶는다.
  */
-import { useEffect, useId, useReducer, useRef, type ReactNode } from "react";
+import { Fragment, useEffect, useId, useReducer, useRef, type ReactNode } from "react";
 
 import { useEditField } from "@/app/_components/EditShell";
 import { InfoTip } from "@/app/_components/InfoTip";
-import { IconButton, IconDown, IconMinusCircle, IconPlus, IconUp } from "@/app/_components/icons";
+import { IconButton, IconDown, IconMinusCircle, IconPlusCircle, IconUp } from "@/app/_components/icons";
 import { NAME_LABEL } from "@/app/_lib/labels";
 import { draftNodeKeys, structureIssues, structureRemovals, type StructureDraftBenefit, type StructureDraftSub, type StructureSavedSub } from "@/domain/coverage";
+import { PAY_RATE_PATH } from "@/domain/master";
 import { StructForm, type FormModel, type Submission } from "@/forms";
 
 import { formKeyOf, formSessionReducer, initFormSession } from "./value-drafts";
@@ -46,7 +49,7 @@ interface SiblingControls {
   onRemove: () => void;
 }
 
-function Card({ editing, level, nodeKey, treeKey, name, onName, issue, sibling, isTarget, scrollToCard, children, body }: {
+function Card({ editing, level, nodeKey, treeKey, name, onName, issue, sibling, isTarget, scrollToCard, children, body, headExtra }: {
   editing: boolean;
   level: Level;
   nodeKey: string;
@@ -62,6 +65,8 @@ function Card({ editing, level, nodeKey, treeKey, name, onName, issue, sibling, 
   children?: ReactNode;
   /** 값 폼 + 자식 카드. */
   body: ReactNode;
+  /** 머리 줄 오른쪽 — 급부의 「지급률 ⊕」(StructForm `frame`). */
+  headExtra?: ReactNode;
 }) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -71,6 +76,30 @@ function Card({ editing, level, nodeKey, treeKey, name, onName, issue, sibling, 
   const what = LEVEL_LABEL[level];
   const shown = name.trim() || what;
   const ariaName = level === "coverage" ? NAME_LABEL.coverage : `${what}명 · ${treeKey ?? ""}`;
+  if (level === "coverage") {
+    // 담보 카드 — 머리 줄 대신 본문 첫 행 「담보 [이름]」: 담보분류 · 값 폼 행과 같은 라벨 열에 선다 (2026-10-21)
+    return (
+      <section ref={ref} className={`ts-cov-card${isTarget ? " is-target" : ""}`} data-level={level} data-node={nodeKey} aria-label={`${what} ${shown}`}>
+        <div className="ts-cov-card-body">
+          <div className="ts-form-row ts-cov-name-row">
+            <span className="ts-form-label-cell">
+              <span className="ts-form-label">{what}</span>
+            </span>
+            <div className="ts-form-control">
+              {editing ? (
+                <input value={name} onChange={(e) => onName(e.target.value)} className="ts-field-direct ts-cov-card-input" aria-label={ariaName} aria-invalid={issue ? true : undefined} />
+              ) : (
+                <span className="ts-cov-card-name">{name}</span>
+              )}
+              {editing && issue ? <span className="ts-form-error ts-tree-issue">{issue}</span> : null}
+            </div>
+          </div>
+          {children}
+          {body}
+        </div>
+      </section>
+    );
+  }
   return (
     <section ref={ref} className={`ts-cov-card${isTarget ? " is-target" : ""}`} data-level={level} data-node={nodeKey} aria-label={`${what} ${shown}`}>
       <div className="ts-cov-card-head">
@@ -79,11 +108,12 @@ function Card({ editing, level, nodeKey, treeKey, name, onName, issue, sibling, 
         ) : null}
         <span className="ts-cov-card-level">{treeKey ? `${what} ${treeKey}` : what}</span>
         {editing ? (
-          <input value={name} onChange={(e) => onName(e.target.value)} className="ts-field-direct ts-cov-card-input" aria-label={ariaName} aria-invalid={issue ? true : undefined} autoFocus={name === "" && level !== "coverage"} />
+          <input value={name} onChange={(e) => onName(e.target.value)} className="ts-field-direct ts-cov-card-input" aria-label={ariaName} aria-invalid={issue ? true : undefined} autoFocus={name === ""} />
         ) : (
           <span className="ts-cov-card-name">{name}</span>
         )}
         {editing && issue ? <span className="ts-form-error ts-tree-issue">{issue}</span> : null}
+        {headExtra ? <span className="ts-cov-head-extra">{headExtra}</span> : null}
         {editing && sibling && sibling.count > 1 ? (
           <span className="ts-row-actions">
             <IconButton icon={<IconUp />} label={`${shown} 위로`} disabled={sibling.index === 0} onClick={() => sibling.onMove(-1)} />
@@ -94,6 +124,18 @@ function Card({ editing, level, nodeKey, treeKey, name, onName, issue, sibling, 
       {children}
       <div className="ts-cov-card-body">{body}</div>
     </section>
+  );
+}
+
+/** 라벨 행 「{라벨} ⊕」 — 누르면 그 아래 목록 끝에 박스가 생긴다 (편집 모드만, 2026-10-21). */
+function AddRow({ label, addLabel, onAdd }: { label: string; addLabel: string; onAdd: () => void }) {
+  return (
+    <div className="ts-form-row ts-cov-add-row">
+      <span className="ts-form-label-cell">
+        <span className="ts-form-label">{label}</span>
+        <IconButton className="ts-label-add" icon={<IconPlusCircle />} label={addLabel} onClick={onAdd} />
+      </span>
+    </div>
   );
 }
 
@@ -183,47 +225,58 @@ export function CoverageCards({ coverageKey, formByNode, original, attributeValu
     : undefined;
 
   /** 노드의 값 폼 — 저장된 노드만. 필드가 없는 레벨은 폼 자리가 없다. */
+  const NEW_NOTE = <p className="ts-muted ts-cov-card-note">새 카드 — 값은 저장한 뒤 입력한다.</p>;
   const formOf = (key: string, isNew: boolean): ReactNode => {
-    if (isNew) return <p className="ts-muted ts-cov-card-note">새 카드 — 값은 저장한 뒤 입력한다.</p>;
+    if (isNew) return NEW_NOTE;
     const form = formByNode[key];
     if (!form || form.fields.length === 0) return null;
-    return (
-      <StructForm
-        key={formKeyOf(session, key)}
-        model={form}
-        embedded
-        flat
-        readOnly={!editing}
-        showCodes={showCodes}
-        highlightPath={key === target ? highlightPath : undefined}
-        onChange={(submission) => values.update((current) => ({ ...current, [key]: submission }))}
-      />
-    );
+    return structForm(key, form);
   };
+  const structForm = (key: string, form: FormModel, frame?: (parts: { head: ReactNode; body: ReactNode }) => ReactNode): ReactNode => (
+    <StructForm
+      key={formKeyOf(session, key)}
+      model={form}
+      embedded
+      flat
+      readOnly={!editing}
+      showCodes={showCodes}
+      highlightPath={key === target ? highlightPath : undefined}
+      onChange={(submission) => values.update((current) => ({ ...current, [key]: submission }))}
+      {...(frame ? { frame, headPaths: [PAY_RATE_PATH] } : {})}
+    />
+  );
 
   const scrollToCard = !highlightPath;
 
-  const benefitCard = (sub: StructureDraftSub, benefit: StructureDraftBenefit, benefitIndex: number) => (
-    <Card
-      key={benefit.key}
-      editing={editing}
-      level="benefit"
-      nodeKey={benefit.key}
-      treeKey={treeKeys.get(benefit.key)}
-      name={benefit.name}
-      onName={(name) => updateSub(sub.key, (s) => ({ ...s, benefits: s.benefits.map((b) => (b.key === benefit.key ? { ...b, name } : b)) }))}
-      issue={issueOf(benefit.key)}
-      sibling={{
-        index: benefitIndex,
-        count: sub.benefits.length,
-        onMove: (delta) => updateSub(sub.key, (s) => ({ ...s, benefits: moved(s.benefits, benefitIndex, delta) })),
-        onRemove: () => updateSub(sub.key, (s) => ({ ...s, benefits: s.benefits.filter((b) => b.key !== benefit.key) })),
-      }}
-      isTarget={benefit.key === target}
-      scrollToCard={scrollToCard}
-      body={formOf(benefit.key, !benefit.id)}
-    />
-  );
+  const benefitCard = (sub: StructureDraftSub, benefit: StructureDraftBenefit, benefitIndex: number) => {
+    const card = (body: ReactNode, headExtra?: ReactNode) => (
+      <Card
+        key={benefit.key}
+        editing={editing}
+        level="benefit"
+        nodeKey={benefit.key}
+        treeKey={treeKeys.get(benefit.key)}
+        name={benefit.name}
+        onName={(name) => updateSub(sub.key, (s) => ({ ...s, benefits: s.benefits.map((b) => (b.key === benefit.key ? { ...b, name } : b)) }))}
+        issue={issueOf(benefit.key)}
+        sibling={{
+          index: benefitIndex,
+          count: sub.benefits.length,
+          onMove: (delta) => updateSub(sub.key, (s) => ({ ...s, benefits: moved(s.benefits, benefitIndex, delta) })),
+          onRemove: () => updateSub(sub.key, (s) => ({ ...s, benefits: s.benefits.filter((b) => b.key !== benefit.key) })),
+        }}
+        isTarget={benefit.key === target}
+        scrollToCard={scrollToCard}
+        body={body}
+        headExtra={headExtra}
+      />
+    );
+    // 급부 값 폼은 카드 틀째 그린다 — 지급률이 이름 줄 오른쪽(머리 줄)에 선다 (2026-10-21)
+    const form = benefit.id ? formByNode[benefit.key] : undefined;
+    if (!benefit.id) return card(NEW_NOTE);
+    if (!form || form.fields.length === 0) return card(null);
+    return <Fragment key={benefit.key}>{structForm(benefit.key, form, ({ head, body }) => card(body, head))}</Fragment>;
+  };
 
   const subCard = (sub: StructureDraftSub, subIndex: number) => (
     <Card
@@ -241,12 +294,8 @@ export function CoverageCards({ coverageKey, formByNode, original, attributeValu
       body={
         <>
           {formOf(sub.key, !sub.id)}
+          {editing ? <AddRow label="급부" addLabel={`${sub.name.trim() || "세부보장"}에 급부 추가`} onAdd={() => addBenefit(sub.key)} /> : null}
           <div className="ts-cov-benefits">{sub.benefits.map((benefit, benefitIndex) => benefitCard(sub, benefit, benefitIndex))}</div>
-          {editing ? (
-            <button type="button" className="ts-linklike ts-cov-add" aria-label={`${sub.name.trim() || "세부보장"}에 급부 추가`} onClick={() => addBenefit(sub.key)}>
-              <IconPlus /> 급부
-            </button>
-          ) : null}
         </>
       }
     />
@@ -265,15 +314,8 @@ export function CoverageCards({ coverageKey, formByNode, original, attributeValu
         <>
           {categories && <CategoryRow editing={editing} value={category.value ?? ""} options={categories} onChange={category.setValue} />}
           {formOf(coverageKey, false)}
-          <div className="ts-cov-grid">
-            {subs.map(subCard)}
-            {editing ? (
-              // 그리드 마지막 칸 — 점선 타일 (편집 모드만)
-              <button type="button" className="ts-cov-add-tile" aria-label="세부보장 추가" onClick={addSub}>
-                <IconPlus /> 세부보장
-              </button>
-            ) : null}
-          </div>
+          {editing ? <AddRow label="세부보장" addLabel="세부보장 추가" onAdd={addSub} /> : null}
+          <div className="ts-cov-grid">{subs.map(subCard)}</div>
         </>
       }
     >

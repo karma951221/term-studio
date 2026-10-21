@@ -182,7 +182,7 @@ export const MASTER: readonly MasterForm[] = [
     description: "급부 하나의 지급 조건 — 담보 레벨 구분자가 집계로 읽는 자리",
     fields: [
       // 선택 필드 — 필요한 급부만 급부 이름 줄의 「지급률 ⊕」로 더한다. 안 적으면 100% (2026-10-21)
-      { key: "rate", label: "지급률", type: { kind: "number" }, optional: true },
+      { key: "rate", label: "지급률", type: { kind: "number" }, unit: "%", optional: true },
     ],
   },
   {
@@ -233,5 +233,7 @@ export const MASTER: readonly MasterForm[] = [
   },
 ];
 
+/** 지급률 값 자리 — 급부 카드 머리 줄의 「지급률 ⊕」 (기능/담보 §3.6). 안 적으면 100% (동적표 `DEFAULT_PAY_RATE`). */
+export const PAY_RATE_PATH = "pay.rate";
 export const REDUCTION_FORM = "reduction";
 export const EXEMPTION_FORM = "exemption";
