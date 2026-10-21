@@ -133,7 +133,7 @@ describe("상품담보 — 기본계약 · 특별약관 표가 한 탭에 · 표
     expect(html).toContain("상해 관련 특별약관");
     expect(html).not.toContain("tab=special&amp;pc=s1");
     // 담보 : 상품담보 = 1 : N — 특별약관 표에서 COV000002 는 한 번만
-    expect(html.split("<code>COV000002</code>").length - 1).toBe(1);
+    expect(html.split(">COV000002</code>").length - 1).toBe(1);
     expect(html).not.toContain("보통약관 템플릿");
   });
 });
