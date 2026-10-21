@@ -166,15 +166,15 @@ describe("함수조항 블록 안 — 가운데는 모델, 미리보기는 문�
     return renderToStaticMarkup(<Block nodes={(tree.children[0] as { children: DocumentNode["children"] }).children} ctx={ctx} />);
   }
 
-  it("편집 · 읽기 모두 — 머리 「[코드] 이름」 · 옵션 자리(선택지 전부 + 고른 것 ✓) · 슬롯 칩 · IF 머리, 함수조항 화면 링크는 없다", () => {
+  it("편집 · 읽기 모두 — 머리 「[코드] 이름」 · 옵션 자리(고른 선택지 글만 — 2026-10-21) · 슬롯 칩 · IF 머리, 함수조항 화면 링크는 없다", () => {
     for (const edit of [true, false]) {
       const html = renderClause(edit);
       expect(html).toContain('<span class="ts-doc-clause-code">[C0002]</span> 대표자의 지정');
       expect(html).not.toContain("함수조항 (대표자의 지정)");
       expect(html).toContain('class="ts-clause-model"');
       expect(html).toContain("지정 주체");
-      expect(html).toContain("계약자");
-      expect(html).toContain("✓피보험자");
+      expect(html).toMatch(/<span class="ts-clause-model-opt"[^>]*>피보험자는<\/span>/);
+      expect(html).not.toContain("계약자는");
       expect(html).toContain("〔담보명〕");
       expect(html).toContain('<span class="ts-cond-badge">IF</span> 감액여부 = true');
       expect(html).not.toContain('href="/functions/C0002"');
@@ -421,5 +421,34 @@ describe("조의 준용하기 옵션 — 조 바로 위 평문 (보통약관 템
     expect(html(withMode(), false)).not.toContain("준용하기 —");
     expect(html(withMode("common"), false)).toMatch(/<p class="ts-doc-cond-head"[^>]*>준용하기 — 공통항 모으기<\/p>/);
     expect(html(withMode("all"), true)).toMatch(/<button type="button" class="ts-doc-cond-head ts-doc-cond-btn" title="준용하기 고치기">준용하기 — 전체항 모으기<\/button>/);
+  });
+});
+
+describe("펼친 함수조항 안 항을 가리키는 조 참조 칩 — 「제2조(소멸) 제2항」 · 툴팁에 코드 (2026-10-21 사용자 QA)", () => {
+  const twoParas = {
+    code: "C0146",
+    label: "특별약관의 무효",
+    mode: "block",
+    options: [],
+    required: { discriminators: [], attributes: [] },
+    body: [
+      { id: "x1", kind: "paragraph", code: "P0100", children: [{ id: "xt1", kind: "text", text: "첫 항" }] },
+      { id: "x2", kind: "paragraph", code: "P0200", children: [{ id: "xt2", kind: "text", text: "둘째 항" }] },
+    ],
+  } as unknown as Clause;
+
+  it("칩은 번호, 「항 P0200」이 아니다", () => {
+    const b = nodeBuilders(sequentialIds("r"));
+    const ref = b.clauseBlock("C0146", {});
+    ref.code = "P0100";
+    const target = b.article("소멸", [ref]);
+    const chip = { id: "chip", kind: "articleRef", targets: [{ articleId: target.id, code: "P0100", innerCode: "P0200" }], scope: "self" };
+    const tree: DocumentNode = b.document("D", [b.article("가", [b.paragraph([chip as never])]), target]);
+    const numbers = numberTree(tree, { clauseSpan: () => 2 });
+    const ctx: DocCtx = { ...ctxOf(tree, false), clauses: [twoParas], clauseLabel: new Map([["C0146", "특별약관의 무효"]]), references: { self: referenceTargetIndex(tree, numbers, { clauseOf: () => twoParas }), general: new Map() } };
+    const html = renderToStaticMarkup(<Block nodes={(tree.children[0] as { children: DocumentNode["children"] }).children} ctx={ctx} />);
+    expect(html).toContain("제2조(소멸) 제2항");
+    expect(html).not.toContain("항 P0200");
+    expect(html).toContain("번호는 조립 때 확정 · 코드 P0100 안 P0200");
   });
 });

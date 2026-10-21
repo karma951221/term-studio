@@ -74,43 +74,45 @@ test(
 );
 
 test(
-  "상품모델링 — 상품담보 탭의 기본계약 · 특별약관 표(담보코드 · 담보명 · 담보속성 · 상품담보명) · 담보 검색",
-  { annotation: { type: "좌표없음", description: "기능/상품 §4.5 탑재 표 (2026-09-27 · 2026-09-28 상품담보 탭 · 담보 묶음)" } },
+  "상품모델링 — 상품담보 탭의 기본계약 · 특별약관 표(담보 두 줄 — 담보명 위 · 코드 아래 · 담보속성 · 상품담보명) · 담보 검색",
+  { annotation: { type: "좌표없음", description: "기능/상품 §4.5 탑재 표 (2026-09-27 · 2026-09-28 상품담보 탭 · 담보 묶음 · 2026-10-21 담보 두 줄 칸)" } },
   async ({ page, ev }) => {
     await ev.action("탑재표#1", "관리자로 로그인한다", () => login(page));
     const productPath = await ev.action("탑재표#2", "시드 상품을 연다", () => openProduct(page));
 
-    await ev.action("탑재표#3", "상품담보 탭 「기본계약」(읽기) — 한 행 COV000001 · 담보명 · 속성 — · 상품담보명(글자)", async () => {
+    await ev.action("탑재표#3", "상품담보 탭 「기본계약」(읽기) — 한 행 담보(담보명 위 · COV000001 아래) · 속성 — · 상품담보명(글자)", async () => {
       await page.goto(`${productPath}?tab=coverages`);
       const section = page.getByRole("region", { name: "기본계약", exact: true });
       await expect(section.getByRole("heading", { name: "기본계약" })).toBeVisible();
-      await expect(section.locator("thead th")).toHaveText(["담보코드", "담보명", "담보속성", "상품담보명", "세목 부착"]);
+      await expect(section.locator("thead th")).toHaveText(["담보", "담보속성", "상품담보명", "세목 부착"]);
       const rows = section.locator("tbody tr");
       await expect(rows).toHaveCount(1);
-      await expect(rows.first().locator("td").nth(0)).toHaveText("COV000001");
-      await expect(rows.first().locator("td").nth(1)).toHaveText("일반상해80%이상후유장해");
-      await expect(rows.first().locator("td").nth(2)).toHaveText("—");
-      await expect(rows.first().locator("td").nth(3)).toHaveText("일반상해80%이상후유장해");
+      // 「담보」 두 줄 칸 (2026-10-21) — 1줄째 담보명(담보 마스터 링크) · 2줄째 코드(작게)
+      const ident = rows.first().locator("td").nth(0);
+      await expect(ident.locator(".ts-ident-name")).toHaveText("일반상해80%이상후유장해");
+      await expect(ident.locator(".ts-ident-code")).toHaveText("COV000001");
+      await expect(ident.locator(".ts-two-line > *").first()).toHaveClass(/ts-ident-name/);
+      await expect(rows.first().locator("td").nth(1)).toHaveText("—");
+      await expect(rows.first().locator("td").nth(2)).toHaveText("일반상해80%이상후유장해");
     });
 
     const section = page.getByRole("region", { name: "특별약관", exact: true });
     const searchSpecial = (value: string) => search(page, "mq", value, section);
-    // 읽기 표 — 상품담보명은 글자 칸(4열)
+    // 읽기 표 — 상품담보명은 글자 칸(3열)
     const rowOf = (name: string) => section.locator("tbody tr").filter({ has: page.locator("td.col-flex").getByText(name, { exact: true }) });
 
-    await ev.action("탑재표#4", "특별약관 표 — 상품담보 10행, 같은 담보의 두 벌은 이어 놓고 코드 · 담보명은 묶음 첫 행에만 · 그룹 열은 담보분류의 기본 그룹(읽기 전용, ADR-0090)", async () => {
-      await expect(section.locator("thead th")).toHaveText(["담보코드", "담보명", "담보속성", "상품담보명", "그룹", "세목 부착"]);
+    await ev.action("탑재표#4", "특별약관 표 — 상품담보 10행, 같은 담보의 두 벌은 이어 놓고 담보 칸은 묶음 첫 행에만 · 그룹 열은 담보분류의 기본 그룹(읽기 전용, ADR-0090)", async () => {
+      await expect(section.locator("thead th")).toHaveText(["담보", "담보속성", "상품담보명", "그룹", "세목 부착"]);
       await expect(section.locator("tbody tr")).toHaveCount(10);
-      await expect(rowOf("일반상해사망보장").locator("td").nth(4)).toHaveText("상해 관련 특별약관");
+      await expect(rowOf("일반상해사망보장").locator("td").nth(3)).toHaveText("상해 관련 특별약관");
       await expect(section.getByText(/총\s*10\s*건/)).toBeVisible();
-      await expect(rowOf("일반상해사망보장").locator("td").nth(0)).toHaveText("COV000002");
-      await expect(rowOf("일반상해사망보장").locator("td").nth(1)).toHaveText("일반상해사망보장");
-      await expect(rowOf("일반상해사망보장").locator("td").nth(2)).toHaveText("부가유형=기본");
+      await expect(rowOf("일반상해사망보장").locator("td").nth(0).locator(".ts-ident-name")).toHaveText("일반상해사망보장");
+      await expect(rowOf("일반상해사망보장").locator("td").nth(0).locator(".ts-ident-code")).toHaveText("COV000002");
+      await expect(rowOf("일반상해사망보장").locator("td").nth(1)).toHaveText("부가유형=기본");
       await expect(rowOf("일반상해사망보장 추가").locator("td").nth(0)).toHaveText("");
-      await expect(rowOf("일반상해사망보장 추가").locator("td").nth(1)).toHaveText("");
-      await expect(rowOf("일반상해사망보장 추가").locator("td").nth(2)).toHaveText("부가유형=추가");
+      await expect(rowOf("일반상해사망보장 추가").locator("td").nth(1)).toHaveText("부가유형=추가");
       await expect(section.getByText("COV000002", { exact: true })).toHaveCount(1);
-      await expect(rowOf("갱신형 수술비(1-7종, 연간3회한)[상해]보장").locator("td").nth(2)).toHaveText("갱신유형=갱신형");
+      await expect(rowOf("갱신형 수술비(1-7종, 연간3회한)[상해]보장").locator("td").nth(1)).toHaveText("갱신유형=갱신형");
     });
 
     await ev.action("탑재표#5", "담보 검색 — 코드 COV000002 면 사망보장 두 벌만 (묶음이라 코드는 첫 행에만)", async () => {
@@ -132,7 +134,7 @@ test(
       await expect(section.locator("tbody tr")).toHaveCount(1);
       await expect(rowOf("일반상해사망보장 추가")).toBeVisible();
       // 걸러져 묶음 둘째 행만 남으면 그 행이 코드를 찍는다
-      await expect(rowOf("일반상해사망보장 추가").locator("td").nth(0)).toHaveText("COV000002");
+      await expect(rowOf("일반상해사망보장 추가").locator("td").nth(0).locator(".ts-ident-code")).toHaveText("COV000002");
       await searchSpecial("없는담보");
       await expect(section.getByText("「없는담보」에 맞는 상품담보가 없습니다.")).toBeVisible();
     });

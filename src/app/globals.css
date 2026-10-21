@@ -1355,6 +1355,12 @@ button:where(:not([data-slot])).danger:focus-visible {
   border-bottom: 1px solid var(--ts-rule-strong);
 }
 
+/* 구조 섹션 머리 — 정의 모양 한 줄(머리글 구조가 정한다) */
+.ts-dyn-shape-line {
+  margin: 0;
+  font-size: 13px;
+}
+
 .ts-dyn-basics {
   display: flex;
   flex-wrap: wrap;
@@ -3880,31 +3886,25 @@ button:where(:not([data-slot])).ts-doc-clause-opt {
   margin: 4px 0;
 }
 
+/* 옵션 자리 — 고른 선택지의 글만 문장처럼(글꼴은 본문 그대로), 칩임은 점선 테두리로 (2026-10-21) */
 .ts-clause-model-opt {
   border: 1px dotted var(--ts-clause-line);
   border-radius: 3px;
   padding: 0 3px;
   margin-inline: 1px;
-  font-family: var(--sans);
-  font-size: 12px;
-  color: var(--ts-ink-2);
-}
-
-.ts-clause-model-opt-name {
-  color: var(--ts-clause-line);
-  font-weight: 600;
-}
-
-.ts-clause-model-opt-value.is-chosen {
   color: var(--ts-ink);
 }
 
-.ts-clause-model-opt-sep,
-.ts-clause-model-opt-missing {
+.ts-clause-model-opt.is-unset {
+  font-family: var(--sans);
+  font-size: 12px;
   color: var(--ts-ink-3);
+  border-style: dashed;
 }
 
 .ts-clause-model-opt.is-broken {
+  font-family: var(--sans);
+  font-size: 12px;
   color: var(--ts-error);
   border-color: var(--ts-error);
 }

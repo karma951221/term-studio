@@ -49,7 +49,7 @@ test(
       await groups.getByRole("button", { name: "위로 · 질병 사망 특별약관" }).click();
       await groups.getByRole("button", { name: "위로 · 질병 사망 특별약관" }).click();
       // 표의 「그룹」 열은 읽기 전용으로 초안을 따른다
-      await expect(specials.locator("tbody tr", { hasText: "질병사망(통합간편가입)보장" }).locator("td").nth(4)).toHaveText("질병 사망 특별약관");
+      await expect(specials.locator("tbody tr", { hasText: "질병사망(통합간편가입)보장" }).locator("td").nth(3)).toHaveText("질병 사망 특별약관");
       await page.getByRole("button", { name: "저장", exact: true }).click();
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
 

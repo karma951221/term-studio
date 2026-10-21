@@ -1,7 +1,7 @@
 /**
  * 탑재 표 — 기본계약 · 특별약관 두 절, 둘 다 상품담보 탭 (기능/상품 §4.5, 2026-09-28).
- * 한 행 = 상품담보 하나: 담보코드 · 담보명 · 담보속성 · 상품담보명. 담보 : 상품담보 = 1 : N — 같은 담보는 이어 놓고
- * 코드 · 담보명은 묶음 첫 행에만. 「담보 검색」(특약 `?mq=` · 기본계약 `?bq=`)은 코드 · 이름 · 속성 값을 거른다.
+ * 한 행 = 상품담보 하나: 담보(두 줄 — 담보명 위 · 담보코드 아래) · 담보속성 · 상품담보명. 담보 : 상품담보 = 1 : N — 같은 담보는 이어 놓고
+ * 담보 칸은 묶음 첫 행에만. 「담보 검색」(특약 `?mq=` · 기본계약 `?bq=`)은 코드 · 이름 · 속성 값을 거른다.
  */
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -51,27 +51,27 @@ function render(query?: string, section: "base" | "special" = "special") {
 const rowsOf = (html: string) => html.match(/<tr(?: [^>]*)?>(?!<th)[\s\S]*?<\/tr>/g)?.filter((r) => !r.includes("<th")) ?? [];
 
 describe("CoverageMountSection — 상품담보 한 건 = 한 행", () => {
-  it("열(읽기) — 특별약관: 담보코드 · 담보명 · 담보속성 · 상품담보명 · 그룹(읽기 전용) · 세목 부착, 기본계약에는 그룹 열이 없다 · 조작 열은 편집에만", () => {
+  it("열(읽기) — 특별약관: 담보 · 담보속성 · 상품담보명 · 그룹(읽기 전용) · 세목 부착, 기본계약에는 그룹 열이 없다 · 조작 열은 편집에만", () => {
     const headers = (html: string) => [...html.matchAll(/<th[^>]*>([^<]*)<\/th>/g)].map((m) => m[1]);
-    expect(headers(render())).toEqual(["담보코드", "담보명", "담보속성", "상품담보명", "그룹", "세목 부착"]);
-    expect(headers(render(undefined, "base"))).toEqual(["담보코드", "담보명", "담보속성", "상품담보명", "세목 부착"]);
+    expect(headers(render())).toEqual(["담보", "담보속성", "상품담보명", "그룹", "세목 부착"]);
+    expect(headers(render(undefined, "base"))).toEqual(["담보", "담보속성", "상품담보명", "세목 부착"]);
   });
 
-  it("행 수 = 상품담보 수 · 코드(담보 마스터 링크) · 담보명은 같은 담보 묶음의 첫 행에만", () => {
+  it("행 수 = 상품담보 수 · 담보 칸(담보명 = 담보 마스터 링크 위 · 코드 작게 아래)은 같은 담보 묶음의 첫 행에만", () => {
     const rows = rowsOf(render());
     expect(rows).toHaveLength(3);
-    expect(rows[0]).toContain('href="/coverages/c-death"');
-    expect(rows[0]).toContain("<code>COV000002</code>");
-    expect(rows[0]).toContain(">일반상해사망보장</td>");
+    // 두 줄 칸 이름 먼저 (2026-10-21) — 1줄째 담보명(링크), 2줄째 코드
+    expect(rows[0]).toMatch(/<span class="ts-two-line ts-ident is-name-first"><a class="ts-ident-name"[^>]* href="\/coverages\/c-death">/);
+    expect(rows[0]).toMatch(/>일반상해사망보장<\/a><code class="ts-ident-code">COV000002<\/code><\/span>/);
     expect(rows[0]).toContain("부가유형=기본");
     // 같은 담보의 둘째 상품담보 — 코드 · 담보명 칸이 비었다
     expect(rows[1]).not.toContain("COV000002");
-    expect(rows[1]).not.toContain(">일반상해사망보장</td>");
+    expect(rows[1]).not.toContain(">일반상해사망보장</a>");
     expect(rows[1]).toContain("is-group-cont");
     expect(rows[1]).toContain("갱신유형=갱신형 · 부가유형=추가");
     expect(rows[1]).toContain(">일반상해사망보장 추가</td>");
-    expect(rows[2]).toContain("<code>COV000008</code>");
-    expect(rows[2]).toContain(">수술비</td>");
+    expect(rows[2]).toContain('<code class="ts-ident-code">COV000008</code>');
+    expect(rows[2]).toContain(">수술비</a>");
     expect(rows[2]).toContain('<span class="ts-muted">—</span>');
   });
 
@@ -103,7 +103,7 @@ describe("CoverageMountSection — 상품담보 한 건 = 한 행", () => {
     const rows = rowsOf(render("추가"));
     expect(rows).toHaveLength(1);
     expect(rows[0]).toContain("pc2");
-    expect(rows[0]).toContain("<code>COV000002</code>");
+    expect(rows[0]).toContain('<code class="ts-ident-code">COV000002</code>');
   });
 
   it("담보 검색 — 속성 값으로 (「갱신형」은 비갱신형 · 갱신형 둘 다가 아니라 붙인 것만)", () => {

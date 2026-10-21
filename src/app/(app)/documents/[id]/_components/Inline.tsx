@@ -14,7 +14,7 @@ import { Fragment, useEffect, useRef, type ClipboardEvent, type KeyboardEvent, t
 
 import { blockRefChipText } from "@/app/_lib/blockRef";
 import { STRUCT_KEY_CHIP, SWITCH_WORD } from "@/app/_lib/labels";
-import { DOCUMENT_WIDE_CHIP, isDocumentWideRef, particlePreset, referenceChunkLabel, referenceKeyIndex, refKey, type ArticleRefNode, type InlineAt, type InlineNode, type ReferenceTarget } from "@/domain/document";
+import { DOCUMENT_WIDE_CHIP, isDocumentWideRef, particlePreset, provisionalNote, referenceChunkLabel, referenceKeyIndex, refKey, type ArticleRefNode, type InlineAt, type InlineNode, type ReferenceTarget } from "@/domain/document";
 import { SCOPE_WORD_CHIP, SCOPE_WORD_PATH } from "@/domain/expression";
 import type { Id, WorkMark } from "@/domain/types";
 
@@ -29,6 +29,15 @@ function keyHead(node: ArticleRefNode, path: string, ctx: DocCtx): string {
   if (!nodes) return path;
   const found = nodes.find((n) => n.keyPath === path);
   return found ? nodeHead(nodes, found) : `끊어진 노드 ${path}`;
+}
+
+/** 조 참조 칩 툴팁 — 번호가 조립 때 바뀔 수 있는 대상(반복 · 펼친 함수조항 안)이 끼면 「번호는 조립 때 확정 · 코드 …」를 덧붙인다 (2026-10-21). */
+function articleRefTitle(node: ArticleRefNode, ctx: DocCtx): string {
+  const base = "조 참조 슬롯 — 번호는 계산값이다";
+  if (isDocumentWideRef(node)) return base;
+  const byKey = referenceKeyIndex(node.scope === "general" ? ctx.references.general : ctx.references.self);
+  const note = provisionalNote(node.targets.flatMap((t) => byKey.get(refKey(t))?.target ?? []));
+  return note ? `${base} · ${note}` : base;
 }
 
 function articleRefText(node: ArticleRefNode, ctx: DocCtx): string {
@@ -74,7 +83,7 @@ function chipParts(node: InlineNode, ctx: DocCtx): { className: string; title: s
       return { className: "ts-doc-slot", title: `치환 슬롯 · ${node.ref}`, body: node.ref };
     }
     case "articleRef":
-      return { className: "ts-doc-ref", title: "조 참조 슬롯 — 번호는 계산값이다", body: articleRefText(node, ctx) };
+      return { className: "ts-doc-ref", title: articleRefTitle(node, ctx), body: articleRefText(node, ctx) };
     case "blockRef":
       return { className: "ts-doc-ref", title: "블록 지정 참조 — 이 상품의 제2절 블록(상품 조 사본 전용)", body: blockRefChipText(ctx.blockChoices, node) };
     case "appendixRef":

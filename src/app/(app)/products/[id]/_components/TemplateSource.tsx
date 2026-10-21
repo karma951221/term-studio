@@ -24,7 +24,7 @@ import { IconButton, IconRevert } from "@/app/_components/icons";
 import { STRUCT_KEY_CHIP } from "@/app/_lib/labels";
 import type { EnumDef } from "@/domain/catalog";
 import { presetUsage, switchValueLabeler, type Bindings, type Clause } from "@/domain/clause";
-import { foldTitle, particlePreset, type JoinMode, refChunkText, repeatLabel, referenceChunkLabel, referenceKeyIndex, refKey, type ArticleNode, type Box, type CondBlockNode, type InlineNode, type Node, type NodeNumber, type ReferenceTarget, type TableNode } from "@/domain/document";
+import { foldTitle, particlePreset, provisionalNote, type JoinMode, refChunkText, repeatLabel, referenceChunkLabel, referenceKeyIndex, refKey, type ArticleNode, type Box, type CondBlockNode, type InlineNode, type Node, type NodeNumber, type ReferenceTarget, type TableNode } from "@/domain/document";
 import { format, parse, refPath } from "@/domain/expression";
 import type { ClauseOptionOverride } from "@/domain/product";
 import type { Code, Id } from "@/domain/types";
@@ -142,7 +142,7 @@ function Inline({ node, ctx }: { node: InlineNode; ctx: Ctx }) {
       }
       const joined = alive.length === 0 ? "없는 조(연결 끊김)" : referenceChunkLabel(alive, node.connector);
       return (
-        <span className="ts-doc-ref" title="조 참조 슬롯 — 번호는 계산값이다">
+        <span className="ts-doc-ref" title={["조 참조 슬롯 — 번호는 계산값이다", provisionalNote(alive)].filter(Boolean).join(" · ")}>
           {node.scope === "general" ? "보통약관 " : ""}
           {joined}
           {alive.length > 0 && broken > 0 ? ` (연결 끊김 ${broken}건)` : ""}

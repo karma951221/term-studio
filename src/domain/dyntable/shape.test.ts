@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Inline } from "../clause/nodes";
 import { dynTableFixtureA, dynTableFixtureR } from "./fixture";
-import { isBlankTemplate, tableShape, tableShapeIssues } from "./shape";
+import { isBlankTemplate, TABLE_SHAPE_LINE, tableShape, tableShapeIssues } from "./shape";
 import type { DynTableHeaders } from "./types";
 
 const text = (id: string, t: string): Inline => ({ id, kind: "text", text: t });
@@ -55,5 +55,12 @@ describe("tableShapeIssues", () => {
     const issues = tableShapeIssues({ ...dynTableFixtureA().headers, single: [] });
     expect(issues).toEqual([expect.objectContaining({ kind: "structure", at: expect.objectContaining({ refPath: "headers.single" }) })]);
     expect(tableShapeIssues(headers({ single: [text("s", " ")] })).map((i) => i.at.refPath)).toEqual(["headers.single"]);
+  });
+});
+
+describe("TABLE_SHAPE_LINE — 구조 섹션 머리의 모양 한 줄", () => {
+  it("모양마다 한 줄", () => {
+    expect(TABLE_SHAPE_LINE[tableShape(dynTableFixtureA().headers)]).toBe("표 모양: 감액 구간형 — 감액 경계로 열을 나눈다");
+    expect(TABLE_SHAPE_LINE[tableShape(dynTableFixtureR().headers)]).toBe("표 모양: 단일형 — 늘 열 하나");
   });
 });
