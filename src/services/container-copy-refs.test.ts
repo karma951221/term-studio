@@ -79,7 +79,7 @@ describe("container — ADR-0081 관통 (PGlite)", () => {
   });
 
   it("상품 조 사본 안 박스 · 별표 참조도 사용처 · 삭제 영향에 선다 — 좌표는 상품 + 조 (기능/박스 §3.3)", async () => {
-    const box = unwrap(await s.document.createBox(editor, { name: "사본 박스", title: "용어", lines: ["줄"] }));
+    const box = unwrap(await s.document.createBox(editor, { title: "용어", lines: ["줄"] }));
     const appendix = unwrap(await s.document.createAppendix(editor, { name: "사본 별표" }));
     const p = unwrap(await s.product.createProduct(editor, { name: "관통 상품 3", generalDocumentId: generalId }));
     const now = (await s.document.get(generalId))!.tree.children.find((c) => c.id === "a10") as ArticleNode;

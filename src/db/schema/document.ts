@@ -12,7 +12,7 @@
  * - appendices: 전상품 superset. 코드는 시스템 채번(`AX000001` · code_sequences kind `appendix`) · 불변 · 유일 (기능/별표 §3.1). 내용 출력은 MVP 밖.
  *   필드는 코드 · 이름뿐 — 주석(description)은 2026-10-10 폐지 (기능/별표 §6.2, 마이그레이션 0025).
  * - boxes: 정적 마스터 박스 (기능/박스 · 최종 결정 9). 코드는 시스템 채번(`BX000001` · code_sequences kind `box`) · 불변 · 유일,
- *   이름도 유일(넣을 때 이름으로 고른다). 줄 = 글 배열(jsonb string[]) — 안에 참조 · 슬롯이 없다.
+ *   이름 칸은 없다 — 제목이 곧 이름(2026-10-21, 마이그레이션 0032). 줄 = 글 배열(jsonb string[]) — 안에 참조 · 슬롯이 없다.
  *
  * 표준 Postgres 만 쓴다 (PGlite 전용 기능 금지).
  */
@@ -61,9 +61,7 @@ export const boxes = pgTable("boxes", {
   id: uuid("id").primaryKey().defaultRandom(),
   /** 자동 채번 불변 코드 `BX000001` … */
   code: text("code").notNull().unique(),
-  /** 박스 이름 — 유일 (기능/박스 §3.1). */
-  name: text("name").notNull().unique(),
-  /** 【제목】 — 비울 수 있다. */
+  /** 제목 — 괄호 없이(표시 · 출력이 【】로 감싼다). 비울 수 있고 겹쳐도 된다 — 박스 이름 칸은 없다 (기능/박스 §3.1, 2026-10-21). */
   title: text("title").notNull().default(""),
   /** 줄 — 글 한 줄씩, 하나 이상. */
   lines: jsonb("lines").$type<string[]>().notNull(),

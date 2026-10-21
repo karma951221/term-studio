@@ -552,7 +552,7 @@ function main(): void {
   const all = [...generals, ...documents];
   for (const g of generals) console.log(`[general] ${g.tree.title}: ${stats(g.tree)}`);
   for (const d of documents) console.log(`[special] ${d.tree.title}: ${stats(d.tree)}`);
-  for (const b of boxRecords) console.log(`[box] ${b.code} ${b.name}`);
+  for (const b of boxRecords) console.log(`[box] ${b.code} ${b.title ? `【${b.title}】` : "(제목 없음)"}`);
   for (const c of clauses) console.log(`[clause] ${c.code} ${c.label} (${c.mode}) — 쓰임 ${all.reduce((n, d) => n + JSON.stringify(d.tree).split(`"clauseCode":"${c.code}"`).length - 1, 0)}`);
   console.log(`[auto] 특약 ${autoStats.docs} · 기존 함수조항 쓰임 ${autoStats.existingUses} · 새 함수조항 ${autoStats.created.length}(쓰임 ${autoStats.createdUses}) · 조 일부 쓰임 ${autoStats.partialUses} · 갱신형 짝 가지 합침 ${autoStats.hoisted}`);
   for (const line of report) console.log(`[report] ${line}`);

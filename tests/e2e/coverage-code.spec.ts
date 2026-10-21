@@ -45,17 +45,17 @@ test(
   async ({ page, ev }) => {
     await ev.action("담보코드#1", "관리자로 로그인한다", () => login(page));
 
-    await ev.action("담보코드#2", `담보 조회 — 1열 헤더가 「코드」이고 시드 담보 ${SEED_COVERAGES}건(알파Plus 9 · 메리츠 9 · 알파Plus2607 질병 5 · 자동 탑재 특약)이 COV000001~ 를 갖는다(한 화면 50건)`, async () => {
+    await ev.action("담보코드#2", `담보 조회 — 1열 「담보」 칸 1줄째가 코드이고 시드 담보 ${SEED_COVERAGES}건(알파Plus 9 · 메리츠 9 · 알파Plus2607 질병 5 · 자동 탑재 특약)이 COV000001~ 를 갖는다(한 화면 50건)`, async () => {
       await page.goto("/coverages");
-      await expect(page.locator("table.ts-table thead th").first()).toHaveText("코드");
+      await expect(page.locator("table.ts-table thead th").first()).toHaveText("담보");
       await expect(page.getByText(new RegExp(`총\\s*${SEED_COVERAGES}\\s*건`))).toBeVisible();
-      const codes = await page.locator("table.ts-table tbody td.col-code code").allInnerTexts();
+      const codes = await page.locator("table.ts-table tbody .ts-ident-code").allInnerTexts();
       expect(codes).toHaveLength(Math.min(50, SEED_COVERAGES));
       expect(codes.every((c) => /^COV\d{6}$/.test(c) && Number(c.slice(3)) >= 1 && Number(c.slice(3)) <= SEED_COVERAGES)).toBe(true);
       expect(new Set(codes).size).toBe(codes.length);
       await search(page, "q", "일반상해사망보장");
       const row = page.locator("tbody tr", { has: page.getByRole("link", { name: "일반상해사망보장", exact: true }) });
-      await expect(row.locator("td.col-code")).toHaveText("COV000002");
+      await expect(row.locator(".ts-ident-code")).toHaveText("COV000002");
     });
 
     await ev.action("담보코드#3", "코드로 검색하면 그 담보 한 건만 남는다", async () => {

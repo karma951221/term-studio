@@ -11,9 +11,9 @@
  */
 import { EmptyState } from "@/app/_components/EmptyState";
 import type { ColumnFilterSpec } from "@/app/_components/ListFilters";
-import { ListPage, codeCol, nameCol, type ListColumn } from "@/app/_components/ListPage";
+import { ListPage, auditCol, identCol, type ListColumn } from "@/app/_components/ListPage";
 import { ENTITY_LABEL, FIELD_LABEL, LEVEL_LABEL, NAME_LABEL, newLabel, searchPlaceholder } from "@/app/_lib/labels";
-import { formatDate, includesQuery, paginate } from "@/app/_lib/list";
+import { includesQuery, paginate } from "@/app/_lib/list";
 import { DISCRIMINATORS_MENU } from "@/app/_lib/menu";
 import type { Discriminator } from "@/domain/catalog/types";
 import { levelDepth } from "@/domain/master";
@@ -65,12 +65,10 @@ export default async function CatalogListPage({ searchParams }: { searchParams: 
 
   const columns: readonly ListColumn<Discriminator>[] = [
     { filter: FILTERS[0], width: "sm", cell: (d) => LEVEL_LABEL[d.level] },
-    codeCol((d) => d.code),
-    nameCol(NAME_LABEL.discriminator, (d) => d.label, (d) => `/catalog/${d.code}`),
+    identCol(ENTITY_LABEL.discriminator, (d) => ({ code: d.code, name: d.label }), (d) => `/catalog/${d.code}`),
     { header: FIELD_LABEL.resultType, width: "sm", cell: (d) => resultTypeLabel(d.resultType, (code) => enumName.get(code)) }, // 필수라 비는 칸이 없다 (2026-10-17)
     { filter: FILTERS[1], width: "sm", cell: (d) => { const badges = warningBadges(warnings.get(d.code) ?? []); return badges.length === 0 ? "—" : badges.map((b) => <span key={b.label} className="ts-badge warning" title={b.title}>{b.label}</span>); } },
-    { header: FIELD_LABEL.updatedAt, width: "md", mono: true, cell: (d) => { const audit = audits.get(d.code); return audit ? formatDate(audit.updatedAt) : "—"; } },
-    { header: FIELD_LABEL.updatedBy, width: "md", cell: (d) => { const by = audits.get(d.code)?.updatedBy; return (by && userName.get(by)) ?? "—"; } },
+    auditCol((d) => audits.get(d.code), userName),
   ];
 
   return (

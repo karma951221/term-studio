@@ -7,12 +7,12 @@
 --    보험금명 값이 없는 담보 · 보통약관 · 상품 조 사본은 바꿀 글자를 몰라 그대로 둔다 — 없는 구분자(brokenRef) · 연결 없음(argUnbound)으로 드러난다.
 -- ③ 보험금명 값 행(담보 마스터 · 상품담보 스냅샷)과 구분자 D0001(식이 coverage_basic.claim_name 인 것만)을 지운다.
 -- 다시 돌려도 같다(멱등) — 두 번째에는 D0001 이 남은 자리만 다시 보고, 값이 없어 아무것도 바꾸지 않는다.
-CREATE OR REPLACE FUNCTION "ts_0033_inline"(node jsonb, claim text, params jsonb) RETURNS jsonb
+CREATE OR REPLACE FUNCTION "ts_0034_inline"(node jsonb, claim text, params jsonb) RETURNS jsonb
 LANGUAGE plpgsql AS $$
 DECLARE result jsonb; b jsonb; name text;
 BEGIN
   IF jsonb_typeof(node) = 'array' THEN
-    RETURN coalesce((SELECT jsonb_agg("ts_0033_inline"(e, claim, params) ORDER BY i) FROM jsonb_array_elements(node) WITH ORDINALITY AS t(e, i)), '[]'::jsonb);
+    RETURN coalesce((SELECT jsonb_agg("ts_0034_inline"(e, claim, params) ORDER BY i) FROM jsonb_array_elements(node) WITH ORDINALITY AS t(e, i)), '[]'::jsonb);
   END IF;
   IF jsonb_typeof(node) <> 'object' THEN
     RETURN node;
@@ -20,7 +20,7 @@ BEGIN
   IF node->>'kind' = 'slot' AND node->>'ref' = 'D0001' THEN
     RETURN jsonb_build_object('id', node->'id', 'kind', 'text', 'text', claim);
   END IF;
-  result := coalesce((SELECT jsonb_object_agg(k, "ts_0033_inline"(v, claim, params)) FROM jsonb_each(node) AS e(k, v)), '{}'::jsonb);
+  result := coalesce((SELECT jsonb_object_agg(k, "ts_0034_inline"(v, claim, params)) FROM jsonb_each(node) AS e(k, v)), '{}'::jsonb);
   IF result ? 'clauseCode' AND params ? (result->>'clauseCode') THEN
     b := coalesce(result->'bindings', '{}'::jsonb);
     FOR name IN SELECT jsonb_array_elements_text(params->(result->>'clauseCode')) LOOP
@@ -48,7 +48,7 @@ BEGIN
     SELECT v."value" #>> '{}' INTO claim FROM "entity_values" v
      WHERE v."owner_kind" = 'coverage' AND v."owner_id" = d."owner_id" AND v."field_path" = 'coverage_basic.claim_name';
     IF claim IS NULL THEN CONTINUE; END IF;
-    t := "ts_0033_inline"(d."tree", claim, claim_params);
+    t := "ts_0034_inline"(d."tree", claim, claim_params);
     IF t <> d."tree" THEN
       UPDATE "documents" SET "tree" = t, "version" = "version" + 1 WHERE "id" = d."id";
     END IF;
@@ -60,7 +60,7 @@ BEGIN
    WHERE claim_params ? c."code";
 END $$;
 --> statement-breakpoint
-DROP FUNCTION "ts_0033_inline"(jsonb, text, jsonb);
+DROP FUNCTION "ts_0034_inline"(jsonb, text, jsonb);
 --> statement-breakpoint
 -- ③ 값 행 · 구분자
 DELETE FROM "entity_values" WHERE "field_path" = 'coverage_basic.claim_name';

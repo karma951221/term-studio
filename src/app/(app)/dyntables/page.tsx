@@ -1,7 +1,7 @@
 /** 동적표 조회 (L1) — 화면은 컬럼만 적고, 조립은 ListPage 가 한다 (기능/동적표 §4.1). */
 import Link from "next/link";
 
-import { ListPage, codeCol, dateCol, nameCol, userCol, type ListColumn } from "@/app/_components/ListPage";
+import { ListPage, auditCol, identCol, type ListColumn } from "@/app/_components/ListPage";
 import { ENTITY_LABEL, FIELD_LABEL, NAME_LABEL, newLabel, searchPlaceholder } from "@/app/_lib/labels";
 import { includesQuery, paginate } from "@/app/_lib/list";
 import type { DynTableSummary } from "@/domain/dyntable/types";
@@ -30,11 +30,9 @@ export default async function DynTablesPage({ searchParams }: { searchParams: Pr
   const { rows, total, page } = paginate(filtered, sp.page, PAGE_SIZE);
 
   const columns: readonly ListColumn<DynTableSummary>[] = [
-    codeCol((t) => t.code),
-    nameCol(NAME_LABEL.dynTable, (t) => t.label, (t) => `/dyntables/${t.code}`),
+    identCol(ENTITY_LABEL.dynTable, (t) => ({ code: t.code, name: t.label }), (t) => `/dyntables/${t.code}`),
     { header: "열 기준", width: "sm", cell: (t) => COLUMN_BASIS_LABEL[t.columnBasis] },
-    dateCol(FIELD_LABEL.updatedAt, (t) => t.updatedAt ?? new Date(0)),
-    userCol(FIELD_LABEL.updatedBy, (t) => t.updatedBy ?? "", userName),
+    auditCol((t) => (t.updatedAt ? { updatedAt: t.updatedAt, updatedBy: t.updatedBy ?? null } : undefined), userName),
   ];
 
   return (

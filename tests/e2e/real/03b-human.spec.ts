@@ -3,7 +3,7 @@ import { pickCombo } from "../_lib/combo";
 import { expect, test } from "../_lib/fixtures";
 import { NO_COORD, arrive, login, open } from "./_lib/app";
 import { ClauseAuthoringDriver, DocumentAuthoring } from "./_lib/driver";
-import { ALL_GENERAL_ANCESTORS, HUMAN_CLAUSE_CODE, SEED, generalAncestors, generalTreeOf, outlinePaths } from "./_lib/seed";
+import { ALL_GENERAL_ANCESTORS, BOX_PICK_LABELS, HUMAN_CLAUSE_CODE, SEED, generalAncestors, generalTreeOf, outlinePaths } from "./_lib/seed";
 
 /**
  * ★ 실물 재현(화면) ③b 사람처럼 넣는 담보 — 알파Plus2607 질병 특약 「말기신부전증진단비보장」 (QA/실물재현/알파플러스2607_모델명세 §6).
@@ -151,8 +151,7 @@ test.describe.serial("실물 재현(화면) ③b 사람처럼 — 말기신부�
       ],
     } as unknown as DocumentNode));
     const clauseLabels = new Map(SEED.clauses.map((c) => [c.code, c.label]));
-    const boxNames = new Map(SEED.boxes.map((b) => [b.code, b.name]));
-    const authoring = new DocumentAuthoring(page, tree, { selfPaths: outlinePaths(tree), generalAncestors: generalAncestors(general) }, clauseLabels, boxNames);
+    const authoring = new DocumentAuthoring(page, tree, { selfPaths: outlinePaths(tree), generalAncestors: generalAncestors(general) }, clauseLabels, BOX_PICK_LABELS);
 
     await ev.action("실물사람#3.1", "메뉴 「담보약관 템플릿」 → 「+」 → 담보 고르기 · 제목 → 생성", async () => {
       await login(page);

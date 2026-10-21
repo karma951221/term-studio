@@ -16,7 +16,6 @@ const BASE = "/boxes";
 export async function createBoxAction(formData: FormData): Promise<void> {
   const actor = await currentActor();
   const r = await getServices().document.createBox(actor, {
-    name: str(formData, "name"),
     title: str(formData, "title"),
     lines: boxLinesFromText(str(formData, "lines")),
   });

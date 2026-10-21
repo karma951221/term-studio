@@ -436,8 +436,8 @@ export class DocumentAuthoring {
     refs: Omit<RefScopes, "hasScopeSelect">,
     /** 함수조항 코드 → 이름 (함수조항 블록 고르기 메뉴의 줄 이름). */
     private readonly clauseLabels: ReadonlyMap<string, string>,
-    /** 박스 코드 → 이름 (툴바 「박스」 고르기 메뉴의 줄 이름). */
-    private readonly boxNames: ReadonlyMap<string, string>,
+    /** 박스 코드 → 툴바 「박스」 고르기 메뉴의 줄 이름 (`BOX_PICK_LABELS`). */
+    private readonly boxPickLabels: ReadonlyMap<string, string>,
   ) {
     this.body = page.locator(".ts-l3-body");
     this.editor = new Editor(page, this.body, { ...refs, hasScopeSelect: true });
@@ -570,7 +570,7 @@ export class DocumentAuthoring {
     }
     if (node.kind === "boxRef") {
       await this.editor.runTool(tool);
-      await this.page.getByRole("menuitem", { name: `${this.boxNames.get(node.boxCode)}(${node.boxCode})`, exact: true }).click();
+      await this.page.getByRole("menuitem", { name: this.boxPickLabels.get(node.boxCode), exact: true }).click();
       return;
     }
     if (node.kind === "clauseBlockRef") {

@@ -1,7 +1,7 @@
 /** 함수조항 조회 (L1) — 화면은 컬럼만 적고, 조립은 ListPage 가 한다. */
 import Link from "next/link";
 
-import { ListPage, codeCol, dateCol, nameCol, userCol, type ListColumn } from "@/app/_components/ListPage";
+import { ListPage, auditCol, identCol, type ListColumn } from "@/app/_components/ListPage";
 import type { ColumnFilterSpec } from "@/app/_components/ListFilters";
 import { ENTITY_LABEL, FIELD_LABEL, MODE_LABEL, MODE_OPTIONS, NAME_LABEL, newLabel, searchPlaceholder } from "@/app/_lib/labels";
 import { includesQuery, paginate } from "@/app/_lib/list";
@@ -42,11 +42,9 @@ export default async function ClausesPage({ searchParams }: { searchParams: Prom
   const { rows, total, page } = paginate(filtered, sp.page, PAGE_SIZE);
 
   const columns: readonly ListColumn<ClauseSummary>[] = [
-    codeCol((c) => c.code),
-    nameCol(NAME_LABEL.clause, (c) => c.label, (c) => `/functions/${c.code}`),
+    identCol(ENTITY_LABEL.clause, (c) => ({ code: c.code, name: c.label }), (c) => `/functions/${c.code}`),
     { filter: FILTERS[0], width: "sm", cell: (c) => MODE_LABEL[c.mode] },
-    dateCol(FIELD_LABEL.updatedAt, (c) => c.updatedAt),
-    userCol(FIELD_LABEL.updatedBy, (c) => c.updatedBy, userName),
+    auditCol((c) => c, userName),
   ];
 
   return (

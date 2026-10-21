@@ -53,6 +53,7 @@ import {
   paramTargetId,
   generalRefsOf,
   type RefTargetFact,
+  boxLabel,
   indexTree,
   numberTree,
   optionCarrier,
@@ -918,7 +919,7 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
                 forms={data.planForms}
               />
             }
-            trial={<TrialPane clause={trial.clause} enums={enumDefs} {...(trial.problem ? { problem: trial.problem } : {})} boxName={(c) => boxByCode.get(c)?.name} appendixName={(c) => appendixName.get(c)} />}
+            trial={<TrialPane clause={trial.clause} enums={enumDefs} {...(trial.problem ? { problem: trial.problem } : {})} boxName={(c) => { const x = boxByCode.get(c); return x ? boxLabel(x) : undefined; }} appendixName={(c) => appendixName.get(c)} />}
             options={shownOptions}
             editing={editing}
             used={used}

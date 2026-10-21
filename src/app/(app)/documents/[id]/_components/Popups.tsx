@@ -55,7 +55,7 @@ import {
   type RepeatSource,
   isJoinMode,
 } from "@/domain/document";
-import type { Box } from "@/domain/document/box";
+import { boxGistLabel, type Box } from "@/domain/document/box";
 import { ATTACH_LEVEL_LABEL, INLINE_REPEAT_CONNECTORS, REFERENCE_CONNECTORS, isInlineRepeatConnector, isReferenceConnector, type Code, type Id, type InlineRepeatConnector, type ReferenceConnector } from "@/domain/types";
 
 import { str } from "../../lib";
@@ -1300,7 +1300,7 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
             ) : (
               <div className="ts-form-row">
                 <label htmlFor="pop-box">박스</label>
-                <Combobox id="pop-box" name="boxCode" defaultValue="" options={env.boxes.map((x) => ({ value: x.code, label: x.name, hint: x.code }))} placeholder="이름 · 코드로 찾기" />
+                <Combobox id="pop-box" name="boxCode" defaultValue="" options={env.boxes.map((x) => ({ value: x.code, label: boxGistLabel(x), hint: x.code, keywords: x.lines.join(" ") }))} placeholder="제목 · 코드 · 본문으로 찾기" />
               </div>
             )}
             <PopActions onCancel={onClose} confirmLabel="넣기" />

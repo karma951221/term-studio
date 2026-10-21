@@ -350,41 +350,71 @@ describe("0018_enum_fields", () => {
   });
 });
 
-describe("0032_drop_pay_exempt", () => {
+describe("0032_box_title_only", () => {
+  it("박스 이름 칸을 지우고(이름 유일 제약도) 제목은 그대로 두되 통째로 【】에 싸인 제목은 벗긴다 — 제목 없는 박스는 제목 없는 채로 · 두 번 돌려도 같다", async () => {
+    for (let idx = 6; idx <= 31; idx++) for (const s of statementsOf(tagOf(idx))) await client.exec(s);
+    await client.query(
+      `INSERT INTO boxes (code, name, title, lines) VALUES
+        ('BX000001', '【보험료】(알파Plus)', '보험료', '["가"]'::jsonb),
+        ('BX000002', '【보험료】(메리츠)', '보험료', '["나"]'::jsonb),
+        ('BX000003', '박스 — 발생할 경우 미리 정해진 …', '', '["발생할 경우 미리 정해진 비율로"]'::jsonb),
+        ('BX000004', '손으로 만든 박스', ' 【 용어풀이 】 ', '["다"]'::jsonb)`,
+    );
+    const apply0032 = async () =>
+      client.transaction(async (tx) => {
+        for (const s of statementsOf(tagOf(32))) await tx.exec(s);
+      });
+    const read = async () => (await client.query<{ code: string; title: string }>(`SELECT code, title FROM boxes ORDER BY code`)).rows;
+    await apply0032();
+    const after = await read();
+    expect(after).toEqual([
+      { code: "BX000001", title: "보험료" },
+      { code: "BX000002", title: "보험료" },
+      { code: "BX000003", title: "" },
+      { code: "BX000004", title: "용어풀이" },
+    ]);
+    const cols = await client.query<{ column_name: string }>(`SELECT column_name FROM information_schema.columns WHERE table_name = 'boxes'`);
+    expect(cols.rows.map((r) => r.column_name)).not.toContain("name");
+    await apply0032();
+    expect(await read()).toEqual(after);
+  });
+});
+
+describe("0033_drop_pay_exempt", () => {
   const put = (ownerKind: string, owner: string, fieldPath: string, value: string) =>
     client.query(`INSERT INTO entity_values (owner_kind, owner_id, field_path, value) VALUES ($1, $2, $3, $4::jsonb)`, [ownerKind, owner, fieldPath, value]);
   const rows = async () =>
     (await client.query<{ owner_kind: string; field_path: string }>(`SELECT owner_kind, field_path FROM entity_values ORDER BY owner_kind, field_path`)).rows;
-  const apply0032 = async () =>
+  const apply0033 = async () =>
     client.transaction(async (tx) => {
-      for (const s of statementsOf(tagOf(32))) await tx.exec(s);
+      for (const s of statementsOf(tagOf(33))) await tx.exec(s);
     });
 
   it("담보 마스터 · 상품담보 스냅샷의 pay.exempt 값 행만 지운다 — 면책은 면책 특성(exemption)이 붙었는지로만 정해진다 · 두 번 돌려도 같다", async () => {
-    for (let idx = 6; idx <= 31; idx++) for (const s of statementsOf(tagOf(idx))) await client.exec(s);
+    for (let idx = 6; idx <= 32; idx++) for (const s of statementsOf(tagOf(idx))) await client.exec(s);
     const other = "22222222-2222-4222-8222-222222222222";
     await put("benefit", OWNER, "pay.exempt", "true");
     await put("benefit", OWNER, "pay.rate", "80");
     await put("productBenefit", other, "pay.exempt", "false");
     await put("productBenefit", other, "exemption.months", "3");
-    await apply0032();
+    await apply0033();
     const after = await rows();
     expect(after).toEqual([
       { owner_kind: "benefit", field_path: "pay.rate" },
       { owner_kind: "productBenefit", field_path: "exemption.months" },
     ]);
-    await apply0032();
+    await apply0033();
     expect(await rows()).toEqual(after);
   });
 });
 
-describe("0033_drop_claim_name", () => {
+describe("0034_drop_claim_name", () => {
   const COV = "33333333-3333-4333-8333-333333333333";
   const NOCLAIM = "44444444-4444-4444-8444-444444444444";
   const PC = "55555555-5555-4555-8555-555555555555";
-  const apply0033 = async () =>
+  const apply0034 = async () =>
     client.transaction(async (tx) => {
-      for (const s of statementsOf(tagOf(33))) await tx.exec(s);
+      for (const s of statementsOf(tagOf(34))) await tx.exec(s);
     });
   const slot = (id: string) => ({ id, kind: "slot", ref: "D0001" });
   const clauseUse = (id: string, bindings?: Record<string, unknown>) => ({ id, kind: "clauseBlockRef", clauseCode: "C0001", options: {}, ...(bindings ? { bindings } : {}) });
@@ -392,7 +422,7 @@ describe("0033_drop_claim_name", () => {
   const para = (...children: unknown[]) => ({ id: "p", kind: "paragraph", children });
 
   async function seedOld() {
-    for (let idx = 6; idx <= 32; idx++) for (const s of statementsOf(tagOf(idx))) await client.exec(s);
+    for (let idx = 6; idx <= 33; idx++) for (const s of statementsOf(tagOf(idx))) await client.exec(s);
     const put = (kind: string, owner: string, p: string, v: string) =>
       client.query(`INSERT INTO entity_values (owner_kind, owner_id, field_path, value) VALUES ($1, $2, $3, $4::jsonb)`, [kind, owner, p, v]);
     await put("coverage", COV, "coverage_basic.claim_name", JSON.stringify("사망보험금"));
@@ -430,7 +460,7 @@ describe("0033_drop_claim_name", () => {
 
   it("담보약관의 보험금명 슬롯 → 그 담보 보험금명 글자 · 기본 연결 쓰임 → 상수 연결, 기본 연결 · 요구 구분자 · 값 행 · D0001 삭제 — 모르는 자리는 두고 · 두 번 돌려도 같다", async () => {
     await seedOld();
-    await apply0033();
+    await apply0034();
     const after = await read();
     const [general, special, noClaim] = after.docs; // 제목순: general-g · special-3333(COV) · special-4444(NOCLAIM)
     expect(special.version).toBe(2);
@@ -449,7 +479,7 @@ describe("0033_drop_claim_name", () => {
     expect(after.values).toEqual(["pay.rate"]);
     expect(after.discs).toEqual(["D0002"]);
 
-    await apply0033();
+    await apply0034();
     expect(await read()).toEqual(after);
   });
 });
