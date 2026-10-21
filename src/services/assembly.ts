@@ -11,6 +11,7 @@
  *   assembleMany(actor, productIds)       여러 상품을 마스터 1회 적재로 순서대로 조립 + 산출본 저장 — 다중이 원형이다 (ADR-0034 결정 1)
  *   run(actor, productId)                 = assembleMany 의 1건 (`product_previews` 상품당 1행 · 기능/조립산출 §3.6) — 편집자 가능 · 비파괴
  *   latest(productId)                     저장된 산출본 + 오래됨(`stale` — 입력 스탬프가 지금과 다름)
+ *   explain(productId, target)            저장본 기준 출처 패널 재료 — 설명 모드(`explainArticle`)로 다시 조립해 기록, 저장본이 오래됐으면 설명하지 않는다 (ADR-0092 결정 3 · 5)
  *   executionBasedFilter(booklet)         실행 기반 완결성 필터 (도메인 re-export) — B1 `CoverageServiceDeps.completenessFilter` 에 꽂는다
  *
  * - 조립은 읽기 전용이다 — 트랜잭션을 열지 않고 스냅샷 구조 동기화(`product.syncStructure`)도 부르지 않는다
@@ -30,7 +31,7 @@
  * - 세목 선택지는 **유효 조합에 등장하는 것**만 (기능/조립산출 §3.2) — 값은 `readSlotsMany(db, "plan", ids)` 한 번.
  * - 컨테이너(C1 동시 작업)는 쓰지 않는다 — 호출자가 서비스 5개를 넘긴다.
  */
-import { assemble, assembleSpecial, type AssemblyCoverage, type AssemblyInput, type AssemblyPlanOption, type Booklet, type MasterBundle, type ProductInput, type SpecialPreview } from "@/domain/assembly";
+import { assemble, assembleSpecial, buildSourceView, explainArticle, type AssemblyCoverage, type AssemblyInput, type AssemblyPlanOption, type Booklet, type MasterBundle, type ExplainTarget, type ProductInput, type SourceView, type SpecialPreview } from "@/domain/assembly";
 import type { SlotPath } from "@/domain/catalog";
 import type { DocumentNode } from "@/domain/document";
 import type { DynTable } from "@/domain/dyntable";
@@ -51,7 +52,7 @@ import type { DocumentService } from "./document";
 import type { ProductService } from "./product";
 
 export { executionBasedFilter } from "@/domain/assembly";
-export type { AssemblyInput, Booklet, MasterBundle, ProductInput, SpecialPreview } from "@/domain/assembly";
+export type { AssemblyInput, Booklet, ExplainTarget, MasterBundle, ProductInput, SourceView, SpecialPreview } from "@/domain/assembly";
 export type { PreviewGrade } from "@/db/repo/preview";
 
 /** 저장된 미리보기 산출본 — 화면이 보여 주는 넷(생성 시점 · 입력 기준 · 결과 등급 · 결과) (기능/조립산출 §3.6). */
@@ -67,6 +68,12 @@ export interface PreviewRecord {
   stale: boolean;
   booklet: Booklet;
 }
+
+/**
+ * 저장본 기준 출처 (ADR-0092 결정 5) — `ok` 패널 재료 · `stale` 저장본 이후 입력이 바뀜(패널 대신 「다시 실행」) · `notRun` 저장본 없음.
+ * 본문은 저장본, 출처는 지금 입력으로 다시 조립하므로 둘이 같은 입력일 때만 설명한다.
+ */
+export type ExplainOutcome = { state: "ok"; view: SourceView } | { state: "stale" } | { state: "notRun" };
 
 /** 문면 저작 화면 미리보기의 상품 한 줄 — 담보약관이면 그 특약 탑재분(상품담보)까지. */
 export interface PreviewProduct {
@@ -118,6 +125,11 @@ export interface AssemblyService {
   run(actor: Actor, productId: Id): Promise<Result<PreviewRecord>>;
   /** 저장된 산출본 — 없으면 undefined. `stale` 은 지금 스탬프와 저장 스탬프의 비교. */
   latest(productId: Id): Promise<PreviewRecord | undefined>;
+  /**
+   * 저장본 기준 출처 패널 재료 — 입력 스탬프를 **적재 전에** 읽어 저장본과 다르면 `stale`(설명하지 않음), 같으면 지금 입력으로 설명 모드 조립 →
+   * 원본 · 결정 노드 기록 + 저장본 책자의 결과 값 조각. 저장하지 않는다. 없는 상품은 `notFound`.
+   */
+  explain(productId: Id, target: ExplainTarget): Promise<Result<ExplainOutcome>>;
 }
 
 export function createAssemblyService(db: Db, services: AssemblyServices): AssemblyService {
@@ -298,6 +310,17 @@ export function createAssemblyService(db: Db, services: AssemblyServices): Assem
     },
     assembleMany,
     run: async (actor, productId) => (await assembleMany(actor, [productId])).get(productId)!,
+    explain: async (productId, target) => {
+      if (!(await product.getProduct(productId))) return reject({ reason: "notFound", what: `상품 ${productId}` });
+      const row = await loadPreview(db, productId);
+      if (!row) return ok({ state: "notRun" });
+      // 스탬프는 적재보다 먼저 (M09 규칙) — 그 뒤 바뀐 입력은 다음 클릭에서 오래됨으로 드러난다
+      if (row.inputStamp !== (await assemblyInputStamp(db, productId))) return ok({ state: "stale" });
+      const master = await loadMaster();
+      const input = await loadProduct(productId, master);
+      if (!input.ok) return input as Result<never>;
+      return ok({ state: "ok", view: buildSourceView(master, input.value, explainArticle(master, input.value, target), row.booklet) });
+    },
     latest: async (productId) => {
       const row = await loadPreview(db, productId);
       if (!row) return undefined;
