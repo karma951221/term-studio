@@ -32,17 +32,19 @@ function values(slots: Record<string, Record<SlotPath, ValueSlot>> = {}): Master
   return { slots: new Map(Object.entries(slots).map(([id, s]) => [id, new Map(Object.entries(s))])) };
 }
 
-describe("담보 레벨 값 입력 — 값 쓰기 검사", () => {
+describe("담보 값 입력 — 값 쓰기 검사", () => {
+  // 담보 레벨 마스터 폼은 없다 (보험금명 2026-10-21 삭제) — 값 쓰기는 급부 레벨 지급률로 본다
   const cov: CoverageNodeRef = { level: "coverage", id: "c1" };
+  const ben1: CoverageNodeRef = { level: "benefit", id: "b1" };
 
   it("그 레벨 마스터 필드에 타입 맞는 값은 통과한다 — 부착이 없으니 자리는 늘 있다", () => {
-    expect(checkValueWrite("coverage_basic.claim_name", "사망보험금", cov, enums).ok).toBe(true);
+    expect(checkValueWrite("pay.rate", 80, ben1, enums).ok).toBe(true);
   });
 
   it("타입 위반은 invalid + 좌표(refPath) — 담보 id 를 모르면 ownerId 도 비운다 (노드 id 를 담보 id 자리에 넣지 않는다)", () => {
-    const r = rejection(checkValueWrite("coverage_basic.claim_name", true, cov, enums));
+    const r = rejection(checkValueWrite("pay.rate", true, ben1, enums));
     expect(r.reason).toBe("invalid");
-    expect(r.issues?.[0]).toMatchObject({ kind: "typeMismatch", at: { document: "coverageMaster", node: cov, refPath: "coverage_basic.claim_name" } });
+    expect(r.issues?.[0]).toMatchObject({ kind: "typeMismatch", at: { document: "coverageMaster", node: ben1, refPath: "pay.rate" } });
     expect(r.issues?.[0]?.at.ownerId).toBeUndefined();
   });
 
@@ -60,9 +62,13 @@ describe("담보 레벨 값 입력 — 값 쓰기 검사", () => {
 
 describe("담보값입력 S4 — 기본값은 프리필로만", () => {
   it("폼 프리필은 명시 값이 있으면 그 값을, 없으면 기본값(있는 자리만) 을 돌려준다", () => {
-    expect(formPrefill("coverage", new Map())).toEqual({});
-    expect(formPrefill("coverage", new Map([["coverage_basic.claim_name", entered("사망보험금")]]))).toEqual({
-      "coverage_basic.claim_name": "사망보험금",
+    expect(formPrefill("coverage", new Map())).toEqual({}); // 담보 레벨은 자리가 없다
+    const defaults = formPrefill("benefit", new Map());
+    expect(defaults).not.toHaveProperty(["pay.rate"]); // 기본값 없는 자리는 비운다
+    expect(defaults).toMatchObject({ "exemption.new_only": true });
+    expect(formPrefill("benefit", new Map([["pay.rate", entered(80)], ["exemption.new_only", entered(false)]]))).toMatchObject({
+      "pay.rate": 80,
+      "exemption.new_only": false,
     });
   });
 });
@@ -84,15 +90,11 @@ describe("담보값입력 S3 — 완결성 조회는 마스터 자리 전부가 
     // 급부는 면책 폼을 연(신규만 입력) 상태 — 선택 필드(면책여부 · 지급률)는 값이 없으면 세지 않는다 (2026-09-27)
     const opened = values({ [b.id]: { "exemption.new_only": entered(true) } });
     expect(completeness(accident, opened).map((m) => [m.owner.level, m.ownerName, m.path])).toEqual([
-      ["coverage", "일반상해사망", "coverage_basic.claim_name"],
+      // 담보 레벨 자리는 없다 (보험금명 2026-10-21 삭제)
       ["benefit", "일반상해사망 > 일반상해사망 > 일반상해사망보험금", "exemption.months"],
       ["benefit", "일반상해사망 > 일반상해사망 > 일반상해사망보험금", "exemption.age15_only"],
     ]);
     expect(completeness(accident, opened)[0]).toMatchObject({
-      label: "담보 기본 › 보험금명",
-      owner: { id: accident.id },
-    });
-    expect(completeness(accident, opened)[1]).toMatchObject({
       label: "면책 › 기간",
       owner: { id: b.id },
     });
@@ -104,8 +106,7 @@ describe("담보값입력 S3 — 완결성 조회는 마스터 자리 전부가 
     const missing = completeness(
       surgery,
       values({
-        [surgery.id]: { "coverage_basic.claim_name": entered("수술비") },
-        [b.id]: { "pay.exempt": entered(false), "pay.rate": entered(100), "exemption.months": entered(3), "exemption.age15_only": entered(false), "exemption.new_only": entered(true) },
+        [b.id]: { "pay.rate": entered(100), "exemption.months": entered(3), "exemption.age15_only": entered(false), "exemption.new_only": entered(true) },
         [surgery.subCoverages[1].benefits[0].id]: { "exemption.new_only": entered(true) },
       }),
     );
@@ -117,23 +118,26 @@ describe("담보값입력 S3 — 완결성 조회는 마스터 자리 전부가 
     const { surgery } = fixture();
     const opened = values({ [surgery.subCoverages[0].benefits[0].id]: { "exemption.new_only": entered(true) } });
     const all = completeness(surgery, opened);
-    const filtered = completeness(surgery, opened, (items) => items.filter((m) => m.owner.level === "coverage"));
+    const filtered = completeness(surgery, opened, (items) => items.filter((m) => m.path === "exemption.months"));
     expect(all.length).toBeGreaterThan(filtered.length);
-    expect(filtered.every((m) => m.owner.level === "coverage")).toBe(true);
+    expect(filtered.length).toBeGreaterThan(0);
+    expect(filtered.every((m) => m.path === "exemption.months")).toBe(true);
   });
 });
 
 describe("완결성 결과의 좌표", () => {
   it("각 항목은 담보 마스터 문서 좌표(document · ownerId · ownerName · refPath)를 갖는다", () => {
     seq = 0;
-    const tree: Coverage = unwrap(createCoverageTree({ name: "일반상해사망" }, newId, []));
-    const [m] = completeness(tree, values());
+    // 담보 레벨 자리는 없다 — 급부의 면책 폼을 열어 미입력 자리를 만든다
+    const tree: Coverage = unwrap(createCoverageTree({ name: "일반상해사망", benefitName: "일반상해사망보험금" }, newId, []));
+    const benefit = tree.subCoverages[0].benefits[0];
+    const [m] = completeness(tree, values({ [benefit.id]: { "exemption.new_only": entered(true) } }));
     expect(m.at).toEqual({
       document: "coverageMaster",
       ownerId: tree.id,
-      ownerName: "일반상해사망",
-      node: { level: "coverage", id: tree.id },
-      refPath: "coverage_basic.claim_name",
+      ownerName: "일반상해사망 > 일반상해사망 > 일반상해사망보험금",
+      node: { level: "benefit", id: benefit.id },
+      refPath: "exemption.months",
     });
   });
 

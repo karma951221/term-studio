@@ -84,7 +84,7 @@ describe("product 서비스 (PGlite)", () => {
   beforeAll(async () => {
     t = await createTestDb();
     const catalog = createCatalogService(t.db);
-    // 값 자리는 MVP 마스터가 정한다 — 담보 claim_name · 급부 pay.exempt · pay.rate ·
+    // 값 자리는 MVP 마스터가 정한다 — 급부 pay.rate(담보 레벨 폼은 없다 — 보험금명 2026-10-21 삭제) ·
     // 세목 waiver{applies · reasons} · no_surrender{type}. 상품 레벨은 비어 있다 (ADR-0037).
     unwrap(await catalog.createEnum(editor, { label: "납입면제사유", values: [{ label: "질병" }, { label: "상해" }] })); // E0001
     unwrap(await catalog.createEnum(editor, { label: "해약환급금유형", values: [{ label: "지급형" }, { label: "미지급형" }] })); // E0002
@@ -94,12 +94,10 @@ describe("product 서비스 (PGlite)", () => {
     unwrap(await catalog.createEnum(editor, { label: "고지유형", values: [{ label: "일반심사" }, { label: "간편심사" }, { label: "건강고지" }] })); // E0005
     unwrap(await catalog.createEnum(editor, { label: "간편심사구분", values: [{ label: "단일심사" }, { label: "통합간편심사" }] })); // E0006
     unwrap(await catalog.createEnum(editor, { label: "계약형태", values: [{ label: "주계약" }, { label: "독립특약" }] })); // E0007 — 독립특약이면 기본계약 없음
-    unwrap(await catalog.create(editor, { label: "담보명", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } })); // D0001
+    unwrap(await catalog.create(editor, { label: "담보명", level: "coverage", expression: "builtin.coverage.name", resultType: { kind: "string" } })); // D0001
 
     // 담보 마스터 값 (B1 이 공용 저장소에 넣는 것과 같은 자리)
-    await writeSlot(t.db, { kind: "coverage", id: SURGERY }, "coverage_basic.claim_name", "수술보험금");
     await writeSlot(t.db, { kind: "benefit", id: SURGERY_BEN1 }, "pay.rate", 50);
-    await writeSlot(t.db, { kind: "coverage", id: DEATH }, "coverage_basic.claim_name", "사망보험금");
     await writeSlot(t.db, { kind: "benefit", id: DEATH_BEN }, "pay.exempt", false);
     await writeSlot(t.db, { kind: "benefit", id: DEATH_BEN }, "pay.rate", 100);
 
@@ -322,7 +320,7 @@ describe("product 서비스 (PGlite)", () => {
     });
 
     it("상품 레벨 값 자리는 공시이율 · 상품특성 · 책자 세 폼 — 다른 레벨 자리는 거부된다 (ADR-0037 · 2026-09-28 · ADR-0090 결정 8)", async () => {
-      expect(reason(await svc.setProductValue(editor, productId, "coverage_basic.claim_name", "x"))).toBe("invalid"); // 담보 레벨 자리
+      expect(reason(await svc.setProductValue(editor, productId, "pay.rate", 1))).toBe("invalid"); // 급부 레벨 자리
       expect(reason(await svc.setProductValue(editor, productId, "product.nope", "x"))).toBe("invalid");
       expect(reason(await svc.setProductValue(editor, productId, "feature.renewable", "예"))).toBe("invalid"); // 타입 불일치
       // 완결성은 분모를 함께 준다 (디자인원칙 §9.6) — 상품 레벨 마스터 10자리(책자 그룹 제목 표시 포함, ADR-0090 결정 8) 중 조건부 칸
@@ -347,7 +345,7 @@ describe("product 서비스 (PGlite)", () => {
       f2 = unwrap(await svc.addPlanOption(editor, productId, { axis: "form", number: 2, name: "해약환급금미지급형", planTypeCode: "no_surrender" })).id;
       unwrap(await svc.setPlanOptionValue(editor, t2, "waiver.reasons", ["V02"]));
       expect((await svc.getPlanOptionValues(t2)).get("waiver.reasons")).toEqual({ entered: true, value: ["V02"] });
-      expect(reason(await svc.setPlanOptionValue(editor, t2, "coverage_basic.claim_name", "x"))).toBe("invalid"); // 다른 레벨 자리
+      expect(reason(await svc.setPlanOptionValue(editor, t2, "pay.rate", 1))).toBe("invalid"); // 다른 레벨 자리
     });
     it("같은 레벨 · 다른 폼 거부 — 선택지는 제 세목유형 폼의 값만 갖는다 (코덱스 리뷰 Important 1)", async () => {
       // f1 은 no_surrender 유형 — waiver 폼은 같은 plan 레벨이지만 이 선택지의 자리가 아니다
@@ -452,7 +450,7 @@ describe("product 서비스 (PGlite)", () => {
       expect(snap.subCoverages).toHaveLength(1);
       expect(snap.subCoverages[0].benefits).toHaveLength(1);
       const benefitNode = snap.subCoverages[0].benefits[0];
-      expect((await readSlots(t.db, { kind: "productCoverage", id: pcSurgery })).get("coverage_basic.claim_name")).toEqual({ entered: true, value: "수술보험금" });
+      expect((await readSlots(t.db, { kind: "productCoverage", id: pcSurgery })).size).toBe(0); // 담보 레벨 값 자리는 없다 (보험금명 2026-10-21 삭제)
       expect((await readSlots(t.db, { kind: "productBenefit", id: benefitNode.id })).get("pay.rate")).toEqual({ entered: true, value: 50 });
       // 스냅샷 값 조회 API
       const values = await svc.getSnapshotValues(pcSurgery);
@@ -467,7 +465,7 @@ describe("product 서비스 (PGlite)", () => {
       unwrap(await svc.setSnapshotValue(editor, pcSurgery, { kind: "productBenefit", id: ben.id }, "pay.rate", 70));
       expect((await svc.getSnapshotValues(pcSurgery)).get(ben.id)?.get("pay.rate")).toEqual({ entered: true, value: 70 });
       expect(reason(await svc.setSnapshotValue(editor, pcSurgery, { kind: "productBenefit", id: ben.id }, "pay.rate", "70%"))).toBe("invalid");
-      expect(reason(await svc.setSnapshotValue(editor, pcSurgery, { kind: "productBenefit", id: ben.id }, "coverage_basic.claim_name", "x"))).toBe("invalid"); // 급부에 담보 레벨 자리
+      expect(reason(await svc.setSnapshotValue(editor, pcSurgery, { kind: "productBenefit", id: ben.id }, "waiver.applies", true))).toBe("invalid"); // 급부에 세목 레벨 자리
       // 다른 상품담보의 노드는 거부
       expect(reason(await svc.setSnapshotValue(editor, pcBasic, { kind: "productBenefit", id: ben.id }, "pay.rate", 1))).toBe("notFound");
 
@@ -514,9 +512,9 @@ describe("product 서비스 (PGlite)", () => {
         "2종수술급부:exemption.age15_only",
         "2종수술급부:exemption.months",
       ]);
-      // 분모: 담보명 1 + 1종수술급부 입력한 지급률 1 + 2종수술급부 연 면책 폼 3 = 5 (값 없는 선택 필드는 세지 않는다)
+      // 분모: 1종수술급부 입력한 지급률 1 + 2종수술급부 연 면책 폼 3 = 4 (담보 레벨 자리는 없다 · 값 없는 선택 필드는 세지 않는다)
       const summary = await svc.coverageCompleteness(pcSurgery);
-      expect(summary.total).toBe(5);
+      expect(summary.total).toBe(4);
       expect(summary.missing).toHaveLength(2);
 
       await writeSlot(t.db, { kind: "productBenefit", id: newBen.id }, "pay.exempt", true);
@@ -529,15 +527,17 @@ describe("product 서비스 (PGlite)", () => {
 
     it("되돌릴 수 있는 필드 — 스냅샷이 마스터와 달라진 값 자리를 센다 (디자인원칙 §1.2)", async () => {
       const before = await svc.snapshotDrift(pcBasic);
-      unwrap(await svc.setSnapshotValue(editor, pcBasic, { kind: "productCoverage", id: pcBasic }, "coverage_basic.claim_name", "달라진 이름")); // 마스터는 「사망보험금」
+      // 담보 레벨 값 자리는 없다(보험금명 2026-10-21 삭제) — 급부 지급률로 본다
+      const basicBen = unwrap(await svc.getSnapshot(pcBasic)).subCoverages[0].benefits[0];
+      unwrap(await svc.setSnapshotValue(editor, pcBasic, { kind: "productBenefit", id: basicBen.id }, "pay.rate", 90)); // 마스터는 100
       expect(await svc.snapshotDrift(pcBasic)).toBe(before + 1);
-      unwrap(await svc.setSnapshotValue(editor, pcBasic, { kind: "productCoverage", id: pcBasic }, "coverage_basic.claim_name", "사망보험금")); // 마스터와 같아지면 다시 준다
+      unwrap(await svc.setSnapshotValue(editor, pcBasic, { kind: "productBenefit", id: basicBen.id }, "pay.rate", 100)); // 마스터와 같아지면 다시 준다
       expect(await svc.snapshotDrift(pcBasic)).toBe(before);
     });
 
     it("getSnapshotMasterValues — owner id(상품담보 자신 · 노드) → 마스터 값 자리, 없는 상품담보는 빈 맵", async () => {
       const masterValues = await svc.getSnapshotMasterValues(pcSurgery);
-      expect(masterValues.get(pcSurgery)?.get("coverage_basic.claim_name")).toEqual({ entered: true, value: "수술보험금" }); // 담보 마스터
+      expect(masterValues.get(pcSurgery)?.size ?? 0).toBe(0); // 담보 마스터 — 담보 레벨 값 자리는 없다 (보험금명 2026-10-21 삭제)
       const snap = unwrap(await svc.getSnapshot(pcSurgery));
       const ben = snap.subCoverages[0].benefits[0];
       expect(masterValues.get(ben.id)?.get("pay.rate")).toEqual({ entered: true, value: 60 }); // 급부 마스터 (앞선 테스트에서 50 → 60 으로 바뀜)
@@ -948,7 +948,7 @@ describe("product 서비스 (PGlite)", () => {
       const first = await svc.unmount(admin, pcSurgery);
       expect(first.ok).toBe(false);
       if (!first.ok && first.rejection.reason === "needsConfirmation") {
-        expect(first.rejection.impact.valueRowsLost).toBeGreaterThanOrEqual(2); // 담보명 · 급부 지급률
+        expect(first.rejection.impact.valueRowsLost).toBeGreaterThanOrEqual(1); // 급부 지급률 (담보 레벨 값 자리는 없다)
         expect(first.rejection.impact.cascade.some((c) => c.includes("옵션 오버라이드"))).toBe(false); // 담보 scope 오버라이드는 없다 (기능/상품 §3.6)
       }
       unwrap(await svc.unmount(admin, pcSurgery, { confirm: true }));

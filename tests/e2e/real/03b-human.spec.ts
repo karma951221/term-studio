@@ -1,7 +1,7 @@
 import { withCodes, withInlineTitles, type DocumentNode } from "../../../src/domain/document";
 import { pickCombo } from "../_lib/combo";
 import { expect, test } from "../_lib/fixtures";
-import { NO_COORD, arrive, login, open, saveEdit } from "./_lib/app";
+import { NO_COORD, arrive, login, open } from "./_lib/app";
 import { ClauseAuthoringDriver, DocumentAuthoring } from "./_lib/driver";
 import { ALL_GENERAL_ANCESTORS, HUMAN_CLAUSE_CODE, SEED, generalAncestors, generalTreeOf, outlinePaths } from "./_lib/seed";
 
@@ -28,7 +28,7 @@ async function menu(page: import("@playwright/test").Page, label: string): Promi
 }
 
 test.describe.serial("실물 재현(화면) ③b 사람처럼 — 말기신부전증진단비보장", () => {
-  test("담보 — 메뉴 「담보」 → + → 담보명 · 세부보장 · 급부 · 담보분류(질병) → 생성 → 편집: 보험금명 → 저장", NO_COORD, async ({ page, ev }) => {
+  test("담보 — 메뉴 「담보」 → + → 담보명 · 세부보장 · 급부 · 담보분류(질병) → 생성", NO_COORD, async ({ page, ev }) => {
     await ev.action("실물사람#1.1", "관리자로 로그인하고 홈에서 메뉴 「담보」로 들어간다", async () => {
       await login(page);
       await open(page, "/");
@@ -46,13 +46,9 @@ test.describe.serial("실물 재현(화면) ③b 사람처럼 — 말기신부�
       await arrive(page, /\/coverages\/[0-9a-f-]{36}$/);
       await expect(page.locator(".ts-count code").first()).toHaveText("COV000023");
     });
-    await ev.action("실물사람#1.3", `편집 — 보험금명 「${CLAIM}」 → 저장 · 담보 카드 맨 위 담보분류 「질병」`, async () => {
-      await page.getByRole("button", { name: "편집", exact: true }).click();
-      await page.locator(`section.ts-cov-card[data-level='coverage'] input[name="coverage_basic.claim_name"]`).fill(CLAIM);
-      await saveEdit(page);
-      await page.reload();
-      await expect(page.locator(`input[name="coverage_basic.claim_name"]`)).toHaveValue(CLAIM);
+    await ev.action("실물사람#1.3", "담보 카드 맨 위 담보분류 「질병」 — 보험금명 줄은 없다(담보약관에 글자로, ADR-0091)", async () => {
       await expect(page.locator('[data-path="category"] .ts-form-control')).toHaveText("질병");
+      await expect(page.locator("section.ts-cov-card[data-level='coverage']").getByText("보험금명")).toHaveCount(0);
     });
   });
 
@@ -107,7 +103,7 @@ test.describe.serial("실물 재현(화면) ③b 사람처럼 — 말기신부�
     test.setTimeout(600_000);
     const general = generalTreeOf(GENERAL_2607);
     const a = (n: number) => `h-a${n}`;
-    // 원문을 보고 친 글 — 제1조 보험금명은 담보 값 슬롯(D0001), 제2조 · 제4조 · 제5조는 함수조항 블록(조 참조 인자 「보험금의 지급사유 조」 ← 제1조)
+    // 원문을 보고 친 글 — 제1조 보험금명은 글자(ADR-0091), 제2조 · 제4조 · 제5조는 함수조항 블록(조 참조 인자 「보험금의 지급사유 조」 ← 제1조)
     const firstArticle = { articleId: a(1) };
     // 손으로 친 트리의 조 제목은 글 — 읽을 때처럼 [글 하나]로 이행해 둔다(조 제목 = 인라인 노드 목록, ADR-0088)
     const tree = withCodes(withInlineTitles({
@@ -122,19 +118,19 @@ test.describe.serial("실물 재현(화면) ③b 사람처럼 — 말기신부�
           children: [
             { id: "h-a1-p1", kind: "paragraph", children: [
               { id: "x1", kind: "text", text: "회사는 보험증권에 기재된 피보험자가 이 특별약관의 보험기간 중에「말기신부전증」으로 진단확정되었을 때에는 보험수익자에게 최초 1회에 한하여 이 특별약관의 보험가입금액을 " },
-              { id: "x2", kind: "slot", ref: "D0001" },
+              { id: "x2", kind: "text", text: CLAIM },
               { id: "x3", kind: "text", text: "로 지급합니다." },
             ] },
             { id: "h-a1-p2", kind: "paragraph", children: [
               { id: "y1", kind: "text", text: "피보험자가 보험기간 중 보장개시일 이후에 사망하고 그 후에 말기신부전증으로 사망한 사실이 확인된 경우에는 그 사망일을 진단확정일로 보고 " },
               { id: "y2", kind: "articleRef", targets: [{ articleId: a(1), code: "P0100" }], connector: "및", scope: "self" },
               { id: "y3", kind: "text", text: "의 " },
-              { id: "y4", kind: "slot", ref: "D0001" },
+              { id: "y4", kind: "text", text: CLAIM },
               { id: "y5", kind: "text", text: "를 지급합니다. 다만, " },
               // 「제4조(특별약관의 소멸) 제3항」 — 소멸 함수조항 블록 안 셋째 항(펼친 함수조항 안쪽)
               { id: "y6", kind: "articleRef", targets: [{ articleId: a(4), code: "P0100", innerCode: "P0300" }], connector: "및", scope: "self" },
               { id: "y7", kind: "text", text: "에 따라 이 특별약관의 계약자적립액 및 미경과보험료를 지급한 경우에는 " },
-              { id: "y8", kind: "slot", ref: "D0001" },
+              { id: "y8", kind: "text", text: CLAIM },
               { id: "y9", kind: "text", text: "에서 이미 지급된 계약자적립액 및 미경과보험료를 차감한 금액을 지급합니다." },
             ] },
           ],
@@ -147,7 +143,7 @@ test.describe.serial("실물 재현(화면) ③b 사람처럼 — 말기신부�
           { id: "h-a3-p2", kind: "paragraph", children: [{ id: "z2", kind: "text", text: "「말기신부전증」의 진단확정은 의료법 제3조에서 정한 국내의 병원, 의원 또는 국외의 의료관련법에서 정한 의료기관의 의사(한의사, 치과의사는 제외합니다) 면허를 가진 자가 작성한 문서화된 기록 또는 검사결과를 기초로 하여 내려져야 합니다. 또한, 회사가「말기신부전증」의 조사나 확인을 위하여 필요하다고 인정하는 경우에는 검사결과, 진료기록부의 사본 제출을 요청할 수 있습니다." }] },
         ] },
         { id: a(4), kind: "article", title: "특별약관의 소멸", children: [
-          { id: "h-a4-k", kind: "clauseBlockRef", clauseCode: LAPSE, options: { O01: "V01" }, bindings: { "보험금의 지급사유 조": { kind: "articleRef", targets: [firstArticle], connector: "및", scope: "self" } } },
+          { id: "h-a4-k", kind: "clauseBlockRef", clauseCode: LAPSE, options: { O01: "V01" }, bindings: { "보험금의 지급사유 조": { kind: "articleRef", targets: [firstArticle], connector: "및", scope: "self" }, 담보명: { kind: "const", value: CLAIM } } },
         ] },
         { id: a(5), kind: "article", title: "준용규정", children: [
           { id: "h-a5-k", kind: "clauseBlockRef", clauseCode: HUMAN_CLAUSE_CODE, options: {} },
@@ -171,7 +167,7 @@ test.describe.serial("실물 재현(화면) ③b 사람처럼 — 말기신부�
     });
     await ev.action("실물사람#3.2", `편집 → 대응 보통약관 「${general.title}」`, () => authoring.startEdit(general.title));
     await ev.action("실물사람#3.3", "조 다섯 — 제목 · 항 · 함수조항 블록(세부규정 · 소멸 · 준용규정, 인자 「보험금의 지급사유 조」 ← 제1조)", () => authoring.buildSkeleton());
-    await ev.action("실물사람#3.4", "문장 — 글 · 보험금명 슬롯 · 조 참조(제1항 · 제4조 제3항 = 소멸 함수조항 안쪽)", () => authoring.fillSentences());
+    await ev.action("실물사람#3.4", "문장 — 글 · 조 참조(제1항 · 제4조 제3항 = 소멸 함수조항 안쪽)", () => authoring.fillSentences());
     await ev.action("실물사람#3.5", "저장 한 번 — 검증 오류 0", async () => {
       await authoring.save();
       await expect(page.locator("nav.ts-l3-toc button.ts-toc-article")).toHaveCount(5);

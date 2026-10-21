@@ -51,14 +51,14 @@ describe("catalog 서비스 (PGlite)", () => {
   describe("구분자정의 S1 — 채번 · 조회 · 표시명 변경", () => {
     it("편집자가 담보 레벨 「담보명」을 채번하면 D0001 을 받는다", async () => {
       const def = unwrap(
-        await svc.create(editor, { label: "담보명", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } }),
+        await svc.create(editor, { label: "담보명", level: "coverage", expression: "builtin.coverage.name", resultType: { kind: "string" } }),
       );
-      expect(def).toMatchObject({ code: "D0001", level: "coverage", expression: "coverage_basic.claim_name" });
+      expect(def).toMatchObject({ code: "D0001", level: "coverage", expression: "builtin.coverage.name" });
       expect(await svc.get("D0001")).toEqual(def);
     });
 
     it("같은 레벨 표시명 중복은 DB 상태 기준으로 거부된다 (D-P1-1)", async () => {
-      const r = await svc.create(editor, { label: "담보명", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } });
+      const r = await svc.create(editor, { label: "담보명", level: "coverage", expression: "builtin.coverage.name", resultType: { kind: "string" } });
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.rejection.reason).toBe("duplicate");
     });
@@ -130,7 +130,9 @@ describe("catalog 서비스 (PGlite)", () => {
     });
 
     it("항등 투영은 허용한다 — 필드를 문면에 내는 유일한 길 (ADR-0036 §2)", async () => {
-      expect((await svc.create(editor, { label: "담보명투영", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } })).ok).toBe(true);
+      // 담보 레벨 필드는 없다(보험금명 2026-10-21 삭제) — 급부 레벨 필드 하나뿐인 식으로 본다. D0003 은 아래 순환 시나리오가 담보 레벨로 쓴다
+      expect((await svc.checkExpression("pay.rate", "benefit")).ok).toBe(true);
+      expect((await svc.create(editor, { label: "담보명투영", level: "coverage", expression: "builtin.coverage.name", resultType: { kind: "string" } })).ok).toBe(true);
     });
 
     it("구분자 → 구분자 참조 — 같은 레벨은 허용, 상위 · 자기 참조 · 순환은 거부 (기능/구분자 §3.2)", async () => {
@@ -147,12 +149,12 @@ describe("catalog 서비스 (PGlite)", () => {
       expect((await svc.get("D0002"))?.expression).toBe("notexist(exemption.months)"); // 원본 그대로
       // 참조받는 쪽을 고쳐 참조하는 쪽이 깨지면 거부 — D0003 = `D0002 = true` 인데 D0002 가 string 이 되면 비교가 깨진다
       // (코덱스 리뷰 2026-09-14 Important-1: 저장 경로가 역방향 사용처를 재검사한다)
-      const broken = await svc.setExpression(editor, "D0002", "coverage_basic.claim_name", { resultType: { kind: "string" } });
+      const broken = await svc.setExpression(editor, "D0002", "builtin.coverage.name", { resultType: { kind: "string" } });
       expect(broken.ok).toBe(false);
       if (!broken.ok && broken.rejection.reason === "invalid") expect(broken.rejection.issues[0].message).toContain("D0003");
       expect((await svc.get("D0002"))?.expression).toBe("notexist(exemption.months)");
       // 투영으로 되돌린다 (다른 시나리오의 전제)
-      unwrap(await svc.setExpression(editor, "D0003", "coverage_basic.claim_name", { resultType: { kind: "string" } }));
+      unwrap(await svc.setExpression(editor, "D0003", "builtin.coverage.name", { resultType: { kind: "string" } }));
     });
 
     it("하위 레벨 자리를 집계 없이 부르면 거부한다", async () => {
@@ -298,7 +300,7 @@ describe("catalog 서비스 (PGlite)", () => {
 
     beforeAll(async () => {
       inspecting = createCatalogService(t.db, { impact: store.source, graph: () => loadGraph(t.db) });
-      slotted = unwrap(await svc.create(editor, { label: "검사슬롯", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } })).code;
+      slotted = unwrap(await svc.create(editor, { label: "검사슬롯", level: "coverage", expression: "builtin.coverage.name", resultType: { kind: "string" } })).code;
       conditioned = unwrap(await svc.create(editor, { label: "검사조건", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } })).code;
       dependent = unwrap(await svc.create(editor, { label: "검사의존", level: "coverage", expression: `${conditioned} and notexist(exemption.months)`, resultType: { kind: "boolean" } })).code;
       const b = nodeBuilders();
@@ -309,10 +311,10 @@ describe("catalog 서비스 (PGlite)", () => {
     });
 
     it("code 없이(생성) — 오류 · 경고 · 추론만, breaks 는 빈 배열", async () => {
-      const r = await inspecting.inspect({ expression: "coverage_basic.claim_name", level: "coverage" });
+      const r = await inspecting.inspect({ expression: "pay.rate", level: "benefit" });
       expect(r.errors).toEqual([]);
       expect(r.warnings.map((i) => i.kind)).toEqual(["alias"]);
-      expect(r.inferred).toEqual({ kind: "string" });
+      expect(r.inferred).toEqual({ kind: "number" });
       expect(r.breaks).toEqual([]);
     });
 
@@ -333,22 +335,22 @@ describe("catalog 서비스 (PGlite)", () => {
     });
 
     it("명시 타입이 있으면 슬롯 규칙은 그것을 본다 (기능/구분자 §3.1) — 식은 string 이어도 명시가 boolean 이면 깨진다", async () => {
-      const r = await inspecting.inspect({ code: slotted, expression: "coverage_basic.claim_name", level: "coverage", resultType: { kind: "boolean" } });
+      const r = await inspecting.inspect({ code: slotted, expression: "builtin.coverage.name", level: "coverage", resultType: { kind: "boolean" } });
       expect(r.errors.map((i) => i.kind)).toEqual(["typeMismatch"]); // 명시 ≠ 추론
       expect(r.breaks.map((i) => i.message)).toEqual([expect.stringContaining("슬롯 사용처")]);
     });
 
     it("타입이 그대로면 사용처는 깨지지 않는다 — 식만 바꿔도 경고 없음", async () => {
-      const r = await inspecting.inspect({ code: slotted, expression: "coverage_basic.claim_name ≠ '' and false or coverage_basic.claim_name = 'x'", level: "coverage" });
+      const r = await inspecting.inspect({ code: slotted, expression: "builtin.coverage.name ≠ '' and false or builtin.coverage.name = 'x'", level: "coverage" });
       // 위 식은 boolean 이라 깨진다 — 같은 타입인 식으로 다시
       expect(r.breaks).toHaveLength(1);
-      const same = await inspecting.inspect({ code: slotted, expression: "builtin.coverage.name", level: "coverage" });
+      const same = await inspecting.inspect({ code: slotted, expression: "'사망보험금'", level: "coverage" });
       expect(same.errors).toEqual([]);
       expect(same.breaks).toEqual([]);
     });
 
     it("조건식이 읽는 구분자의 타입이 바뀌면 — 조건식 사용처 경고 + 참조하는 구분자가 깨진다는 오류", async () => {
-      const r = await inspecting.inspect({ code: conditioned, expression: "coverage_basic.claim_name", level: "coverage" });
+      const r = await inspecting.inspect({ code: conditioned, expression: "builtin.coverage.name", level: "coverage" });
       expect(r.breaks).toHaveLength(1);
       expect(r.breaks[0]).toMatchObject({ severity: "warning", at: expect.objectContaining({ document: "general", ownerName: "검사용 보통약관", refPath: conditioned }) });
       expect(r.breaks[0].message).toContain("조건식 사용처");
@@ -358,7 +360,7 @@ describe("catalog 서비스 (PGlite)", () => {
     });
 
     it("구분자를 거쳐 닿는 슬롯 — 거치는 구분자도 결과 타입이 필수라 원천의 타입 변경은 경유 경고가 아니라 그 구분자의 타입 불일치 오류로 막힌다 (ADR-0049 §2 「구분자 → 구분자 → 문면」)", async () => {
-      const origin = unwrap(await svc.create(editor, { label: "경유원천", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } })).code;
+      const origin = unwrap(await svc.create(editor, { label: "경유원천", level: "coverage", expression: "builtin.coverage.name", resultType: { kind: "string" } })).code;
       const alias = unwrap(await svc.create(editor, { label: "경유별칭", level: "coverage", expression: origin, resultType: { kind: "string" } })).code;
       const b = nodeBuilders();
       const art = b.article("경유 대상 조", [b.paragraph([b.text("별칭 "), b.slot(alias)])]);
@@ -371,7 +373,7 @@ describe("catalog 서비스 (PGlite)", () => {
       expect(r.breaks).toEqual([]); // 별칭의 타입은 그대로(string) — 경유 슬롯은 그 타입을 본다
 
       // 같은 타입이면 오류도 경고도 없다
-      const same = await inspecting.inspect({ code: origin, expression: "builtin.coverage.name", level: "coverage", resultType: { kind: "string" } });
+      const same = await inspecting.inspect({ code: origin, expression: "'사망보험금'", level: "coverage", resultType: { kind: "string" } });
       expect(same.errors).toEqual([]);
       expect(same.breaks).toEqual([]);
     });
@@ -390,8 +392,11 @@ describe("catalog 서비스 (PGlite)", () => {
     });
 
     it("listWarnings — 별칭인 구분자만 코드 → 경고 목록으로", async () => {
+      // 슬롯 구분자(builtin.coverage.name)는 별칭이 아니다 — 필드 하나뿐인 투영을 따로 만든다 (담보 레벨 필드는 2026-10-21 없어졌다)
+      const aliased = unwrap(await svc.create(editor, { label: "별칭검사", level: "benefit", expression: "pay.rate", resultType: { kind: "number" } })).code;
       const map = await svc.listWarnings();
-      expect(map.get(slotted)?.map((i) => i.kind)).toEqual(["alias"]);
+      expect(map.get(aliased)?.map((i) => i.kind)).toEqual(["alias"]);
+      expect(map.has(slotted)).toBe(false);
       expect(map.has(conditioned)).toBe(false);
       expect(map.has(dependent)).toBe(false);
     });

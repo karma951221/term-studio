@@ -82,7 +82,7 @@ test(
     await page.getByRole("button", { name: /admin/ }).click();
     await page.waitForURL((url) => !url.pathname.startsWith("/login"));
 
-    await page.goto("/relations?kind=discriminator&code=D0001");
+    await page.goto("/relations?kind=discriminator&code=D0002"); // 보통약관 납입면제 조를 감싸는 「납입면제 있음」 — D0001 은 2026-10-21 삭제
     const graph = page.getByRole("img", { name: "조회 대상의 이웃 그래프" });
     await expect(graph).toBeVisible();
 

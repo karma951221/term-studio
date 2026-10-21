@@ -79,7 +79,7 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
       "conversion.converts",
       "business_type.applies",
     ]);
-    expect(valueSlotsOf("coverage")).toEqual(["coverage_basic.claim_name"]);
+    expect(valueSlotsOf("coverage")).toEqual([]); // 담보 레벨 폼은 없다 — 보험금명(coverage_basic.claim_name)은 2026-10-21 뺐다
   });
 
   it("마스터가 비어 있는 레벨은 값 자리가 없다", () => {
@@ -98,8 +98,8 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
 
   it("자리의 타입을 경로로 찾는다 — 레벨이 다르면 못 찾는다", () => {
     expect(slotType("plan", "waiver.applies")).toEqual({ kind: "boolean" });
-    expect(slotType("coverage", "coverage_basic.claim_name")).toEqual({ kind: "string" });
-    expect(slotType("plan", "coverage_basic.claim_name")).toBeUndefined();
+    expect(slotType("benefit", "pay.rate")).toEqual({ kind: "number" });
+    expect(slotType("plan", "pay.rate")).toBeUndefined();
     expect(slotType("plan", "plan.waiver.nope")).toBeUndefined();
   });
 });
@@ -113,7 +113,7 @@ describe("폼입력 S1 — 기본값 프리필: 저장 전에는 미입력", () 
 
   it("저장소가 비어 있으면 그 레벨 자리가 전부 미입력이다", () => {
     const empty = () => undefined;
-    expect(missingSlots("coverage", empty)).toEqual(["coverage_basic.claim_name"]);
+    expect(missingSlots("coverage", empty)).toEqual([]); // 담보 레벨은 자리가 없다
     expect(missingSlots("plan", empty)).toHaveLength(5);
   });
 });
@@ -133,8 +133,14 @@ describe("폼입력 S2 — 미입력 상태로 중간 저장", () => {
   });
 
   it("전부 입력되면 미입력 없음", () => {
-    const store: Record<string, ValueSlot> = { "coverage_basic.claim_name": entered("사망보험금") };
-    expect(missingSlots("coverage", (p) => store[p])).toEqual([]);
+    const store: Record<string, ValueSlot> = {
+      "waiver.applies": entered(true),
+      "waiver.reasons": entered(["V01"]),
+      "no_surrender.type": entered("V01"),
+      "conversion.converts": entered(false),
+      "business_type.applies": entered(false),
+    };
+    expect(missingSlots("plan", (p) => store[p])).toEqual([]);
   });
 });
 

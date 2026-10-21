@@ -46,10 +46,10 @@ describe("coverage 서비스 (PGlite)", () => {
   beforeAll(async () => {
     t = await createTestDb();
     svc = createCoverageService(t.db, { usage });
-    // 카탈로그 픽스처 — 값 자리는 MVP 마스터가 정한다 (담보 claim_name · 급부 pay.rate).
-    // 구분자는 문면이 보는 이름일 뿐이다: D0001 담보명(투영) · D0002 면책구분(집계).
+    // 카탈로그 픽스처 — 값 자리는 MVP 마스터가 정한다 (담보 레벨 폼은 없다 — 급부 pay.rate 등).
+    // 구분자는 문면이 보는 이름일 뿐이다: D0001 담보명(내장 경로) · D0002 면책구분(집계).
     const catalog = createCatalogService(t.db);
-    unwrap(await catalog.create(editor, { label: "담보명", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } }));
+    unwrap(await catalog.create(editor, { label: "담보명", level: "coverage", expression: "builtin.coverage.name", resultType: { kind: "string" } }));
     unwrap(await catalog.create(editor, { label: "면책구분", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } }));
   });
   afterAll(async () => {
@@ -121,10 +121,10 @@ describe("coverage 서비스 (PGlite)", () => {
   });
 
   describe("담보값입력 S1 — 값 자리는 마스터가 정한다 (ADR-0037)", () => {
-    it("그 레벨 마스터 필드가 두 담보 모두의 폼에 그대로 뜬다 — 부착 조작이 없다", async () => {
+    it("그 레벨 마스터 필드가 두 담보 모두의 폼에 그대로 뜬다 — 부착 조작이 없다 (담보 레벨은 폼이 없어 빈 목록)", async () => {
       for (const c of [accident, surgery]) {
         const form = unwrap(await svc.form(cov(c)));
-        expect(form.fields.map((f) => f.path)).toEqual(["coverage_basic.claim_name"]);
+        expect(form.fields.map((f) => f.path)).toEqual([]); // 보험금명(coverage_basic.claim_name)은 2026-10-21 뺐다
         expect(form.slots).toEqual({});
       }
     });
@@ -145,11 +145,14 @@ describe("coverage 서비스 (PGlite)", () => {
 
   describe("담보값입력 S4 — 값 입력 · 미입력 상태 · 값 비우기", () => {
     it("타입 맞는 값은 저장되고 폼에 명시 값으로 보인다. 타입 위반은 invalid", async () => {
-      unwrap(await svc.writeValue(editor, cov(surgery), "coverage_basic.claim_name", "수술보험금"));
-      expect(unwrap(await svc.form(cov(surgery))).slots).toEqual({
-        "coverage_basic.claim_name": { entered: true, value: "수술보험금" },
+      // 담보 레벨 값 자리는 없다 — 급부 지급률로 본다. 뒤 시나리오의 값 행 수에 새지 않게 끝에 비운다
+      const b: CoverageNodeRef = { level: "benefit", id: surgery.subCoverages[0].benefits[0].id };
+      unwrap(await svc.writeValue(editor, b, "pay.rate", 80));
+      expect(unwrap(await svc.form(b)).slots).toEqual({
+        "pay.rate": { entered: true, value: 80 },
       });
-      expect(rejection(await svc.writeValue(editor, cov(surgery), "coverage_basic.claim_name", true)).issues?.[0].kind).toBe("typeMismatch");
+      expect(rejection(await svc.writeValue(editor, b, "pay.rate", true)).issues?.[0].kind).toBe("typeMismatch");
+      unwrap(await svc.clearValue(editor, b, "pay.rate"));
     });
 
     it("그 레벨의 자리가 아닌 경로 · 없는 경로에는 쓸 수 없다", async () => {
@@ -183,26 +186,25 @@ describe("coverage 서비스 (PGlite)", () => {
     afterAll(async () => {
       unwrap(await svc.clearValue(editor, { level: "benefit", id: accident.subCoverages[0].benefits[0].id }, "exemption.new_only"));
     });
-    it("일반상해사망: 담보명 + 연 면책 폼의 빈 자리가 미입력. 선택 필드(지급률)는 값이 없으면 세지 않는다", async () => {
+    it("일반상해사망: 연 면책 폼의 빈 자리가 미입력 (담보 레벨 자리는 없다). 선택 필드(지급률)는 값이 없으면 세지 않는다", async () => {
       const b: CoverageNodeRef = { level: "benefit", id: accident.subCoverages[0].benefits[0].id };
       unwrap(await svc.writeValue(editor, b, "exemption.new_only", true)); // 면책 폼을 연다 — 기간 · 15세 이상은 비워 둔다
       const missing = unwrap(await svc.completeness(accident.id));
       expect(missing.map((m) => [m.owner.level, m.path])).toEqual([
-        ["coverage", "coverage_basic.claim_name"],
         ["benefit", "exemption.months"], // 첫 급부: rate 는 선택 필드
         ["benefit", "exemption.age15_only"],
         // 두 번째 세부보장(1종수술)의 급부 — 선택 필드뿐이라 셀 자리가 없다
       ]);
     });
 
-    it("수술비: 담보명이 입력되고 급부는 값 없는 선택 필드뿐이라 미입력이 없다", async () => {
+    it("수술비: 급부는 값 없는 선택 필드뿐이라 미입력이 없다", async () => {
       expect(unwrap(await svc.completeness(surgery.id))).toEqual([]);
     });
 
     it("완결성 요약은 분모를 함께 준다 — 「값 자리 N 중 M 입력」 (디자인원칙 §9.2·§9.6)", async () => {
       const summary = unwrap(await svc.completenessSummary(accident.id));
-      // 담보명 1 + 첫 급부(연 면책 폼 3) 3 = 4 (세부보장 레벨 마스터는 비어 있다 · 값 없는 선택 필드는 세지 않는다)
-      expect(summary.total).toBe(4);
+      // 첫 급부(연 면책 폼 3) 3 (담보 · 세부보장 레벨 마스터는 비어 있다 · 값 없는 선택 필드는 세지 않는다)
+      expect(summary.total).toBe(3);
       expect(summary.missing).toEqual(unwrap(await svc.completeness(accident.id)));
       expect(summary.total - summary.missing.length).toBe(1); // 첫 급부의 면책 신규만
     });
@@ -274,13 +276,14 @@ describe("coverage 서비스 (PGlite)", () => {
 
     it("담보 삭제도 같은 결 — 편집자 forbidden · 관리자 확인 후 트리·값 전부 삭제", async () => {
       const simple = (await svc.list()).find((c) => c.name === "단순담보")!;
-      unwrap(await svc.writeValue(editor, cov(simple), "coverage_basic.claim_name", "단순"));
+      const simpleBenefit: CoverageNodeRef = { level: "benefit", id: simple.subCoverages[0].benefits[0].id };
+      unwrap(await svc.writeValue(editor, simpleBenefit, "pay.rate", 50));
       expect(rejection(await svc.remove(editor, simple.id)).reason).toBe("forbidden");
       const first = rejection(await svc.remove(admin, simple.id));
       expect(first.impact).toMatchObject({ valueRowsLost: 1, cascade: ["세부보장 단순담보", "급부 단순담보"] });
       unwrap(await svc.remove(admin, simple.id, { confirm: true }));
       expect(await svc.get(simple.id)).toBeUndefined();
-      expect((await readSlots(t.db, own(cov(simple)))).size).toBe(0);
+      expect((await readSlots(t.db, own(simpleBenefit))).size).toBe(0);
       expect(rejection(await svc.remove(admin, simple.id, { confirm: true })).reason).toBe("notFound");
     });
   });

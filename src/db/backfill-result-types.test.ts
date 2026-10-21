@@ -32,7 +32,7 @@ async function types(): Promise<Record<string, unknown>> {
 
 describe("backfillDiscriminatorResultTypes", () => {
   it("미지정 행만 추론 타입으로 채우고, 있는 타입은 그대로 둔다", async () => {
-    await insert("D0001", "coverage", "coverage_basic.claim_name");
+    await insert("D0001", "coverage", "builtin.coverage.name");
     await insert("D0002", "coverage", "D0001 ≠ ''");
     await insert("D0003", "plan", "waiver.applies", { kind: "boolean" });
     const r = await backfillDiscriminatorResultTypes(t.db);

@@ -521,6 +521,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "사망보험금"
                 }
               },
               "code": "P0100"
@@ -591,8 +595,8 @@
                 },
                 {
                   "id": "s2-a1-p1-x3s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "일반상해80%이상후유장해 생활자금"
                 },
                 {
                   "id": "s2-a1-p1-x3b",
@@ -797,7 +801,13 @@
               "kind": "clauseBlockRef",
               "clauseCode": "C0056",
               "options": {},
-              "code": "P0100"
+              "code": "P0100",
+              "bindings": {
+                "담보명": {
+                  "kind": "const",
+                  "value": "골절(치아파절 제외)진단비"
+                }
+              }
             }
           ]
         },
@@ -1039,8 +1049,8 @@
                 },
                 {
                   "id": "s4-a1-p1-x3s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "일반상해50%이상후유장해 생활자금"
                 },
                 {
                   "id": "s4-a1-p1-x3b",
@@ -1245,7 +1255,13 @@
               "kind": "clauseBlockRef",
               "clauseCode": "C0057",
               "options": {},
-              "code": "P0100"
+              "code": "P0100",
+              "bindings": {
+                "담보명": {
+                  "kind": "const",
+                  "value": "골절수술비"
+                }
+              }
             }
           ]
         },
@@ -1610,8 +1626,8 @@
                 },
                 {
                   "id": "s6-a1-p1-x1s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "중대한특정상해수술비"
                 },
                 {
                   "id": "s6-a1-p1-x1b",
@@ -2019,6 +2035,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "중대한특정상해수술비"
                 }
               },
               "code": "P0100"
@@ -2089,8 +2109,8 @@
                 },
                 {
                   "id": "s7-a1-p1-x3s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "수술비"
                 },
                 {
                   "id": "s7-a1-p1-x3b",
@@ -3895,8 +3915,8 @@
                   "children": [
                     {
                       "id": "s9-a2-p1-i1-x1s",
-                      "kind": "slot",
-                      "ref": "D0001"
+                      "kind": "text",
+                      "text": "화상진단비"
                     },
                     {
                       "id": "s9-a2-p1-i1-x1ba",
@@ -3905,8 +3925,8 @@
                     },
                     {
                       "id": "s9-a2-p1-i1-x1bs",
-                      "kind": "slot",
-                      "ref": "D0001"
+                      "kind": "text",
+                      "text": "화상진단비"
                     },
                     {
                       "id": "s9-a2-p1-i1-x1bb",
@@ -4684,8 +4704,8 @@
                 },
                 {
                   "id": "m1-a1-p1-x3s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "일반상해80%이상후유장해보험금"
                 },
                 {
                   "id": "m1-a1-p1-x3b",
@@ -4761,6 +4781,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "일반상해80%이상후유장해보험금"
                 }
               },
               "code": "P0100"
@@ -4831,8 +4855,8 @@
                 },
                 {
                   "id": "m2-a1-p1-x3s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "수술비"
                 },
                 {
                   "id": "m2-a1-p1-x3b",
@@ -6458,7 +6482,13 @@
               "kind": "clauseBlockRef",
               "clauseCode": "C0056",
               "options": {},
-              "code": "P0100"
+              "code": "P0100",
+              "bindings": {
+                "담보명": {
+                  "kind": "const",
+                  "value": "골절(치아파절 제외)진단비"
+                }
+              }
             }
           ]
         },
@@ -6684,8 +6714,8 @@
                   "children": [
                     {
                       "id": "m4-a2-p1-i1-x1s",
-                      "kind": "slot",
-                      "ref": "D0001"
+                      "kind": "text",
+                      "text": "화상진단비"
                     },
                     {
                       "id": "m4-a2-p1-i1-x1ba",
@@ -6694,8 +6724,8 @@
                     },
                     {
                       "id": "m4-a2-p1-i1-x1bs",
-                      "kind": "slot",
-                      "ref": "D0001"
+                      "kind": "text",
+                      "text": "화상진단비"
                     },
                     {
                       "id": "m4-a2-p1-i1-x1bb",
@@ -7253,7 +7283,13 @@
               "kind": "clauseBlockRef",
               "clauseCode": "C0057",
               "options": {},
-              "code": "P0100"
+              "code": "P0100",
+              "bindings": {
+                "담보명": {
+                  "kind": "const",
+                  "value": "골절수술비"
+                }
+              }
             }
           ]
         },
@@ -7618,8 +7654,8 @@
                 },
                 {
                   "id": "m6-a1-p1-x1s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "질병사망보험금"
                 },
                 {
                   "id": "m6-a1-p1-x1b",
@@ -7908,6 +7944,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "질병사망보험금"
                 }
               },
               "code": "P0100"
@@ -8044,8 +8084,8 @@
                 },
                 {
                   "id": "m7-a1-p1-x3s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "질병80%이상후유장해보험금"
                 },
                 {
                   "id": "m7-a1-p1-x3b",
@@ -8317,6 +8357,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "질병80%이상후유장해보험금"
                 }
               },
               "code": "P0100"
@@ -8387,8 +8431,8 @@
                 },
                 {
                   "id": "m8-a1-p1-x3s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "수술비"
                 },
                 {
                   "id": "m8-a1-p1-x3b",
@@ -10491,8 +10535,8 @@
                 },
                 {
                   "id": "a7cancer5-a1-p1-x1s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "5대고액치료비암진단비"
                 },
                 {
                   "id": "a7cancer5-a1-p1-x1b",
@@ -10530,8 +10574,8 @@
                 },
                 {
                   "id": "a7cancer5-a1-p2-x4s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "5대고액치료비암진단비"
                 },
                 {
                   "id": "a7cancer5-a1-p2-x4b",
@@ -10558,8 +10602,8 @@
                 },
                 {
                   "id": "a7cancer5-a1-p2-x5s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "5대고액치료비암진단비"
                 },
                 {
                   "id": "a7cancer5-a1-p2-x5b",
@@ -10811,6 +10855,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "5대고액치료비암진단비"
                 }
               },
               "code": "P0100"
@@ -10912,8 +10960,8 @@
                 },
                 {
                   "id": "a7tumor-a1-p1-x1s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "양성뇌종양진단비"
                 },
                 {
                   "id": "a7tumor-a1-p1-x1b",
@@ -10951,8 +10999,8 @@
                 },
                 {
                   "id": "a7tumor-a1-p2-x4s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "양성뇌종양진단비"
                 },
                 {
                   "id": "a7tumor-a1-p2-x4b",
@@ -10979,8 +11027,8 @@
                 },
                 {
                   "id": "a7tumor-a1-p2-x5s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "양성뇌종양진단비"
                 },
                 {
                   "id": "a7tumor-a1-p2-x5b",
@@ -11099,6 +11147,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "양성뇌종양진단비"
                 }
               },
               "code": "P0100"
@@ -11159,8 +11211,8 @@
                 },
                 {
                   "id": "a7diabetes-a1-p1-x1s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "만성당뇨합병증진단비"
                 },
                 {
                   "id": "a7diabetes-a1-p1-x1b",
@@ -11198,8 +11250,8 @@
                 },
                 {
                   "id": "a7diabetes-a1-p2-x4s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "만성당뇨합병증진단비"
                 },
                 {
                   "id": "a7diabetes-a1-p2-x4b",
@@ -11226,8 +11278,8 @@
                 },
                 {
                   "id": "a7diabetes-a1-p2-x5s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "만성당뇨합병증진단비"
                 },
                 {
                   "id": "a7diabetes-a1-p2-x5b",
@@ -11408,6 +11460,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "만성당뇨합병증진단비"
                 }
               },
               "code": "P0100"
@@ -11468,8 +11524,8 @@
                 },
                 {
                   "id": "a7anemia-a1-p1-x1s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "중대한재생불량성빈혈진단비"
                 },
                 {
                   "id": "a7anemia-a1-p1-x1b",
@@ -11507,8 +11563,8 @@
                 },
                 {
                   "id": "a7anemia-a1-p2-x4s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "중대한재생불량성빈혈진단비"
                 },
                 {
                   "id": "a7anemia-a1-p2-x4b",
@@ -11535,8 +11591,8 @@
                 },
                 {
                   "id": "a7anemia-a1-p2-x5s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "중대한재생불량성빈혈진단비"
                 },
                 {
                   "id": "a7anemia-a1-p2-x5b",
@@ -11707,6 +11763,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "중대한재생불량성빈혈진단비"
                 }
               },
               "code": "P0100"
@@ -11767,8 +11827,8 @@
                 },
                 {
                   "id": "a7kidney-a1-p1-x1s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "말기신부전증진단비"
                 },
                 {
                   "id": "a7kidney-a1-p1-x1b",
@@ -11806,8 +11866,8 @@
                 },
                 {
                   "id": "a7kidney-a1-p2-x4s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "말기신부전증진단비"
                 },
                 {
                   "id": "a7kidney-a1-p2-x4b",
@@ -11834,8 +11894,8 @@
                 },
                 {
                   "id": "a7kidney-a1-p2-x5s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "말기신부전증진단비"
                 },
                 {
                   "id": "a7kidney-a1-p2-x5b",
@@ -11944,6 +12004,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "말기신부전증진단비"
                 }
               },
               "code": "P0100"
@@ -21832,6 +21896,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "일반상해50%이상후유장해보험금"
                 }
               },
               "code": "P0100"
@@ -35241,6 +35309,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "질병사망보험금"
                 }
               },
               "code": "P0100"
@@ -35404,6 +35476,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "질병사망보험금"
                 }
               },
               "code": "P0100"
@@ -35584,6 +35660,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "말기폐질환진단비"
                 }
               },
               "code": "P0100"
@@ -35764,6 +35844,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "말기간경화진단비"
                 }
               },
               "code": "P0100"
@@ -37866,6 +37950,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "충수염수술비"
                 }
               },
               "code": "P0100"
@@ -38267,6 +38355,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "조혈모세포이식수술비"
                 }
               },
               "code": "P0100"
@@ -41040,6 +41132,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "희귀난치성 7대질환진단비"
                 }
               },
               "code": "P0100"
@@ -41440,6 +41536,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "뇌출혈진단비"
                 }
               },
               "code": "P0100"
@@ -41730,6 +41830,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "질병80%이상후유장해보험금"
                 }
               },
               "code": "P0100"
@@ -45870,6 +45974,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "갑상선기능항진증치료비"
                 }
               },
               "code": "P0100"
@@ -46172,6 +46280,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "16대특정암진단비"
                 }
               },
               "code": "P0100"
@@ -46996,6 +47108,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "결핵진단비"
                 }
               },
               "code": "P0100"
@@ -47225,6 +47341,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "약제내성결핵(슈퍼결핵포함)진단비"
                 }
               },
               "code": "P0100"
@@ -49225,6 +49345,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "다발경화증진단비"
                 }
               },
               "code": "P0100"
@@ -54779,6 +54903,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "대상포진진단비"
                 }
               },
               "code": "P0100"
@@ -55632,6 +55760,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "대상포진눈병진단비"
                 }
               },
               "code": "P0100"
@@ -56524,6 +56656,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "통풍진단비"
                 }
               },
               "code": "P0100"
@@ -57287,6 +57423,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "간경변증진단비"
                 }
               },
               "code": "P0100"
@@ -57877,6 +58017,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "갑상선암(초기제외)진단비"
                 }
               },
               "code": "P0100"
@@ -59591,6 +59735,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "전이암진단비"
                 }
               },
               "code": "P0100"
@@ -60092,6 +60240,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "요로결석진단비"
                 }
               },
               "code": "P0100"
@@ -63401,6 +63553,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "급성간염(A,B,C형)진단비"
                 }
               },
               "code": "P0100"
@@ -66287,6 +66443,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "심근병증진단비"
                 }
               },
               "code": "P0100"
@@ -66620,6 +66780,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "갑상선기능저하증진단비"
                 }
               },
               "code": "P0100"
@@ -67177,8 +67341,8 @@
                 },
                 {
                   "id": "a7d83-a4-p1-x2s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "보험료납입지원금"
                 },
                 {
                   "id": "a7d83-a4-p1-x2b",
@@ -69506,8 +69670,8 @@
                 },
                 {
                   "id": "a7d88-a6-p1-x4s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "혈전용해치료비Ⅱ(특정심장질환)"
                 },
                 {
                   "id": "a7d88-a6-p1-x4b",
@@ -78953,6 +79117,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "특정순환계질환진단비"
                 }
               },
               "code": "P0100"
@@ -83053,8 +83221,8 @@
                 },
                 {
                   "id": "a7d122-a10-p1-x2s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "누적 2대질환치료포인트 1점에서 3점에 해당하는"
                 },
                 {
                   "id": "a7d122-a10-p1-x2b",
@@ -132793,6 +132961,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "항암중입자방사선치료비"
                 }
               },
               "code": "P0100"
@@ -165573,8 +165745,8 @@
                 },
                 {
                   "id": "a7d152-a6-p1-x2s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "「특정소액암(전이포함)」,「특정소화기암(전이포함)」,「14대특정암(전이포함)」,「10대특정암(전이포함)」,「4대고액암(전이포함)」에 해당하는"
                 },
                 {
                   "id": "a7d152-a6-p1-x2b",
@@ -198294,6 +198466,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "5대장기이식수술비"
                 }
               },
               "code": "P0100"
@@ -198482,6 +198658,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "유방절제수술복원치료비"
                 }
               },
               "code": "P0100"
@@ -198861,8 +199041,8 @@
                 },
                 {
                   "id": "a7b4-a5-p1-x2s",
-                  "kind": "slot",
-                  "ref": "D0001"
+                  "kind": "text",
+                  "text": "각막이식수술비"
                 },
                 {
                   "id": "a7b4-a5-p1-x2b",
@@ -199267,6 +199447,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "장기요양급여금(1-4등급)"
                 }
               },
               "code": "P0100"
@@ -199475,6 +199659,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "장기요양급여금(1-2등급)"
                 }
               },
               "code": "P0100"
@@ -199683,6 +199871,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "장기요양급여금(1등급)"
                 }
               },
               "code": "P0100"
@@ -200066,6 +200258,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "중증치매간병비"
                 }
               },
               "code": "P0100"
@@ -200755,6 +200951,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "경증이상 치매간병비"
                 }
               },
               "code": "P0100"
@@ -202040,6 +202240,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "중등도이상 치매간병비"
                 }
               },
               "code": "P0100"
@@ -202824,6 +203028,10 @@
                   ],
                   "connector": "및",
                   "scope": "self"
+                },
+                "담보명": {
+                  "kind": "const",
+                  "value": "7대장기이식대기등록지원금"
                 }
               },
               "code": "P0100"

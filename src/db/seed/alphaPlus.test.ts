@@ -68,7 +68,7 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     expect(preview.value.baseContracts.map((b) => b.name)).toEqual(["일반상해80%이상후유장해"]);
 
     const defs = await services.catalog.list();
-    expect(defs.find((d) => d.code === "D0001")).toMatchObject({ label: "담보명", level: "coverage", expression: "coverage_basic.claim_name" });
+    expect(defs.find((d) => d.code === "D0001")).toBeUndefined(); // 담보명(coverage_basic.claim_name 투영)은 2026-10-21 뺐다 — 코드는 재사용하지 않는다
     // 세목유형 4종은 이제 세목 레벨 마스터 폼이다 (ADR-0037 · 기능/마스터 §3.3)
     expect(planTypeOptions().map((t) => t.label)).toEqual(["납입면제", "무저해지", "계약전환", "영위업종적용"]);
     // E0001 납입면제사유 — 면책은 값을 나눠(암·면책 / 암·무면책), 장해는 값으로, 한 값이 호 여럿(최종 결정 17). 유저 정의 필드 셋(결정 18)
@@ -170,10 +170,9 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     expect(burn.subCoverages.map((s) => s.benefits.map((b) => b.name))).toEqual(names.map((n) => [n]));
   });
 
-  it("시드 구분자는 원문 모델링이 쓰는 담보명(D0001) · 납입면제 있음(D0002) · 해약환급금 지급형(D0003 · D0004 있음) · 갱신형 담보 · 상품(D0005 · D0006) · 해약환급금 미지급형 있음(D0007)뿐 — 감액 · 면책 · 최초1회 같은 특성 구분자는 두지 않는다 (알파플러스_모델명세 §2)", async () => {
+  it("시드 구분자는 원문 모델링이 쓰는 납입면제 있음(D0002) · 해약환급금 지급형(D0003 · D0004 있음) · 갱신형 담보 · 상품(D0005 · D0006) · 해약환급금 미지급형 있음(D0007)뿐 — 감액 · 면책 · 최초1회 같은 특성 구분자는 두지 않는다 · 담보명(D0001)은 2026-10-21 뺐다 (알파플러스_모델명세 §2)", async () => {
     const defs = await services.catalog.list();
     expect(defs.map((d) => [d.code, d.label, d.level, d.expression])).toEqual([
-      ["D0001", "담보명", "coverage", "coverage_basic.claim_name"],
       ["D0002", "납입면제 있음", "product", "any(waiver.applies)"],
       ["D0003", "해약환급금 지급형", "plan", "no_surrender.type = 'V01'"],
       ["D0004", "해약환급금 지급형 있음", "product", "any(D0003)"],
@@ -358,12 +357,12 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
 
   it("기존 DB 재실행은 카탈로그를 건드리지 않는다 — 사용자가 고친 구분자 · 새로 만든 구분자가 그대로다", async () => {
     const product = (await services.product.listProducts()).find((p) => p.name === ALPHA_PLUS_PRODUCT_NAME)!;
-    await t.db.update(discriminators).set({ label: "사용자 담보명" }).where(eq(discriminators.code, "D0001"));
+    await t.db.update(discriminators).set({ label: "사용자 납입면제 있음" }).where(eq(discriminators.code, "D0002"));
     const before = await services.catalog.list();
     const result = await seedAlphaPlus(services, admin);
     expect(result).toEqual({ created: false, productId: product.id });
     expect(await services.catalog.list()).toEqual(before);
-    await t.db.update(discriminators).set({ label: "담보명" }).where(eq(discriminators.code, "D0001"));
+    await t.db.update(discriminators).set({ label: "납입면제 있음" }).where(eq(discriminators.code, "D0002"));
   });
 
   it("같은 기본계약의 재지정은 거부되고(기능/상품 §3.5), 기존 상품은 시드 재실행으로 바뀌지 않는다", async () => {
