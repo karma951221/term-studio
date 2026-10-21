@@ -1372,7 +1372,7 @@ button:where(:not([data-slot])).danger:focus-visible {
   margin-bottom: 4px;
 }
 
-.ts-dyn-sample-pick select {
+.ts-dyn-sample-pick select:where(:not([data-slot])) {
   min-width: 0;
   max-width: 100%;
 }
@@ -1434,7 +1434,7 @@ button:where(:not([data-slot])).danger:focus-visible {
   background: transparent;
 }
 
-.ts-dyn-table .ts-dyn-cellbtn:focus-visible {
+.ts-dyn-table .ts-dyn-cellbtn:where(:not([data-slot])):focus-visible {
   outline: 2px solid var(--rc);
   outline-offset: -3px;
 }
