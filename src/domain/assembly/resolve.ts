@@ -30,6 +30,10 @@
  * - **박스 참조**(정적 마스터, 최종 결정 9)는 박스 마스터(`env.boxes`)에서 제목 · 줄을 읽어 정적 박스로 바꾼다 — 조 자리 · 호 목록 자리,
  *   펼친 함수조항 본문 안도 같다. 없는 박스는 brokenRef 오류 마커. 줄은 고정 글이라 더 해소할 것이 없다.
  * - 슬롯·조 참조·별표 참조는 그대로 둔다 (4·7단계).
+ * - **막힌 분기**(조건 · 값별 분기의 대상 값 평가 오류로 어느 가지도 고르지 못함)는 오류 마커 + `onBlocked` 알림 — `Booklet.pending` 의 재료 (ADR-0092 결정 6).
+ * - **설명 모드**(`explain` 고리, ADR-0092 결정 3)면 설명 대상 조 안의 결정 노드(조건 분기 · 인라인 조건 · 값별 분기 · 함수조항 호출 · 반복 · 행 반복 표 · 동적표)를
+ *   같은 실행 경로 그대로 기록한다 — 가지별 결과 · 평가한 조건식의 근거(읽은 구분자 · 담보속성 · 필드, 문맥의 읽기 받이 `ReadTap`) · 원소별 기록.
+ *   평가하지 않은 가지는 평가하지 않는다(결정 4). 고리가 없으면(일반 조립) 기록하지 않아 결과가 같다.
  *
  * 좌표: 문서 기본 좌표 + 조(id·조 명) + 노드 경로. 펼친 함수조항 안의 노드 id 는 `${참조노드id}/${원노드id}`, 반복 복제본은 `${원id}@${원소}`
  * (둘이 섞이면 `참조id@종@사유/안쪽id` — 원 템플릿 노드는 `templateIdOf`).
@@ -74,10 +78,11 @@ import { withClauseCodes } from "../clause/pcode";
 import { evaluate, parse, type EvalContext } from "../expression";
 import { expandRepeatTable } from "../document/repeat";
 import { descend, enumerateRows, type StructNodeRef } from "../structure";
-import { isInlineRepeatConnector, type Code, type Coordinate, type Id, type Issue } from "../types";
-import type { AssemblyContext } from "./context";
+import { isInlineRepeatConnector, type Code, type Coordinate, type Id, type Issue, type Value } from "../types";
+import type { AssemblyContext, ReadTap } from "./context";
 import { formatValue } from "./substitute";
-import type { ErrorNode, LoopTag, RArticle, RArticleRef, RBulletList, RInline, RItem, RParagraph, ResolvedDoc, RSection, RStatic, RSubitem, RTable } from "./types";
+import { effectiveBindings, type Binding } from "../clause/params";
+import type { ArgRecord, BranchRecord, ClauseDecision, ConditionDecision, ConditionEval, DecisionAt, DecisionRecord, DynTableDecision, ErrorNode, LoopTag, RArticle, RArticleRef, RBulletList, RepeatDecision, RepeatElementRecord, RInline, RItem, RParagraph, ResolvedDoc, RSection, RStatic, RSubitem, RTable, SwitchDecision } from "./types";
 
 export interface ResolveEnv {
   clauses: ReadonlyMap<Code, Clause>;
@@ -98,6 +103,25 @@ export interface ResolveEnv {
    * 막힌 분기 안쪽은 평가하지 않으므로 안쪽의 막힌 분기는 알리지 않는다. 칸 없는 값(`unassignedValue`)은 막힘이 아니다.
    */
   onBlocked?: (nodeId: Id, issue: Issue) => void;
+  /** 설명 모드 (ADR-0092 결정 3) — 있으면 설명 대상 조 안의 결정 노드를 기록해 알린다. 없으면(일반 조립) 기록하지 않는다. */
+  explain?: ExplainHooks;
+}
+
+/**
+ * 설명 모드의 고리 (ADR-0092 결정 3) — 해소가 설명 대상 조 안의 결정 노드를 기록해 알린다. 한 조립 실행 안에서 같은 문서를
+ * 다시 해소하면(제1절 판정의 뼈대 해소 → 실제 해소) `begin` 이 그 문서의 앞 기록을 버리게 한다 — 마지막 해소가 결과다.
+ */
+export interface ExplainHooks {
+  /** 문서 한 벌의 해소를 시작한다 — 좌표 = 문서 기본 좌표(보통약관 · 상품담보). */
+  begin(coordinate: Coordinate): void;
+  /** 이 조를 기록하나. */
+  wants(article: ArticleNode, coordinate: Coordinate): boolean;
+  /** 이 조 자리 조건 분기가 기록할 조를 감싸나 — 감싸면 그 분기(조 자리를 정한 조건)도 기록한다. */
+  wraps(cond: CondBlockNode, coordinate: Coordinate): boolean;
+  /** 기록한 조 하나 — 그 조 안(제목 포함)의 결정 노드. */
+  article(coordinate: Coordinate, article: ArticleNode, decisions: DecisionRecord[]): void;
+  /** 기록할 조를 감싼 조 자리 조건 분기 — 바깥부터. 가지 안쪽 결정은 싣지 않는다(조 기록이 따로). */
+  enclosing(coordinate: Coordinate, record: DecisionRecord): void;
 }
 
 export interface ResolveOutcome {
@@ -218,6 +242,8 @@ class Walker {
   readonly issues: Issue[] = [];
   /** 조 id → 밟은 반복 블록이 낼 수 있던 코드 원형 (`RArticle.repeatKeys`). */
   private readonly repeatKeys = new Map<Id, Set<string>>();
+  /** 결정 노드 기록을 받는 곳 — 설명 대상 조 안에서만 있다(그 밖 · 일반 조립은 없음 = 기록하지 않음). */
+  private sink: DecisionRecord[] | undefined;
   constructor(
     private readonly ctx: AssemblyContext,
     private readonly env: ResolveEnv,
@@ -234,6 +260,31 @@ class Walker {
   error(id: Id, issue: Issue): ErrorNode {
     this.issues.push(issue);
     return { kind: "error", id, issue };
+  }
+
+  /** 결정 노드 기록 하나를 지금 받는 곳에 싣는다 — 받는 곳이 없으면(설명 대상 밖) 싣지 않고 undefined. */
+  note<T extends DecisionRecord>(rec: () => T): T | undefined {
+    if (!this.sink) return undefined;
+    const r = rec();
+    this.sink.push(r);
+    return r;
+  }
+
+  /** 받는 곳을 바꿔 실행한다 — 가지 · 원소 · 펼친 본문 안쪽 기록을 그 기록 아래로. undefined 면 그 안은 기록하지 않는다. */
+  into<T>(target: DecisionRecord[] | undefined, run: () => T): T {
+    const prev = this.sink;
+    this.sink = target;
+    try {
+      return run();
+    } finally {
+      this.sink = prev;
+    }
+  }
+
+  /** 결정 노드의 자리 — 노드 id · P코드 열쇠 · 감싼 반복의 원소 (오류 좌표 키와 같은 체계, §3.4). */
+  place(n: { id: Id; code?: Code }, f: Frame): DecisionAt {
+    const k = keyOf(n, f);
+    return { nodeId: n.id, ...(k.key !== undefined ? { key: k.key } : {}), ...(k.loops ? { loops: k.loops } : {}) };
   }
 
   /** 막힌 분기 — 조건(값별 분기의 대상 값) 평가 오류로 어느 가지도 고르지 못했다. 오류 마커 + 평가 대기 알림 (ADR-0092 결정 6). */
@@ -255,8 +306,12 @@ class Walker {
    */
   repeat<T>(n: ForBlockNode, f: Frame, each: (children: readonly unknown[], g: Frame) => T[]): (T | ErrorNode)[] {
     const at = this.at(f, n.id);
+    const rec = this.note((): RepeatDecision => ({ kind: "repeat", ...this.place(n, f), form: "block", source: n.source, elements: [] }));
     const r = this.elementsOf(n, f, at);
-    if (!r.ok) return [this.error(n.id, r.issue)];
+    if (!r.ok) {
+      if (rec) rec.issue = r.issue;
+      return [this.error(n.id, r.issue)];
+    }
     const via = f.via ?? "";
     // 반복 블록 · 그 안 대상을 가리키는 참조가 원소 0개일 때 「사라짐」이 아니라 「0개」 오류가 되도록 밟은 반복의 코드를 적어 둔다
     // — 「비었을 때」 칸 쪽 코드도(원소가 있는 상품에서 칸에만 있는 대상을 가리키면 「0개」, ADR-0088 결정 4)
@@ -272,9 +327,30 @@ class Walker {
     // 칸이 낸 블록도 반복 블록의 묶음이라 반복 블록 자신을 가리키는 참조는 칸이 낸 것 전부다 (ADR-0088 결정 4)
     if (r.value.length === 0) {
       const fallback = n.fallback ?? [];
-      return fallback.length === 0 ? [] : each(fallback, { ...f, path: [...f.path, n.id, fallbackPathId(n.id)], ...(group ? { groups: group } : {}) });
+      if (rec) rec.fallback = [];
+      return fallback.length === 0 ? [] : this.into(rec?.fallback, () => each(fallback, { ...f, path: [...f.path, n.id, fallbackPathId(n.id)], ...(group ? { groups: group } : {}) }));
     }
-    return r.value.flatMap((element) => each(cloneForElement(n.children, repeatElementId(element)), { ...this.elementFrame(n, f, element), ...(group ? { groups: group } : {}) }));
+    return r.value.flatMap((element) => this.into(this.elementRecord(rec, element), () => each(cloneForElement(n.children, repeatElementId(element)), { ...this.elementFrame(n, f, element), ...(group ? { groups: group } : {}) })));
+  }
+
+  /** 반복 원소 하나의 기록 자리 — 반복 기록이 있으면 원소를 싣고 그 원소의 받는 곳을 돌려준다. */
+  elementRecord(rec: RepeatDecision | undefined, element: RepeatElement): DecisionRecord[] | undefined {
+    if (!rec) return undefined;
+    const e: RepeatElementRecord = { id: repeatElementId(element), kind: element.kind, label: this.elementLabel(element), ...(element.kind === "coverageNode" ? { path: element.path } : {}), decisions: [] };
+    rec.elements.push(e);
+    return e.decisions;
+  }
+
+  /** 원소의 이름 — 종 = 세목 선택지 이름, 열거값 = 값 이름, 담보 트리 노드 = 노드 이름 (모르면 원소 id). */
+  elementLabel(e: RepeatElement): string {
+    if (e.kind === "planOption") return this.ctx.plans?.options.find((o) => o.id === e.id)?.name ?? e.id;
+    if (e.kind === "enumValue") return this.env.enums?.get(e.enumCode)?.values.find((v) => v.code === e.code)?.label ?? e.code;
+    const rows = this.ctx.rows;
+    for (const sub of rows?.providers.coverage?.children(rows.root) ?? []) {
+      if (sub.id === e.id) return sub.name;
+      for (const b of rows?.providers.subCoverage?.children(sub) ?? []) if (b.id === e.id) return b.name;
+    }
+    return e.path;
   }
 
   /** 반복(블록 · 인라인)의 원소 — 원천을 상품 문맥에서 푼다. 바깥 반복의 현재 원소는 프레임에서. */
@@ -309,15 +385,24 @@ class Walker {
    */
   inlineRepeat(n: InlineForNode, f: Frame): RInline[] {
     const at = this.at(f, n.id);
+    const rec = this.note((): RepeatDecision => ({ kind: "repeat", ...this.place(n, f), form: "inline", source: n.source, elements: [] }));
     const r = this.elementsOf(n, f, at);
-    if (!r.ok) return [this.error(n.id, r.issue)];
-    if (r.value.length === 0) return this.inlines(n.fallback ?? [], { ...f, path: [...f.path, n.id, fallbackPathId(n.id)] });
+    if (!r.ok) {
+      if (rec) rec.issue = r.issue;
+      return [this.error(n.id, r.issue)];
+    }
+    if (r.value.length === 0) {
+      if (rec) rec.fallback = [];
+      return this.into(rec?.fallback, () => this.inlines(n.fallback ?? [], { ...f, path: [...f.path, n.id, fallbackPathId(n.id)] }));
+    }
     const connector = n.connector;
     if (r.value.length > 1 && !isInlineRepeatConnector(connector)) {
-      return [this.error(n.id, { kind: "structure", message: "문장 안 반복의 연결어(및 · 또는 · 쉼표만)가 없습니다 — 편집기에서 고른다", at })];
+      const issue: Issue = { kind: "structure", message: "문장 안 반복의 연결어(및 · 또는 · 쉼표만)가 없습니다 — 편집기에서 고른다", at };
+      if (rec) rec.issue = issue;
+      return [this.error(n.id, issue)];
     }
     // 잇기 · 같은 글 거르기는 슬롯이 글이 된 뒤(치환 단계 `repeatInline`)
-    const elements = r.value.map((element) => this.inlines(cloneForElement(n.children, repeatElementId(element)), this.elementFrame(n, f, element)));
+    const elements = r.value.map((element) => this.into(this.elementRecord(rec, element), () => this.inlines(cloneForElement(n.children, repeatElementId(element)), this.elementFrame(n, f, element))));
     return [{ kind: "inlineRepeat", id: n.id, ...(isInlineRepeatConnector(connector) ? { connector } : {}), elements }];
   }
 
@@ -371,8 +456,28 @@ class Walker {
     return { ok: true, targets: out };
   }
 
-  /** 조건식 하나 — taken / notTaken / 오류. */
-  condition(src: string, at: Coordinate, base: EvalContext | undefined = this.ctx.eval): { kind: "taken" | "notTaken" } | { kind: "error"; issue: Issue } {
+  /**
+   * 식 하나를 평가한다 — 설명 대상 안이면(받는 곳이 있으면) 그 평가 중의 읽기를 받이로 모아 근거(`ConditionEval`)를 함께 낸다.
+   * 결과 해석(참거짓 · 목록값 코드)은 부르는 쪽이 한다.
+   */
+  evalExpr(src: string, at: Coordinate, base: EvalContext | undefined): { result: { kind: "value"; value: Value } | { kind: "error"; issue: Issue }; trace?: ConditionEval } {
+    const tap = this.sink ? this.ctx.tap : undefined;
+    const prev = tap?.active;
+    const bag: NonNullable<ReadTap["active"]> = { reads: [], discriminators: [], attributes: [] };
+    if (tap) tap.active = bag;
+    let result: { kind: "value"; value: Value } | { kind: "error"; issue: Issue };
+    try {
+      result = this.evalRaw(src, at, base);
+    } finally {
+      if (tap) tap.active = prev;
+    }
+    if (!this.sink) return { result };
+    const trace: ConditionEval = { expression: src, ...(result.kind === "value" ? { value: result.value } : { issue: result.issue }), discriminators: bag.discriminators, attributes: bag.attributes, reads: bag.reads };
+    return { result, trace };
+  }
+
+  /** 식 하나 → 값 또는 오류(미결은 원인에 맞는 오류로). */
+  evalRaw(src: string, at: Coordinate, base: EvalContext | undefined): { kind: "value"; value: Value } | { kind: "error"; issue: Issue } {
     if (!base) return { kind: "error", issue: { kind: "brokenRef", message: "반복 표 행 노드의 문맥을 만들 수 없습니다", at } };
     const parsed = parse(src, at);
     if (!parsed.ok) {
@@ -383,41 +488,84 @@ class Walker {
     const r = evaluate(parsed.value, { ...base, coordinate: at });
     if (r.kind === "error") return { kind: "error", issue: r.issue };
     if (r.kind === "undetermined") return { kind: "error", issue: this.ctx.explainUndetermined(r.reason, at) };
-    if (typeof r.value !== "boolean") {
-      return { kind: "error", issue: { kind: "typeMismatch", message: `조건식의 결과가 boolean 이 아닙니다 (${typeof r.value})`, at } };
-    }
-    return { kind: r.value ? "taken" : "notTaken" };
+    return { kind: "value", value: r.value };
   }
 
-  /** 가지 선택 — 택한 가지, 없음(모두 false · else 없음), 오류. 밟지 않은 가지는 평가하지 않는다. */
-  select(branches: readonly Branch[], f: Frame, condId: Id): { kind: "branch"; branch: Branch } | { kind: "none" } | { kind: "error"; issue: Issue } {
-    for (const br of branches) {
-      if (br.when === undefined) return { kind: "branch", branch: br };
-      const r = this.condition(br.when, this.at({ ...f, path: [...f.path, condId] }, br.id), this.evalOf(f));
-      if (r.kind === "error") return r;
-      if (r.kind === "taken") return { kind: "branch", branch: br };
+  /** 조건식 하나 — taken / notTaken / 오류. 설명 대상 안이면 근거(`trace`)도. */
+  condition(src: string, at: Coordinate, base: EvalContext | undefined = this.ctx.eval): ({ kind: "taken" | "notTaken" } | { kind: "error"; issue: Issue }) & { trace?: ConditionEval } {
+    const { result: r, trace } = this.evalExpr(src, at, base);
+    if (r.kind === "error") return { kind: "error", issue: r.issue, ...(trace ? { trace } : {}) };
+    if (typeof r.value !== "boolean") {
+      const issue: Issue = { kind: "typeMismatch", message: `조건식의 결과가 boolean 이 아닙니다 (${typeof r.value})`, at };
+      return { kind: "error", issue, ...(trace ? { trace: { expression: trace.expression, issue, discriminators: trace.discriminators, attributes: trace.attributes, reads: trace.reads } } : {}) };
     }
-    return { kind: "none" };
+    return { kind: r.value ? "taken" : "notTaken", ...(trace ? { trace } : {}) };
+  }
+
+  /**
+   * 가지 선택 — 택한 가지, 없음(모두 false · else 없음), 오류. 밟지 않은 가지는 평가하지 않는다.
+   * `rec` 가 있으면(설명 대상 안) 가지마다 결과를 싣는다 — 택한 가지 뒤는 「평가 안 함」, 막힌 가지와 그 뒤는 「막힘」(ADR-0092 결정 4).
+   */
+  select(branches: readonly Branch[], f: Frame, condId: Id, rec?: BranchRecord[]): { kind: "branch"; branch: Branch; record?: BranchRecord } | { kind: "none" } | { kind: "error"; issue: Issue } {
+    let out: { kind: "branch"; branch: Branch; record?: BranchRecord } | { kind: "error"; issue: Issue } | undefined;
+    for (const br of branches) {
+      const head = { id: br.id, ...(br.when !== undefined ? { when: br.when } : {}) };
+      if (out) {
+        // 결정됐다 — 뒤 가지는 평가하지 않는다 (기록만)
+        if (!rec) break;
+        rec.push({ ...head, outcome: out.kind === "branch" ? "skipped" : "blocked", decisions: [] });
+        continue;
+      }
+      if (br.when === undefined) {
+        const record: BranchRecord = { ...head, outcome: "taken", decisions: [] };
+        rec?.push(record);
+        out = { kind: "branch", branch: br, ...(rec ? { record } : {}) };
+        continue;
+      }
+      const r = this.condition(br.when, this.at({ ...f, path: [...f.path, condId] }, br.id), this.evalOf(f));
+      const condition = r.trace ? { condition: r.trace } : {};
+      if (r.kind === "error") {
+        rec?.push({ ...head, outcome: "blocked", ...condition, decisions: [] });
+        out = { kind: "error", issue: r.issue };
+      } else if (r.kind === "taken") {
+        const record: BranchRecord = { ...head, outcome: "taken", ...condition, decisions: [] };
+        rec?.push(record);
+        out = { kind: "branch", branch: br, ...(rec ? { record } : {}) };
+      } else rec?.push({ ...head, outcome: "false", ...condition, decisions: [] });
+    }
+    return out ?? { kind: "none" };
+  }
+
+  /** 조건 분기 기록 하나를 싣는다(설명 대상 안에서만). */
+  noteCond(n: { id: Id; code?: Code }, f: Frame, inline: boolean): ConditionDecision | undefined {
+    return this.note((): ConditionDecision => ({ kind: "condition", ...this.place(n, f), inline, branches: [] }));
+  }
+
+  /**
+   * 조건 분기 (조 · 항 · 호 · 목 자리, 문장 안) — 가지를 골라 택한 가지 본문을 자리 규칙(`walk`)으로. 막히면 오류 마커 + 평가 대기.
+   * 설명 대상 안이면 분기 기록을 싣고 택한 가지 안쪽 기록을 그 가지 아래로.
+   */
+  cond<T>(n: { id: Id; code?: Code; branches: readonly Branch[] }, f: Frame, inline: boolean, walk: (children: readonly unknown[], g: Frame) => T[]): (T | ErrorNode)[] {
+    const rec = this.noteCond(n, f, inline);
+    const r = this.select(n.branches, f, n.id, rec?.branches);
+    if (r.kind === "error") return [this.blocked(n.id, r.issue)];
+    if (r.kind === "none") return [];
+    return this.into(r.record?.decisions, () => walk(r.branch.children, { ...f, path: [...f.path, n.id, r.branch.id] }));
   }
 
   /**
    * 값별 분기의 칸 고르기 (최종 결정 5) — 대상 값을 사용처 문맥에서 평가해 그 값이 든 칸. 칸이 없는 값이면 `unassignedValue`
    * (그 값이 실제로 닿은 이 자리만 — 저장 때 미배정은 막혔으므로 여기 오는 것은 열거값 추가로 생긴 미배정이다). 밟지 않은 칸은 보지 않는다.
+   * `rec` 가 있으면(설명 대상 안) 대상 식의 근거와 판단 값을 싣는다.
    */
-  choose(n: SwitchLike, f: Frame): { kind: "case"; case: SwitchLike["cases"][number] } | { kind: "error"; issue: Issue } {
+  choose(n: SwitchLike, f: Frame, rec?: SwitchDecision): { kind: "case"; case: SwitchLike["cases"][number] } | { kind: "error"; issue: Issue } {
     const at = this.at(f, n.id);
-    const base = this.evalOf(f);
-    if (!base) return { kind: "error", issue: { kind: "brokenRef", message: "반복 표 행 노드의 문맥을 만들 수 없습니다", at } };
-    const parsed = parse(n.on, at);
-    if (!parsed.ok) {
-      const issue: Issue = parsed.rejection.reason === "invalid" && parsed.rejection.issues[0] ? parsed.rejection.issues[0] : { kind: "syntax", message: "식을 읽을 수 없습니다", at };
-      return { kind: "error", issue };
-    }
-    const r = evaluate(parsed.value, { ...base, coordinate: at });
+    const { result: r, trace } = this.evalExpr(n.on, at, this.evalOf(f));
+    if (rec && trace) rec.on = trace;
     if (r.kind === "error") return { kind: "error", issue: r.issue };
-    if (r.kind === "undetermined") return { kind: "error", issue: this.ctx.explainUndetermined(r.reason, at) };
     if (typeof r.value !== "string") return { kind: "error", issue: { kind: "typeMismatch", message: `값별 분기의 대상 값이 목록값 코드가 아닙니다 (${typeof r.value})`, at } };
     const value = r.value;
+    if (rec) rec.value = value;
     const k = n.cases.find((c) => c.values.includes(value));
     if (!k) {
       const where = f.clause ? `함수조항 ${f.clause} 의 값별 분기` : "값별 분기";
@@ -427,11 +575,26 @@ class Walker {
   }
 
   /** 값별 분기 → 고른 칸의 본문(「문구 없음」이면 빈 목록) 을 자리 규칙(`each`)으로. 오류면 마커 하나. */
-  switchOf<T>(n: SwitchLike, f: Frame, each: (children: readonly unknown[], g: Frame) => T[]): (T | ErrorNode)[] {
-    const r = this.choose(n, f);
-    if (r.kind === "error") return [r.issue.kind === "unassignedValue" ? this.error(n.id, r.issue) : this.blocked(n.id, r.issue)];
-    if (r.case.empty) return [];
-    return each(r.case.children, { ...f, path: [...f.path, n.id, r.case.id] });
+  switchOf<T>(n: SwitchLike, f: Frame, inline: boolean, each: (children: readonly unknown[], g: Frame) => T[]): (T | ErrorNode)[] {
+    const rec = this.note((): SwitchDecision => ({ kind: "switch", ...this.place(n, f), inline, on: { expression: n.on, discriminators: [], attributes: [], reads: [] }, outcome: "taken", decisions: [] }));
+    const r = this.choose(n, f, rec);
+    if (r.kind === "error") {
+      if (r.issue.kind === "unassignedValue") {
+        if (rec) rec.outcome = "unassigned";
+        return [this.error(n.id, r.issue)];
+      }
+      if (rec) {
+        rec.outcome = "blocked";
+        if (rec.on.issue === undefined) rec.on = { expression: rec.on.expression, issue: r.issue, discriminators: rec.on.discriminators, attributes: rec.on.attributes, reads: rec.on.reads };
+      }
+      return [this.blocked(n.id, r.issue)];
+    }
+    if (rec) rec.caseId = r.case.id;
+    if (r.case.empty) {
+      if (rec) rec.empty = true;
+      return [];
+    }
+    return this.into(rec?.decisions, () => each(r.case.children, { ...f, path: [...f.path, n.id, r.case.id] }));
   }
 
   /** 함수조항 참조 → 펼친 본문 (옵션 해소 포함). 실패면 오류 마커. */
@@ -440,6 +603,7 @@ class Walker {
     modes: readonly ClauseMode[],
     at: Coordinate,
     f: Frame,
+    rec?: ClauseDecision,
   ): { ok: true; mode: ClauseMode; body: (ClauseInline | ClauseBlock)[]; selection: OptionSelection } | { ok: false; marker: ErrorNode } {
     const defined = this.env.clauses.get(node.clauseCode);
     if (!defined) return { ok: false, marker: this.error(node.id, { kind: "brokenRef", message: `함수조항 ${node.clauseCode} 이(가) 없습니다`, at }) };
@@ -447,6 +611,11 @@ class Walker {
     const used = presetUsage(defined, node, at);
     const broken = used.issues.find((i) => i.kind === "brokenRef");
     if (broken) return { ok: false, marker: this.error(node.id, broken) };
+    if (rec) {
+      rec.args = (defined.params ?? []).map((p) => this.argRecord(p.name, effectiveBindings(defined, used.bindings)[p.name], f, at));
+      const override = this.env.overrides.get(templateIdOf(node.id));
+      rec.overridden = override ? Object.keys(override).sort() : [];
+    }
     // 인자 연결 — 펼치기 전에 arg.X 를 사용처 연결(없으면 기본 연결)로 바꿔 쓰고, 내부 변수 · 필드 읽기 · 연산은 사용처 문맥에서 값으로 푼다
     const usage = this.evalOf(f);
     const locals: LocalEnv | undefined = usage
@@ -477,6 +646,53 @@ class Walker {
       return { ok: false, marker: this.error(node.id, { ...issue, at: { ...at, ...issue.at } }) };
     }
     return { ok: true, mode: clause.mode, body: expanded.value as (ClauseInline | ClauseBlock)[], selection };
+  }
+
+  /**
+   * 함수조항 참조 하나 — 펼친 본문을 자리 규칙(`walk`)으로. 실패면 오류 마커. 설명 대상 안이면 호출 기록(인자 · 고른 옵션 ·
+   * 상품 오버라이드)을 싣고 펼친 본문의 기록을 그 아래로(재귀).
+   */
+  call<T>(
+    n: { id: Id; code?: Code; clauseCode: Code; options: OptionSelection; bindings?: Bindings; preset?: Code },
+    modes: readonly ClauseMode[],
+    f: Frame,
+    walk: (r: { mode: ClauseMode; body: (ClauseInline | ClauseBlock)[]; selection: OptionSelection }) => T[],
+  ): (T | ErrorNode)[] {
+    const rec = this.note((): ClauseDecision => ({ kind: "clause", ...this.place(n, f), clauseCode: n.clauseCode, ...(n.preset !== undefined ? { preset: n.preset } : {}), args: [], options: {}, overridden: [], decisions: [] }));
+    const r = this.expand(n, modes, this.at(f, n.id), f, rec);
+    if (!r.ok) {
+      if (rec) rec.issue = r.marker.issue;
+      return [r.marker];
+    }
+    if (rec) rec.options = r.selection;
+    return this.into(rec?.decisions, () => walk(r));
+  }
+
+  /**
+   * 인자 하나의 기록 — 연결과 값. 구분자 연결은 사용처 문맥(노드 연결이면 그 노드)에서 평가한 값(설명 모드에서만 평가한다 — 펼친 본문이
+   * 같은 구분자를 같은 문맥에서 읽으므로 조립 결과와 어긋나지 않는다), 상수는 그 값, 반복의 현재 원소는 원소 id.
+   */
+  argRecord(name: string, binding: Binding | undefined, f: Frame, at: Coordinate): ArgRecord {
+    if (!binding) return { name };
+    const head = { name, binding };
+    switch (binding.kind) {
+      case "const":
+        return { ...head, value: binding.value };
+      case "current": {
+        const e = f.loops?.[binding.loop];
+        return e ? { ...head, value: repeatElementId(e) } : head;
+      }
+      case "discriminator": {
+        const base = this.evalOf(f);
+        if (!base) return head;
+        const ref = { kind: "discriminator" as const, code: binding.code, ...(binding.node && "path" in binding.node ? { node: { path: binding.node.path } } : {}) };
+        const r = evaluate({ kind: "ref", ref }, { ...base, coordinate: { ...at, refPath: binding.code } });
+        if (r.kind === "value") return { ...head, value: r.value };
+        return { ...head, issue: r.kind === "error" ? r.issue : this.ctx.explainUndetermined(r.reason, { ...at, refPath: binding.code }) };
+      }
+      default:
+        return head;
+    }
   }
 
   /** 인자의 현재 원소 연결 → 값 (열거값 코드 · 종 하나를 커서로 세운 문맥). 감싼 반복이 아니면 undefined. */
@@ -532,21 +748,14 @@ class Walker {
         return [{ kind: "appendixRef", id: n.id, appendixCode: n.appendixCode, at }];
       case "particle":
         return [{ kind: "particle", id: n.id, preset: n.preset, at }];
-      case "inlineCond": {
-        const r = this.select(n.branches, f, n.id);
-        if (r.kind === "error") return [this.blocked(n.id, r.issue)];
-        if (r.kind === "none") return [];
-        return this.inlines(r.branch.children as AnyInline[], { ...f, path: [...f.path, n.id, r.branch.id] });
-      }
+      case "inlineCond":
+        return this.cond(n, f, true, (children, g) => this.inlines(children as AnyInline[], g));
       case "inlineSwitch":
-        return this.switchOf(n, f, (children, g) => this.inlines(children as AnyInline[], g));
+        return this.switchOf(n, f, true, (children, g) => this.inlines(children as AnyInline[], g));
       case "inlineFor":
         return this.inlineRepeat(n, f);
-      case "clauseInlineRef": {
-        const r = this.expand(n, ["inline"], at, f);
-        if (!r.ok) return [r.marker];
-        return this.inlines(r.body as ClauseInline[], { ...f, path: [...f.path, n.id], clause: n.clauseCode });
-      }
+      case "clauseInlineRef":
+        return this.call(n, ["inline"], f, (r) => this.inlines(r.body as ClauseInline[], { ...f, path: [...f.path, n.id], clause: n.clauseCode }));
       case "optionSlot":
         // expandClause 가 이미 치환했으므로 여기 오면 정의 오류다
         return [this.error(n.id, { kind: "optionInvalid", message: `옵션 자리 ${n.optionCode} 이(가) 치환되지 않았습니다`, at })];
@@ -563,15 +772,10 @@ class Walker {
       if (n.kind === "bulletList") return this.static(n, f) as (RBulletList<RInline> | ErrorNode)[];
       if (n.kind === "clauseBlockRef") {
         // 「목」 함수조항 — 목 목록을 이 자리에 펴고 번호는 사용처에서 이어 매긴다 (최종 결정 4)
-        const r = this.expand(n, ["subitem"], this.at(f, n.id), f);
-        if (!r.ok) return [r.marker];
-        return this.subitems(r.body as unknown as AnySubitemSlot[], this.expanded(n, f));
+        return this.call(n, ["subitem"], f, (r) => this.subitems(r.body as unknown as AnySubitemSlot[], this.expanded(n, f)));
       }
-      if (n.kind === "switchBlock") return this.switchOf(n, f, (children, g) => this.subitems(children as AnySubitemSlot[], g));
-      const r = this.select(n.branches, f, n.id);
-      if (r.kind === "error") return [this.blocked(n.id, r.issue)];
-      if (r.kind === "none") return [];
-      return this.subitems(r.branch.children as AnySubitemSlot[], { ...f, path: [...f.path, n.id, r.branch.id] });
+      if (n.kind === "switchBlock") return this.switchOf(n, f, false, (children, g) => this.subitems(children as AnySubitemSlot[], g));
+      return this.cond(n, f, false, (children, g) => this.subitems(children as AnySubitemSlot[], g));
     });
   }
 
@@ -599,13 +803,14 @@ class Walker {
       const bullets = (list: readonly (BulletNode | ClauseBulletNode | AnyCond)[], g: Frame): { id: Id; children: RInline[] }[] =>
         list.flatMap((b) => {
           if (b.kind === "bullet") return [{ id: b.id, children: this.inlines(b.children, { ...g, path: [...g.path, b.id] }) }];
-          const r = this.select(b.branches, g, b.id);
+          const rec = this.noteCond(b, g, false);
+          const r = this.select(b.branches, g, b.id, rec?.branches);
           if (r.kind === "error") {
             errors.push(this.blocked(b.id, r.issue));
             return [];
           }
           if (r.kind === "none") return [];
-          return bullets(r.branch.children as (BulletNode | ClauseBulletNode | AnyCond)[], { ...g, path: [...g.path, b.id, r.branch.id] });
+          return this.into(r.record?.decisions, () => bullets(r.branch.children as (BulletNode | ClauseBulletNode | AnyCond)[], { ...g, path: [...g.path, b.id, r.branch.id] }));
         });
       const items = bullets(n.children, inner);
       return [...(items.length > 0 ? [{ kind: "bulletList" as const, id: n.id, items }] : []), ...errors];
@@ -634,9 +839,18 @@ class Walker {
       return [this.error(n.id, { kind: "structure", message: `반복할 구조를 읽을 수 없습니다${what}`, at })];
     }
     const expanded = expandRepeatTable(n, keys.value, descend(source.root.level, n.repeat.depth));
+    // 설명 모드 — 행(노드)마다 그 행 문맥의 결정 노드, 머리글 행은 따로
+    const rec = this.note((): RepeatDecision => ({ kind: "repeat", ...this.place(n, f), form: "table", source: { kind: "tableRows", depth: n.repeat.depth }, elements: [], header: [] }));
     if (!expanded) return []; // key 조합 0 — 표를 통째로 생략 (ADR-0004 결)
     const inner = { ...f, path: [...f.path, n.id] };
-    const rowOf = new Map(expanded.rows.map((r) => [r.index, { level: r.node.level, id: r.node.id }]));
+    const rowOf = new Map(expanded.rows.map((r) => [r.index, { level: r.node.level, id: r.node.id, name: r.node.name }]));
+    const sinkOf = (node: { id: Id; name: string } | undefined): DecisionRecord[] | undefined => {
+      if (!rec) return undefined;
+      if (!node) return rec.header;
+      let e = rec.elements.find((x) => x.id === node.id);
+      if (!e) rec.elements.push((e = { id: node.id, kind: "row", label: node.name, decisions: [] }));
+      return e.decisions;
+    };
     const t = expanded.table;
     return [
       {
@@ -646,10 +860,10 @@ class Walker {
         columns: t.columns,
         rows: t.rows.map((row, ri) => {
           const node = rowOf.get(ri);
-          const frame: Frame = node ? { ...inner, row: node } : inner;
+          const frame: Frame = node ? { ...inner, row: { level: node.level, id: node.id } } : inner;
           return {
             ...(row.header ? { header: true } : {}),
-            cells: row.cells.map((cell) => this.inlines(cell, frame)),
+            cells: this.into(sinkOf(node), () => row.cells.map((cell) => this.inlines(cell, frame))),
             ...(row.spans ? { spans: row.spans } : {}),
           };
         }),
@@ -664,14 +878,19 @@ class Walker {
    */
   dynTable(n: DynTableRefNode, f: Frame): RTable<RInline> | ErrorNode {
     const at = this.at(f, n.id);
+    const rec = this.note((): DynTableDecision => ({ kind: "dynTable", ...this.place(n, f), tableCode: n.tableCode, benefits: [], header: [], rows: [] }));
+    const fail = (issue: Issue): ErrorNode => {
+      if (rec) rec.issue = issue;
+      return this.error(n.id, issue);
+    };
     const def = this.env.dynTables?.get(n.tableCode);
-    if (!def) return this.error(n.id, { kind: "brokenRef", message: `동적표 ${n.tableCode} 이(가) 없습니다`, at });
+    if (!def) return fail({ kind: "brokenRef", message: `동적표 ${n.tableCode} 이(가) 없습니다`, at });
     const rows = this.ctx.rows;
-    if (!rows) return this.error(n.id, { kind: "structure", message: "동적표는 담보약관(상품담보) 문맥에서만 쓸 수 있습니다", at });
+    if (!rows) return fail({ kind: "structure", message: "동적표는 담보약관(상품담보) 문맥에서만 쓸 수 있습니다", at });
     const keys = enumerateRows(rows.root, 2, rows.providers);
     if (!keys.ok) {
       const what = keys.rejection.reason === "notFound" ? ` — ${keys.rejection.what} 없음` : "";
-      return this.error(n.id, { kind: "structure", message: `동적표의 급부를 열거할 수 없습니다${what}`, at });
+      return fail({ kind: "structure", message: `동적표의 급부를 열거할 수 없습니다${what}`, at });
     }
     const benefits: DynBenefit[] = [];
     for (const chain of keys.value) {
@@ -697,10 +916,14 @@ class Walker {
         ...(reduction ? { reduction } : {}),
       });
     }
+    if (rec) rec.benefits = benefits;
     const expanded = expandDynTable(def, { benefits }, n.bindings, { formatConst: (value, param) => this.constText(value, param.type), refId: n.id }, at);
     this.issues.push(...expanded.issues);
     const fatal = expanded.issues.find((i) => i.severity !== "warning" && (i.kind === "argUnbound" || i.kind === "brokenRef"));
-    if (fatal) return { kind: "error", id: n.id, issue: fatal };
+    if (fatal) {
+      if (rec) rec.issue = fatal;
+      return { kind: "error", id: n.id, issue: fatal };
+    }
     // 셀은 담보 문맥(행 노드 문맥 아님) — 「해당보장의」 조건이 담보의 세부보장 수를 센다. 템플릿엔 마스터 슬롯이 없어 행 노드가 필요 없다
     const inner: Frame = { ...f, path: [...f.path, n.id] };
     delete inner.row;
@@ -709,8 +932,12 @@ class Walker {
       id: n.id,
       columns: expanded.header.map(() => ({})),
       rows: [
-        { header: true, cells: expanded.header.map((cell) => this.inlines(cell, inner)) },
-        ...expanded.rows.map((row) => ({ cells: row.cells.map((cell) => this.inlines(cell, inner)) })),
+        { header: true, cells: this.into(rec?.header, () => expanded.header.map((cell) => this.inlines(cell, inner))) },
+        ...expanded.rows.map((row) => {
+          const r = rec ? { name: row.name, benefitKeys: row.benefitKeys, decisions: [] as DecisionRecord[] } : undefined;
+          if (r) rec!.rows.push(r);
+          return { cells: this.into(r?.decisions, () => row.cells.map((cell) => this.inlines(cell, inner))) };
+        }),
       ],
     };
   }
@@ -724,17 +951,12 @@ class Walker {
       if (n.kind === "clauseBlockRef") {
         // 「호」 함수조항 — 호 목록(빈 목록 · 여러 호 가능)을 이 자리에 펴고 번호는 사용처에서 이어 매긴다 (최종 결정 4).
         // 다른 유형이면(저장 검사를 거치지 않은 트리) expand 가 자리 유형 오류 마커를 낸다
-        const r = this.expand(n, ["item"], this.at(f, n.id), f);
-        if (!r.ok) return [r.marker];
-        return this.items(r.body as unknown as AnyItemSlot[], this.expanded(n, f));
+        return this.call(n, ["item"], f, (r) => this.items(r.body as unknown as AnyItemSlot[], this.expanded(n, f)));
       }
-      if (n.kind === "switchBlock") return this.switchOf(n, f, (children, g) => this.items(children as AnyItemSlot[], g));
+      if (n.kind === "switchBlock") return this.switchOf(n, f, false, (children, g) => this.items(children as AnyItemSlot[], g));
       // 호 목록 자리의 블록 반복 — 원소마다 호 · 「호」 함수조항을 편다 (사유마다, ADR-0077)
       if (n.kind === "forBlock") return this.repeat(n, f, (children, g) => this.items(children as AnyItemSlot[], g));
-      const r = this.select(n.branches, f, n.id);
-      if (r.kind === "error") return [this.blocked(n.id, r.issue)];
-      if (r.kind === "none") return [];
-      return this.items(r.branch.children as AnyItemSlot[], { ...f, path: [...f.path, n.id, r.branch.id] });
+      return this.cond(n, f, false, (children, g) => this.items(children as AnyItemSlot[], g));
     });
   }
 
@@ -766,31 +988,26 @@ class Walker {
           return [this.boxRef(n, f)];
         case "dynTableRef":
           return [this.dynTable(n, f)];
-        case "condBlock": {
-          const r = this.select(n.branches, f, n.id);
-          if (r.kind === "error") return [this.blocked(n.id, r.issue)];
-          if (r.kind === "none") return [];
-          return this.blocks(r.branch.children as AnyBlock[], { ...f, path: [...f.path, n.id, r.branch.id] }, excludeFromComparison);
-        }
+        case "condBlock":
+          return this.cond(n, f, false, (children, g) => this.blocks(children as AnyBlock[], g, excludeFromComparison));
         case "switchBlock":
-          return this.switchOf(n, f, (children, g) => this.blocks(children as AnyBlock[], g, excludeFromComparison));
-        case "clauseBlockRef": {
-          const r = this.expand(n, ["block"], at, f);
-          if (!r.ok) return [r.marker];
-          const out = this.blocks(
-            r.body as ClauseBlock[],
-            this.expanded(n, f),
-            excludeFromComparison || (this.env.coordinate.document === "general" && n.excludeFromComparison === true),
-          );
-          // 제1절 판정의 「같다」 단위 — 이 참조가 펼친 항마다 함수조항 · 옵션 · 순번 (ADR-0082 결정 4)
-          const options = JSON.stringify(Object.keys(r.selection).sort().map((k) => [k, r.selection[k]]));
-          let index = 0;
-          for (const [i, x] of out.entries()) if (x.kind === "paragraph" && !x.clauseUse) out[i] = { ...x, clauseUse: { code: n.clauseCode, options, index: index++ } };
-          // 항 번호 다시 세기(통합형 특약의 소제목 첫 항이 함수조항이 된 자리) — 펼친 첫 항에 옮긴다
-          const first = n.restart ? out.findIndex((x) => x.kind === "paragraph") : -1;
-          if (first >= 0) out[first] = { ...(out[first] as RParagraph<RInline>), restart: true };
-          return out;
-        }
+          return this.switchOf(n, f, false, (children, g) => this.blocks(children as AnyBlock[], g, excludeFromComparison));
+        case "clauseBlockRef":
+          return this.call(n, ["block"], f, (r): (RParagraph<RInline> | RStatic<RInline> | ErrorNode)[] => {
+            const out = this.blocks(
+              r.body as ClauseBlock[],
+              this.expanded(n, f),
+              excludeFromComparison || (this.env.coordinate.document === "general" && n.excludeFromComparison === true),
+            );
+            // 제1절 판정의 「같다」 단위 — 이 참조가 펼친 항마다 함수조항 · 옵션 · 순번 (ADR-0082 결정 4)
+            const options = JSON.stringify(Object.keys(r.selection).sort().map((k) => [k, r.selection[k]]));
+            let index = 0;
+            for (const [i, x] of out.entries()) if (x.kind === "paragraph" && !x.clauseUse) out[i] = { ...x, clauseUse: { code: n.clauseCode, options, index: index++ } };
+            // 항 번호 다시 세기(통합형 특약의 소제목 첫 항이 함수조항이 된 자리) — 펼친 첫 항에 옮긴다
+            const first = n.restart ? out.findIndex((x) => x.kind === "paragraph") : -1;
+            if (first >= 0) out[first] = { ...(out[first] as RParagraph<RInline>), restart: true };
+            return out;
+          });
         case "forBlock":
           return this.repeat(n, f, (children, g) => this.blocks(children as AnyBlock[], g, excludeFromComparison));
         default: {
@@ -805,14 +1022,34 @@ class Walker {
   articlesIn(list: readonly (ArticleNode | CondBlockNode)[], f: Frame): (RArticle<RInline> | ErrorNode)[] {
     return list.flatMap((n): (RArticle<RInline> | ErrorNode)[] => {
       if (n.kind === "article") return [this.article(n, f)];
-      const r = this.select(n.branches, f, n.id);
-      if (r.kind === "error") return [this.blocked(n.id, r.issue)];
-      if (r.kind === "none") return [];
-      return this.articlesIn(r.branch.children as (ArticleNode | CondBlockNode)[], { ...f, path: [...f.path, n.id, r.branch.id] });
+      return this.placeCond(n, f, (children, g) => this.articlesIn(children as (ArticleNode | CondBlockNode)[], g));
     });
   }
 
+  /**
+   * 조 자리의 조건 분기 — 설명 모드에서 기록할 조를 감싸면 그 분기(조 자리를 정한 조건)를 따로 기록해 알린다.
+   * 가지 안쪽(조)은 조 기록이 따로 받는다.
+   */
+  placeCond<T>(n: CondBlockNode, f: Frame, walk: (children: readonly unknown[], g: Frame) => T[]): (T | ErrorNode)[] {
+    const hooks = this.env.explain;
+    if (!hooks?.wraps(n, this.env.coordinate)) return this.into(undefined, () => this.cond(n, f, false, walk));
+    const out: DecisionRecord[] = [];
+    const r = this.into(out, () => this.cond(n, f, false, (children, g) => this.into(undefined, () => walk(children, g))));
+    if (out[0]) hooks.enclosing(this.env.coordinate, out[0]);
+    return r;
+  }
+
   article(n: ArticleNode, f: Frame): RArticle<RInline> {
+    // 설명 모드 — 설명 대상 조면 그 안(제목 포함)의 결정 노드를 기록해 알린다 (ADR-0092 결정 3)
+    const hooks = this.env.explain;
+    if (!hooks?.wants(n, this.env.coordinate)) return this.into(undefined, () => this.articleBody(n, f));
+    const decisions: DecisionRecord[] = [];
+    const out = this.into(decisions, () => this.articleBody(n, f));
+    hooks.article(this.env.coordinate, n, decisions);
+    return out;
+  }
+
+  articleBody(n: ArticleNode, f: Frame): RArticle<RInline> {
     const inner: Frame = { path: [...f.path, n.id], articleId: n.id, articleTitle: foldTitle(n.title) };
     // 제목도 본문 문장과 같은 길로 푼다 — 조건은 여기서, 슬롯 · 조사는 치환 단계에서 (ADR-0088 · ADR-0072 결정 2a)
     const heading = this.inlines(n.title, inner);
@@ -833,10 +1070,7 @@ class Walker {
     return list.flatMap((n): (RArticle<RInline> | RSection<RInline> | ErrorNode)[] => {
       if (n.kind === "section") return [{ kind: "section", id: n.id, title: n.title, children: this.articlesIn(n.children, { ...f, path: [...f.path, n.id] }) }];
       if (n.kind === "article") return [this.article(n, f)];
-      const r = this.select(n.branches, f, n.id);
-      if (r.kind === "error") return [this.blocked(n.id, r.issue)];
-      if (r.kind === "none") return [];
-      return this.articles(r.branch.children as DocumentNode["children"], { ...f, path: [...f.path, n.id, r.branch.id] });
+      return this.placeCond(n, f, (children, g) => this.articles(children as DocumentNode["children"], g));
     });
   }
 }
@@ -845,6 +1079,7 @@ class Walker {
 export function resolveDocument(input: DocumentNode, ctx: AssemblyContext, env: ResolveEnv): ResolveOutcome {
   // 코드 없는 옛 · 손으로 짠 트리도 같은 열쇠로 푼다 — 저장 트리는 이미 코드가 있어 그대로다 (ADR-0072 결정 10)
   const doc = withCodes(input);
+  env.explain?.begin(env.coordinate);
   const w = new Walker(ctx, env);
   const children = w.articles(doc.children, { path: [doc.id] });
   return { doc: { kind: "document", id: doc.id, title: doc.title, children }, issues: w.issues };

@@ -26,7 +26,10 @@
 
 import type { StructNodeRef } from "../structure";
 import type { Discriminator, EnumDef, SlotPath } from "../catalog/types";
-import type { Clause } from "../clause/types";
+import type { Clause, OptionSelection } from "../clause/types";
+import type { Binding } from "../clause/params";
+import type { RepeatSource } from "../document/blockRepeat";
+import type { DynBenefit } from "../dyntable/types";
 import type { Appendix } from "../document/appendix";
 import type { Box } from "../document/box";
 import type { DynTable } from "../dyntable/types";
@@ -36,7 +39,7 @@ import type { AttributeKind, ClauseOptionOverride, PlanAxis, ProductCoverageSnap
 import type { MasterTree } from "../master";
 import type { ProductGroupSetting } from "../product/groups";
 import type { BlockTreatment, JoinOption, VerdictKind, VerdictReason } from "./section";
-import type { Code, Coordinate, Id, InlineRepeatConnector, Issue, ReferenceConnector, ValueSlot } from "../types";
+import type { Code, Coordinate, Id, InlineRepeatConnector, Issue, ReferenceConnector, Value, ValueSlot } from "../types";
 
 // ───────────────────────────── 입력 ─────────────────────────────
 
@@ -550,6 +553,142 @@ export interface ContextTrace {
   coverageId: Id;
   reads: ReadRecord[];
 }
+
+// ───────────────────────────── 결정 노드 기록 (설명 모드) ─────────────────────────────
+
+/**
+ * 가지 하나의 결과 (ADR-0092 결정 3 · 4) — 탐 · 평가했고 거짓 · 앞 가지에서 결정(평가 안 함) · 막힘(조건 평가 오류로 어느 가지도 고르지 못함).
+ * 막힌 가지 뒤의 가지도 평가하지 않았으므로 막힘이다.
+ */
+export type BranchOutcome = "taken" | "false" | "skipped" | "blocked";
+
+/** 조건식(값별 분기의 대상 식)이 곧바로 읽은 구분자 하나 — 코드 · 평가한 자리 · 유효값. 구분자 안에서 다시 읽은 구분자는 싣지 않는다(필드 읽기는 `reads`). */
+export interface DiscriminatorRead {
+  code: Code;
+  /** 평가한 담보 트리 노드(스냅샷 id — 집계면 원소마다). 상품 문맥(보통약관 · 기본계약 없음)이면 없다. */
+  nodeId?: Id;
+  /** 세목 커서(세목 선택지 id) — 세목 레벨 집계 · 종 반복 안이면. */
+  planId?: Id;
+  /** 유효값 — 값 자리(미입력 포함) · 자리 없음 · 미결 · 없는 값(지운 열거값). */
+  slot: ValueSlot | "missing" | "undetermined" | "invalid";
+}
+
+/** 조건식이 읽은 담보속성 — 코드 · 그 상품담보의 값 코드(안 쓰면 `unused`). */
+export interface AttributeRead {
+  code: Code;
+  value: Code | "unused";
+}
+
+/** 평가한 식 하나의 근거 — 평가한 식(함수조항 안이면 인자를 바꿔 쓴 뒤) · 결과 · 그 평가 중 읽은 구분자 · 담보속성 · 필드. */
+export interface ConditionEval {
+  expression: string;
+  /** 결과 — 조건은 참거짓, 값별 분기는 판단 값. 오류면 없다. */
+  value?: Value;
+  issue?: Issue;
+  discriminators: DiscriminatorRead[];
+  attributes: AttributeRead[];
+  /** 그 평가 중 필드 읽기 — 구분자 안쪽까지(같은 자리는 한 번). */
+  reads: ReadRecord[];
+}
+
+/** 결정 노드의 자리 — 노드 id(반복 복제본이면 `@원소` 접미사, 펼친 함수조항 안이면 `참조노드id/…`) · P코드 열쇠 · 감싼 반복의 원소 (§3.4 와 같은 체계). */
+export interface DecisionAt {
+  nodeId: Id;
+  key?: string;
+  loops?: LoopTag[];
+}
+
+export interface BranchRecord {
+  id: Id;
+  /** 조건 — else 가지는 없다. */
+  when?: string;
+  outcome: BranchOutcome;
+  /** 평가한 가지(탐 · 거짓 · 막힘을 낸 가지)만. 평가 안 한 가지는 없다. */
+  condition?: ConditionEval;
+  /** 탄 가지 안의 결정 노드. 다른 가지는 비어 있다(평가하지 않았다). */
+  decisions: DecisionRecord[];
+}
+
+/** 조건 분기 · 인라인 조건 (조 자리 · 항 자리 · 호 · 목 · 글머리 목록 자리 모두). */
+export interface ConditionDecision extends DecisionAt {
+  kind: "condition";
+  inline: boolean;
+  branches: BranchRecord[];
+}
+
+/** 값별 분기 · 인라인 값별 분기 — 판단 값과 고른 칸. 칸 없는 값이면 `unassigned`(값은 정해졌다), 대상 값을 평가하지 못했으면 `blocked`. */
+export interface SwitchDecision extends DecisionAt {
+  kind: "switch";
+  inline: boolean;
+  on: ConditionEval;
+  outcome: "taken" | "unassigned" | "blocked";
+  value?: Code;
+  caseId?: Id;
+  /** 고른 칸이 「문구 없음」. */
+  empty?: true;
+  decisions: DecisionRecord[];
+}
+
+/** 함수조항 인자 하나 — 연결(사용처 > 기본) · 값. 구분자 연결은 사용처 문맥에서 평가한 값(설명 모드만 평가한다), 반복의 현재 원소는 원소 id. */
+export interface ArgRecord {
+  name: string;
+  binding?: Binding;
+  value?: Value;
+  issue?: Issue;
+}
+
+/** 함수조항 호출 — 인자 · 고른 옵션(상품 오버라이드면 그 옵션 코드) · 펼친 본문의 결정 노드(재귀). 펼치지 못했으면 `issue`. */
+export interface ClauseDecision extends DecisionAt {
+  kind: "clause";
+  clauseCode: Code;
+  preset?: Code;
+  args: ArgRecord[];
+  options: OptionSelection;
+  /** 상품 옵션 오버라이드가 정한 옵션 코드(보통약관 자리). */
+  overridden: Code[];
+  issue?: Issue;
+  decisions: DecisionRecord[];
+}
+
+/** 반복 원소 하나 — 원소 id(복제 접미사) · 이름 · 그 문맥의 결정 노드. 반복 표면 행 노드. */
+export interface RepeatElementRecord {
+  id: string;
+  kind: "planOption" | "enumValue" | "coverageNode" | "row";
+  label: string;
+  /** 담보 트리 원소의 키 경로 (`01` · `01.2`). */
+  path?: string;
+  decisions: DecisionRecord[];
+}
+
+/** 반복 — 블록 반복 · 트리 반복 · 인라인 반복 · 행 반복 표. 원천과 원소 목록, 원소 0개면 「비었을 때」 칸의 결정 노드. */
+export interface RepeatDecision extends DecisionAt {
+  kind: "repeat";
+  form: "block" | "inline" | "table";
+  /** 원천 — 블록 · 인라인 반복은 `RepeatSource`(옛 트리면 그 값 그대로), 행 반복 표는 `{ kind: "tableRows", depth }`. */
+  source: RepeatSource | { kind: "tableRows"; depth: number };
+  elements: RepeatElementRecord[];
+  /** 원소 0개 — 「비었을 때」 칸(원소 문맥 밖)의 결정 노드. 원소가 있으면 없다. */
+  fallback?: DecisionRecord[];
+  /** 행 반복 표의 머리글 행 안 결정 노드. */
+  header?: DecisionRecord[];
+  issue?: Issue;
+}
+
+/** 동적표 — 원천 급부(행 재료) · 펼친 행마다 셀의 결정 노드 · 머리글. 펼치지 못했으면 `issue`. */
+export interface DynTableDecision extends DecisionAt {
+  kind: "dynTable";
+  tableCode: Code;
+  benefits: DynBenefit[];
+  header: DecisionRecord[];
+  rows: { name: string; benefitKeys: string[]; decisions: DecisionRecord[] }[];
+  issue?: Issue;
+}
+
+/**
+ * 결정 노드 기록 (ADR-0092 결정 3) — 설명 모드가 설명 대상 조 안에서만 만든다. 산출 `Booklet` 에는 싣지 않는다.
+ * 결정 노드 = 조건 분기 · 인라인 조건 · 값별 분기 · 인라인 값별 분기 · 함수조항 호출 · 반복(트리 반복 포함) · 동적표.
+ */
+export type DecisionRecord = ConditionDecision | SwitchDecision | ClauseDecision | RepeatDecision | DynTableDecision;
 
 /** 보통약관 형태 (ADR-0021 결정 1) — 대치 형태(절 없음) · 절 형태(제1절 일반조항 / 제2절 보장조항). */
 export type BookletForm = "single" | "sectioned";

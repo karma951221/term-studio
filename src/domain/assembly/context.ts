@@ -33,7 +33,7 @@ import { CONTRACT_KIND_PATH, findMasterField, isMasterPathShape, isStandaloneCon
 import type { RowSource } from "../structure";
 import { type AttachLevel, type Code, type Coordinate, entered, type Id, type Issue, NOT_ENTERED, type Value, type ValueSlot } from "../types";
 import { type FormPlan, planForm } from "./section";
-import type { AssemblyCoverage, AssemblyInput, AssemblyPlanOption, AssemblyProduct, ContextTrace, ReadRecord } from "./types";
+import type { AssemblyCoverage, AssemblyInput, AssemblyPlanOption, AssemblyProduct, AttributeRead, ContextTrace, DiscriminatorRead, ReadRecord } from "./types";
 
 // ───────────────────────────── 계약 ─────────────────────────────
 
@@ -54,6 +54,16 @@ export interface AssemblyContext {
    * (세목 레벨 구분자 · `builtin.plan.name` 이 그 종을 읽는다).
    */
   plans?: { options: readonly AssemblyPlanOption[]; context(optionId: Id): EvalContext | undefined };
+  /** 설명 모드의 읽기 받이 — 있으면 조립이 조건식 하나를 평가하는 동안 켜서 그 평가의 읽기를 모은다 (ADR-0092 결정 3). */
+  tap?: ReadTap;
+}
+
+/**
+ * 설명 모드의 읽기 받이 (ADR-0092 결정 3) — 한 조립 실행의 모든 문맥이 함께 쓴다(전역 아님). `active` 가 있는 동안의
+ * 필드 읽기(구분자 안쪽까지) · 담보속성 · 식이 곧바로 읽은 구분자를 모은다 — 조건 평가 중의 읽기를 그 조건에 묶는다. 실행 추적(`trace`)과 무관하다.
+ */
+export interface ReadTap {
+  active?: { reads: ReadRecord[]; discriminators: DiscriminatorRead[]; attributes: AttributeRead[] };
 }
 
 export interface AssemblyContexts {
@@ -118,12 +128,16 @@ interface Env {
   output: OutputPosition | "none";
   /** 절 형태의 제1절 문맥 — 담보가 없어 담보 레벨 참조가 `generalReadsCoverage` 다(대치 형태는 `noBaseContract`). */
   sectioned?: true;
+  /** 설명 모드의 읽기 받이 (ADR-0092). */
+  tap?: ReadTap;
 }
 
 const EMPTY_SLOTS: ReadonlyMap<SlotPath, ValueSlot> = new Map();
 
 function record(env: Env, ownerId: Id, path: SlotPath, slot: ValueSlot | "missing"): void {
   const owner = env.owners.get(ownerId);
+  const tapped = env.tap?.active?.reads;
+  if (tapped && owner && !tapped.some((x) => x.owner.id === ownerId && x.path === path)) tapped.push({ owner: { kind: owner.kind, id: ownerId }, masterId: owner.masterId, path, slot });
   if (!env.trace || !owner) return;
   const r = env.trace.reads;
   if (r.some((x) => x.owner.id === ownerId && x.path === path)) return;
@@ -164,8 +178,19 @@ function lookupBuiltin(env: Env, node: CoverageNode | undefined, plan: PlanCurso
   return target ? slotOf(target.name) : MISSING;
 }
 
-/** 구분자 — 그 레벨 문맥에서 식을 평가한다. 값 행이 없다. */
+/** 구분자 — 그 레벨 문맥에서 식을 평가한다. 설명 모드면 식이 곧바로 읽은 구분자(구분자 안쪽 제외)와 유효값을 받이에 남긴다. */
 function lookupDiscriminator(env: Env, node: CoverageNode | undefined, plan: PlanCursor, ref: ValueRef & { kind: "discriminator" }, coordinate: Coordinate): LookupResult {
+  const r = discriminatorValue(env, node, plan, ref, coordinate);
+  const tapped = env.tap?.active?.discriminators;
+  if (tapped && env.evaluating.size === 0) {
+    const read: DiscriminatorRead = { code: ref.code, ...(node ? { nodeId: node.id } : {}), ...(plan ? { planId: plan.id } : {}), slot: r.kind === "slot" ? r.slot : r.kind === "undetermined" ? "undetermined" : r.kind === "invalid" ? "invalid" : "missing" };
+    if (!tapped.some((x) => x.code === read.code && x.nodeId === read.nodeId && x.planId === read.planId)) tapped.push(read);
+  }
+  return r;
+}
+
+/** 구분자 값 — 그 레벨 문맥에서 식을 평가한다. 값 행이 없다. */
+function discriminatorValue(env: Env, node: CoverageNode | undefined, plan: PlanCursor, ref: ValueRef & { kind: "discriminator" }, coordinate: Coordinate): LookupResult {
   const def = env.catalog.get(ref.code);
   if (!def) return BROKEN; // 없는 구분자 — 고칠 자리는 문면의 참조다 (편집기로 갈 구분자가 없다)
   if (env.evaluating.has(def.code)) return brokenDefinition(def); // 순환 — 정의 저장이 거부하지만(기능/구분자 §3.2) 평가도 스스로 멈춘다
@@ -298,6 +323,8 @@ function contextFor(env: Env, node: CoverageNode | undefined, coordinate: Coordi
     },
     attribute: (code) => {
       const value = env.attributes.get(code);
+      const tapped = env.tap?.active?.attributes;
+      if (tapped && !tapped.some((x) => x.code === code)) tapped.push({ code, value: value ?? "unused" });
       return value === undefined ? { kind: "unused" } : { kind: "value", value };
     },
     children: (ref) => {
@@ -489,6 +516,7 @@ function contextOf(env: Env, coordinate: Coordinate, repeatable = false): Assemb
     },
     explainUndetermined: (reason, at) => explain(env, reason, at),
     trace: env.trace,
+    ...(env.tap ? { tap: env.tap } : {}),
     ...(repeatable && env.tree ? { rows: rowSourceOf(env, env.tree, coordinate) } : {}),
   };
 }
@@ -511,7 +539,7 @@ export function snapshotNodeContext(input: AssemblyInput, c: AssemblyCoverage, n
  * 전 상품담보 + 보통약관 문맥. 대치 형태의 보통약관은 기본계약 상품담보의 환경을 좌표만 바꿔 쓴다 (읽은 값은 기본계약 추적에 실린다).
  * 절 형태의 제1절은 담보 없는 문맥이다 — 담보 레벨 참조는 `generalReadsCoverage`.
  */
-export function buildContexts(input: AssemblyInput): AssemblyContexts {
+export function buildContexts(input: AssemblyInput, tap?: ReadTap): AssemblyContexts {
   const catalog = new Map(input.catalog.map((d) => [d.code, d]));
   const form = planForm(input);
   const specials = new Map<Id, AssemblyContext>();
@@ -520,14 +548,14 @@ export function buildContexts(input: AssemblyInput): AssemblyContexts {
   for (const c of input.coverages) {
     const trace: ContextTrace = { productCoverageId: c.snapshot.id, productCoverageName: c.snapshot.name, coverageId: c.snapshot.coverageId, reads: [] };
     traces.push(trace);
-    const env = envOf(input, catalog, c, trace, form);
+    const env: Env = { ...envOf(input, catalog, c, trace, form), ...(tap ? { tap } : {}) };
     envs.set(c.snapshot.id, env);
     specials.set(c.snapshot.id, contextOf(env, specialCoordinate(c), true));
   }
   // 대치 형태(기본계약 하나)만 보통약관 문맥에 기본계약 담보를 준다. 기본계약 0 이면 담보 없는 문맥(noBaseContract)
   const base = form.form === "single" && input.product.baseContractIds.length > 0 ? envs.get(input.product.baseContractIds[0]) : undefined;
   // 보통약관 문맥에는 작성위치가 없다 — 기본계약 환경을 빌려 써도 작성위치는 없음 (기능/식언어 §3)
-  const bare = envOf(input, catalog, undefined, undefined, form);
+  const bare: Env = { ...envOf(input, catalog, undefined, undefined, form), ...(tap ? { tap } : {}) };
   const general = contextOf({ ...(base ?? bare), output: "none", ...(form.form === "sectioned" ? { sectioned: true as const } : {}) }, generalCoordinate(input.product, generalDocumentOf(input)));
   return { general, specials, traces };
 }
