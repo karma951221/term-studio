@@ -481,6 +481,8 @@ export function DocumentEditor(props: EditorProps) {
       if (!anchor || anchor.target === "_blank") return;
       const url = new URL(anchor.href, window.location.href);
       if (url.origin === window.location.origin && url.pathname === window.location.pathname && url.search === window.location.search) return;
+      // 미리보기 탭 출처 패널의 같은 문서 링크(「원본 조 열기」)는 떠나지 않는다 — 가운데에서 그 노드를 연다(PreviewTab)
+      if (url.origin === window.location.origin && url.pathname === window.location.pathname && anchor.closest("[data-src-inpage]")) return;
       event.preventDefault();
       event.stopPropagation();
       const href = url.origin === window.location.origin ? `${url.pathname}${url.search}${url.hash}` : url.href;
@@ -830,7 +832,7 @@ export function DocumentEditor(props: EditorProps) {
     ...(generalTitle ? { generalTitle } : {}),
     generalProposed: current.generalDocumentId === undefined && props.suggestedGeneralId !== undefined,
     // 가운데와 같은 조를 고른 상품의 조립 문맥으로 — 편집 중이면 편집본 (§3.9)
-    preview: <PreviewTab docKind={doc.kind} selection={selection} tree={tree} {...(currentArticleId ? { articleId: currentArticleId } : {})} editing={mode === "edit"} />,
+    preview: <PreviewTab docKind={doc.kind} selection={selection} tree={tree} {...(currentArticleId ? { articleId: currentArticleId } : {})} editing={mode === "edit"} openNode={go} />,
     ...(doc.kind === "special" ? { leaves: <LeafPanelTab selection={selection} tree={tree} go={go} /> } : {}),
     go,
     ...(fixCode ? { fixCode } : {}),
