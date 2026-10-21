@@ -72,9 +72,11 @@ import type { ValueOwner } from "@/db/repo/values";
 /** 사용처 역인덱스 — 이 함수조항을 참조하는 문서들. C1(refs)/B3(document) 가 구현한다. */
 export interface UsageSource {
   documentsReferencing(clauseCode: Code): Promise<Usage[]>;
+  /** 함수조항별 참조 문서 수 — 목록용. 사용처가 없는 함수조항은 빠질 수 있다. */
+  usageCounts(): Promise<ReadonlyMap<Code, number>>;
 }
 
-export const NO_USAGES: UsageSource = { documentsReferencing: async () => [] };
+export const NO_USAGES: UsageSource = { documentsReferencing: async () => [], usageCounts: async () => new Map() };
 
 export interface ClauseServiceDeps {
   usage?: UsageSource;
@@ -319,20 +321,18 @@ export function createClauseService(db: Db, deps: ClauseServiceDeps = {}): Claus
     list: () => repo.listClauses(db),
     summaries: async () => {
       const all = await repo.listClauses(db);
-      const audits = await repo.clauseAudits(db);
-      const out: ClauseSummary[] = [];
-      for (const c of all) {
+      const [audits, counts] = await Promise.all([repo.clauseAudits(db), usage.usageCounts()]);
+      return all.map((c) => {
         const audit = audits.get(c.code);
-        out.push({
+        return {
           code: c.code,
           label: c.label,
           mode: c.mode,
-          usageCount: (await usage.documentsReferencing(c.code)).length,
+          usageCount: counts.get(c.code) ?? 0,
           updatedAt: audit?.updatedAt ?? new Date(0),
           updatedBy: audit?.updatedBy ?? "",
-        });
-      }
-      return out;
+        };
+      });
     },
     required: async (code) => (await repo.loadClause(db, code))?.required,
     usages: (code) => usage.documentsReferencing(code),
