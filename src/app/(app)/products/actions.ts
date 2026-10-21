@@ -6,8 +6,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import type { ActionOutcome } from "@/app/_components/ValueForm";
+import { panelQuery, type PanelQueryState } from "@/app/_components/sourcePanel/query";
 import { str } from "@/app/_lib/formData";
 import { describeRejection, errorRedirectPath } from "@/app/_lib/rejection";
+import type { ExplainOutcome, ExplainTarget } from "@/services/assembly";
 import type { GeneralSettingsInput, ProductBasicInput, ProductCoveragesInput, SnapshotOwner } from "@/services/product";
 import type { ArticleNode } from "@/domain/document";
 import type { Id, Impact, Issue, Result } from "@/domain/types";
@@ -158,13 +160,24 @@ export async function saveProductGeneralAction(productId: Id, input: GeneralSett
  * 편집자 가능 · 비파괴. 자동 재실행은 없다 — 이 버튼만이 산출본을 바꾼다.
  * 거부(없는 상품 등)면 `?error=` 로 같은 화면에 돌아온다.
  */
-export async function runPreviewAction(id: Id): Promise<void> {
+export async function runPreviewAction(id: Id, panel: PanelQueryState | undefined, _formData?: FormData): Promise<void> {
+  void _formData;
   const actor = await currentActor();
   const path = previewPath(id);
   const r = await getServices().assembly.run(actor, id);
   if (!r.ok) redirect(errorRedirectPath(path, msg(r.rejection)));
   revalidatePath(path);
-  redirect(path);
+  // 출처 패널에서 다시 실행했으면 같은 패널로 돌아온다 (기능/조립산출 §4.1 — 오래된 결과의 「다시 실행」)
+  redirect(`${path}${panel ? panelQuery(panel) : ""}`);
+}
+
+/**
+ * 저장본 기준 출처 패널 재료 (ADR-0092 결정 3 · 5) — 저장본이 오래됐으면 `stale`(패널 대신 「다시 실행」).
+ * 미리보기 화면은 서버에서 서비스를 바로 부른다 — 이 액션은 패널을 브라우저에서 여는 자리(다른 미리보기)가 쓴다.
+ */
+export async function explainArticleAction(id: Id, target: ExplainTarget): Promise<Result<ExplainOutcome>> {
+  await currentActor();
+  return getServices().assembly.explain(id, target);
 }
 
 function previewPath(id: Id): string {

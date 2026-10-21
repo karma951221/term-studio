@@ -129,7 +129,8 @@ export default async function ProductCoverageDetailPage({ params }: { params: Pr
         <p className="ts-muted">지금 계산한 결과 (저장하지 않음)</p>
         {preview.ok ? (
           <>
-            <AssemblyCheckLine issues={preview.value.issues} />
+            {/* 평가 대기 목록의 「미리보기에서 보기」 — 이 화면은 출처 패널 전(3단계)이라 아래 미리보기의 그 조로 */}
+            <AssemblyCheckLine issues={preview.value.issues} pending={preview.value.pending} viewHref={(p) => (p.at.articleId ? `#node-${p.at.articleId}` : undefined)} />
             {!preview.value.complete && <p className="ts-error-banner">완성본 아님 — 아래 오류를 확인하세요.</p>}
             <IssueList issues={preview.value.issues} />
             <RenderedDoc doc={preview.value.doc} />

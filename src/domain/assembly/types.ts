@@ -140,6 +140,11 @@ export interface MasterBundle {
    * 없는 담보는 검사하지 않는다.
    */
   coverageGenerals?: ReadonlyMap<Id, Id>;
+  /**
+   * 문서 트리 id → 문서 레코드 id — 화면 주소(`/documents/<레코드 id>`)를 짓는 자리(출처 패널의 「원본 조 열기」)만 읽는다. 조립은 읽지 않는다.
+   * 트리 id 는 레코드 id 와 따로 채번된다. 없으면 주소를 짓지 못한다.
+   */
+  documentIds?: ReadonlyMap<Id, Id>;
 }
 
 /** 상품 고유분 — 상품 값 · 세목 · 탑재 스냅샷/값/부착 · 오버라이드 · 숨김 · 특약 그룹 설정 (ADR-0034 결정 2). 상품마다 적재한다. */

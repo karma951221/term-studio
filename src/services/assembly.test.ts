@@ -520,6 +520,38 @@ describe("assembly 서비스 (PGlite) — 관통 1 통합", () => {
     });
   });
 
+  describe("explain — 저장본 기준 출처 (ADR-0092 결정 3 · 5 · 기능/조립산출 §3.7)", () => {
+    it("저장본이 지금 입력과 같으면 설명한다 — 원본 · 결과 자리 · 결과 값 조각", async () => {
+      unwrap(await svc.run(editor, productId));
+      const r = unwrap(await svc.explain(productId, { document: "special", productCoverageId: pcBasic, articleId: "s-art-reduce" }));
+      expect(r.state).toBe("ok");
+      if (r.state !== "ok") return;
+      expect(r.view.explanation.status).toBe("shown");
+      expect(r.view.sources[0].article?.id).toBe("s-art-reduce");
+      expect(r.view.place).toMatch(/제\d+조\(보험금의 감액지급\)$/);
+      expect(Object.keys(r.view.values)).toContain("s-slot-reduce");
+    });
+
+    it("입력이 바뀌어 저장본이 오래되면 설명하지 않고 stale 을 돌려준다 — 다시 실행하면 다시 설명한다", async () => {
+      unwrap(await svc.run(editor, productId));
+      const opt = (await product.listPlanOptions(productId)).find((o) => o.axis === "type")!;
+      unwrap(await product.setPlanOptionValue(editor, opt.id, "waiver.applies", true));
+      expect(unwrap(await svc.explain(productId, { document: "general", articleId: "g-art-def" }))).toEqual({ state: "stale" });
+      unwrap(await svc.run(editor, productId));
+      expect(unwrap(await svc.explain(productId, { document: "general", articleId: "g-art-def" })).state).toBe("ok");
+    });
+
+    it("저장본이 없으면 notRun — 실행 전에는 설명할 결과가 없다", async () => {
+      const other = unwrap(await product.createProduct(editor, { name: "실행 안 한 상품" }));
+      expect(unwrap(await svc.explain(other.id, { document: "general", articleId: "g-art-def" }))).toEqual({ state: "notRun" });
+    });
+
+    it("없는 상품은 notFound", async () => {
+      const r = await svc.explain("00000000-0000-4000-8000-0000000000fe", { document: "general", articleId: "g-art-def" });
+      expect(!r.ok && r.rejection.reason).toBe("notFound");
+    });
+  });
+
   describe("재료 분리 · 상수 쿼리 · 결정성 (ADR-0034 결정 2·3·4)", () => {
     const count = async (fn: () => Promise<unknown>) => {
       t.resetQueryCount();

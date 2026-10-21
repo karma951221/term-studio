@@ -20,6 +20,36 @@ import type {
 
 import { StaticBox, StaticBullets, StaticTable } from "./StaticNodes";
 
+/** 고른 조 — 출처 패널이 연 조를 본문에서 강조한다 (기능/조립산출 §4.1). 보통약관은 `ownerId` 없이, 특약 · 블록은 상품담보 id. */
+export interface DocSelection {
+  document: "general" | "special";
+  ownerId?: string;
+  articleId: string;
+}
+
+/** 생략 자리 — 원래 조 자리에 끼우는 번호 없는 회색 한 줄 (화면에만, 책자에는 없다 · §3.7). `afterId` 없음 = 문서 맨 앞. */
+export interface DocOmission {
+  articleId: string;
+  title: string;
+  afterId?: string;
+  note: string;
+}
+
+interface DocMarks {
+  selectedId?: string;
+  omissions?: readonly DocOmission[];
+}
+
+function OmissionLine({ slot, marks }: { slot: DocOmission; marks: DocMarks }) {
+  return (
+    <p className={marks.selectedId === slot.articleId ? "ts-doc-omitted is-selected" : "ts-doc-omitted"} data-omitted-article={slot.articleId}>
+      (생략) {slot.title} — {slot.note}
+    </p>
+  );
+}
+
+const slotsAfter = (marks: DocMarks, id: string | undefined) => (marks.omissions ?? []).filter((o) => o.afterId === id);
+
 /** 정적 표·박스 (기능/문면 §3.2) — 편집기와 같은 컴포넌트. 표 셀의 참조도 계산 번호로 찍힌다. */
 function Static({ node }: { node: RenderedStatic }) {
   if (node.kind === "box") return <StaticBox node={node} />;
@@ -72,7 +102,8 @@ function ErrorMark({ node }: { node: ErrorNode }) {
 function Inline({ node }: { node: RenderedInline }) {
   switch (node.kind) {
     case "text":
-      return <>{node.text}</>;
+      // 노드 id 를 남긴다 — 값 조각을 누르면 출처 패널이 원본의 같은 자리를 강조한다 (§3.7)
+      return <span data-n={node.id}>{node.text}</span>;
     case "articleRef":
       return (
         <span id={`node-${node.id}`} className="ts-doc-ref">
@@ -157,24 +188,35 @@ function Paragraph({ node }: { node: RenderedParagraph | RenderedStatic | ErrorN
   );
 }
 
-function Section({ node }: { node: RenderedSection }) {
+function Section({ node, marks }: { node: RenderedSection; marks: DocMarks }) {
   return (
     <section id={`node-${node.id}`} className="ts-doc-section">
       <h2 className="ts-doc-section-title">
         {node.label} {node.title}
       </h2>
       {node.children.map((a, i) => (
-        <Article key={i} node={a} />
+        <Article key={i} node={a} marks={marks} />
       ))}
     </section>
   );
 }
 
-function Article({ node }: { node: RenderedArticle | RenderedSection | ErrorNode }) {
+function Article({ node, marks = {} }: { node: RenderedArticle | RenderedSection | ErrorNode; marks?: DocMarks }) {
   if (node.kind === "error") return <div className="ts-doc-article"><ErrorMark node={node} /></div>;
-  if (node.kind === "section") return <Section node={node} />;
+  if (node.kind === "section") return <Section node={node} marks={marks} />;
   return (
-    <section id={`node-${node.id}`} className="ts-doc-article">
+    <>
+      <ArticleBody node={node} selected={marks.selectedId === node.id} />
+      {slotsAfter(marks, node.id).map((o) => (
+        <OmissionLine key={o.articleId} slot={o} marks={marks} />
+      ))}
+    </>
+  );
+}
+
+function ArticleBody({ node, selected }: { node: RenderedArticle; selected: boolean }) {
+  return (
+    <section id={`node-${node.id}`} data-article={node.id} className={selected ? "ts-doc-article is-selected" : "ts-doc-article"}>
       <h3 className="ts-doc-article-title">
         {node.label}({node.title})
       </h3>
@@ -190,13 +232,26 @@ export function RenderedArticleView({ node }: { node: RenderedArticle }) {
   return <Article node={node} />;
 }
 
-/** `heading` — 문서 제목 대신 찍을 머리(절 형태의 「제1절 일반조항」). 블록은 `doc.head`(「Ⅰ-1.」)가 제목 앞에 선다. */
-export function RenderedDoc({ doc, heading }: { doc: RenderedDocType; heading?: string }) {
+/** 이 문서에서 고른 조 id — 보통약관이면 보통약관 선택만, 특약 · 블록이면 상품담보가 같을 때만. */
+function selectedIn(doc: RenderedDocType, selection: DocSelection | undefined): string | undefined {
+  if (!selection || selection.document !== doc.document) return undefined;
+  return doc.document === "general" || selection.ownerId === doc.ownerId ? selection.articleId : undefined;
+}
+
+/**
+ * `heading` — 문서 제목 대신 찍을 머리(절 형태의 「제1절 일반조항」). 블록은 `doc.head`(「Ⅰ-1.」)가 제목 앞에 선다.
+ * `selection` — 출처 패널이 연 조(본문 강조), `omissions` — 이 문서에 끼울 생략 자리 (책자 미리보기, 기능/조립산출 §4.1).
+ */
+export function RenderedDoc({ doc, heading, selection, omissions }: { doc: RenderedDocType; heading?: string; selection?: DocSelection; omissions?: readonly DocOmission[] }) {
+  const marks: DocMarks = { ...(selectedIn(doc, selection) ? { selectedId: selectedIn(doc, selection) } : {}), ...(omissions ? { omissions } : {}) };
   return (
-    <article className="ts-doc" data-owner={doc.ownerId}>
+    <article className="ts-doc" data-owner={doc.ownerId} data-document={doc.document}>
       <h2 className="ts-doc-title">{heading ?? (doc.head !== undefined ? `${doc.head} ${doc.title}` : doc.title)}</h2>
+      {slotsAfter(marks, undefined).map((o) => (
+        <OmissionLine key={o.articleId} slot={o} marks={marks} />
+      ))}
       {doc.children.map((a, i) => (
-        <Article key={i} node={a} />
+        <Article key={i} node={a} marks={marks} />
       ))}
     </article>
   );
@@ -207,7 +262,7 @@ export function RenderedDoc({ doc, heading }: { doc: RenderedDocType; heading?: 
  * 담보분류를 정할 수 없는 상품담보(미입력 · 지운 값)의 자리는 제목 줄이 없다.
  * 절 형태 블록이면 번호 머리가 제목 앞에 선다 — 그룹 「Ⅰ.」 · 블록 「Ⅰ-1.」 / 「1.」 (ADR-0090 결정 8).
  */
-export function RenderedGroupView({ group }: { group: RenderedGroup }) {
+export function RenderedGroupView({ group, selection, omissions }: { group: RenderedGroup; selection?: DocSelection; omissions?: ReadonlyMap<string, readonly DocOmission[]> }) {
   return (
     <section className="ts-doc-group" aria-label={group.title ?? (group.titleError ? "그룹 제목 없는 특별약관" : "그룹 없는 특별약관")}>
       {group.title !== undefined && <h2 className="ts-doc-group-title">{group.head !== undefined ? `${group.head} ${group.title}` : group.title}</h2>}
@@ -218,7 +273,7 @@ export function RenderedGroupView({ group }: { group: RenderedGroup }) {
         </h2>
       )}
       {group.docs.map((d, i) => (
-        <RenderedDoc key={`${d.ownerId ?? d.id}-${i}`} doc={d} />
+        <RenderedDoc key={`${d.ownerId ?? d.id}-${i}`} doc={d} selection={selection} omissions={omissions?.get(d.ownerId)} />
       ))}
     </section>
   );
@@ -228,13 +283,13 @@ export function RenderedGroupView({ group }: { group: RenderedGroup }) {
  * 절 형태의 제2절 보장조항 (기능/조립산출 §3.8 · §4.1) — 블록 그룹을 그룹 순서대로, 특약 그룹과 같은 부품(`RenderedGroupView`)으로.
  * 그룹 제목 표시를 켰으면 그룹 머리 줄 「Ⅰ. {그룹 제목}」(빈 제목이면 오류 마커), 블록 문서 제목 앞에 블록 머리 「Ⅰ-1.」 · 「1.」.
  */
-export function RenderedBlocksView({ groups }: { groups: readonly RenderedGroup[] }) {
+export function RenderedBlocksView({ groups, selection, omissions }: { groups: readonly RenderedGroup[]; selection?: DocSelection; omissions?: ReadonlyMap<string, readonly DocOmission[]> }) {
   return (
     <section className="ts-doc-part" aria-label="제2절 보장조항">
       <h2 className="ts-doc-title">제2절 보장조항</h2>
       {groups.length === 0 && <p className="ts-muted">블록이 없다.</p>}
       {groups.map((g) => (
-        <RenderedGroupView key={g.id} group={g} />
+        <RenderedGroupView key={g.id} group={g} selection={selection} omissions={omissions} />
       ))}
     </section>
   );
