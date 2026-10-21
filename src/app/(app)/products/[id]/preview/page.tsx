@@ -15,7 +15,7 @@ import type { DocumentNode } from "@/domain/document";
 import { runPreviewAction } from "../../actions";
 import { articleCount, excludedClauseLabel, omissionCounts, omissionPairLabel } from "../../lib";
 import { omissionSlots } from "./omissionSlots";
-import { OmittedToggle, PreviewPanelHost } from "./PreviewPanelHost";
+import { OmittedToggle, PreviewPanelHost } from "@/app/_components/sourcePanel/PanelHost";
 
 export const dynamic = "force-dynamic";
 
