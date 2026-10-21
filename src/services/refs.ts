@@ -318,29 +318,40 @@ export function coverageUsageSource(db: Db): CoverageUsageSource {
 
 // ───────────────────────────── clause: UsageSource ─────────────────────────────
 
+/** 그래프 하나에서 이 함수조항을 참조하는 문서들 — 단건 조회와 목록의 사용처 수가 같은 규칙으로 센다. */
+function clauseUsagesIn(graph: RefGraph, clauseCode: Code): Usage[] {
+  const out: Usage[] = [];
+    for (const e of usagesOf(graph, { kind: "clause", code: clauseCode }, { via: ["clauseRef"] })) {
+      const documentId = documentIdOf(e.from);
+      if (documentId === undefined) continue;
+      const info = graph.nodes.get(nodeKey({ kind: "document", id: documentId }));
+      const ownerKind: UsageOwnerKind = info?.detail === "special" ? "coverage" : "general";
+      const refNodeId = e.at.nodePath?.at(-1);
+      out.push({
+        documentId,
+        ownerKind,
+        ownerId: info?.ownerId ?? documentId,
+        ...(e.at.ownerName !== undefined ? { ownerName: e.at.ownerName } : {}),
+        ...(refNodeId !== undefined ? { refNodeId } : {}),
+        selection: e.options ?? {},
+        ...(e.bindings ? { bindings: e.bindings } : {}),
+        ...(e.preset !== undefined ? { preset: e.preset } : {}),
+        ...(e.treeLoopLevel ? { treeLoopLevel: e.treeLoopLevel } : {}),
+      });
+    }
+  return out;
+}
+
 export function clauseUsageSource(db: Db): ClauseUsageSource {
   return {
     async documentsReferencing(clauseCode: Code): Promise<Usage[]> {
+      return clauseUsagesIn(await loadGraph(db), clauseCode);
+    },
+    // 목록이 함수조항마다 그래프를 다시 지으면 230건에 수십 초가 걸린다 — 그래프는 한 번만 짓는다.
+    async usageCounts(): Promise<ReadonlyMap<Code, number>> {
       const graph = await loadGraph(db);
-      const out: Usage[] = [];
-      for (const e of usagesOf(graph, { kind: "clause", code: clauseCode }, { via: ["clauseRef"] })) {
-        const documentId = documentIdOf(e.from);
-        if (documentId === undefined) continue;
-        const info = graph.nodes.get(nodeKey({ kind: "document", id: documentId }));
-        const ownerKind: UsageOwnerKind = info?.detail === "special" ? "coverage" : "general";
-        const refNodeId = e.at.nodePath?.at(-1);
-        out.push({
-          documentId,
-          ownerKind,
-          ownerId: info?.ownerId ?? documentId,
-          ...(e.at.ownerName !== undefined ? { ownerName: e.at.ownerName } : {}),
-          ...(refNodeId !== undefined ? { refNodeId } : {}),
-          selection: e.options ?? {},
-          ...(e.bindings ? { bindings: e.bindings } : {}),
-          ...(e.preset !== undefined ? { preset: e.preset } : {}),
-          ...(e.treeLoopLevel ? { treeLoopLevel: e.treeLoopLevel } : {}),
-        });
-      }
+      const out = new Map<Code, number>();
+      for (const { key } of graph.nodes.values()) if (key.kind === "clause") out.set(key.code, clauseUsagesIn(graph, key.code).length);
       return out;
     },
   };

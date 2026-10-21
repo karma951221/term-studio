@@ -48,7 +48,18 @@ describe("clause 서비스 (PGlite)", () => {
   let svc: ClauseService;
   /** 사용처 흉내 — C1/B3 가 줄 것. 테스트가 직접 채운다. */
   const usages = new Map<string, Usage[]>();
-  const usageSource: UsageSource = { documentsReferencing: async (code) => usages.get(code) ?? [] };
+  /** 함수조항마다 사용처를 따로 물으면 목록이 그래프를 함수조항 수만큼 다시 짓는다 — 몇 번 불렸는지 센다. */
+  const calls = { documentsReferencing: 0, usageCounts: 0 };
+  const usageSource: UsageSource = {
+    documentsReferencing: async (code) => {
+      calls.documentsReferencing += 1;
+      return usages.get(code) ?? [];
+    },
+    usageCounts: async () => {
+      calls.usageCounts += 1;
+      return new Map([...usages].map(([code, u]) => [code, u.length] as const));
+    },
+  };
 
   beforeAll(async () => {
     t = await createTestDb();
@@ -103,6 +114,13 @@ describe("clause 서비스 (PGlite)", () => {
       ]);
       expect((await svc.usages("C0001")).map((u) => u.ownerName)).toEqual(["수술비", "일반상해사망"]);
       expect((await svc.list()).length).toBe(2);
+    });
+
+    it("목록 요약은 사용처 수를 한 번에 센다 — 함수조항마다 사용처를 묻지 않는다", async () => {
+      calls.documentsReferencing = 0;
+      calls.usageCounts = 0;
+      await svc.summaries();
+      expect(calls).toEqual({ documentsReferencing: 0, usageCounts: 1 });
     });
 
     it("표시명 변경은 편집자 자유, 코드 불변", async () => {

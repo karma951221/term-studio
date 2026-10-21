@@ -1,6 +1,7 @@
 import { type Locator, type Page } from "@playwright/test";
 
 import { pickCombo } from "./_lib/combo";
+import { applyFrom, editFoot, editForm, insertFrom } from "./_lib/editTab";
 import { createEnum } from "./_lib/enum";
 import { expect, test } from "./_lib/fixtures";
 
@@ -8,8 +9,8 @@ import { expect, test } from "./_lib/fixtures";
  * 약관 에디터 툴바 · 함수조항 생성 (기능/문면 §4.3 · 기능/함수조항 §4.2, 2026-09-27).
  *
  * 1. 문면 저작 — 편집을 누르면 본문 위에 툴바가 선다. 툴바 「조」 · 「항」으로 쓰고, 「조건식」은 블록 조건이다(팝업 없음):
- *    커서만 있으면 그 항 뒤에 빈 조건 블록, 글을 고르면 그 선택이 걸친 항(여럿이면 여럿)을 감싸고 빈 IF 줄에 초점이 간다.
- *    변수 · 연산자 · 값을 머리 줄에서 고르고 저장 → 읽기 모드의 IF 한 줄.
+ *    커서만 있으면 그 항 뒤에 빈 조건 블록, 글을 고르면 그 선택이 걸친 항(여럿이면 여럿)을 감싸고 우측 패널 편집 탭의 빈 IF 줄에 초점이 간다.
+ *    변수 · 연산자 · 값을 편집 탭에서 고르고 적용 · 저장 → 읽기 모드의 IF 한 줄. 본문 머리 줄은 편집 모드에도 읽기용 한 줄(2026-10-21).
  *    오른쪽 클릭 메뉴에는 조건 넣기가 없다. (기능/문면 §4.3 · §6.2 「조건식 = 블록 삽입 + 머리 줄 인라인 편집」, 2026-09-28)
  * 2. 함수조항 생성 — `/functions/new` 에서 유형(항) · 함수조항명 · 본문 · 옵션을 쓰고 툴바로 옵션 자리를 넣고, 「조건식」으로 그 항을
  *    조건 블록으로 감싸 머리 줄을 채운 뒤 저장 한 번 → 상세(읽기 모드 IF 줄) · 목록.
@@ -110,7 +111,8 @@ test(
       const head = body.locator("[data-cond-head]");
       await expect(head).toHaveCount(1);
       await expect(head.locator(".ts-cond-badge")).toHaveText("IF");
-      await expect(head.getByRole("combobox", { name: "IF 1번 줄 변수" })).toBeFocused();
+      // 식은 우측 패널 편집 탭에서 고친다 — 빈 IF 줄 첫 칸에 초점
+      await expect(editForm(page, "조건식").getByRole("combobox", { name: "IF 1번 줄 변수" })).toBeFocused();
       const inside = body.locator(".ts-doc-cond").getByRole("textbox", { name: "항", exact: true });
       await expect(inside).toHaveCount(1);
       await expect(inside).toHaveText("");
@@ -155,15 +157,17 @@ test(
       await expect(body.locator(".ts-doc-cond").getByRole("textbox", { name: "항", exact: true })).toHaveCount(2);
     });
 
-    await ev.action("툴바#8", "머리 줄에서 변수 · 연산자 · 값을 고른다 — 가지 조작이 켜지고, 저장 한 번 · 새로 읽으면 초록 상자 안 IF 한 줄", async () => {
+    await ev.action("툴바#8", "머리 줄을 눌러 편집 탭에서 변수 · 연산자 · 값을 고르고 적용 — 가지 조작이 켜지고, 저장 한 번 · 새로 읽으면 초록 상자 안 IF 한 줄", async () => {
       const head = body.locator("[data-cond-head]");
+      // 본문 머리 줄을 누르면 그 가지가 고른 것 — 툴바 자리도 조건 가지(조건 편집 묶음은 머리 줄을 골랐을 때 선다)
+      await head.getByRole("button", { name: "IF 조건식 고치기" }).click();
+      const form = editForm(page, "조건식");
       // 시드 구분자는 참거짓뿐이다(문자 구분자 담보명 D0001 은 2026-10-21 삭제 — ADR-0091) — 갱신형 상품(D0006) = 참, 값은 참 · 거짓 고르기
-      await pickCombo(head.getByRole("combobox", { name: "IF 1번 줄 변수" }), { value: "D0006" });
-      await expect(head.getByRole("combobox", { name: "IF 1번 줄 연산자" })).toHaveValue("=");
-      const value = head.getByRole("combobox", { name: "IF 1번 줄 값" });
-      await value.selectOption("true");
-      // 참거짓 값은 고르기(select)다 — 글자 칸의 Enter 와 달리 커서가 머리 줄에 남도록 다시 짚는다(조건 편집 묶음은 머리 줄을 골랐을 때 선다)
-      await value.focus();
+      await pickCombo(form.getByRole("combobox", { name: "IF 1번 줄 변수" }), { value: "D0006" });
+      await expect(form.getByRole("combobox", { name: "IF 1번 줄 연산자" })).toHaveValue("=");
+      await form.getByRole("combobox", { name: "IF 1번 줄 값" }).selectOption("true");
+      await editFoot(page, "적용").click();
+      await expect(head).toContainText("갱신형 상품");
       await expect(tool("그 밖의 경우 추가")).toBeEnabled();
       await submit(page, page.getByRole("button", { name: "저장", exact: true }));
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
@@ -179,7 +183,8 @@ test(
 
     await ev.action("툴바#9", "머리 줄을 셋으로 늘려 결합을 섞으면 왼쪽부터 묶이는 괄호가 보이고, 같게 바꾸면 사라진다 (기능/문면 §3.3)", async () => {
       await page.getByRole("button", { name: "편집", exact: true }).click();
-      const head = body.locator("[data-cond-head]");
+      await body.locator("[data-cond-head]").getByRole("button", { name: "IF 조건식 고치기" }).click();
+      const head = editForm(page, "조건식");
       for (const [n, code] of [[2, "D0002"], [3, "D0004"]] as const) {
         await head.getByRole("button", { name: `IF ${n - 1}번 줄 뒤에 조건 줄 추가` }).click();
         await pickCombo(head.getByRole("combobox", { name: `IF ${n}번 줄 변수` }), { value: code });
@@ -199,6 +204,8 @@ test(
       // 모두 OR 로 — 괄호가 사라진다
       await head.getByRole("combobox", { name: "IF 3번 줄 결합" }).selectOption("or");
       await expect(head.locator(".ts-cond-paren")).toHaveCount(0);
+      await editFoot(page, "적용").click();
+      await expect(editFoot(page, "적용")).toBeDisabled();
     });
 
     await ev.action("툴바#10", "조 참조 — 대상 둘을 고르고 연결어를 안 고르면 적용이 거부된다, 「또는」을 고르면 「제1항 또는 제2항」 (결정 14 · 기능/문면 §3.5)", async () => {
@@ -206,7 +213,7 @@ test(
       await inside.first().click();
       await inside.first().press("End");
       await tool("조 참조").click();
-      const d = page.getByRole("dialog", { name: "조 참조 넣기" });
+      const d = editForm(page, "조 참조 넣기");
       await expect(d).toBeVisible();
       // 연결어는 기본값 없이 시작한다 — 대상이 하나 이하면 꺼져 있다
       await expect(d.getByRole("radio", { name: "및", exact: true })).toBeDisabled();
@@ -217,12 +224,11 @@ test(
       await expect(d.getByRole("radio", { name: "및", exact: true })).toBeEnabled();
       await expect(d.getByRole("radio", { name: "및", exact: true })).not.toBeChecked();
       await expect(d.getByRole("radio", { name: "또는", exact: true })).not.toBeChecked();
-      await d.getByRole("button", { name: "넣기", exact: true }).click();
+      await editFoot(page, "넣기").click();
       await expect(d.getByRole("alert")).toHaveText("대상이 둘 이상이거나 반복 · 함수조항 · 값 한정으로 여러 번호가 될 수 있으면 연결어(및 · 또는)를 고른다.");
       await expect(d).toBeVisible();
       await d.getByRole("radio", { name: "또는", exact: true }).check();
-      await d.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(d).toHaveCount(0);
+      await insertFrom(page, d);
       await expect(body.locator(".ts-doc-cond [data-chip]")).toContainText(["제1항 또는 제2항"]);
       await submit(page, page.getByRole("button", { name: "저장", exact: true }));
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
@@ -474,10 +480,9 @@ test(
       await page.getByRole("menuitem", { name: `${clauseName}(${code})`, exact: true }).click();
       await expect(body.locator("[data-clause-ref]")).toHaveCount(1);
       await body.locator("[data-clause-ref] .ts-doc-clause-opt").click();
-      const dialog = page.getByRole("dialog", { name: "함수조항 옵션 · 인자", exact: true });
-      await dialog.getByLabel("인자 사유").selectOption("c:V01");
-      await dialog.getByRole("button", { name: "확인", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      const form = editForm(page, "함수조항 옵션 · 인자");
+      await form.getByLabel("인자 사유").selectOption("c:V01");
+      await applyFrom(page);
       await submit(page, page.getByRole("button", { name: "저장", exact: true }));
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
     });

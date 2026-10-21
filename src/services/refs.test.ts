@@ -272,6 +272,13 @@ describe("refs 서비스 · 주입 소스 (PGlite)", () => {
       expect((await clauseUsageSource(contextualDb(t.db)).documentsReferencing("C002"))[0].selection).toEqual({});
       expect(await clauseUsageSource(contextualDb(t.db)).documentsReferencing("C999")).toEqual([]);
     });
+
+    it("usageCounts — 함수조항별 참조 수를 그래프 한 번으로 센다 (documentsReferencing 의 건수와 같다)", async () => {
+      const src = clauseUsageSource(contextualDb(t.db));
+      const counts = await src.usageCounts();
+      for (const code of ["C001", "C002"]) expect(counts.get(code)).toBe((await src.documentsReferencing(code)).length);
+      expect(counts.get("C999")).toBeUndefined();
+    });
   });
 
   describe("documentUsageSource — 문서 서비스가 못 보는 외부 사용처", () => {

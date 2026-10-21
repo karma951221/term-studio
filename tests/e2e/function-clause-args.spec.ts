@@ -1,6 +1,7 @@
 import { type Locator, type Page } from "@playwright/test";
 
 import { pickCombo } from "./_lib/combo";
+import { applyFrom, editForm } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 import { productWithSpecial } from "./_lib/product";
 
@@ -102,11 +103,11 @@ test(
     });
 
     await ev.action("인자#6", "그 사용처에서만 인자 연결을 새 구분자로 바꾸고 저장", async () => {
-      await body.locator("[data-clause-ref] .ts-doc-clause-opt").click();
-      const dialog = page.getByRole("dialog", { name: "함수조항 옵션 · 인자", exact: true });
+      // 띠 이름을 눌러도 편집 탭에 옵션 · 인자 폼 (기능/문면 §3.9, 2026-10-21)
+      await body.locator("[data-clause-ref] .ts-doc-clause-name").click();
+      const dialog = editForm(page, "함수조항 옵션 · 인자");
       await dialog.getByLabel("인자 보험금명", { exact: true }).selectOption(`d:${bound}`);
-      await dialog.getByRole("button", { name: "확인", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await applyFrom(page);
       await expect(body.locator("[data-clause-ref] .ts-doc-clause-head")).toContainText(`인자: 보험금명 ← 인자연결검증${stamp} (${bound})`);
       await submit(page, page.getByRole("button", { name: "저장", exact: true }));
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
@@ -119,3 +120,4 @@ test(
     });
   },
 );
+

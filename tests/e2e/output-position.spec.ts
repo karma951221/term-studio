@@ -1,6 +1,7 @@
 import { type Locator, type Page } from "@playwright/test";
 
 import { comboOptionCount, pickCombo } from "./_lib/combo";
+import { applyFrom, editForm, insertFrom } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 import { productWithSpecial } from "./_lib/product";
 
@@ -59,10 +60,9 @@ test(
       await paragraph.fill("회사는 ");
       await paragraph.press("End");
       await tool("슬롯").click();
-      const dialog = page.getByRole("dialog", { name: "치환 슬롯 넣기", exact: true });
+      const dialog = editForm(page, "치환 슬롯 넣기");
       await pickCombo(dialog.locator("#pop-slot"), { value: "builtin.output.scope" });
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await insertFrom(page, dialog);
       await expect(body.locator(".ts-doc-slot")).toHaveText("〔이 약관의〕");
       await paragraph.click();
       await paragraph.press("End");
@@ -71,10 +71,12 @@ test(
 
     await ev.action("작성위치#4", "툴바 「조건식」 — 변수 목록 끝 「작성위치」 · 연산자 = · 값 「특약」, 빈 항에 특약 전용 문장을 쓰고 저장", async () => {
       await tool("조건식").click();
-      const head = body.locator("[data-cond-head]");
+      // 식은 우측 패널 편집 탭에서 고르고 적용한다 (2026-10-21)
+      const head = editForm(page, "조건식");
       await pickCombo(head.getByRole("combobox", { name: "IF 1번 줄 변수" }), { value: "builtin.output" });
       await expect(head.getByRole("combobox", { name: "IF 1번 줄 연산자" })).toHaveValue("=");
       await head.getByRole("combobox", { name: "IF 1번 줄 값" }).selectOption({ label: "특약" });
+      await applyFrom(page);
       const inner = body.locator(".ts-doc-cond").getByRole("textbox", { name: "항", exact: true });
       await inner.click();
       await inner.fill("특약에만 있는 문장입니다.");
@@ -103,8 +105,9 @@ test(
       await tool("항").click();
       await body.getByRole("textbox", { name: "항", exact: true }).fill("x");
       await tool("조건식").click();
-      const head = body.locator("[data-cond-head]");
+      const head = editForm(page, "조건식");
       expect(await comboOptionCount(head.getByRole("combobox", { name: "IF 1번 줄 변수" }), "작성위치")).toBe(0);
     });
   },
 );
+
