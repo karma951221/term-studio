@@ -160,7 +160,8 @@ export async function saveProductGeneralAction(productId: Id, input: GeneralSett
  * 편집자 가능 · 비파괴. 자동 재실행은 없다 — 이 버튼만이 산출본을 바꾼다.
  * 거부(없는 상품 등)면 `?error=` 로 같은 화면에 돌아온다.
  */
-export async function runPreviewAction(id: Id, panel?: PanelQueryState): Promise<void> {
+export async function runPreviewAction(id: Id, panel: PanelQueryState | undefined, _formData?: FormData): Promise<void> {
+  void _formData;
   const actor = await currentActor();
   const path = previewPath(id);
   const r = await getServices().assembly.run(actor, id);
