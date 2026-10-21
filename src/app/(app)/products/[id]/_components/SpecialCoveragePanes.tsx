@@ -37,7 +37,9 @@ export function SpecialCoveragePanes({ productId, panes, initialId, panel }: { p
   }
   const pane = panes.find((p) => p.id === current) ?? panes[0];
   const target = panel?.state.target;
-  const open = panel?.content && target?.document === "special" && target.productCoverageId === pane?.id ? panel.content : undefined;
+  // 선택기로 상품담보를 바꾸면 주소에서 패널이 빠진다 — 서버가 내린 같은 패널을 다시 붙이지 않게 열쇠로 기억, 조를 누르면 다시 연다
+  const [dismissed, setDismissed] = useState<string>();
+  const open = panel?.content && target?.document === "special" && target.productCoverageId === pane?.id && dismissed !== panelKey(panel.state) ? panel.content : undefined;
   const showOmitted = panel?.state.showOmitted ?? true;
   return (
     <>
@@ -51,6 +53,7 @@ export function SpecialCoveragePanes({ productId, panes, initialId, panel }: { p
           onChange={(e) => {
             const id = e.target.value;
             setCurrent(id);
+            if (panel?.content) setDismissed(panelKey(panel.state));
             globalThis.window?.history.replaceState(null, "", specialPreviewPath(productId, id));
           }}
         >
@@ -63,7 +66,12 @@ export function SpecialCoveragePanes({ productId, panes, initialId, panel }: { p
         <span className="ts-dim">상품담보 {panes.length}</span>
       </div>
       {pane && (
-        <PanelClicks onPick={(hit) => go({ ...hit, showOmitted })}>
+        <PanelClicks
+          onPick={(hit) => {
+            setDismissed(undefined);
+            go({ ...hit, showOmitted });
+          }}
+        >
           <Fragment key={pane.id}>{pane.body}</Fragment>
         </PanelClicks>
       )}
