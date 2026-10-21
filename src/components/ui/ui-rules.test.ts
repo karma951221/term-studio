@@ -25,10 +25,10 @@ describe("NativeSelect — cn(twMerge) 를 거쳐도 바탕색이 남는다", ()
   // 그래서 클래스 이름은 조각을 이어 만든다.
   const URL_PREFIX = "bg-" + "[url(";
 
-  it("bg-card 가 class 에 있다 (위치 임의값을 바탕색으로 읽어 지우던 버그)", () => {
+  it("bg-transparent 가 class 에 있다 (위치 임의값을 바탕색으로 읽어 지우던 버그 — 밑줄 칸은 바탕이 투명)", () => {
     const html = renderToStaticMarkup(createElement(NativeSelect));
     const cls = html.match(/class="([^"]*)"/)?.[1]?.split(/\s+/) ?? [];
-    expect(cls).toContain("bg-card");
+    expect(cls).toContain("bg-transparent");
     expect(cls).toContain("bg-no-repeat");
   });
 

@@ -71,6 +71,7 @@ export function ListFilterBar({
           <span className="sr-only">검색</span>
           <Input
             type="search"
+            variant="box"
             className="w-[min(320px,32vw)] pl-7"
             key={urlQuery}
             defaultValue={urlQuery}
