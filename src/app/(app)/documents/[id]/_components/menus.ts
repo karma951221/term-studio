@@ -9,10 +9,10 @@
  * 규칙상 불가한 넣기는 싣지 않고, 할 일이 없는 조작(맨 위에서 「위로」)은 잠근다.
  * 항목이 하는 일은 셋 — 명령을 바로 적용(`ops`) · 그 자리에 팝업(`popup`) · 삭제 확인(`remove`).
  */
-import type { DocumentNode, EditOp, IdSource, InlineAt, NodeKind, Position, TreeIndex } from "@/domain/document";
+import type { Box, DocumentNode, EditOp, IdSource, InlineAt, NodeKind, Position, TreeIndex } from "@/domain/document";
 import type { AttachLevel, Id } from "@/domain/types";
 
-import { allowedIn, isCodedKind, nodeBuilders, PARTICLE_PRESETS, repeatLevels as repeatLevelsOf } from "@/domain/document";
+import { allowedIn, boxPickLabel, isCodedKind, nodeBuilders, PARTICLE_PRESETS, repeatLevels as repeatLevelsOf } from "@/domain/document";
 
 import { afterOf, emptyNode, inlineListAt, moveOps, removeChipOps, selectionRange, siblingPlace, unwrapOps, wrapOps, wrapRangeOps } from "./editOps";
 import { runsFromTokens, type Token } from "./inlineRuns";
@@ -249,12 +249,13 @@ export function clausePickItems(clauses: readonly { code: string; label: string;
 }
 
 /**
- * 툴바 「박스」의 고르기 목록 — 정적 마스터 박스마다 한 줄(「이름(코드)」), 고르면 그 자리에 박스 참조를 곧바로 넣는다 (기능/박스 §4.4).
+ * 툴바 「박스」의 고르기 목록 — 정적 마스터 박스마다 한 줄(「【제목】(코드) 본문 앞머리」 — 같은 제목이 여럿이어도 가른다, 2026-10-21),
+ * 고르면 그 자리에 박스 참조를 곧바로 넣는다 (기능/박스 §4.4).
  * 박스는 조 자리 · 호 목록 자리 어디서나 같아 자리로 거르지 않는다.
  */
-export function boxPickItems(boxes: readonly { code: string; name: string }[], at: Position, newId: IdSource): MenuItem[] {
+export function boxPickItems(boxes: readonly Box[], at: Position, newId: IdSource): MenuItem[] {
   const b = nodeBuilders(newId);
-  return boxes.map((x) => ({ label: `${x.name}(${x.code})`, action: { do: "ops", ops: [{ type: "insert", node: b.boxRef(x.code), at }] } }));
+  return boxes.map((x) => ({ label: boxPickLabel(x), action: { do: "ops", ops: [{ type: "insert", node: b.boxRef(x.code), at }] } }));
 }
 
 /** 블록 자리에 넣는 함수조항 유형 — 조 자리 「항」 · 호 목록 「호」 · 목 목록 「목」. */

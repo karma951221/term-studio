@@ -351,10 +351,6 @@ export function createDocumentService(db: Db, deps: DocumentServiceDeps = {}): D
     });
   }
 
-  async function boxNames(tx: Db): Promise<string[]> {
-    return (await repo.listBoxes(tx)).map((x) => x.name);
-  }
-
   return {
     get: (id) => repo.loadDocument(db, id),
     findByCoverage: (coverageId) => repo.findByOwner(db, coverageId),
@@ -591,8 +587,8 @@ export function createDocumentService(db: Db, deps: DocumentServiceDeps = {}): D
 
     createBox: (actor, input) =>
       db.transaction(async (tx) => {
-        // 코드는 시스템 채번 — 검사(이름 유일 · 줄 하나 이상)를 먼저 하고 순번을 받는다 (기능/박스 §3.1)
-        const r = await createBox(input, await boxNames(tx), () => repo.nextBoxSeq(tx));
+        // 코드는 시스템 채번 — 검사(제목 정리 · 줄 하나 이상)를 먼저 하고 순번을 받는다 (기능/박스 §3.1)
+        const r = await createBox(input, () => repo.nextBoxSeq(tx));
         if (!r.ok) return r;
         await repo.insertBox(tx, r.value, actor.userId);
         return r;
@@ -601,7 +597,7 @@ export function createDocumentService(db: Db, deps: DocumentServiceDeps = {}): D
       db.transaction(async (tx) => {
         const x = await repo.loadBox(tx, code);
         if (!x) return notFound(`박스 ${code}`);
-        const r = reviseBox(x, input, await boxNames(tx));
+        const r = reviseBox(x, input);
         if (!r.ok) return r;
         await repo.saveBox(tx, r.value, actor.userId);
         return r;

@@ -286,12 +286,13 @@ describe("document 서비스 (PGlite)", () => {
       expect(usages[0]).toMatchObject({ document: "special", ownerId: covSurgery, articleTitle: "별표 참조" });
     });
 
-    it("박스 생성(코드 시스템 채번 BX000001) · 이름 중복 거부 · 저장 한 번 · 박스 참조는 정적 마스터 코드로 검증", async () => {
-      expect(unwrap(await svc.createBox(editor, { name: "【용어풀이】 보험연도", title: "보험연도", lines: ["보험연도란 …"] })).code).toBe("BX000001");
-      expect(rejection(await svc.createBox(editor, { name: "【용어풀이】 보험연도", lines: ["x"] })).reason).toBe("invalid");
-      expect(rejection(await svc.createBox(editor, { name: "빈 박스", lines: [] })).reason).toBe("invalid");
-      unwrap(await svc.saveBox(editor, "BX000001", { name: "보험연도", title: "보험연도", lines: ["보험연도란", "계약일부터 1년"] }));
-      expect(await svc.getBox("BX000001")).toEqual({ code: "BX000001", name: "보험연도", title: "보험연도", lines: ["보험연도란", "계약일부터 1년"] });
+    it("박스 생성(코드 시스템 채번 BX000001) · 같은 제목 허용 · 【】 정리 · 저장 한 번 · 박스 참조는 정적 마스터 코드로 검증", async () => {
+      expect(unwrap(await svc.createBox(editor, { title: "보험연도", lines: ["보험연도란 …"] })).code).toBe("BX000001");
+      expect(unwrap(await svc.createBox(editor, { title: "【보험연도】", lines: ["x"] }))).toEqual({ code: "BX000002", title: "보험연도", lines: ["x"] });
+      expect(rejection(await svc.createBox(editor, { title: "빈 박스", lines: [] })).reason).toBe("invalid");
+      unwrap(await svc.saveBox(editor, "BX000001", { title: "보험연도", lines: ["보험연도란", "계약일부터 1년"] }));
+      expect(await svc.getBox("BX000001")).toEqual({ code: "BX000001", title: "보험연도", lines: ["보험연도란", "계약일부터 1년"] });
+      unwrap(await svc.removeBox(admin, "BX000002", { confirm: true }));
       expect((await svc.listBoxes()).map((x) => x.code)).toEqual(["BX000001"]);
 
       const root = (await svc.get(specialId))!.tree.id;

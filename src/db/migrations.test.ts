@@ -349,3 +349,33 @@ describe("0018_enum_fields", () => {
     expect((await client.query<{ fields: unknown }>(`SELECT fields FROM enum_values`)).rows).toEqual([{ fields: {} }]);
   });
 });
+
+describe("0032_box_title_only", () => {
+  it("박스 이름 칸을 지우고(이름 유일 제약도) 제목은 그대로 두되 통째로 【】에 싸인 제목은 벗긴다 — 제목 없는 박스는 제목 없는 채로 · 두 번 돌려도 같다", async () => {
+    for (let idx = 6; idx <= 31; idx++) for (const s of statementsOf(tagOf(idx))) await client.exec(s);
+    await client.query(
+      `INSERT INTO boxes (code, name, title, lines) VALUES
+        ('BX000001', '【보험료】(알파Plus)', '보험료', '["가"]'::jsonb),
+        ('BX000002', '【보험료】(메리츠)', '보험료', '["나"]'::jsonb),
+        ('BX000003', '박스 — 발생할 경우 미리 정해진 …', '', '["발생할 경우 미리 정해진 비율로"]'::jsonb),
+        ('BX000004', '손으로 만든 박스', ' 【 용어풀이 】 ', '["다"]'::jsonb)`,
+    );
+    const apply0032 = async () =>
+      client.transaction(async (tx) => {
+        for (const s of statementsOf(tagOf(32))) await tx.exec(s);
+      });
+    const read = async () => (await client.query<{ code: string; title: string }>(`SELECT code, title FROM boxes ORDER BY code`)).rows;
+    await apply0032();
+    const after = await read();
+    expect(after).toEqual([
+      { code: "BX000001", title: "보험료" },
+      { code: "BX000002", title: "보험료" },
+      { code: "BX000003", title: "" },
+      { code: "BX000004", title: "용어풀이" },
+    ]);
+    const cols = await client.query<{ column_name: string }>(`SELECT column_name FROM information_schema.columns WHERE table_name = 'boxes'`);
+    expect(cols.rows.map((r) => r.column_name)).not.toContain("name");
+    await apply0032();
+    expect(await read()).toEqual(after);
+  });
+});

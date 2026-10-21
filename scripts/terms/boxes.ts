@@ -4,10 +4,10 @@
  * 원문의 박스(【용어풀이】 · 【보험금 지급예시】 · 민법 인용 …)는 모두 박스 마스터 레코드가 되고, 그 자리는 박스 참조(`boxRef`)가 된다.
  *
  * - 같은 박스(제목 · 줄이 글자까지 같다)는 하나로 합친다.
- * - 낱말만 다른 박스도 **따로** 만든다 — 박스에는 옵션이 없다(정적 마스터 = 코드 · 이름 · 제목 · 줄). 각 자리는 제 글의 박스를 놓는다.
+ * - 낱말만 다른 박스도 **따로** 만든다 — 박스에는 옵션이 없다(정적 마스터 = 코드 · 제목 · 줄). 각 자리는 제 글의 박스를 놓는다.
  *   낱말만 다른 무리(제목 · 줄 수가 같고, 줄마다 공통 앞뒤를 떼고 남는 구간이 짧다 — `MAX_REGION` 자 · 다른 줄 `MAX_LINES` 이하)는
- *   이름에만 쓴다: 무리 이름 뒤에 그 박스의 (첫) 다른 낱말(박스 이름은 유일해야 한다).
- * - 이름은 「【제목】」(제목 없는 박스는 「박스 — 첫 줄 앞머리」). 겹치면 상품 이름, 그래도 겹치면 첫 줄 앞머리 · 순번을 붙인다.
+ *   순서에만 쓴다: 한 무리의 박스는 붙여서 코드를 받는다.
+ * - 박스 이름 칸은 없다(2026-10-21) — 제목이 같은 박스가 여럿이어도 되고 코드로 가른다.
  */
 import type { BoxNode, DocumentNode, Node } from "../../src/domain/document/nodes";
 import type { Id } from "../../src/domain/types";
@@ -30,7 +30,6 @@ export interface BoxSite {
 /** 박스 마스터 레코드 — 시드 `boxes.json` 한 줄. 코드는 적재 순서로 변환기가 매긴다(채번 대조용). */
 export interface BoxRecord {
   code: string;
-  name: string;
   title: string;
   lines: string[];
 }
@@ -102,14 +101,8 @@ function mergeable(boxes: readonly BoxNode[]): boolean {
   return differing > 0 && differing <= MAX_LINES;
 }
 
-const snippet = (text: string, n = 14) => {
-  const t = text.replace(/\s+/g, " ").trim();
-  return [...t].length > n ? `${[...t].slice(0, n).join("")}…` : t;
-};
-
 /**
- * 원문 박스 자리 전부 → 박스 마스터 계획. 같은 박스(글자까지 같다)는 하나, 낱말만 다른 박스도 **따로**(옵션 없음) —
- * 낱말만 다른 무리는 이름을 짓는 데만 쓴다: 무리 이름 뒤에 그 박스의 다른 낱말(「【계약 전 알릴 의무】 — 청약서에서」).
+ * 원문 박스 자리 전부 → 박스 마스터 계획. 같은 박스(글자까지 같다)는 하나, 낱말만 다른 박스도 **따로**(옵션 없음).
  * 순서는 첫 등장 순(문서 순서 그대로, 한 무리의 박스는 붙여서) — 코드는 변환기가 적재 순서대로 매긴다.
  */
 export function planBoxes(sites: readonly BoxSite[]): BoxPlan[] {
@@ -127,72 +120,19 @@ export function planBoxes(sites: readonly BoxSite[]): BoxPlan[] {
       distinct.push(entry);
     }
   }
-  // 2. 낱말만 다른 박스끼리 — 첫 등장이 무리의 씨앗 (이름 짓기용)
-  const clusters: { label: string; variants: { box: BoxNode; sites: BoxSite[] }[] }[] = [];
-  // 자동 탑재 특약만 쓰는 박스는 자동 탑재 특약만 쓰는 무리에만 든다 — 앞 무리에 변형이 늘면 그 무리 이름이 바뀐다
+  // 2. 낱말만 다른 박스끼리 — 첫 등장이 무리의 씨앗 (순서용 — 한 무리의 박스는 붙여서 코드를 받는다)
+  const clusters: { variants: { box: BoxNode; sites: BoxSite[] }[] }[] = [];
+  // 자동 탑재 특약만 쓰는 박스는 자동 탑재 특약만 쓰는 무리에만 든다 — 앞 무리에 변형이 끼면 앞 박스 코드가 밀린다
   const lateOnly = (sites: readonly BoxSite[]) => sites.every((s) => s.late);
   for (const d of distinct) {
     const home = clusters.find((c) => lateOnly(c.variants.flatMap((v) => v.sites)) === lateOnly(d.sites) && mergeable([...c.variants.map((v) => v.box), d.box]));
     if (home) home.variants.push(d);
-    else clusters.push({ label: "", variants: [d] });
+    else clusters.push({ variants: [d] });
   }
-  // 3. 무리 이름 — 「【제목】」(제목 없으면 「박스 — 첫 줄 앞머리」). 겹치면 상품, 그래도 겹치면 첫 줄 앞머리
-  for (const c of clusters) {
-    const first = c.variants[0].box;
-    c.label = first.title ? `【${first.title}】` : `박스 — ${snippet(first.lines[0] ?? "")}`;
-  }
-  const PRODUCT: Record<string, string> = { alpha: "알파Plus", meritz: "메리츠", alpha2607: "알파Plus2607" };
-  type Cluster = (typeof clusters)[number];
-  // 뒤에 더한 상품 — 앞 상품 박스의 이름을 바꾸지 않는다. 앞 상품이 쓰는 무리는 앞 상품 자리만 보고 이름을 짓고(2607 을 더하기 전과 같다),
-  // 뒤 상품만 쓰는 무리는 그다음에 앞 이름과 겹치지 않게 짓는다
-  const LATER = new Set(["alpha2607"]);
-  const productsOf = (c: Cluster, round: readonly Cluster[]) => {
-    const all = c.variants.flatMap((v) => v.sites.map((s) => s.product));
-    return [...new Set(round === early ? all.filter((p) => !LATER.has(p)) : all)];
-  };
-  const early = clusters.filter((c) => c.variants.some((v) => v.sites.some((s) => !LATER.has(s.product) && !s.late)));
-  const latest = clusters.filter((c) => c.variants.every((v) => lateOnly(v.sites)));
-  const later = clusters.filter((c) => !early.includes(c) && !latest.includes(c));
-  // 이 차례의 무리 중 이름이 겹치는 것(앞 차례 이름과 겹치는 것 포함)만 고친다 — 고친 이름이 서로 다를 때만
-  const dedupe = (round: readonly Cluster[], fixed: readonly Cluster[], pick: (c: Cluster) => string) => {
-    const groups = new Map<string, Cluster[]>();
-    for (const c of round) groups.set(c.label, [...(groups.get(c.label) ?? []), c]);
-    const taken = new Set(fixed.map((c) => c.label));
-    for (const [label, group] of groups) {
-      if (group.length < 2 && !taken.has(label)) continue;
-      const next = group.map(pick);
-      if (new Set(next).size === next.length && next.every((n) => !taken.has(n))) group.forEach((c, i) => (c.label = next[i]));
-    }
-  };
-  for (const [round, fixed] of [[early, []], [later, early], [latest, [...early, ...later]]] as [Cluster[], Cluster[]][]) {
-    dedupe(round, fixed, (c) => {
-      const products = productsOf(c, round);
-      return products.length === 1 ? `${c.label}(${PRODUCT[products[0]] ?? products[0]})` : c.label;
-    });
-    dedupe(round, fixed, (c) => `${c.label} ${snippet(c.variants[0].box.lines[0] ?? "", 16)}`);
-  }
-  // 4. 무리 → 박스 하나씩. 여러 박스인 무리는 이름에 다른 낱말(줄마다의 다른 구간)을 붙인다
-  const plans = clusters.flatMap((c, ci) =>
-    c.variants.map((v, vi): BoxPlan => {
-      let name = c.label;
-      if (c.variants.length > 1) {
-        // 첫 번째로 다른 줄의 다른 구간 — 그 무리 안에서 박스를 가른다(겹치면 아래 순번)
-        const li = v.box.lines.findIndex((_, i) => new Set(c.variants.map((x) => x.box.lines[i])).size > 1);
-        const d = diffRegion([...new Set(c.variants.map((x) => x.box.lines[li]))])!;
-        const text = [...v.box.lines[li]];
-        name = `${c.label} — ${snippet(text.slice(d.prefix, text.length - d.suffixes[0]).join(""), 12) || "(없음)"}`;
-      }
-      return { key: `box-${ci + 1}-${vi + 1}`, record: { code: "", name, title: v.box.title, lines: [...v.box.lines] }, sites: v.sites };
-    }),
+  // 3. 무리 → 박스 하나씩(한 무리의 박스는 붙여서). 박스 이름 칸은 없다 — 같은 제목은 코드로 가른다 (기능/박스 §3.1, 2026-10-21)
+  return clusters.flatMap((c, ci) =>
+    c.variants.map((v, vi): BoxPlan => ({ key: `box-${ci + 1}-${vi + 1}`, record: { code: "", title: v.box.title, lines: [...v.box.lines] }, sites: v.sites })),
   );
-  // 5. 그래도 겹치면 순번
-  const seen = new Map<string, number>();
-  for (const p of plans) {
-    const n = (seen.get(p.record.name) ?? 0) + 1;
-    seen.set(p.record.name, n);
-    if (n > 1) p.record.name = `${p.record.name} ${n}`;
-  }
-  return plans;
 }
 
 /** 원문 박스 자리 하나를 박스 참조로 바꾼다 — 같은 목록 자리, id 는 `<박스 id>-k`. */

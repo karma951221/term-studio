@@ -259,7 +259,7 @@ describe("clause 서비스 (PGlite)", () => {
     });
 
     it("정적 마스터에 있는 박스를 놓은 본문은 저장되고, 없는 박스면 거부한다 (brokenRef — 박스는 잎이라 중첩 금지에 걸리지 않는다)", async () => {
-      await insertBox(t.db, { code: "BX000001", name: "암 정의 박스", title: "", lines: ["암이란 …"] }, admin.userId);
+      await insertBox(t.db, { code: "BX000001", title: "암 정의", lines: ["암이란 …"] }, admin.userId);
       const body: Block[] = [{ id: "p1", kind: "paragraph", children: [{ id: "t1", kind: "text", text: "정의" }] }, { id: "bx1", kind: "boxRef", boxCode: "BX000001" }];
       // 저장이 코드 없는 항에 P코드를 채운다 (ADR-0072 결정 10)
       expect(unwrap(await svc.create(editor, { params: P, label: "박스 놓은 항", mode: "block", body })).body).toEqual([{ ...body[0], code: "P0100" }, body[1]]);

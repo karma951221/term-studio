@@ -28,6 +28,7 @@ import type { Discriminator } from "../catalog/types";
 import { discriminatorResultType } from "../catalog/expression";
 import { allMasterFields, findMasterField, masterFieldFullLabel, type MasterTree } from "../master";
 import type { ClauseNode } from "../clause/nodes";
+import { boxLabel } from "../document/box";
 import { collectExpressions, switchEnumCode } from "../clause/body";
 import { valueParamTypes } from "../clause/params";
 import { presetUsage } from "../clause/presets";
@@ -662,7 +663,7 @@ export function buildGraph(inputs: GraphInputs): RefGraph {
     for (const f of e.fields ?? []) b.node({ key: { kind: "enumField", enumCode: e.code, key: f.key }, label: f.label, parent: key, detail: f.type });
   }
   for (const a of inputs.appendices ?? []) b.node({ key: { kind: "appendix", code: a.code }, label: a.name });
-  for (const x of inputs.boxes ?? []) b.node({ key: { kind: "box", code: x.code }, label: x.name });
+  for (const x of inputs.boxes ?? []) b.node({ key: { kind: "box", code: x.code }, label: boxLabel(x) });
   for (const d of inputs.dynTables ?? []) b.node({ key: { kind: "dynTable", code: d.code }, label: d.label });
   for (const k of inputs.attributeKinds ?? []) {
     const key: RefNodeKey = { kind: "attribute", code: k.code };
