@@ -369,7 +369,8 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     (node: InlineNode) => {
       // 이 함수조항의 항 조 참조 — 본문 안 순번으로, 조 참조 인자 슬롯 — 「⟨보험금의 지급사유 조⟩」 (§3.5 · ADR-0083)
       const scoped = clauseScopedRefLabel(node, positions);
-      if (scoped !== undefined) return { className: "ts-doc-ref", what: "조 참조", title: "조 참조 — 사용처에 펼치면 그 자리의 계산 번호로 찍힌다", body: scoped };
+      // 칩은 범위 이름 없이 「제1항」(같은 조 안 — 조립과 같은 꼴, 2026-10-21) — 범위는 툴팁에 남긴다
+      if (scoped !== undefined) return { className: "ts-doc-ref", what: "조 참조", title: node.kind === "articleRef" && node.scope === "self" ? "조 참조 · 이 함수조항 — 사용처에 펼치면 그 자리의 계산 번호로 찍힌다" : "조 참조 · 인자 — 사용처가 연결한 조로 찍힌다", body: scoped };
       const optionCode = optionCodeOf(node);
       if (optionCode === undefined) return undefined;
       const option = shownOptions.find((o) => o.code === optionCode);

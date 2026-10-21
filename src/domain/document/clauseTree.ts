@@ -352,12 +352,15 @@ function positionText(parts: readonly number[]): string {
 /**
  * 편집 트리(함수조항 본문을 싼 트리)의 항 · 호 · 목 → 본문 안 순번 `[항, 호?, 목?]`. 조건 블록 안도 차례로 센다.
  * 노드 id 와 P코드(`P0100` — 노드 id 와 겹치지 않는 꼴) 둘 다로 찾는다 — 「이 함수조항」 참조는 코드를 저장한다. 같은 코드의 분기 짝은 첫 노드.
+ * `at` = 사용처 자리(문면에 넣은 모델) — 그 단계 번호를 자리부터 센다(② 자리면 첫 항이 2, 2026-10-21). 없으면 본문 안 순번.
  */
-export function clausePositions(tree: DocumentNode): Map<string, number[]> {
+export function clausePositions(tree: DocumentNode, at?: { kind: string; n: number }): Map<string, number[]> {
   const out = new Map<string, number[]>();
-  const put = (node: { id: string; code?: Code }, at: number[]) => {
-    out.set(node.id, at);
-    if (node.code !== undefined && !out.has(node.code)) out.set(node.code, at);
+  const level = at ? ["paragraph", "item", "subitem"].indexOf(at.kind) : -1;
+  const put = (node: { id: string; code?: Code }, pos: number[]) => {
+    const at2 = level >= 0 && pos[level] !== undefined && pos[level] > 0 ? pos.map((n, i) => (i === level ? n + at!.n - 1 : n)) : pos;
+    out.set(node.id, at2);
+    if (node.code !== undefined && !out.has(node.code)) out.set(node.code, at2);
   };
   const article = tree.children[0];
   if (!article || article.kind !== "article") return out;
@@ -398,8 +401,9 @@ export function clausePositions(tree: DocumentNode): Map<string, number[]> {
 }
 
 /**
- * 함수조항의 제 항 · 조 참조 인자 표기 (기능/함수조항 §3.5) — 「이 함수조항 제1항」 · 「⟨보험금의 지급사유 조⟩」(ADR-0083 결정 7).
- * 번호는 본문 안 순번이다(사용처에서는 펼친 자리의 계산 번호로 찍힌다). 편집 트리 노드를 받는다 — 보통약관 참조면 undefined.
+ * 함수조항의 제 항 · 조 참조 인자 표기 (기능/함수조항 §3.5) — 「제1항」 · 「⟨보험금의 지급사유 조⟩」(ADR-0083 결정 7).
+ * 같은 조 안 참조라 범위 이름(이 함수조항) 없이 — 조립 결과와 같은 꼴(2026-10-21 사용자 QA). 번호는 `positions` 가 준다(본문 안 순번 ·
+ * 문면 모델이면 사용처 자리부터). 편집 트리 노드를 받는다 — 보통약관 참조면 undefined.
  */
 export function clauseScopedRefLabel(node: InlineNode, positions: ReadonlyMap<string, number[]>): string | undefined {
   if (node.kind !== "articleRef") return undefined;
@@ -411,7 +415,7 @@ export function clauseScopedRefLabel(node: InlineNode, positions: ReadonlyMap<st
     return at ? positionText(at) : "없는 항(연결 끊김)";
   });
   const joined = labels.length <= 1 ? (labels[0] ?? "") : `${labels.slice(0, -1).join(", ")} ${node.connector ?? CONNECTOR_PLACEHOLDER} ${labels.at(-1)}`;
-  return `이 함수조항 ${joined}`;
+  return joined;
 }
 
 /** 함수조항 본문 노드 → 편집 트리 노드 (모델 표시가 `clauseScopedRefLabel` 을 쓰게). */

@@ -14,6 +14,7 @@ import {
   itemLabel,
   numberTree,
   paragraphLabel,
+  provisionalNote,
   referenceAncestorIds,
   referenceChunkLabel,
   referenceKeyIndex,
@@ -331,6 +332,21 @@ describe("함수조항 참조는 펼칠 항 · 호 · 목 수만큼 센다 (clau
     const numbers = numberTree(doc([para("p1"), ref("k", "C9"), para("p2")]), { clauseSpan });
     expect(numbers.get("p2")?.label).toBe("③");
     expect(numbers.get("k")?.span).toBeUndefined();
+  });
+
+  it("펼친 함수조항 안 항을 가리키는 칩은 편집기 번호 — ② 자리 3항 함수조항의 셋째 항은 제4항, 코드는 툴팁 (2026-10-21 사용자 QA)", () => {
+    const tree = doc([para("p1"), { ...ref("k", "C3"), code: "P0200" } as Node, para("p2")]);
+    const body = ["P0100", "P0200", "P0300"].map((code, i) => ({ id: `b${i}`, kind: "paragraph", code, children: [{ kind: "text", text: `본문${i}` }] }));
+    const clause = { code: "C3", label: "특별약관의 소멸", mode: "block", body, options: [], params: [], required: { discriminators: [], attributes: [] } } as unknown as Clause;
+    const index = referenceTargetIndex(tree, numberTree(tree, { clauseSpan }), { clauseOf: () => clause });
+    const third = [...index.values()].find((t) => t.via === "P0200" && t.paragraph?.code === "P0300")!;
+    expect(referenceTargetLabel(third)).toBe("제1조(조) 제4항");
+    expect(provisionalNote([third])).toBe("번호는 조립 때 확정 · 코드 P0200 안 P0300");
+    // 고르기 줄도 같은 번호 — 「제4항 · 「본문2」」
+    const [group] = referenceOutline(index);
+    expect(group.rows[0].children[1].children.map((r) => r.label)).toEqual(["제2항 · 「본문0」", "제3항 · 「본문1」", "제4항 · 「본문2」"]);
+    // 일반 항은 툴팁 몫이 없다
+    expect(provisionalNote([index.get("p2")!])).toBeUndefined();
   });
 
   it("조 참조 대상 색인도 밀린 번호를 쓴다 — 함수조항 뒤 항은 제4항", () => {

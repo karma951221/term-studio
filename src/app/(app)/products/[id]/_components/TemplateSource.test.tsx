@@ -153,7 +153,7 @@ describe("TemplateSource — 함수조항 상자 안에 모델을 편다 (2026-0
   };
   const host: ArticleNode = { id: "A1", kind: "article", title: titleNodes("대표자", "A1"), children: [{ id: "R1", kind: "clauseBlockRef", clauseCode: "C0002", options: { O01: "V01" } }] };
 
-  it("머리 띠 「[코드] 이름」(함수조항 화면 링크 없음) · 슬롯 · 옵션 자리(고른 것 ✓) · 조건 · 오버라이드가 모델에 반영", () => {
+  it("머리 띠 「[코드] 이름」(함수조항 화면 링크 없음) · 슬롯 · 옵션 자리(고른 선택지 글만) · 조건 · 오버라이드가 모델에 반영", () => {
     const html = renderToStaticMarkup(
       <TemplateSource
         productId="p1"
@@ -175,7 +175,7 @@ describe("TemplateSource — 함수조항 상자 안에 모델을 편다 (2026-0
     expect(html).toContain("〔담보명〕");
     expect(html).toContain('<span class="ts-cond-badge">IF</span> 담보명 = &#x27;입원&#x27;');
     // 이 상품의 오버라이드(피보험자)가 모델의 고른 선택지다
-    expect(html).toContain("✓피보험자");
+    expect(html).toMatch(/<span class="ts-clause-model-opt"[^>]*>피보험자<\/span>/);
     expect(html).toContain("오버라이드");
     expect(html).toContain("마스터 기본 — 지정 주체: 계약자");
   });

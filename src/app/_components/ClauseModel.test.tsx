@@ -73,16 +73,21 @@ describe("ClauseModel — 함수조항 본문의 모델을 편다", () => {
     expect(html).not.toContain("data-inline");
   });
 
-  it("옵션 자리 — 선택지 전부 + 이 사용처가 고른 것(✓)", () => {
+  it("옵션 자리 — 고른 선택지의 글만 칩으로, 다른 선택지는 본문에 늘어놓지 않는다 (2026-10-21 사용자 QA)", () => {
     const html = render({ O01: "V02" });
-    expect(html).toContain("지정 주체");
-    expect(html).toContain("계약자");
-    expect(html).toMatch(/<b class="ts-clause-model-opt-value is-chosen" aria-current="true">✓피보험자<\/b>/);
-    expect(html).not.toContain("미선택");
+    expect(html).toMatch(/<span class="ts-clause-model-opt"[^>]*>피보험자는<\/span> 대표자를 지정하여/);
+    expect(html).not.toContain("계약자는");
+    expect(html).not.toContain("✓");
+    expect(html).not.toContain(" | ");
+    // 옵션 이름 · 고른 것은 툴팁에
+    expect(html).toContain('title="옵션 자리 — 지정 주체 · 고른 선택지: 피보험자');
   });
 
-  it("고른 선택지가 없으면 「미선택」을 드러낸다", () => {
-    expect(render({})).toContain("· 미선택");
+  it("고른 선택지가 없으면 빈 칩 「〔지정 주체 — 고르세요〕」, 없는 선택지면 깨진 칩", () => {
+    const empty = render({});
+    expect(empty).toMatch(/<span class="ts-clause-model-opt is-unset"[^>]*>〔지정 주체 — 고르세요〕<\/span>/);
+    expect(empty).not.toContain("피보험자는");
+    expect(render({ O01: "V09" })).toMatch(/<span class="ts-clause-model-opt is-broken"[^>]*>〔지정 주체 — V09\(없는 선택지\)〕<\/span>/);
   });
 });
 
@@ -149,6 +154,23 @@ describe("ClauseModel — 사용처 자리 번호부터 잇는다 (2026-10-03 �
     expect(nums(at(2, "②"))).toEqual(["②", "③"]);
     expect(nums(at(1, ""))).toEqual([]);
     expect(nums(renderToStaticMarkup(<ClauseModel clause={clause} selected={{}} references={new Map()} />))).toEqual(["①", "②"]);
+  });
+
+  it("제 항 참조 칩도 자리 번호로 — ② 자리면 첫 항 참조는 「제2항」, 범위 이름(이 함수조항) 없이 (2026-10-21 사용자 QA)", () => {
+    const clause = {
+      ...base,
+      code: "C0014",
+      label: "자기 참조",
+      mode: "block",
+      body: [
+        { ...p("q1", "첫 항"), code: "P0100" },
+        { id: "q2", kind: "paragraph", code: "P0200", children: [{ id: "r", kind: "articleRef", targets: [{ code: "P0100" }], scope: "clause" }, { id: "q2t", kind: "text", text: "에 따라" }] },
+      ],
+    } as unknown as Clause;
+    const html = (at?: { n: number; label: string }) => renderToStaticMarkup(<ClauseModel clause={clause} selected={{}} references={new Map()} {...(at ? { at: { kind: "paragraph", ...at } } : {})} />);
+    expect(html({ n: 2, label: "②" })).toContain(">제2항</span>에 따라");
+    expect(html()).toContain(">제1항</span>에 따라");
+    expect(html()).not.toContain("이 함수조항");
   });
 
   it("호 — 3. 자리면 목록이 3.부터 (counter-reset 2)", () => {

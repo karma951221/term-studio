@@ -114,12 +114,12 @@ describe("함수조항 조 참조 범위 — 편집 트리 운반 · 표기 (§3
     expect(treeToClauseBody("block", tree).ok).toBe(false);
   });
 
-  it("표기 — 「⟨보험금의 지급사유 조⟩」 · 「이 함수조항 제1항 및 제1항 제1호」, 보통약관 참조는 undefined", () => {
+  it("표기 — 「⟨보험금의 지급사유 조⟩」 · 「제1항 및 제1항 제1호」(범위 이름 없이 — 같은 조 안, 2026-10-21), 보통약관 참조는 undefined", () => {
     const tree = clauseBodyToTree("block", body);
     const positions = clausePositions(tree);
     const [p1, p2] = (tree.children[0] as { children: { children: InlineNode[] }[] }).children;
     expect(clauseScopedRefLabel(p1.children[0], positions)).toBe("⟨보험금의 지급사유 조⟩");
-    expect(clauseScopedRefLabel(p2.children[0], positions)).toBe("이 함수조항 제1항 및 제1항 제1호");
+    expect(clauseScopedRefLabel(p2.children[0], positions)).toBe("제1항 및 제1항 제1호");
     expect(clauseScopedRefLabel({ id: "g", kind: "articleRef", targets: [{ articleId: "g-a1" }], connector: "및", scope: "general" }, positions)).toBeUndefined();
   });
 
@@ -202,12 +202,12 @@ describe("호 · 목 유형 본문 ↔ 편집 트리 (최종 결정 4)", () => {
     expect(treeToClauseBody("item", tree).ok).toBe(false);
   });
 
-  it("제 호 참조는 「이 함수조항 제1호」 — 자리 항은 번호 단계가 아니다", () => {
+  it("제 호 참조는 「제1호」 — 자리 항은 번호 단계가 아니다", () => {
     const tree = clauseBodyToTree("item", items);
     const ref: InlineNode = { id: "r1", kind: "articleRef", targets: [{ articleId: CLAUSE_ARTICLE_ID, code: "P0100" }], scope: "self" };
-    expect(clauseScopedRefLabel(ref, clausePositions(tree))).toBe("이 함수조항 제1호");
+    expect(clauseScopedRefLabel(ref, clausePositions(tree))).toBe("제1호");
     const subTree = clauseBodyToTree("subitem", subitems);
-    expect(clauseScopedRefLabel({ ...ref, targets: [{ articleId: CLAUSE_ARTICLE_ID, code: "P0200" }] }, clausePositions(subTree))).toBe("이 함수조항 나목");
+    expect(clauseScopedRefLabel({ ...ref, targets: [{ articleId: CLAUSE_ARTICLE_ID, code: "P0200" }] }, clausePositions(subTree))).toBe("나목");
   });
 });
 
