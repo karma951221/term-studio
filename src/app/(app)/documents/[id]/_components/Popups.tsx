@@ -1,13 +1,17 @@
 "use client";
 
 /**
- * 그 자리 팝업들 (기능/문면 §4.3) — 칩 · 조건 머리를 누르거나 오른쪽 클릭 메뉴에서 고르면 그 자리 바로 아래에 뜬다.
+ * 고치기 · 넣기 폼들 (기능/문면 §4.3) — 칩 · 함수조항 머리 띠 · 조건 머리 줄을 누르거나 툴바 · 오른쪽 클릭 메뉴에서 고르면 연다.
  *
- * 팝업의 확인은 편집본에 곧바로 명령을 적용한다(서버로 가지 않는다 — ADR-0074). 원본 반영은 바의 `저장` 한 번.
- * 조건식에는 팝업이 없다 — 조건 블록 머리 줄에서 그 자리로 고친다(2026-09-28). 문장 안 조건 칩의 팝업만 가지마다 같은 머리 줄(`CondRows`)을 쓴다.
- * 우측 패널에는 입력칸이 없다 — 여기가 입력칸이 뜨는 유일한 자리다.
+ * 폼은 두 껍데기 중 하나에 든다 (2026-10-21):
+ * - **편집 탭**(`panel` — 문면 편집기) — 우측 패널 「편집」 탭에 그린다. 고친 것은 폼 안에 모였다가 탭 아래 고정 줄의
+ *   「적용」(넣기 폼은 「넣기」)으로 편집본에 들어간다. 「되돌리기」는 폼을 처음 값으로 다시 그린다. 문장 안 조건 · 값별 분기 · 블록 조건식도
+ *   고칠 때마다 적용하지 않고 적용 때 명령 묶음으로 (`branchForm`).
+ * - **그 자리 팝업**(`Popover` — 함수조항 · 동적표 템플릿 · 상품 조 사본 편집기) — 누른 자리 바로 아래. 확인 = 적용.
+ *
+ * 어느 쪽이든 적용은 편집본에만 명령을 넣는다(서버로 가지 않는다 — ADR-0074). 원본 반영은 바의 `저장` 한 번.
  */
-import { useState, type FocusEvent, type FormEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type FocusEvent, type FormEvent, type ReactNode } from "react";
 
 import { Combobox, type ComboOption } from "@/app/_components/Combobox";
 import { IconButton, IconTrash } from "@/app/_components/icons";
@@ -46,7 +50,6 @@ import {
   type DocumentNode,
   type EditOp,
   type IdSource,
-  type InlineBranch,
   type InlineNode,
   type Node,
   type ReferenceTarget,
@@ -70,6 +73,8 @@ import { InlineSlot } from "./Inline";
 import { runsFromTokens } from "./inlineRuns";
 import { clausesFitting, type PopupSpec } from "./menus";
 import { PopActions, Popover } from "./Popover";
+import { addCase, addElif, addElse, branchDraftOf, branchFormOps, removeDraftBranch, setDraftCase, setDraftSubject, setDraftWhen, shownBranches, type BranchDraft } from "./branchForm";
+import { formSnapshot } from "./editTabRules";
 import { RefTargetTree } from "./RefTargetTree";
 import { keyChoicesFor, restrictHint, restrictMode, restrictOfForm, treeLoopChoicesFor, treeLoopsAt } from "./restrict";
 import { loopChoices, loopsAround, nodeTreeAt, repeatChoices, sourceOfValue, sourceValue, type RepeatChoice } from "./repeatSources";
@@ -100,14 +105,76 @@ export interface PopupEnv {
   enumOf?: (code: Code) => EnumDef | undefined;
 }
 
-/** 확인이면 FormData → 명령, 적용되면 닫는다. 명령을 못 만들면(빈 칸) 그 사유를 팝업 안에 보인다. */
+/**
+ * 편집 탭 껍데기 (문면 편집기, 2026-10-21) — 폼은 `formId` 의 `<form>` 이고, 탭 아래 고정 줄의 「적용」 · 「넣기」가 그 폼을 낸다.
+ * 적용되면 `onApplied`(넣은 명령 — 비었으면 고친 것 없음), 폼 값이 처음과 달라지면 `onDirty(true)`.
+ */
+export interface PanelShell {
+  formId: string;
+  onApplied: (ops: readonly EditOp[]) => void;
+  onDirty: (dirty: boolean) => void;
+}
+
+const ShellContext = createContext<PanelShell | undefined>(undefined);
+
+/** 폼 머리 — 편집 탭이면 탭 안 제목 줄, 아니면 누른 자리 아래 팝업. 편집 탭에서 `aria-label` 은 영역 이름(테스트 · 스크린 리더). */
+function Frame({ anchor, label, onClose, wide, children }: { anchor: Anchor; label: string; onClose: () => void; wide?: boolean; children: ReactNode }) {
+  const shell = useContext(ShellContext);
+  if (!shell) {
+    return (
+      <Popover anchor={anchor} label={label} onClose={onClose} {...(wide ? { wide } : {})}>
+        {children}
+      </Popover>
+    );
+  }
+  return (
+    <section className={`ts-edit-form${wide ? " is-wide" : ""}`} aria-label={label}>
+      <p className="ts-edit-form-title">{label}</p>
+      {children}
+    </section>
+  );
+}
+
+/** 확인 · 취소 줄 — 편집 탭에서는 탭 아래 고정 줄이 대신한다. */
+function Actions(props: Parameters<typeof PopActions>[0]) {
+  return useContext(ShellContext) ? null : <PopActions {...props} />;
+}
+
+/** 편집 탭 폼의 「고친 것이 있는가」 — 폼 값이 처음 값과 다르면. 콤보 · 체크 트리는 고른 뒤 값이 서므로 한 박자 뒤에 견준다. */
+function useShellDirty(shell: PanelShell | undefined) {
+  const ref = useRef<HTMLFormElement>(null);
+  const base = useRef<string | undefined>(undefined);
+  const snap = () => (ref.current ? formSnapshot(new FormData(ref.current).entries()) : "");
+  useEffect(() => {
+    if (shell) base.current = snap();
+    // 처음 그린 값이 기준 — 폼을 다시 그리면(되돌리기 · 적용 뒤) 새 기준
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const check = () => {
+    if (!shell) return;
+    setTimeout(() => {
+      if (ref.current && base.current !== undefined) shell.onDirty(snap() !== base.current);
+    }, 0);
+  };
+  const handlers = shell ? { id: shell.formId, onInput: check, onChange: check, onClick: check, onKeyUp: check } : {};
+  return { ref, handlers };
+}
+
+/** 확인이면 FormData → 명령, 적용되면 닫는다(편집 탭이면 `onApplied`). 명령을 못 만들면(빈 칸) 그 사유를 폼 안에 보인다. */
 function PopForm({ env, onClose, build, children, after }: { env: PopupEnv; onClose: () => void; build: (fd: FormData) => EditOp[] | string; children: ReactNode; after?: (ops: readonly EditOp[]) => void }) {
+  const shell = useContext(ShellContext);
+  const { ref, handlers } = useShellDirty(shell);
   const [message, setMessage] = useState<string>();
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const built = build(new FormData(event.currentTarget));
     if (typeof built === "string") {
       setMessage(built);
+      return;
+    }
+    if (shell) {
+      // 편집 탭 — 넣은 뒤 이어 열 폼(넣은 칩)은 껍데기가 정한다
+      if (built.length === 0 || env.apply(built)) shell.onApplied(built);
       return;
     }
     if (built.length > 0 && after) {
@@ -117,7 +184,7 @@ function PopForm({ env, onClose, build, children, after }: { env: PopupEnv; onCl
     if (built.length === 0 || env.apply(built)) onClose();
   };
   return (
-    <form onSubmit={onSubmit}>
+    <form ref={ref} onSubmit={onSubmit} {...handlers}>
       {children}
       {message && (
         <p className="ts-form-issues" role="alert">
@@ -126,6 +193,31 @@ function PopForm({ env, onClose, build, children, after }: { env: PopupEnv; onCl
       )}
     </form>
   );
+}
+
+/**
+ * 가지 초안 — 편집 탭이면 폼 안에 모았다가 적용 때 명령 묶음으로(`branchFormOps`), 팝업이면 고칠 때마다 곧바로 적용(예전 그대로).
+ * `submit` 은 편집 탭 폼의 「적용」.
+ */
+function useBranchDraft(env: PopupEnv, node: Parameters<typeof branchDraftOf>[0]) {
+  const shell = useContext(ShellContext);
+  const [local, setLocal] = useState<BranchDraft>(() => branchDraftOf(node));
+  const draft = shell ? local : branchDraftOf(node);
+  const ops = shell ? branchFormOps(node, local) : [];
+  const dirty = ops.length > 0;
+  useEffect(() => {
+    shell?.onDirty(dirty);
+  }, [shell, dirty]);
+  const update = (next: BranchDraft) => {
+    if (shell) setLocal(next);
+    else env.apply(branchFormOps(node, next));
+  };
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!shell) return;
+    if (ops.length === 0 || env.apply(ops)) shell.onApplied(ops);
+  };
+  return { shell, draft, update, submit };
 }
 
 /**
@@ -654,130 +746,216 @@ function hasArticleRefParam(clauses: readonly Clause[], code: Code): boolean {
 const INSERT_TITLE = { slot: "치환 슬롯 넣기", articleRef: "조 참조 넣기", blockRef: "블록 지정 참조 넣기", appendixRef: "별표 참조 넣기", clauseInlineRef: "함수조항(문장 안) 넣기", structKey: "구조 표기 넣기" } as const;
 
 /**
- * 문장 안 조건 — 가지마다 머리 줄(`CondRows`, 그 자리에서 고친다) · 그 가지 문장(그 자리 편집기) · 가지 삭제, 아래에 가지 추가.
+ * 문장 안 조건 — 가지마다 머리 줄(`CondRows`) · 그 가지 문장(그 자리 편집기) · 가지 삭제, 아래에 가지 추가.
  * 툴바 「조건식」으로 막 넣은 칩이면 IF 머리 줄 첫 칸에 초점이 간다.
+ * 편집 탭이면 식 · 가지 추가 · 삭제는 「적용」 때 한꺼번에, 가지 문장은 본문 문장처럼 초점이 떠날 때 들어간다(새 가지의 문장은 적용 뒤에).
  */
 function InlineCondPopup({ env, nodeId, anchor, onClose }: { env: PopupEnv; nodeId: Id; anchor: Anchor; onClose: () => void }) {
-  const [focusFirst, setFocusFirst] = useState(true);
   const node = indexTree(env.tree).nodes.get(nodeId)?.node;
   if (!node || node.kind !== "inlineCond") return null;
-  const hasElse = node.branches.some((b) => b.when === undefined);
-  const b = nodeBuilders(env.newId);
-  const elseIndex = node.branches.findIndex((br) => br.when === undefined);
-  return (
-    <Popover anchor={anchor} label="문장 안 조건" onClose={onClose} wide>
-      <div onContextMenu={env.ctx.edit?.contextMenu}>
-        {node.branches.map((br: InlineBranch, i) => {
-          const label = i === 0 ? "IF" : br.when === undefined ? "ELSE" : "ELIF";
-          const remove = (
-            <IconButton className="ts-cond-rowbtn" icon={<IconTrash />} danger label={`${label} 가지 삭제`} disabled={node.branches.length <= 1} onClick={() => env.apply([{ type: "removeBranch", branchId: br.id }])} />
-          );
-          return (
-            <div key={br.id} className="ts-pop-branch">
-              {br.when === undefined ? (
-                <div className="ts-cond-line">
-                  <span className="ts-cond-badge">ELSE</span>
-                  <span className="ts-muted">그 밖의 경우</span>
-                  {remove}
-                </div>
-              ) : (
-                <CondRows
-                  label={label}
-                  when={br.when}
-                  context={env.condition}
-                  onCommit={(source) => env.apply([{ type: "setWhen", branchId: br.id, when: source }])}
-                  focus={i === 0 && focusFirst && br.when === ""}
-                  onFocused={() => setFocusFirst(false)}
-                  tools={remove}
-                />
-              )}
-              <div className="ts-pop-branch-body ts-doc">
-                <InlineSlot at={{ parentId: br.id }} nodes={br.children} ctx={env.ctx} placeholder={br.when === undefined ? "그 밖의 경우" : "참일 때"} />
+  return <InlineCondForm env={env} node={node} anchor={anchor} onClose={onClose} />;
+}
+
+function InlineCondForm({ env, node, anchor, onClose }: { env: PopupEnv; node: Extract<Node, { kind: "inlineCond" }>; anchor: Anchor; onClose: () => void }) {
+  const [focusFirst, setFocusFirst] = useState(true);
+  const { shell, draft, update, submit } = useBranchDraft(env, node);
+  const shown = shownBranches(draft);
+  const hasElse = shown.some((b) => b.when === undefined);
+  const real = new Map(node.branches.map((br) => [br.id, br] as const));
+  const body = (
+    <div onContextMenu={env.ctx.edit?.contextMenu}>
+      {shown.map((br, i) => {
+        const label = i === 0 ? "IF" : br.when === undefined ? "ELSE" : "ELIF";
+        const remove = <IconButton className="ts-cond-rowbtn" icon={<IconTrash />} danger label={`${label} 가지 삭제`} disabled={shown.length <= 1} onClick={() => update(removeDraftBranch(draft, br.id))} />;
+        const children = real.get(br.id)?.children;
+        return (
+          <div key={br.id} className="ts-pop-branch">
+            {br.when === undefined ? (
+              <div className="ts-cond-line">
+                <span className="ts-cond-badge">ELSE</span>
+                <span className="ts-muted">그 밖의 경우</span>
+                {remove}
               </div>
+            ) : (
+              <CondRows
+                label={label}
+                when={br.when}
+                context={env.condition}
+                onCommit={(source) => update(setDraftWhen(draft, br.id, source))}
+                {...(shell ? { onChange: (source: string) => update(setDraftWhen(draft, br.id, source)) } : {})}
+                focus={i === 0 && focusFirst && br.when === ""}
+                onFocused={() => setFocusFirst(false)}
+                tools={remove}
+              />
+            )}
+            <div className="ts-pop-branch-body ts-doc">
+              {children && !br.added ? (
+                <InlineSlot at={{ parentId: br.id }} nodes={children} ctx={env.ctx} placeholder={br.when === undefined ? "그 밖의 경우" : "참일 때"} />
+              ) : (
+                <p className="ts-muted">새 가지 — 적용하면 이 가지의 문장을 쓸 수 있다.</p>
+              )}
             </div>
-          );
-        })}
-        <div className="ts-form-actions">
-          <button type="button" onClick={() => env.apply([{ type: "addBranch", condId: node.id, branch: b.inlineBranch("", []), ...(elseIndex >= 0 ? { index: elseIndex } : {}) }])}>
-            가지 추가(ELIF)
+          </div>
+        );
+      })}
+      <div className="ts-form-actions">
+        <button type="button" onClick={() => update(addElif(draft, env.newId))}>
+          가지 추가(ELIF)
+        </button>
+        {!hasElse && (
+          <button type="button" onClick={() => update(addElse(draft, env.newId))}>
+            ELSE 가지 추가
           </button>
-          {!hasElse && (
-            <button type="button" onClick={() => env.apply([{ type: "addBranch", condId: node.id, branch: b.inlineBranch(undefined, []) }])}>
-              ELSE 가지 추가
-            </button>
-          )}
+        )}
+        {!shell && (
           <button type="button" className="primary" onClick={onClose}>
             닫기
           </button>
-        </div>
-        <p className="ts-muted">식은 머리 줄에서, 가지 문장은 그 자리에서 고친다 — 오른쪽 클릭으로 슬롯 · 참조를 넣는다. 고친 것은 편집본에 들어가고 저장해야 반영된다.</p>
+        )}
       </div>
-    </Popover>
+      <p className="ts-muted">
+        {shell
+          ? "식 · 가지 추가 · 삭제는 「적용」을 눌러야 편집본에 들어간다. 가지 문장은 그 자리에서 고친다 — 오른쪽 클릭으로 슬롯 · 참조를 넣는다."
+          : "식은 머리 줄에서, 가지 문장은 그 자리에서 고친다 — 오른쪽 클릭으로 슬롯 · 참조를 넣는다. 고친 것은 편집본에 들어가고 저장해야 반영된다."}
+      </p>
+    </div>
+  );
+  return (
+    <Frame anchor={anchor} label="문장 안 조건" onClose={onClose} wide>
+      {shell ? (
+        <form id={shell.formId} onSubmit={submit}>
+          {body}
+        </form>
+      ) : (
+        body
+      )}
+    </Frame>
   );
 }
 
 /**
  * 문장 안 값별 분기 (최종 결정 5) — 대상 고르기 · 칸 없는 값, 칸마다 머리(값 칩 · + 값 · 「문구 없음」 · 칸 삭제) + 그 칸 문장(그 자리 편집기), 아래에 칸 추가.
- * 모양은 블록 분기의 칸 머리와 같다(`CaseControls`).
+ * 모양은 블록 분기의 칸 머리와 같다(`CaseControls`). 편집 탭이면 대상 · 칸은 「적용」 때 한꺼번에.
  */
 function InlineSwitchPopup({ env, nodeId, anchor, onClose }: { env: PopupEnv; nodeId: Id; anchor: Anchor; onClose: () => void }) {
   const node = indexTree(env.tree).nodes.get(nodeId)?.node;
   if (!node || node.kind !== "inlineCond" || node.switchOn === undefined) return null;
+  return <InlineSwitchForm env={env} node={node} anchor={anchor} onClose={onClose} />;
+}
+
+function InlineSwitchForm({ env, node, anchor, onClose }: { env: PopupEnv; node: Extract<Node, { kind: "inlineCond" }>; anchor: Anchor; onClose: () => void }) {
+  const { shell, draft, update, submit } = useBranchDraft(env, node);
+  const shown = shownBranches(draft);
+  const real = new Map(node.branches.map((br) => [br.id, br] as const));
+  // 칸 머리 조작은 지금 초안의 칸으로 그린다 — 본문(children)은 편집본의 것
+  const cases = shown.map((br) => ({ id: br.id, ...(br.values ? { values: [...br.values] } : {}), ...(br.empty ? { empty: true as const } : {}), children: real.get(br.id)?.children ?? [] }));
   const subjects = env.ctx.switchSubjects ?? [];
-  const subject = subjects.find((s) => s.code === node.switchOn);
-  const missing = unassignedValues(subject, node.branches);
+  const switchOn = draft.switchOn ?? node.switchOn!;
+  const subject = subjects.find((s) => s.code === switchOn);
+  const missing = unassignedValues(subject, cases);
   const onSubject = (code: string) => {
     const next = subjects.find((s) => s.code === code);
     if (!next) return;
-    const keep = new Set(next.values.map((v) => v.code));
-    env.apply([{ type: "setSwitch", nodeId: node.id, on: code }, ...node.branches.map((br) => ({ type: "setCase" as const, branchId: br.id, values: (br.values ?? []).filter((v) => keep.has(v)), empty: br.empty === true }))]);
+    update(setDraftSubject(draft, code, new Set(next.values.map((v) => v.code))));
   };
-  return (
-    <Popover anchor={anchor} label={SWITCH_WORD.inlineSwitch} onClose={onClose} wide>
-      <div onContextMenu={env.ctx.edit?.contextMenu}>
-        <div className="ts-doc-cond-head ts-switch-on is-edit">
-          <span className="ts-cond-badge">{SWITCH_WORD.switch}</span>
-          <select aria-label="값별 분기 대상" value={node.switchOn} onChange={(e) => onSubject(e.target.value)}>
-            {!subject && <option value={node.switchOn}>{node.switchOn} (없는 대상)</option>}
-            {subjects.map((s) => (
-              <option key={s.code} value={s.code}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-          {missing.length > 0 && (
-            <span className="ts-cond-issue ts-switch-missing" role="note">
-              {SWITCH_WORD.unassigned}: {missing.map((v) => v.label).join(" · ")}
+  // 칸 머리 조작(CaseControls)은 setCase 명령을 낸다 — 초안에 받아 둔다
+  const caseApply = (ops: readonly EditOp[]): boolean => {
+    let next = draft;
+    for (const op of ops) if (op.type === "setCase") next = setDraftCase(next, op.branchId, op.values, op.empty === true);
+    update(next);
+    return true;
+  };
+  const body = (
+    <div onContextMenu={env.ctx.edit?.contextMenu}>
+      <div className="ts-doc-cond-head ts-switch-on is-edit">
+        <span className="ts-cond-badge">{SWITCH_WORD.switch}</span>
+        <select aria-label="값별 분기 대상" value={switchOn} onChange={(e) => onSubject(e.target.value)}>
+          {!subject && <option value={switchOn}>{switchOn} (없는 대상)</option>}
+          {subjects.map((s) => (
+            <option key={s.code} value={s.code}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        {missing.length > 0 && (
+          <span className="ts-cond-issue ts-switch-missing" role="note">
+            {SWITCH_WORD.unassigned}: {missing.map((v) => v.label).join(" · ")}
+          </span>
+        )}
+      </div>
+      {cases.map((br) => (
+        <div key={br.id} className="ts-pop-branch">
+          <div className="ts-doc-cond-head is-edit ts-switch-case">
+            <span className="ts-cond-badge">{SWITCH_WORD.case}</span>
+            <CaseControls subject={subject} branch={br} branches={cases} apply={caseApply} />
+            <span className="ts-cond-tools">
+              <IconButton className="ts-cond-rowbtn" icon={<IconTrash />} danger label="이 칸 삭제" disabled={cases.length <= 1} onClick={() => update(removeDraftBranch(draft, br.id))} />
             </span>
-          )}
-        </div>
-        {node.branches.map((br: InlineBranch) => (
-          <div key={br.id} className="ts-pop-branch">
-            <div className="ts-doc-cond-head is-edit ts-switch-case">
-              <span className="ts-cond-badge">{SWITCH_WORD.case}</span>
-              <CaseControls subject={subject} branch={br} branches={node.branches} apply={env.apply} />
-              <span className="ts-cond-tools">
-                <IconButton className="ts-cond-rowbtn" icon={<IconTrash />} danger label="이 칸 삭제" disabled={node.branches.length <= 1} onClick={() => env.apply([{ type: "removeBranch", branchId: br.id }])} />
-              </span>
-            </div>
-            {!br.empty && (
-              <div className="ts-pop-branch-body ts-doc">
-                <InlineSlot at={{ parentId: br.id }} nodes={br.children} ctx={env.ctx} placeholder="이 칸의 문구" />
-              </div>
-            )}
           </div>
-        ))}
-        <div className="ts-form-actions">
-          <button type="button" onClick={() => env.apply([{ type: "addBranch", condId: node.id, branch: { id: env.newId(), values: missing[0] ? [missing[0].code] : [], children: [] } }])}>
-            칸 추가
-          </button>
+          {!br.empty &&
+            (real.has(br.id) ? (
+              <div className="ts-pop-branch-body ts-doc">
+                <InlineSlot at={{ parentId: br.id }} nodes={real.get(br.id)!.children} ctx={env.ctx} placeholder="이 칸의 문구" />
+              </div>
+            ) : (
+              <p className="ts-muted">새 칸 — 적용하면 이 칸의 문구를 쓸 수 있다.</p>
+            ))}
+        </div>
+      ))}
+      <div className="ts-form-actions">
+        <button type="button" onClick={() => update(addCase(draft, env.newId, missing[0] ? [missing[0].code] : []))}>
+          칸 추가
+        </button>
+        {!shell && (
           <button type="button" className="primary" onClick={onClose}>
             닫기
           </button>
-        </div>
-        <p className="ts-muted">칸마다 값을 고르고 그 칸 문구를 그 자리에서 쓴다 — 모든 값이 한 칸에 서야 저장된다. 아무것도 내지 않는 칸은 「{SWITCH_WORD.empty}」를 켠다.</p>
+        )}
       </div>
-    </Popover>
+      <p className="ts-muted">칸마다 값을 고르고 그 칸 문구를 그 자리에서 쓴다 — 모든 값이 한 칸에 서야 저장된다. 아무것도 내지 않는 칸은 「{SWITCH_WORD.empty}」를 켠다.</p>
+    </div>
+  );
+  return (
+    <Frame anchor={anchor} label={SWITCH_WORD.inlineSwitch} onClose={onClose} wide>
+      {shell ? (
+        <form id={shell.formId} onSubmit={submit}>
+          {body}
+        </form>
+      ) : (
+        body
+      )}
+    </Frame>
+  );
+}
+
+/**
+ * 블록 조건 가지의 식 (편집 탭, 2026-10-21) — 본문 머리 줄은 읽기용 `IF …` 한 줄이고, 누르면 여기서 고친다. 「적용」 때 `setWhen` 하나.
+ */
+function CondHeadForm({ env, spec }: { env: PopupEnv; spec: Extract<PopupSpec, { kind: "condHead" }> }) {
+  const shell = useContext(ShellContext);
+  const ix = indexTree(env.tree);
+  const entry = ix.branches.get(spec.branchId);
+  const saved = entry?.branch.when;
+  const [when, setWhen] = useState(saved ?? "");
+  const dirty = saved !== undefined && when !== saved;
+  useEffect(() => {
+    shell?.onDirty(dirty);
+  }, [shell, dirty]);
+  if (!entry || saved === undefined) return null;
+  const label = entry.index === 0 ? "IF" : "ELIF";
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const ops: EditOp[] = dirty ? [{ type: "setWhen", branchId: spec.branchId, when }] : [];
+    if (ops.length === 0 || env.apply(ops)) shell?.onApplied(ops);
+  };
+  return (
+    <section className="ts-edit-form is-wide" aria-label="조건식">
+      <p className="ts-edit-form-title">조건식</p>
+      <form id={shell?.formId} onSubmit={onSubmit}>
+        <CondRows label={label} when={when} context={env.condition} onCommit={setWhen} onChange={setWhen} focus={spec.focus === true} />
+        <p className="ts-muted">줄이 다 차지 않은 식은 빈 식으로 들어가고, 저장 검증이 그 가지를 알린다. ELIF · ELSE · 풀기 · 삭제는 본문 머리 줄 끝의 버튼.</p>
+      </form>
+    </section>
   );
 }
 
@@ -798,7 +976,7 @@ function RepeatBlockPopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
   const parent = spec.at ? ix.nodes.get(spec.at.parentId) : undefined;
   const inItems = spec.at?.slot === "items" || (parent?.node.kind === "forBlock" && parent.allowed.includes("item")) || (spec.at ? ix.branches.get(spec.at.parentId)?.allowed.includes("item") === true : false);
   return (
-    <Popover anchor={anchor} label={node ? "반복 원천" : "반복 블록 넣기"} onClose={onClose}>
+    <Frame anchor={anchor} label={node ? "반복 원천" : "반복 블록 넣기"} onClose={onClose}>
       <PopForm
         env={env}
         onClose={onClose}
@@ -820,9 +998,9 @@ function RepeatBlockPopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
             ? `「비었을 때」 칸 있음(블록 ${node!.fallback!.length}개) — 원소가 0 이면 반복 대신 칸 내용이 나온다. 칸은 본문 아래에서 고친다.`
             : "「비었을 때」 칸 없음 — 원소가 0 이면 아무것도 없다. 넣으려면 블록 아래 「+ 비었을 때 내용」 · 툴바 「비었을 때」."}
         </p>
-        <PopActions onCancel={onClose} confirmLabel={node ? "적용" : "넣기"} />
+        <Actions onCancel={onClose} confirmLabel={node ? "적용" : "넣기"} />
       </PopForm>
-    </Popover>
+    </Frame>
   );
 }
 
@@ -912,10 +1090,62 @@ function InlineRepeatPopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec
   const choices = repeatChoices({ ...(around.at(-1) ? { outer: around.at(-1)! } : {}), depth: around.length, ...(env.enumOf ? { enumOf: env.enumOf } : {}) });
   const current = node && isRepeatSource(node.source) ? sourceValue(node.source) : "";
   const b = nodeBuilders(env.newId);
+  const shell = useContext(ShellContext);
   if (node) {
     const set = (patch: { source?: RepeatSource; connector?: InlineRepeatConnector; alias?: string }) => env.apply([{ type: "setFor", nodeId: node.id, ...patch }]);
+    // 본문 · 「비었을 때」 칸은 그 자리 편집기 — 본문 문장처럼 초점이 떠날 때 편집본에 들어간다
+    const bodies = (
+      <>
+        <div className="ts-pop-branch">
+          <div className="ts-cond-line">
+            <span className="ts-cond-badge">마다</span>
+            <span className="ts-muted">원소마다 되풀이할 글 — 「현재 …」 슬롯이 그 원소를 찍는다</span>
+          </div>
+          <div className="ts-pop-branch-body ts-doc">
+            <InlineSlot at={{ parentId: node.id }} nodes={node.children} ctx={env.ctx} placeholder="원소마다" />
+          </div>
+        </div>
+        <div className="ts-pop-branch">
+          <div className="ts-cond-line">
+            <span className="ts-cond-badge">비었을 때</span>
+            <span className="ts-muted">원소가 하나도 없을 때 이 자리에 나오는 글 — 비우면 빈 글. 현재 원소는 읽지 못한다</span>
+          </div>
+          <div className="ts-pop-branch-body ts-doc">
+            <InlineSlot at={{ parentId: node.id, slot: "fallback" }} nodes={node.fallback ?? []} ctx={env.ctx} placeholder="비었을 때" />
+          </div>
+        </div>
+      </>
+    );
+    if (shell) {
+      // 편집 탭 — 원천 · 연결어 · 이름은 「적용」 때 setFor 하나로
+      return (
+        <Frame anchor={anchor} label="문장 안 반복" onClose={onClose} wide>
+          <PopForm
+            env={env}
+            onClose={onClose}
+            build={(fd) => {
+              const source = sourceOfValue(str(fd, "source"));
+              const connector = str(fd, "connector");
+              const alias = str(fd, "alias");
+              const patch: { source?: RepeatSource; connector?: InlineRepeatConnector; alias?: string } = {};
+              if (source && sourceValue(source) !== current) patch.source = source;
+              if (isInlineRepeatConnector(connector) && connector !== node.connector) patch.connector = connector;
+              if (alias !== (node.alias ?? "")) patch.alias = alias;
+              return Object.keys(patch).length > 0 ? [{ type: "setFor", nodeId: node.id, ...patch }] : [];
+            }}
+          >
+            <div onContextMenu={env.ctx.edit?.contextMenu}>
+              <RepeatSourceFields choices={choices} current={current} alias={node.alias} idBase="pop-inline-repeat" />
+              <RepeatConnectorField {...(node.connector ? { value: node.connector } : {})} idBase="pop-inline-repeat" />
+              {bodies}
+              <p className="ts-muted">원소 순서는 블록 반복과 같다(종은 선택지 순서 · 사유는 열거형 순서). 실제 글은 미리보기 탭에서 본다. 원천 · 연결어 · 이름은 「적용」을 눌러야 편집본에 들어간다.</p>
+            </div>
+          </PopForm>
+        </Frame>
+      );
+    }
     return (
-      <Popover anchor={anchor} label="문장 안 반복" onClose={onClose} wide>
+      <Frame anchor={anchor} label="문장 안 반복" onClose={onClose} wide>
         <div onContextMenu={env.ctx.edit?.contextMenu}>
           <RepeatSourceFields
             choices={choices}
@@ -929,24 +1159,7 @@ function InlineRepeatPopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec
             onAlias={(alias) => set({ alias })}
           />
           <RepeatConnectorField value={node.connector} onPick={(connector) => set({ connector })} idBase="pop-inline-repeat" />
-          <div className="ts-pop-branch">
-            <div className="ts-cond-line">
-              <span className="ts-cond-badge">마다</span>
-              <span className="ts-muted">원소마다 되풀이할 글 — 「현재 …」 슬롯이 그 원소를 찍는다</span>
-            </div>
-            <div className="ts-pop-branch-body ts-doc">
-              <InlineSlot at={{ parentId: node.id }} nodes={node.children} ctx={env.ctx} placeholder="원소마다" />
-            </div>
-          </div>
-          <div className="ts-pop-branch">
-            <div className="ts-cond-line">
-              <span className="ts-cond-badge">비었을 때</span>
-              <span className="ts-muted">원소가 하나도 없을 때 이 자리에 나오는 글 — 비우면 빈 글. 현재 원소는 읽지 못한다</span>
-            </div>
-            <div className="ts-pop-branch-body ts-doc">
-              <InlineSlot at={{ parentId: node.id, slot: "fallback" }} nodes={node.fallback ?? []} ctx={env.ctx} placeholder="비었을 때" />
-            </div>
-          </div>
+          {bodies}
           <div className="ts-form-actions">
             <button type="button" className="primary" onClick={onClose}>
               닫기
@@ -954,13 +1167,13 @@ function InlineRepeatPopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec
           </div>
           <p className="ts-muted">원소 순서는 블록 반복과 같다(종은 선택지 순서 · 사유는 열거형 순서). 실제 글은 미리보기 탭에서 본다. 고친 것은 편집본에 들어가고 저장해야 반영된다.</p>
         </div>
-      </Popover>
+      </Frame>
     );
   }
   if (spec.kind !== "repeatInline") return null;
   const at = spec.at;
   return (
-    <Popover anchor={anchor} label="문장 안 반복 넣기" onClose={onClose}>
+    <Frame anchor={anchor} label="문장 안 반복 넣기" onClose={onClose}>
       <PopForm
         env={env}
         onClose={onClose}
@@ -985,13 +1198,12 @@ function InlineRepeatPopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec
         <RepeatSourceFields choices={choices} current="" idBase="pop-inline-repeat" />
         <RepeatConnectorField idBase="pop-inline-repeat" />
         <p className="ts-muted">원소마다 본문을 되풀이해 「A, B 및 C」로 잇는다 — 넣으면 본문 · 「비었을 때」 칸을 고치는 창이 이어서 열린다.</p>
-        <PopActions onCancel={onClose} confirmLabel="넣기" />
+        <Actions onCancel={onClose} confirmLabel="넣기" />
       </PopForm>
-    </Popover>
+    </Frame>
   );
 }
 
-/** 팝업 하나 — 종류대로. */
 /**
  * 코드 수정 창 (ADR-0072 결정 5 · 6) — 항 · 호 · 목 · 함수조항 참조 · 반복 블록의 P코드 한 칸. 기본값은 지금 코드(충돌 줄에서 열면 추천값),
  * 「추천」은 공존 코드를 피한 시스템 추천값을 넣는다. 공존 중복이면 적용이 거부된다(명령 `setCode`). 바꾼 코드는 문서 저장 한 번에 반영된다.
@@ -1007,7 +1219,7 @@ function CodePopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec: Extrac
   const code = value.trim();
   const breaks = code === "" ? 0 : codeChangeBreaks(tree, node.id, code);
   return (
-    <Popover anchor={anchor} label="코드" onClose={onClose}>
+    <Frame anchor={anchor} label="코드" onClose={onClose}>
       <PopForm env={env} onClose={onClose} build={() => (code === "" ? "코드를 쓴다." : code === node.code ? [] : [{ type: "setCode", nodeId: node.id, code }])}>
         <div className="ts-form-row">
           <label htmlFor="pop-code">코드</label>
@@ -1027,13 +1239,24 @@ function CodePopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec: Extrac
           </p>
         )}
         <p className="ts-muted">같은 조의 공존하는 항 · 호 · 목과 겹치면 거부된다(같은 조건 블록의 다른 가지만 같은 코드). 참조는 코드를 따라가지 않는다 — 다른 문서가 가리키면 저장 때 확인을 받는다.</p>
-        <PopActions onCancel={onClose} />
+        <Actions onCancel={onClose} />
       </PopForm>
-    </Popover>
+    </Frame>
   );
 }
 
-export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupSpec; anchor: Anchor; onClose: () => void }) {
+/**
+ * 폼 하나 — 종류대로. `panel` 이면 편집 탭 껍데기(문면 편집기), 아니면 누른 자리 아래 팝업.
+ */
+export function PopupHost({ env, spec, anchor, onClose, panel }: { env: PopupEnv; spec: PopupSpec; anchor: Anchor; onClose: () => void; panel?: PanelShell }) {
+  return (
+    <ShellContext.Provider value={panel}>
+      <PopupBody env={env} spec={spec} anchor={anchor} onClose={onClose} />
+    </ShellContext.Provider>
+  );
+}
+
+function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupSpec; anchor: Anchor; onClose: () => void }) {
   const { ctx } = env;
   const ix = indexTree(env.tree);
   const b = nodeBuilders(env.newId);
@@ -1057,6 +1280,8 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
   };
 
   switch (spec.kind) {
+    case "condHead":
+      return <CondHeadForm env={env} spec={spec} />;
     case "code":
       return <CodePopup env={env} spec={spec} anchor={anchor} onClose={onClose} />;
     case "repeatBlock":
@@ -1100,7 +1325,7 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
         }
       };
       return (
-        <Popover anchor={anchor} label={INSERT_TITLE[spec.what]} onClose={onClose} wide={spec.what === "articleRef"}>
+        <Frame anchor={anchor} label={INSERT_TITLE[spec.what]} onClose={onClose} wide={spec.what === "articleRef"}>
           <PopForm
             env={env}
             onClose={onClose}
@@ -1134,9 +1359,9 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
                 </select>
               </div>
             )}
-            <PopActions onCancel={onClose} confirmLabel="넣기" />
+            <Actions onCancel={onClose} confirmLabel="넣기" />
           </PopForm>
-        </Popover>
+        </Frame>
       );
     }
 
@@ -1151,7 +1376,7 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
         node.kind === "dynTableRef" ? "동적표 인자 연결" :
         node.kind === "slot" ? "치환 슬롯" : node.kind === "articleRef" ? "조 참조" : node.kind === "blockRef" ? "블록 지정 참조" : node.kind === "appendixRef" ? "별표 참조" : node.kind === "particle" ? "조사" : node.kind === "clauseInlineRef" || node.kind === "clauseBlockRef" ? (env.clauses.find((c) => c.code === node.clauseCode)?.params?.length ? "함수조항 옵션 · 인자" : "함수조항 옵션") : "고치기";
       return (
-        <Popover anchor={anchor} label={title} onClose={onClose} wide={node.kind === "articleRef" || ((node.kind === "clauseInlineRef" || node.kind === "clauseBlockRef") && hasArticleRefParam(env.clauses, node.clauseCode))}>
+        <Frame anchor={anchor} label={title} onClose={onClose} wide={node.kind === "articleRef" || ((node.kind === "clauseInlineRef" || node.kind === "clauseBlockRef") && hasArticleRefParam(env.clauses, node.clauseCode))}>
           <PopForm
             env={env}
             onClose={onClose}
@@ -1212,15 +1437,15 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
             )}
             {node.kind === "dynTableRef" && <DynTableFields tables={env.dynTables ?? []} code={node.tableCode} {...(node.bindings ? { bindings: node.bindings } : {})} condition={env.condition} {...(env.enumOf ? { enumOf: env.enumOf } : {})} loops={loopsAt(node.id)} {...treeProp(node.id)} />}
             {(node.kind === "clauseInlineRef" || node.kind === "clauseBlockRef") && <ClauseFields clauses={env.clauses} code={node.clauseCode} options={node.options} {...(node.bindings ? { bindings: node.bindings } : {})} {...(node.preset !== undefined ? { preset: node.preset } : {})} condition={env.condition} {...(env.enumOf ? { enumOf: env.enumOf } : {})} loops={loopsAt(node.id)} {...treeProp(node.id)} refs={{ ctx, restrict: restrictAt(node.id, true) }} />}
-            <PopActions onCancel={onClose} {...(node.kind === "particle" ? { confirmLabel: "조사 적용" } : {})} />
+            <Actions onCancel={onClose} {...(node.kind === "particle" ? { confirmLabel: "조사 적용" } : {})} />
           </PopForm>
-        </Popover>
+        </Frame>
       );
     }
 
     case "newTable":
       return (
-        <Popover anchor={anchor} label="표 넣기" onClose={onClose}>
+        <Frame anchor={anchor} label="표 넣기" onClose={onClose}>
           <PopForm
             env={env}
             onClose={onClose}
@@ -1241,14 +1466,14 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
             <label className="ts-form-radio">
               <input type="checkbox" name="header" defaultChecked /> 첫 행을 제목줄로
             </label>
-            <PopActions onCancel={onClose} confirmLabel="표 만들기" />
+            <Actions onCancel={onClose} confirmLabel="표 만들기" />
           </PopForm>
-        </Popover>
+        </Frame>
       );
 
     case "clauseBlock":
       return (
-        <Popover anchor={anchor} label={`함수조항(${spec.fit === "item" ? "호" : spec.fit === "subitem" ? "목" : "조 단위"}) 넣기`} onClose={onClose}>
+        <Frame anchor={anchor} label={`함수조항(${spec.fit === "item" ? "호" : spec.fit === "subitem" ? "목" : "조 단위"}) 넣기`} onClose={onClose}>
           <PopForm
             env={env}
             onClose={onClose}
@@ -1260,14 +1485,14 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
             }}
           >
             <ClauseFields clauses={clausesFitting(env.clauses, spec.fit)} condition={env.condition} {...(env.enumOf ? { enumOf: env.enumOf } : {})} loops={loopsAt(spec.at.parentId)} {...treeProp(spec.at.parentId)} refs={{ ctx, restrict: restrictAt(spec.at.parentId) }} />
-            <PopActions onCancel={onClose} confirmLabel="넣기" />
+            <Actions onCancel={onClose} confirmLabel="넣기" />
           </PopForm>
-        </Popover>
+        </Frame>
       );
 
     case "dynTable":
       return (
-        <Popover anchor={anchor} label="동적표 넣기" onClose={onClose}>
+        <Frame anchor={anchor} label="동적표 넣기" onClose={onClose}>
           <PopForm
             env={env}
             onClose={onClose}
@@ -1279,14 +1504,14 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
             }}
           >
             <DynTableFields tables={env.dynTables ?? []} condition={env.condition} {...(env.enumOf ? { enumOf: env.enumOf } : {})} loops={loopsAt(spec.at.parentId)} {...treeProp(spec.at.parentId)} />
-            <PopActions onCancel={onClose} confirmLabel="넣기" />
+            <Actions onCancel={onClose} confirmLabel="넣기" />
           </PopForm>
-        </Popover>
+        </Frame>
       );
 
     case "boxPick":
       return (
-        <Popover anchor={anchor} label="박스 넣기" onClose={onClose}>
+        <Frame anchor={anchor} label="박스 넣기" onClose={onClose}>
           <PopForm
             env={env}
             onClose={onClose}
@@ -1303,16 +1528,16 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
                 <Combobox id="pop-box" name="boxCode" defaultValue="" options={env.boxes.map((x) => ({ value: x.code, label: boxGistLabel(x), hint: x.code, keywords: x.lines.join(" ") }))} placeholder="제목 · 코드 · 본문으로 찾기" />
               </div>
             )}
-            <PopActions onCancel={onClose} confirmLabel="넣기" />
+            <Actions onCancel={onClose} confirmLabel="넣기" />
           </PopForm>
-        </Popover>
+        </Frame>
       );
 
     case "tableProps": {
       const t = ix.nodes.get(spec.tableId)?.node;
       if (!t || t.kind !== "table") return null;
       return (
-        <Popover anchor={anchor} label="표 속성" onClose={onClose}>
+        <Frame anchor={anchor} label="표 속성" onClose={onClose}>
           <PopForm
             env={env}
             onClose={onClose}
@@ -1332,9 +1557,9 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
               <input id="pop-t-widths" type="text" name="widths" className="ts-mono" defaultValue={t.columns.map((c) => c.width ?? "").join(",")} placeholder="예: 30,70 (빈칸은 자동)" />
             </div>
             <p className="ts-muted">행 · 열 · 제목줄은 셀을 누르면 뜨는 조작 줄에서 바꾼다.</p>
-            <PopActions onCancel={onClose} />
+            <Actions onCancel={onClose} />
           </PopForm>
-        </Popover>
+        </Frame>
       );
     }
 
@@ -1342,7 +1567,7 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
       const t = ix.nodes.get(spec.tableId)?.node;
       if (!t || t.kind !== "table") return null;
       return (
-        <Popover anchor={anchor} label="행 반복" onClose={onClose}>
+        <Frame anchor={anchor} label="행 반복" onClose={onClose}>
           <PopForm
             env={env}
             onClose={onClose}
@@ -1360,9 +1585,9 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
               </select>
             </div>
             <p className="ts-muted">머리글이 아닌 행이 템플릿이 되어 담보의 세부보장(› 급부)마다 복제된다.</p>
-            <PopActions onCancel={onClose} />
+            <Actions onCancel={onClose} />
           </PopForm>
-        </Popover>
+        </Frame>
       );
     }
 
@@ -1370,7 +1595,7 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
       const a = ix.nodes.get(spec.articleId)?.node;
       if (!a || a.kind !== "article") return null;
       return (
-        <Popover anchor={anchor} label="조연결" onClose={onClose}>
+        <Frame anchor={anchor} label="조연결" onClose={onClose}>
           <PopForm
             env={env}
             onClose={onClose}
@@ -1393,9 +1618,9 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
               />
             </div>
             {ctx.references.general.size === 0 && <p className="ts-muted">대응 보통약관을 먼저 고른다 — 더보기 › 대응 보통약관.</p>}
-            <PopActions onCancel={onClose} />
+            <Actions onCancel={onClose} />
           </PopForm>
-        </Popover>
+        </Frame>
       );
     }
 
@@ -1404,7 +1629,7 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
       const a = ix.nodes.get(spec.articleId)?.node;
       if (!a || a.kind !== "article") return null;
       return (
-        <Popover anchor={anchor} label="준용하기" onClose={onClose}>
+        <Frame anchor={anchor} label="준용하기" onClose={onClose}>
           <PopForm
             env={env}
             onClose={onClose}
@@ -1424,33 +1649,31 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
                 <option value="all">전체항 모으기</option>
               </select>
             </div>
-            <PopActions onCancel={onClose} />
+            <Actions onCancel={onClose} />
           </PopForm>
-        </Popover>
+        </Frame>
       );
     }
 
     case "docTitle":
       return (
-        <Popover anchor={anchor} label="템플릿 이름" onClose={onClose}>
+        <Frame anchor={anchor} label="템플릿 이름" onClose={onClose}>
           <PopForm env={env} onClose={onClose} build={(fd) => (str(fd, "title") ? [{ type: "setTitle", nodeId: env.tree.id, title: str(fd, "title") }] : "이름을 쓴다.")}>
             <div className="ts-form-row">
               <label htmlFor="pop-doc-title">템플릿 이름</label>
               <input id="pop-doc-title" type="text" name="title" defaultValue={env.tree.title} />
             </div>
-            <PopActions onCancel={onClose} />
+            <Actions onCancel={onClose} />
           </PopForm>
-        </Popover>
+        </Frame>
       );
 
     case "general": {
       const proposed = env.generalDocumentId === undefined && env.suggestedGeneralId !== undefined;
       return (
-        <Popover anchor={anchor} label="대응 보통약관" onClose={onClose}>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const picked = str(new FormData(e.currentTarget), "generalDocumentId");
+        <Frame anchor={anchor} label="대응 보통약관" onClose={onClose}>
+          <GeneralForm
+            onPick={(picked) => {
               env.setGeneral(picked === "" ? undefined : picked);
               onClose();
             }}
@@ -1469,12 +1692,31 @@ export function PopupHost({ env, spec, anchor, onClose }: { env: PopupEnv; spec:
               </span>
             </div>
             <p className="ts-muted">조연결 · 보통약관 조 참조의 대상이 이 템플릿의 조로 바뀐다. 해제는 그 둘이 하나도 없을 때만.</p>
-            <PopActions onCancel={onClose} />
-          </form>
-        </Popover>
+            <Actions onCancel={onClose} />
+          </GeneralForm>
+        </Frame>
       );
     }
   }
+}
+
+/** 대응 보통약관 폼 — 고르면 보통약관을 받아(처음이면 서버에서) 편집본에. 편집 탭이면 「적용」. */
+function GeneralForm({ onPick, children }: { onPick: (picked: string) => void; children: ReactNode }) {
+  const shell = useContext(ShellContext);
+  const { ref, handlers } = useShellDirty(shell);
+  return (
+    <form
+      ref={ref}
+      {...handlers}
+      onSubmit={(e) => {
+        e.preventDefault();
+        onPick(str(new FormData(e.currentTarget), "generalDocumentId"));
+        shell?.onApplied([]);
+      }}
+    >
+      {children}
+    </form>
+  );
 }
 
 /** 블록 지정 참조 고르기 (ADR-0082 결정 12) — 블록마다 「블록 전체」 줄과 블록 조 줄. 값은 `blockRefValue`. */
