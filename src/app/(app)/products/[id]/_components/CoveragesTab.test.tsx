@@ -103,9 +103,9 @@ describe("상품담보 탭 — 읽기", () => {
   it("세목 부착은 조합 글자, 없으면 「—」 · 특별약관 표에만 읽기 전용 「그룹」 열", () => {
     const s = section(html, "특별약관");
     expect(s).toContain("(제1종)");
-    expect([...s.matchAll(/<th[^>]*>([^<]*)<\/th>/g)].map((m) => m[1])).toEqual(["담보코드", "담보명", "담보속성", "상품담보명", "그룹", "세목 부착"]);
+    expect([...s.matchAll(/<th[^>]*>([^<]*)<\/th>/g)].map((m) => m[1])).toEqual(["담보", "담보속성", "상품담보명", "그룹", "세목 부착"]);
     expect(s).toMatch(/title="기본 — 담보분류 상해">상해 관련 특별약관</);
-    expect([...section(html, "기본계약").matchAll(/<th[^>]*>([^<]*)<\/th>/g)].map((m) => m[1])).toEqual(["담보코드", "담보명", "담보속성", "상품담보명", "세목 부착"]);
+    expect([...section(html, "기본계약").matchAll(/<th[^>]*>([^<]*)<\/th>/g)].map((m) => m[1])).toEqual(["담보", "담보속성", "상품담보명", "세목 부착"]);
   });
 
   it("담보 검색 · 페이저는 읽기에만", () => {
@@ -124,6 +124,8 @@ describe("상품담보 탭 — 편집", () => {
     const s = section(html, "특별약관");
     expect(s).toContain('aria-label="상품담보명 · 일반상해사망 추가"');
     expect(s).not.toContain("이름 저장");
+    // 담보 칸은 편집 중에도 읽기 그대로 — 담보명 위 · 코드 아래(작게) 두 줄 (2026-10-21)
+    expect(s).toMatch(/<span class="ts-two-line ts-ident is-name-first"><a class="ts-ident-name"[^>]* href="\/coverages\/c-death">일반상해사망<\/a><code class="ts-ident-code">COV000002<\/code><\/span>/);
     expect(s).toContain('aria-label="세목 부착 해제 · 일반상해사망 · (제1종)"');
     expect(s).toContain('aria-label="세목 조합 · 일반상해사망"');
     expect(s).toContain('aria-label="탑재 해제 · 일반상해사망 추가"');

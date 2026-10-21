@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useState, type ReactNode } from "react";
 
 import { Combobox } from "@/app/_components/Combobox";
+import { IdentCell } from "@/app/_components/ListCells";
 import { ListFilterBar } from "@/app/_components/ListFilters";
 import { ListShell } from "@/app/_components/ListShell";
 import { IconButton, IconClose, IconPlus, IconRevert, IconTrash } from "@/app/_components/icons";
@@ -80,8 +80,9 @@ const planLabel = (plans: readonly ProductPlan[], id: Id) => {
 };
 
 /**
- * 탑재 표 한 절 (기능/상품 §4.5). 표는 **상품담보 한 건 = 한 행** — 담보코드 · 담보명 · 담보속성 · 상품담보명 · (특별약관만) 그룹 · 세목 부착.
- * 담보 : 상품담보 = 1 : N 이라 같은 담보의 상품담보를 이어 놓고 담보코드 · 담보명은 그 묶음 첫 행에만 찍는다 (2026-09-28 사용자 확정).
+ * 탑재 표 한 절 (기능/상품 §4.5). 표는 **상품담보 한 건 = 한 행** — 담보 · 담보속성 · 상품담보명 · (특별약관만) 그룹 · 세목 부착.
+ * 「담보」는 두 줄 칸 — 담보명(담보 마스터 링크) 위 · 담보코드 작게 아래 (2026-10-21 사용자 확정, 옛 담보코드 · 담보명 두 열).
+ * 담보 : 상품담보 = 1 : N 이라 같은 담보의 상품담보를 이어 놓고 담보 칸은 그 묶음 첫 행에만 찍는다 (2026-09-28 사용자 확정).
  *
  * - **읽기**: 글자만 — 입력 · 아이콘이 없다. 위 「담보 검색」(`?mq=` · `?bq=`) · 아래 페이저는 L1 목록과 같은 부품.
  * - **편집** (2026-10-04): 초안의 행 전부(검색 · 페이저 없음) — 상품담보명 입력 · 세목 부착 칩(✕) + select ＋ · 「작명: …」 ↺ · 🗑(기존 행은 「삭제」 표시 +
@@ -96,8 +97,7 @@ export function CoverageMountSection({ productId, section, items, coverages, att
 
   const head = (
     <tr>
-      <th className="col-code">담보코드</th>
-      <th className="col-fixed-md">담보명</th>
+      <th className="col-fixed-md">담보</th>
       <th className="col-fixed-md">담보속성</th>
       <th className="col-flex">상품담보명</th>
       {withGroup && <th className="col-fixed-md">그룹</th>}
@@ -115,21 +115,17 @@ export function CoverageMountSection({ productId, section, items, coverages, att
       </td>
     );
   };
+  // 담보 칸 (2026-10-21) — 두 줄: 담보명(담보 마스터 링크) 위 · 담보코드 작게 아래. 묶음 첫 행에만, 편집 중에도 같다
   const codeCell = (groupStart: boolean, coverageId: Id, code: string | undefined, name: string | undefined) => (
-    <>
-      <td className="col-code">
-        {!groupStart ? null : code ? (
-          <Link href={`/coverages/${coverageId}`} title={`담보 마스터 열기 · ${name ?? "담보"}`}>
-            <code>{code}</code>
-          </Link>
-        ) : (
-          <span className="ts-muted" title="담보 마스터가 없어졌다">
-            —
-          </span>
-        )}
-      </td>
-      <td className="col-fixed-md">{groupStart ? (name ?? <span className="ts-muted">—</span>) : null}</td>
-    </>
+    <td className="col-fixed-md">
+      {!groupStart ? null : code ? (
+        <IdentCell order="name-first" code={code} name={name ?? "—"} href={`/coverages/${coverageId}`} title={`담보 마스터 열기 · ${name ?? "담보"}`} />
+      ) : (
+        <span className="ts-muted" title="담보 마스터가 없어졌다">
+          —
+        </span>
+      )}
+    </td>
   );
 
   if (!edit) {
@@ -185,7 +181,7 @@ export function CoverageMountSection({ productId, section, items, coverages, att
   const refs: CoverageRef[] = [...coverages, ...draftRows.filter((r) => !byId.has(r.coverageId)).map((r) => ({ id: r.coverageId, code: r.coverageCode, name: r.coverageName ?? r.coverageId }))];
   const rows = withGroupStarts(mountRows(asItems, refs, attributeKinds));
   const rowOf = new Map(draftRows.map((r) => [r.key, r]));
-  const cols = withGroup ? 7 : 6;
+  const cols = withGroup ? 6 : 5;
   // 주계약은 기본계약을 여럿 둔다 — 2개 이상이면 절 형태(제2절 블록, ADR-0021 결정 1). 막는 것은 독립특약뿐
   const blocked = section === "base" && edit.standalone ? "독립특약 상품은 기본계약을 두지 않습니다" : undefined;
 
