@@ -31,7 +31,7 @@
  * - 세목 선택지는 **유효 조합에 등장하는 것**만 (기능/조립산출 §3.2) — 값은 `readSlotsMany(db, "plan", ids)` 한 번.
  * - 컨테이너(C1 동시 작업)는 쓰지 않는다 — 호출자가 서비스 5개를 넘긴다.
  */
-import { assemble, assembleSpecial, buildSourceView, explainArticle, type AssemblyCoverage, type AssemblyInput, type AssemblyPlanOption, type Booklet, type MasterBundle, type ExplainTarget, type ProductInput, type SourceView, type SpecialPreview } from "@/domain/assembly";
+import { assemble, assembleSpecial, buildSourceView, explainArticle, liveSourceView, type AssemblyCoverage, type AssemblyInput, type AssemblyPlanOption, type Booklet, type MasterBundle, type ExplainTarget, type ProductInput, type SourceView, type SpecialPreview } from "@/domain/assembly";
 import type { SlotPath } from "@/domain/catalog";
 import type { DocumentNode } from "@/domain/document";
 import type { DynTable } from "@/domain/dyntable";
@@ -130,6 +130,11 @@ export interface AssemblyService {
    * 원본 · 결정 노드 기록 + 저장본 책자의 결과 값 조각. 저장하지 않는다. 없는 상품은 `notFound`.
    */
   explain(productId: Id, target: ExplainTarget): Promise<Result<ExplainOutcome>>;
+  /**
+   * 실시간 화면의 출처 패널 재료 (기능/조립산출 §4.2 — 상품 보통약관 · 특별약관 탭 · 상품담보 미리보기) — 지금 입력으로 설명 모드 조립 한 번.
+   * 본문도 지금 입력의 계산이라 오래된 결과 차단이 없다. 저장하지 않는다. 없는 상품은 `notFound`.
+   */
+  explainLive(productId: Id, target: ExplainTarget): Promise<Result<SourceView>>;
 }
 
 export function createAssemblyService(db: Db, services: AssemblyServices): AssemblyService {
@@ -323,6 +328,11 @@ export function createAssemblyService(db: Db, services: AssemblyServices): Assem
       const input = await loadProduct(productId, master);
       if (!input.ok) return input as Result<never>;
       return ok({ state: "ok", view: buildSourceView(master, input.value, explainArticle(master, input.value, target), row.booklet) });
+    },
+    explainLive: async (productId, target) => {
+      const master = await loadMaster();
+      const input = await loadProduct(productId, master);
+      return input.ok ? ok(liveSourceView(master, input.value, target)) : (input as Result<never>);
     },
     latest: async (productId) => {
       const row = await loadPreview(db, productId);
