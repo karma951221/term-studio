@@ -142,7 +142,10 @@ function articleRefText(node: ArticleRefNode, ctx: Ctx): string {
   return `보통약관 ${joined}${alive.length > 0 && broken > 0 ? ` (연결 끊김 ${broken}건)` : ""}`;
 }
 
-/** 옵션 자리 — 「〔옵션명: ✓고른 선택지 | 다른 선택지〕」. 고른 것이 없으면 「미선택」을 드러낸다. */
+/**
+ * 옵션 자리 — 고른 선택지의 글만 칩으로(「피보험자는」), 다른 선택지는 본문에 늘어놓지 않는다 (2026-10-21 사용자 QA).
+ * 안 골랐으면 빈 칩 「〔옵션명 — 고르세요〕」, 없는 선택지면 깨진 칩. 옵션 이름 · 선택지 전부는 툴팁. 바꾸는 길은 함수조항 머리 띠(옵션 카드).
+ */
 function OptionPlace({ optionCode, ctx }: { optionCode: Code; ctx: Ctx }) {
   const option = ctx.clause.options.find((o) => o.code === optionCode);
   if (!option) {
@@ -155,23 +158,25 @@ function OptionPlace({ optionCode, ctx }: { optionCode: Code; ctx: Ctx }) {
   const chosen = ctx.selected[option.code];
   const values = [...option.values].sort((a, b) => a.order - b.order);
   const bodyText = (body: readonly Inline[]) => body.map((n) => (n.kind === "text" ? n.text : "〔…〕")).join("");
+  const value = chosen !== undefined ? values.find((v) => v.code === chosen) : undefined;
+  const all = values.map((v) => v.label).join(" · ") || "없음";
+  if (chosen === undefined) {
+    return (
+      <span className="ts-clause-model-opt is-unset" title={`옵션 자리 — ${option.label} · 미선택 (선택지: ${all}) · 함수조항 머리 띠에서 고른다`}>
+        〔{option.label} — 고르세요〕
+      </span>
+    );
+  }
+  if (!value) {
+    return (
+      <span className="ts-clause-model-opt is-broken" title={`옵션 자리 — ${option.label} · 고른 선택지 ${chosen} 가 옵션에 없다 (선택지: ${all})`}>
+        〔{option.label} — {chosen}(없는 선택지)〕
+      </span>
+    );
+  }
   return (
-    <span className="ts-clause-model-opt" title={`옵션 자리 — ${option.label} · ${values.map((v) => { const text = bodyText(v.body) || "(빈 문구)"; return v.label === text ? text : `${v.label}: ${text}`; }).join(" / ")}`}>
-      〔<span className="ts-clause-model-opt-name">{option.label}</span>:{" "}
-      {values.map((v, i) => (
-        <Fragment key={v.code}>
-          {i > 0 && <span className="ts-clause-model-opt-sep"> | </span>}
-          {v.code === chosen ? (
-            <b className="ts-clause-model-opt-value is-chosen" aria-current="true">
-              ✓{v.label}
-            </b>
-          ) : (
-            <span className="ts-clause-model-opt-value">{v.label}</span>
-          )}
-        </Fragment>
-      ))}
-      {chosen === undefined && <span className="ts-clause-model-opt-missing"> · 미선택</span>}
-      {chosen !== undefined && !values.some((v) => v.code === chosen) && <span className="ts-clause-model-opt-missing"> · {chosen}(없는 선택지)</span>}〕
+    <span className="ts-clause-model-opt" title={`옵션 자리 — ${option.label} · 고른 선택지: ${value.label} (선택지: ${all}) · 함수조항 머리 띠에서 바꾼다`}>
+      {bodyText(value.body) || value.label}
     </span>
   );
 }

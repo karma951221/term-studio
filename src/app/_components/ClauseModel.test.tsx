@@ -73,16 +73,21 @@ describe("ClauseModel — 함수조항 본문의 모델을 편다", () => {
     expect(html).not.toContain("data-inline");
   });
 
-  it("옵션 자리 — 선택지 전부 + 이 사용처가 고른 것(✓)", () => {
+  it("옵션 자리 — 고른 선택지의 글만 칩으로, 다른 선택지는 본문에 늘어놓지 않는다 (2026-10-21 사용자 QA)", () => {
     const html = render({ O01: "V02" });
-    expect(html).toContain("지정 주체");
-    expect(html).toContain("계약자");
-    expect(html).toMatch(/<b class="ts-clause-model-opt-value is-chosen" aria-current="true">✓피보험자<\/b>/);
-    expect(html).not.toContain("미선택");
+    expect(html).toMatch(/<span class="ts-clause-model-opt"[^>]*>피보험자는<\/span> 대표자를 지정하여/);
+    expect(html).not.toContain("계약자는");
+    expect(html).not.toContain("✓");
+    expect(html).not.toContain(" | ");
+    // 옵션 이름 · 고른 것은 툴팁에
+    expect(html).toContain('title="옵션 자리 — 지정 주체 · 고른 선택지: 피보험자');
   });
 
-  it("고른 선택지가 없으면 「미선택」을 드러낸다", () => {
-    expect(render({})).toContain("· 미선택");
+  it("고른 선택지가 없으면 빈 칩 「〔지정 주체 — 고르세요〕」, 없는 선택지면 깨진 칩", () => {
+    const empty = render({});
+    expect(empty).toMatch(/<span class="ts-clause-model-opt is-unset"[^>]*>〔지정 주체 — 고르세요〕<\/span>/);
+    expect(empty).not.toContain("피보험자는");
+    expect(render({ O01: "V09" })).toMatch(/<span class="ts-clause-model-opt is-broken"[^>]*>〔지정 주체 — V09\(없는 선택지\)〕<\/span>/);
   });
 });
 
