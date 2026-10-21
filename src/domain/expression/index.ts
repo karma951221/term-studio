@@ -43,6 +43,9 @@ export { parse, renameExprRefs, RESERVED_WORDS } from "./parser";
 export type { DisplayName, MemberName } from "./format";
 export { format, formatLiteral } from "./format";
 
+export type { KoreanLabels } from "./korean";
+export { formatKorean, koreanExpr } from "./korean";
+
 export type { EnumRead, EnumReadTypes, ExtractedRef } from "./refs";
 export { enumReads, extractRefs, inferType, localNames, masterFieldPaths, paramNames, requiredDiscriminatorCodes } from "./refs";
 

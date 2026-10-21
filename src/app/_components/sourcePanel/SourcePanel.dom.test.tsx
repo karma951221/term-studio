@@ -49,12 +49,20 @@ describe("본문 — 덧칠", () => {
     expect(slot.querySelector(".ts-src-value")?.textContent).toMatch(/^ = .+/);
   });
 
+  it("조건식 — 한국어 표기(참조 표시명 · 그리고 · 있음 · 값 이름), 원문 식은 툴팁", () => {
+    const { container } = render(<SourcePanel content={{ state: "ok", view: view({ document: "special", productCoverageId: "pc-basic", articleId: "s-art-pay" }) }} onClose={() => {}} />);
+    const expr = container.querySelector('[data-node="s-inl-renew"] .ts-src-expr')!;
+    expect(expr.getAttribute("title")).toBe("원문 — exist(attr.A0001) and attr.A0001 = '2'");
+    expect(expr.textContent).toMatch(/^\S.* 있음 그리고 .+ = .+$/);
+    expect(expr.textContent).not.toMatch(/attr\.|exist|and|'/);
+  });
+
   it("조 자리 조건 — 조건으로 빠진 조: 「조건으로 빠짐」 + 감싼 조건의 가지", () => {
     const v = view({ document: "special", productCoverageId: "pc-basic", articleId: "s-art-exempt" });
     render(<SourcePanel content={{ state: "ok", view: v }} onClose={() => {}} />);
     if (v.explanation.status === "absent") {
       expect(screen.getByText("이 상품에서는 조건으로 빠짐")).toBeTruthy();
-      expect((screen.getByRole("region", { name: "조 자리 조건" })).textContent).toMatch("D0005 = true");
+      expect((screen.getByRole("region", { name: "조 자리 조건" })).textContent).toMatch("면책여부합 = 예");
     } else {
       expect((screen.getByRole("region", { name: "조 자리 조건" })).textContent).toMatch("탐");
     }
