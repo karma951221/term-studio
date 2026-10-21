@@ -12,10 +12,12 @@
  * DB · React import 금지 (순수층).
  */
 import type { Clause } from "../clause/types";
+import { keyPathOf, nodeKeyLabel } from "../coverage/keys";
 import { clauseBodyToTree } from "../document/clauseTree";
 import type { ArticleNode, BlockNode, DocumentNode } from "../document/nodes";
 import { foldTitle } from "../document/title";
 import { VERDICT_WORD, verdictText } from "../product/judgment";
+import type { ProductCoverageSnapshot } from "../product/types";
 import type { Code, Id } from "../types";
 import type { ArticleExplanation, ArticleSource, ExplainTarget } from "./explain";
 import type { Booklet, ErrorNode, MasterBundle, ProductInput, RenderedArticle, RenderedDoc, RenderedInline, RenderedStatic } from "./types";
@@ -36,6 +38,8 @@ export interface SourceViewSource {
   tabLabel: string;
   /** 담보약관 글이 템플릿 조 자리를 채웠다 — 「보통약관 제3조 자리 ← 기본계약 「상해사망」 담보약관 제1조 (조연결)」. */
   fillLine?: string;
+  /** 노드 키 경로 → 머리 표기(「세부보장 01 · 이름 › 급부 1 · 이름」) — 노드 한정 구분자(`D0001@01`)의 조건식 표기. 담보약관 원본만. */
+  nodeLabels?: Record<string, string>;
 }
 
 export interface SourceViewClause {
@@ -43,6 +47,8 @@ export interface SourceViewClause {
   /** 함수조항 본문의 모델 트리 — 문면 노드 모양(`clauseBodyToTree`), 조 하나(`clause-article`) 아래. */
   tree: DocumentNode;
   params: string[];
+  /** 열거 인자 이름 → 열거형 코드 — 본문 식이 견주는 값 코드를 값 이름으로 찍는다(조건식 표기). 열거 인자가 없으면 없다. */
+  paramEnums?: Record<string, Code>;
 }
 
 /** 출처 패널 한 장의 재료 — 서버가 만들어 화면(클라이언트)으로 그대로 넘긴다(순수 데이터). */
@@ -57,7 +63,8 @@ export interface SourceView {
   values: Record<Id, string>;
   clauses: Record<Code, SourceViewClause>;
   discriminators: Record<Code, { label: string; enumCode?: Code }>;
-  enums: Record<Code, { label: string; values: Record<Code, string> }>;
+  /** `fields` = 열거형 필드 키 → 이름(필드 읽기 `arg.사유.F01` 표기). 필드가 없으면 없다. */
+  enums: Record<Code, { label: string; values: Record<Code, string>; fields?: Record<Code, string> }>;
   attributes: Record<Code, { label: string; values: Record<Code, string> }>;
   /** 생략 · 준용 · 제1절 판정의 상대 — 연결한 보통약관(제1절) 조의 결과 표시(「제12조(보험금의 청구)」). */
   linkedLabel?: string;
@@ -139,6 +146,17 @@ export function renderedValues(article: RenderedArticle): Record<Id, string> {
 
 // ───────────────────────────── 원본 ─────────────────────────────
 
+/** 상품담보 스냅샷의 노드 키 경로 → 머리 표기 (`keyPathLabel` 과 같은 꼴). 노드가 없으면 undefined. */
+function nodeLabelsOf(snapshot: ProductCoverageSnapshot): Record<string, string> | undefined {
+  const out: Record<string, string> = {};
+  for (const sub of snapshot.subCoverages) {
+    const head = nodeKeyLabel("subCoverage", sub.key, sub.name);
+    out[sub.key] = head;
+    for (const b of sub.benefits) out[keyPathOf(sub, b)] = `${head} › ${nodeKeyLabel("benefit", b.key, b.name)}`;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 /** 문서의 조(관 · 조 자리 조건 가지 안까지) — 모델 순서. */
 function modelArticles(nodes: readonly unknown[], out: ArticleNode[] = []): ArticleNode[] {
   for (const n of nodes as BlockNode[]) {
@@ -194,7 +212,9 @@ export function buildSourceView(master: MasterBundle, product: ProductInput, exp
       fillLine = `${sectioned ? "제1절" : "보통약관"} ${place} 자리 ← ${role} 「${name}」 담보약관${index >= 0 ? ` 제${index + 1}조` : ""} (${FILL_WORD[s.fills.via]})`;
     }
     const record = master.documentIds?.get(s.documentId);
-    return { ...(article ? { article } : {}), ...(record ? { documentRecordId: record } : {}), documentTitle: doc?.title ?? "", kindLabel: "담보약관", ...(index >= 0 ? { ordinal: index + 1 } : {}), tabLabel: name, ...(fillLine ? { fillLine } : {}) };
+    const snapshot = s.productCoverageId === undefined ? undefined : product.coverages.find((c) => c.snapshot.id === s.productCoverageId)?.snapshot;
+    const nodeLabels = snapshot ? nodeLabelsOf(snapshot) : undefined;
+    return { ...(article ? { article } : {}), ...(record ? { documentRecordId: record } : {}), documentTitle: doc?.title ?? "", kindLabel: "담보약관", ...(index >= 0 ? { ordinal: index + 1 } : {}), tabLabel: name, ...(fillLine ? { fillLine } : {}), ...(nodeLabels ? { nodeLabels } : {}) };
   });
 
   // 이름표 — 원본 트리 · 기록이 부르는 것만
@@ -209,7 +229,8 @@ export function buildSourceView(master: MasterBundle, product: ProductInput, exp
     const c: Clause | undefined = clauseOf.get(code);
     if (!c) continue;
     const tree = clauseBodyToTree(c.mode, c.body, c.label);
-    clauses[code] = { label: c.label, tree, params: (c.params ?? []).map((p) => p.name) };
+    const paramEnums = Object.fromEntries((c.params ?? []).flatMap((p) => (p.type.kind === "enum" || p.type.kind === "list<enum>" ? [[p.name, p.type.enumCode]] : [])));
+    clauses[code] = { label: c.label, tree, params: (c.params ?? []).map((p) => p.name), ...(Object.keys(paramEnums).length > 0 ? { paramEnums } : {}) };
     const json = JSON.stringify([tree, c.params ?? []]);
     scanned += json;
     for (const inner of clauseCodesIn(json)) if (!clauses[inner]) pending.push(inner);
@@ -227,7 +248,11 @@ export function buildSourceView(master: MasterBundle, product: ProductInput, exp
   }
   for (const c of Object.keys(clauses)) for (const p of clauseOf.get(c)?.params ?? []) if (p.type.kind === "enum" || p.type.kind === "list<enum>") enumCodes.add(p.type.enumCode);
   const enums: SourceView["enums"] = {};
-  for (const e of master.enums) if (enumCodes.has(e.code)) enums[e.code] = { label: e.label, values: Object.fromEntries(e.values.map((v) => [v.code, v.label])) };
+  for (const e of master.enums) {
+    if (!enumCodes.has(e.code)) continue;
+    const fields = e.fields && e.fields.length > 0 ? { fields: Object.fromEntries(e.fields.map((f) => [f.key, f.label])) } : {};
+    enums[e.code] = { label: e.label, values: Object.fromEntries(e.values.map((v) => [v.code, v.label])), ...fields };
+  }
   const usedA = codesIn(scanned, "A");
   const attributes: SourceView["attributes"] = {};
   for (const k of master.attributeKinds) if (usedA.has(k.code)) attributes[k.code] = { label: k.label, values: Object.fromEntries(k.values.map((v) => [v.code, v.label])) };

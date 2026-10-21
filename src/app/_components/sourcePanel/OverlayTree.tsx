@@ -17,7 +17,7 @@ import { optionCodeOf, repeatLabel, type BlockNode, type InlineNode } from "@/do
 import { particlePreset } from "@/domain/document/particles";
 
 import { IconFx, IconLink } from "../icons";
-import { argText, BRANCH_OUTCOME_LABEL, clauseScope, elementForNode, elementScope, keyOf, links, readsText, ROOT_SCOPE, slotText, type Scope } from "./overlay";
+import { argText, BRANCH_OUTCOME_LABEL, clauseScope, elementForNode, elementScope, exprText, keyOf, links, readsText, ROOT_SCOPE, slotText, type ExprAt, type Scope } from "./overlay";
 
 export interface OverlayCtx {
   view: SourceView;
@@ -27,14 +27,25 @@ export interface OverlayCtx {
   scope: Scope;
   /** 안 탄 가지 · 평가하지 않은 자리의 안쪽. */
   dim: boolean;
+  /** 식이 놓인 자리 — 조건식 한국어 표기의 재료(펼친 함수조항 · 원본 담보의 노드 머리). */
+  at?: ExprAt;
 }
 
-export function rootCtx(view: SourceView, index: ReadonlyMap<string, DecisionRecord>, focus?: string): OverlayCtx {
-  return { view, index, ...(focus ? { focus } : {}), scope: ROOT_SCOPE, dim: false };
+export function rootCtx(view: SourceView, index: ReadonlyMap<string, DecisionRecord>, focus?: string, at?: ExprAt): OverlayCtx {
+  return { view, index, ...(focus ? { focus } : {}), scope: ROOT_SCOPE, dim: false, ...(at ? { at } : {}) };
+}
+
+/** 조건식 — 한국어 표기, 원문 식은 툴팁 (기능/조립산출 §3.7). */
+export function ExprView({ source, ctx }: { source: string; ctx: Pick<OverlayCtx, "view" | "at"> }) {
+  return (
+    <span className="ts-src-expr" title={`원문 — ${source}`}>
+      {exprText(source, ctx.view, ctx.at)}
+    </span>
+  );
 }
 
 /** 원본 자리 하나 — 강조 대상이면 표시하고 스크롤해 보인다. */
-function Spot({ ctx, id, className, children, as = "span" }: { ctx: OverlayCtx; id: string; className?: string; children: ReactNode; as?: "span" | "div" }) {
+function Spot({ ctx, id, className, title, children, as = "span" }: { ctx: OverlayCtx; id: string; className?: string; title?: string; children: ReactNode; as?: "span" | "div" }) {
   const key = keyOf(ctx.scope, id);
   const focused = ctx.focus === key;
   const ref = useRef<HTMLElement>(null);
@@ -43,7 +54,7 @@ function Spot({ ctx, id, className, children, as = "span" }: { ctx: OverlayCtx; 
   }, [focused]);
   const Tag = as;
   return (
-    <Tag ref={ref as never} data-node={key} className={[className, focused ? "is-focus" : null].filter(Boolean).join(" ") || undefined}>
+    <Tag ref={ref as never} data-node={key} title={title} className={[className, focused ? "is-focus" : null].filter(Boolean).join(" ") || undefined}>
       {children}
     </Tag>
   );
@@ -71,7 +82,10 @@ export function Inlines({ nodes, ctx }: { nodes: readonly InlineNode[]; ctx: Ove
   );
 }
 
-function slotLabel(ref: string, view: SourceView): string {
+function slotLabel(ref: string, view: SourceView, at?: ExprAt): string {
+  // 참조 한 마디(구분자 · 노드 한정 · 인자 · 범위 낱말)는 조건식과 같은 표시명
+  const text = exprText(ref, view, at);
+  if (text !== ref) return text;
   const code = ref.match(/\bD\d{4}\b/)?.[0];
   return code && view.discriminators[code] ? `${view.discriminators[code].label}${ref !== code ? ` · ${ref}` : ""}` : ref;
 }
@@ -84,9 +98,9 @@ function Inline({ node, ctx }: { node: InlineNode; ctx: OverlayCtx }) {
       const value = ctx.dim ? undefined : ctx.view.values[keyOf(ctx.scope, node.id)];
       const code = node.ref.match(/\bD\d{4}\b/)?.[0];
       return (
-        <Spot ctx={ctx} id={node.id} className="ts-src-slot">
-          〔{slotLabel(node.ref, ctx.view)}〕{value !== undefined && <b className="ts-src-value"> = {value}</b>}
-          {code && <GoLink href={links.discriminator(code)} label={`구분자 열기 · ${slotLabel(node.ref, ctx.view)}`} />}
+        <Spot ctx={ctx} id={node.id} className="ts-src-slot" title={`원문 — ${node.ref}`}>
+          〔{slotLabel(node.ref, ctx.view, ctx.at)}〕{value !== undefined && <b className="ts-src-value"> = {value}</b>}
+          {code && <GoLink href={links.discriminator(code)} label={`구분자 열기 · ${slotLabel(node.ref, ctx.view, ctx.at)}`} />}
         </Spot>
       );
     }
@@ -223,7 +237,7 @@ export function CondView({ node, ctx, inline = false }: { node: CondNode; ctx: O
     return (
       <Spot ctx={ctx} id={node.id} as={inline ? "span" : "div"} className={inline ? "ts-src-cond is-inline" : "ts-src-cond"}>
         <Tag className="ts-src-branch-head">
-          값별 분기 — {node.switchOn}
+          값별 분기 — <ExprView source={node.switchOn} ctx={ctx} />
           {sw && sw.outcome !== "blocked" && sw.value !== undefined && <b> = {caseLabel([sw.value], undefined, sw, ctx)}</b>}
           {sw?.outcome === "unassigned" && <span className="ts-src-mark"> 칸 없음</span>}
           {sw?.outcome === "blocked" && <span className="ts-src-mark is-blocked"> {BRANCH_OUTCOME_LABEL.blocked}{sw.on.issue ? ` — ${sw.on.issue.message}` : ""}</span>}
@@ -257,7 +271,12 @@ export function CondView({ node, ctx, inline = false }: { node: CondNode; ctx: O
           <Tag key={`${b.id}-${i}`} className={outcome === "taken" ? "ts-src-branch is-taken" : "ts-src-branch is-dim"} data-outcome={outcome ?? "none"}>
             <Tag className="ts-src-branch-head">
               {word}
-              {b.when !== undefined && <code> {b.when}</code>}
+              {b.when !== undefined && (
+                <>
+                  {" "}
+                  <ExprView source={b.when} ctx={ctx} />
+                </>
+              )}
               {outcome && <span className={`ts-src-mark is-${outcome}`}> {BRANCH_OUTCOME_LABEL[outcome]}</span>}
               {reads.length > 0 && <span className="ts-src-reads"> · {reads.join(" · ")}</span>}
               {br?.condition?.discriminators.map((d) => (
@@ -353,7 +372,7 @@ export function ClauseCall({ node, ctx, inline = false }: { node: CallNode; ctx:
         {call?.args.map((a) => (
           <span key={a.name} className="ts-src-reads">
             {" "}
-            · {argText(a, ctx.view)}
+            · {argText(a, ctx.view, node.clauseCode)}
           </span>
         ))}
         {options.map(([o, v]) => (
@@ -366,7 +385,7 @@ export function ClauseCall({ node, ctx, inline = false }: { node: CallNode; ctx:
       </Tag>
       {open && (
         <Tag className="ts-src-call-body">
-          {!def ? <span className="ts-muted">정의 없음</span> : <Blocks nodes={body} ctx={{ ...ctx, scope: clauseScope(ctx.scope, node.id) }} />}
+          {!def ? <span className="ts-muted">정의 없음</span> : <Blocks nodes={body} ctx={{ ...ctx, scope: clauseScope(ctx.scope, node.id), at: { ...ctx.at, clause: node.clauseCode } }} />}
         </Tag>
       )}
     </Spot>
@@ -404,14 +423,19 @@ export function DecisionList({ decisions, ctx }: { decisions: readonly DecisionR
             d.branches.map((b, j) => (
               <div key={j} className={b.outcome === "taken" ? "ts-src-branch is-taken" : "ts-src-branch is-dim"} data-outcome={b.outcome}>
                 {b.when === undefined ? "그 밖의 경우" : j === 0 ? "IF" : "ELIF"}
-                {b.when !== undefined && <code> {b.when}</code>}
+                {b.when !== undefined && (
+                  <>
+                    {" "}
+                    <ExprView source={b.when} ctx={ctx} />
+                  </>
+                )}
                 <span className={`ts-src-mark is-${b.outcome}`}> {BRANCH_OUTCOME_LABEL[b.outcome]}</span>
                 {b.condition && readsText(b.condition, ctx.view).length > 0 && <span className="ts-src-reads"> · {readsText(b.condition, ctx.view).join(" · ")}</span>}
               </div>
             ))}
           {d.kind === "switch" && (
             <span>
-              값별 분기 {d.on.expression} = {d.value ?? "—"} ({d.outcome === "taken" ? "고름" : d.outcome === "unassigned" ? "칸 없음" : BRANCH_OUTCOME_LABEL.blocked})
+              값별 분기 <ExprView source={d.on.expression} ctx={ctx} /> = {d.value ?? "—"} ({d.outcome === "taken" ? "고름" : d.outcome === "unassigned" ? "칸 없음" : BRANCH_OUTCOME_LABEL.blocked})
             </span>
           )}
           {d.kind === "clause" && <span>함수조항 {ctx.view.clauses[d.clauseCode]?.label ?? d.clauseCode}</span>}

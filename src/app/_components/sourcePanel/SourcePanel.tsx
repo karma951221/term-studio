@@ -84,7 +84,7 @@ function Loaded({ view, focus, close }: { view: SourceView; focus?: string; clos
   const source = e.sources[tab];
   const sv = view.sources[tab];
   const index = useMemo(() => indexDecisions([...(source?.enclosing ?? []), ...(source?.decisions ?? [])]), [source]);
-  const ctx = rootCtx(view, index, focus);
+  const ctx = rootCtx(view, index, focus, sv?.nodeLabels ? { nodeLabels: sv.nodeLabels } : undefined);
   const title = sv?.article ? foldTitle(sv.article.title) : "";
 
   return (

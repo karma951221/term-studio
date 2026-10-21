@@ -135,3 +135,32 @@ describe("buildSourceView — 원본 · 대치 한 줄 · 이름표", () => {
     expect(v.productId).toBe("prod-alpha");
   });
 });
+
+describe("buildSourceView — 조건식 한국어 표기 재료 (§3.7)", () => {
+  it("담보약관 원본 — 그 상품담보의 노드 키 경로 → 머리 표기(노드 한정 구분자 「세부보장 01 · 이름 › …」)", () => {
+    const v = view({ document: "special", productCoverageId: "pc-basic", articleId: "s-art-lapse" });
+    const pc = input.coverages.find((c) => c.snapshot.id === "pc-basic")!.snapshot;
+    const sub = pc.subCoverages[0]!;
+    const ben = sub.benefits[0]!;
+    expect(v.sources[0].nodeLabels?.[sub.key]).toBe(`세부보장 ${sub.key} · ${sub.name}`);
+    expect(v.sources[0].nodeLabels?.[`${sub.key}.${ben.key}`]).toBe(`세부보장 ${sub.key} · ${sub.name} › 급부 ${ben.key} · ${ben.name}`);
+  });
+
+  it("템플릿 원본 — 노드 표기 없음", () => {
+    const v = view({ document: "general", articleId: "g-art-def" });
+    expect(v.sources[0].nodeLabels).toBeUndefined();
+  });
+
+  it("함수조항 열거 인자 → 열거형 코드(값 이름 재료), 열거형 필드 이름도 싣는다", () => {
+    const e = input.enums[0]!;
+    const changed = {
+      ...input,
+      clauses: input.clauses.map((c) => (c.code === "C0001" ? { ...c, params: [...(c.params ?? []), { name: "사유", type: { kind: "enum" as const, enumCode: e.code } }] } : c)),
+      enums: input.enums.map((x) => (x.code === e.code ? { ...x, fields: [{ key: "F01", label: "약관표시명", type: "string" as const, order: 1 }] } : x)),
+    };
+    const target: ExplainTarget = { document: "special", productCoverageId: "pc-basic", articleId: "s-art-lapse" };
+    const v = buildSourceView(changed, changed, explainArticle(changed, changed, target), assemble(changed, changed));
+    expect(v.clauses.C0001?.paramEnums).toEqual({ 사유: e.code });
+    expect(v.enums[e.code]?.fields).toEqual({ F01: "약관표시명" });
+  });
+});

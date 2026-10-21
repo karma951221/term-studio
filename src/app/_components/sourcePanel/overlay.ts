@@ -6,6 +6,7 @@
  * - 이동 주소는 「고치러 가기」 표(§3.4)와 같은 목적지다.
  */
 import type { ArgRecord, ConditionEval, DecisionRecord, ReadRecord, RepeatDecision, SourceView } from "@/domain/assembly";
+import { koreanExpr, OUTPUT_DISPLAY, refPath, SCOPE_WORD_CHIP, type Expr, type KoreanLabels, type Ref } from "@/domain/expression";
 import type { Code, Id, Value, ValueSlot } from "@/domain/types";
 
 // ───────────────────────────── 결정 노드 색인 ─────────────────────────────
@@ -102,10 +103,12 @@ export function readsText(ev: ConditionEval, view: Pick<SourceView, "discriminat
   ];
 }
 
-/** 함수조항 인자 한 줄 — 「면책기간 ← 감액기간 = 1년」. */
-export function argText(arg: ArgRecord, view: Pick<SourceView, "discriminators" | "enums">): string {
+/** 함수조항 인자 한 줄 — 「면책기간 ← 감액기간 = 1년」. `clause` 를 주면 열거 인자의 상수 · 현재 원소 값도 값 이름으로. */
+export function argText(arg: ArgRecord, view: Pick<SourceView, "discriminators" | "enums"> & Partial<Pick<SourceView, "clauses">>, clause?: Code): string {
   const b = arg.binding;
-  const value = arg.issue ? `오류 — ${arg.issue.message}` : arg.value === undefined ? undefined : valueText(arg.value, b?.kind === "discriminator" ? enumOf(view, b.code) : undefined);
+  const paramEnum = clause ? view.clauses?.[clause]?.paramEnums?.[arg.name] : undefined;
+  const labels = b?.kind === "discriminator" ? enumOf(view, b.code) : paramEnum ? view.enums[paramEnum] : undefined;
+  const value = arg.issue ? `오류 — ${arg.issue.message}` : arg.value === undefined ? undefined : valueText(arg.value, labels);
   if (!b) return value === undefined ? `${arg.name} — 연결 없음` : `${arg.name} = ${value}`;
   switch (b.kind) {
     case "discriminator":
@@ -119,6 +122,61 @@ export function argText(arg: ArgRecord, view: Pick<SourceView, "discriminators" 
     case "articleRef":
       return `${arg.name} ← 조 참조`;
   }
+}
+
+// ───────────────────────────── 조건식 표기 ─────────────────────────────
+
+/** 식이 놓인 자리 — 펼친 함수조항 본문이면 그 조항(인자 선언), 담보약관 원본이면 그 담보의 노드 머리 표기. */
+export interface ExprAt {
+  clause?: Code;
+  nodeLabels?: Record<string, string>;
+}
+
+type ExprView = Pick<SourceView, "discriminators" | "enums" | "attributes"> & Partial<Pick<SourceView, "clauses">>;
+
+/** 출처 패널의 이름표로 짓는 표기 훅 — 참조 표시명 · 열거 값 이름 · 필드 이름. */
+export function exprLabels(view: ExprView, at: ExprAt = {}): KoreanLabels {
+  const paramEnum = (name: string) => (at.clause ? view.clauses?.[at.clause]?.paramEnums?.[name] : undefined);
+  const name = (ref: Ref): string => {
+    switch (ref.kind) {
+      case "discriminator": {
+        const label = discriminatorLabel(view, ref.code);
+        return ref.node ? `${at.nodeLabels?.[ref.node.path] ?? `노드 ${ref.node.path}`} › ${label}` : label;
+      }
+      case "attr":
+        return view.attributes[ref.code]?.label ?? ref.code;
+      case "output":
+        return ref.prop === "scope" ? SCOPE_WORD_CHIP : OUTPUT_DISPLAY;
+      case "param":
+      case "local":
+        return ref.name;
+      default:
+        return refPath(ref);
+    }
+  };
+  const enumOfExpr = (e: Expr): { values: Record<Code, string>; fields?: Record<Code, string> } | undefined => {
+    if (e.kind !== "ref") return undefined;
+    if (e.ref.kind === "discriminator") return enumOf(view, e.ref.code);
+    if (e.ref.kind === "attr") return view.attributes[e.ref.code];
+    if (e.ref.kind === "param") {
+      const code = paramEnum(e.ref.name);
+      return code ? view.enums[code] : undefined;
+    }
+    return undefined;
+  };
+  return {
+    name,
+    value: (against, code) => enumOfExpr(against)?.values[code],
+    member: (target, field) => {
+      const label = enumOfExpr(target)?.fields?.[field];
+      return label && target.kind === "ref" ? `${name(target.ref)}.${label}` : undefined;
+    },
+  };
+}
+
+/** 소스 식 → 한국어 표기 (「작성위치 = 대치」 · 「납입형태 있음 그리고 …」). 파싱 실패면 원문 — 원문은 화면이 툴팁으로 남긴다. */
+export function exprText(source: string, view: ExprView, at?: ExprAt): string {
+  return koreanExpr(source, exprLabels(view, at));
 }
 
 // ───────────────────────────── 이동 주소 ─────────────────────────────

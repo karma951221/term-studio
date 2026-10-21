@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { ConditionDecision, DecisionRecord, RepeatDecision, SourceView } from "@/domain/assembly";
 import { entered, NOT_ENTERED } from "@/domain/types";
 
-import { argText, BRANCH_OUTCOME_LABEL, clauseScope, elementScope, elementForNode, indexDecisions, keyOf, links, readsText, ROOT_SCOPE, slotText } from "./overlay";
+import { argText, BRANCH_OUTCOME_LABEL, clauseScope, elementScope, elementForNode, exprText, indexDecisions, keyOf, links, readsText, ROOT_SCOPE, slotText } from "./overlay";
 
 const cond = (nodeId: string, inner: DecisionRecord[] = []): ConditionDecision => ({
   kind: "condition",
@@ -75,6 +75,46 @@ describe("값 표기", () => {
 
   it("가지 표식 넷", () => {
     expect(BRANCH_OUTCOME_LABEL).toEqual({ taken: "탐", false: "거짓", skipped: "앞 가지에서 결정 — 평가 안 함", blocked: "막힘" });
+  });
+});
+
+describe("조건식 한국어 표기 — 출처 패널의 식 자리 (기능/조립산출 §3.7)", () => {
+  const view = {
+    discriminators: { D0001: { label: "갱신여부" }, D0009: { label: "사유", enumCode: "E1" } },
+    enums: { E1: { label: "사유", values: { V01: "암", V02: "뇌출혈" }, fields: { F01: "약관표시명" } } },
+    attributes: { A0001: { label: "납입형태", values: { "1": "일시납", "2": "월납" } } },
+    clauses: { C0001: { label: "보험금 지급", tree: { kind: "document", id: "d", children: [] }, params: ["납입면제_있음", "사유"], paramEnums: { 사유: "E1" } } },
+  } as unknown as SourceView;
+
+  it("작성위치 — 「작성위치 = 대치」", () => {
+    expect(exprText("builtin.output = 'replace'", view)).toBe("작성위치 = 대치");
+  });
+
+  it("담보속성 — 이름 · 값 이름", () => {
+    expect(exprText("exist(attr.A0001) and attr.A0001 = '2'", view)).toBe("납입형태 있음 그리고 납입형태 = 월납");
+  });
+
+  it("함수조항 인자 — 인자 이름 · 열거 인자 값 이름(그 조항의 인자 선언) · 필드 이름", () => {
+    expect(exprText("arg.납입면제_있음 = true", view, { clause: "C0001" })).toBe("납입면제_있음 = 예");
+    expect(exprText("arg.사유 = 'V02'", view, { clause: "C0001" })).toBe("사유 = 뇌출혈");
+    expect(exprText("arg.사유.있음('V01')", view, { clause: "C0001" })).toBe("사유에 암 있음");
+    expect(exprText("arg.사유.F01 = '암'", view, { clause: "C0001" })).toBe("사유.약관표시명 = 암");
+    expect(exprText("arg.사유 = 'V02'", view)).toBe("사유 = V02");
+  });
+
+  it("구분자 — 표시명 · 열거 값 이름, 노드 한정은 원본 담보의 노드 머리 › 표시명", () => {
+    expect(exprText("D0009 = 'V01' or not D0001", view)).toBe("사유 = 암 또는 갱신여부 아님");
+    expect(exprText("D0009@01.1 = 'V01'", view, { nodeLabels: { "01.1": "세부보장 01 · 상해 › 급부 1 · 사망" } })).toBe("세부보장 01 · 상해 › 급부 1 · 사망 › 사유 = 암");
+    expect(exprText("D0001@02 = true", view)).toBe("노드 02 › 갱신여부 = 예");
+  });
+
+  it("범위 낱말 · 파싱 실패", () => {
+    expect(exprText("builtin.output.scope", view)).toBe("이 약관의");
+    expect(exprText("D0001 = = 1", view)).toBe("D0001 = = 1");
+  });
+
+  it("함수조항 인자 연결 — 열거 인자의 상수 값은 값 이름", () => {
+    expect(argText({ name: "사유", binding: { kind: "const", value: "V01" }, value: "V01" }, view, "C0001")).toBe("사유 = 암 (V01) (상수)");
   });
 });
 
