@@ -39,11 +39,11 @@ import { baseKey, replaceGeneralWithBase } from "./base";
 import { judgeOmission } from "./omission";
 import type { RefPosition } from "./position";
 import { type BlockLabel, collectAppendices, locateIssues, numberDocument, renderDocument } from "./render";
-import { resolveDocument } from "./resolve";
+import { resolveDocument, type ExplainHooks } from "./resolve";
 import { firstSectionRecords, planFirstSection, raisedArticles, treatBlock, type SectionBlock, type SectionEnv, type SectionPlan } from "./firstSection";
 import { blockCoordinate, fillDelegation, FIRST_SECTION_COORDINATE, type FormPlan, type JoinOption, planForm, withDelegation } from "./section";
 import { substituteSlots } from "./substitute";
-import type { AssemblyCoverage, AssemblyInput, Booklet, FirstSectionRecord, BookletAppendix, BookletForm, MasterBundle, NumberedDoc, OmissionRecord, ProductInput, RArticle, RenderedDoc, RenderedGroup, SInline, SpecialPreview, SubstitutedDoc, UndocumentedCoverage } from "./types";
+import type { AssemblyCoverage, AssemblyInput, Booklet, FirstSectionRecord, PendingBranch, BookletAppendix, BookletForm, MasterBundle, NumberedDoc, OmissionRecord, ProductInput, RArticle, RenderedDoc, RenderedGroup, SInline, SpecialPreview, SubstitutedDoc, UndocumentedCoverage } from "./types";
 import { articlesOf, mapArticles } from "./walk";
 
 /**
@@ -135,10 +135,33 @@ interface Shared {
   catalog: Map<string, AssemblyInput["catalog"][number]>;
   enums: Map<string, AssemblyInput["enums"][number]>;
   master?: AssemblyInput["master"];
+  /**
+   * 막힌 분기 — 그 원인 오류의 열쇠(`blockedKey`) → 분기 노드 id. 한 조립 실행 안에서만 쓰는 모음이다(전역 아님 — 결정성).
+   * 버리는 해소(제1절 판정의 뼈대 해소 등)의 것도 모이지만, `pendingOf` 가 책자에 남은 오류와 짝지어 거른다.
+   */
+  blocked: Map<string, Id>;
+  /** 설명 모드의 고리 (ADR-0092 결정 3) — 일반 조립엔 없다(결정 노드를 기록하지 않는다). */
+  explain?: ExplainHooks;
 }
 
-function shared(input: AssemblyInput): Shared {
+/** 막힌 분기 원인 오류의 열쇠 — 해소 뒤 단계가 덧붙이는 번호 · 절 · 원천은 넣지 않는다(같은 오류를 해소 때와 책자에서 짝짓는다). */
+function blockedKey(issue: Issue): string {
+  const at = issue.at;
+  return [issue.kind, issue.message, at.document ?? "", at.ownerId ?? "", at.articleId ?? "", (at.nodePath ?? []).join("/"), at.refPath ?? ""].join("|");
+}
+
+/** 책자 오류 중 막힌 분기의 원인인 것 → 평가 대기 줄 (책자 등장 순, ADR-0092 결정 6). */
+function pendingOf(issues: readonly Issue[], s: Shared): PendingBranch[] {
+  return issues.flatMap((issue): PendingBranch[] => {
+    const nodeId = s.blocked.get(blockedKey(issue));
+    return nodeId === undefined ? [] : [{ nodeId, at: issue.at, ...(issue.source ? { source: issue.source } : {}), message: issue.message }];
+  });
+}
+
+function shared(input: AssemblyInput, explain?: ExplainHooks): Shared {
   return {
+    blocked: new Map(),
+    ...(explain ? { explain } : {}),
     clauses: new Map(input.clauses.map((c) => [c.code, c])),
     boxes: new Map((input.boxes ?? []).map((x) => [x.code, x])),
     dynTables: new Map((input.dynTables ?? []).map((t) => [t.code, t])),
@@ -177,7 +200,7 @@ function prepare(
   s: Shared,
   opts: { coordinate: ReturnType<typeof specialCoordinate>; overrides?: readonly ClauseOptionOverride[]; source: Coordinate; valueSource: Coordinate; title?: string },
 ): Prepared {
-  const resolved = resolveDocument({ ...doc, ...(opts.title !== undefined ? { title: opts.title } : {}) }, ctx, { clauses: s.clauses, boxes: s.boxes, dynTables: s.dynTables, overrides: overrideMap(opts.overrides ?? []), coordinate: opts.coordinate, enums: s.enums, ...(s.master ? { master: s.master } : {}) });
+  const resolved = resolveDocument({ ...doc, ...(opts.title !== undefined ? { title: opts.title } : {}) }, ctx, { clauses: s.clauses, boxes: s.boxes, dynTables: s.dynTables, overrides: overrideMap(opts.overrides ?? []), coordinate: opts.coordinate, enums: s.enums, ...(s.master ? { master: s.master } : {}), onBlocked: (nodeId, issue) => s.blocked.set(blockedKey(issue), nodeId), ...(s.explain ? { explain: s.explain } : {}) });
   const substituted = substituteSlots(resolved.doc, ctx, { catalog: s.catalog, enums: s.enums, master: s.master });
   const issues = [...resolved.issues, ...substituted.issues].map((issue): Issue => {
     if (issue.source) return issue;
@@ -643,9 +666,24 @@ const completeOf = (issues: readonly Issue[]) => !issues.some((item) => (item.se
  * (주계약 기본계약 2+ 면 특약 그룹) → 별표 (기능/조립산출 §3.8).
  */
 export function assemble(master: MasterBundle, product: ProductInput): Booklet {
+  return runAssembly(master, product).booklet;
+}
+
+/** 조립 한 번의 결과 — 책자 + 설명 모드가 읽는 조립 안쪽 사실. */
+export interface AssemblyRun {
+  booklet: Booklet;
+  /** 대치 형태: 기본계약 조로 대치된 보통약관 조 id → 기본계약 상품담보 이름. */
+  replaced: ReadonlyMap<Id, string>;
+}
+
+/**
+ * 조립 한 번 — `assemble` 의 몸통. `explain` 을 주면 설명 모드다(ADR-0092 결정 3): 같은 파이프라인을 돌며 고리가 고른 조 안의 결정 노드를
+ * 기록해 고리로 알린다(책자에는 싣지 않는다 — 책자는 설명 모드가 아닐 때와 같다). 읽기 받이도 이 실행 안에서만 만든다(결정성).
+ */
+export function runAssembly(master: MasterBundle, product: ProductInput, opts: { explain?: ExplainHooks } = {}): AssemblyRun {
   const input: AssemblyInput = { ...master, ...product };
-  const s = shared(input);
-  const contexts = buildContexts(input);
+  const s = shared(input, opts.explain);
+  const contexts = buildContexts(input, opts.explain ? {} : undefined);
   const form = planForm(input);
   const issues: Issue[] = [];
   const omitted: OmissionRecord[] = [];
@@ -726,7 +764,7 @@ export function assemble(master: MasterBundle, product: ProductInput): Booklet {
 
   // 책자 제목 — 독립특약은 상품명, 그 밖은 템플릿 제목 (기능/조립산출 §3.8)
   const title = form.form === "sectioned" && form.standalone ? input.product.name : (renderedGeneral?.title ?? input.product.name);
-  return {
+  const booklet: Booklet = {
     form: form.form,
     title,
     general: renderedGeneral,
@@ -740,7 +778,9 @@ export function assemble(master: MasterBundle, product: ProductInput): Booklet {
     baseContracts: placement.baseContracts,
     trace: contexts.traces,
     ...(sectioned ? { firstSection: sectioned.firstSection } : {}),
+    pending: pendingOf(issues, s),
   };
+  return { booklet, replaced: general?.replaced ?? new Map() };
 }
 
 /** 저장된 산출본의 형태 — `form` 이 없는 옛 산출본은 대치 형태다 (기능/조립산출 §3.8 「산출물 모양」). */
@@ -785,7 +825,7 @@ export function assembleSpecial(master: MasterBundle, product: ProductInput, pro
   }
   const rendered = block ? { ...renderBlock(block, general, appendices, sectioned!.groupIssues.get(productCoverageId)), omitted: [] } : { ...renderSpecial(c, special!, general, appendices, specialPositionOf(form)), omitted: special!.omitted };
   issues.push(...rendered.issues);
-  return ok({ doc: rendered.doc, general: renderedGeneral, appendices, issues, complete: completeOf(issues), omitted: rendered.omitted, trace });
+  return ok({ doc: rendered.doc, general: renderedGeneral, appendices, issues, complete: completeOf(issues), omitted: rendered.omitted, trace, pending: pendingOf(issues, s) });
 }
 
 /** 보통약관 미리보기 — 그 상품의 보통약관 한 벌만 조립한다 (문면 저작 화면 미리보기, 기능/문면 §3.9). 템플릿을 고르지 않았으면 undefined. 절 형태면 제1절. */
