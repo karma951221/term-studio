@@ -28,7 +28,8 @@ test.describe.serial("실물 재현(화면) ② 담보", () => {
         await expect(page.locator(".ts-count code").first()).toHaveText(spec.code);
       });
 
-      await ev.action("실물화면#2.3", `편집 — 세부보장 ${rest.length}개 더하기 · 저장 한 번`, async () => {
+      // 담보 값이 없어(보험금명 삭제 — ADR-0091) 세부보장이 하나뿐이면 편집할 것이 없다 — 저장 버튼이 켜지지 않는다
+      if (rest.length > 0) await ev.action("실물화면#2.3", `편집 — 세부보장 ${rest.length}개 더하기 · 저장 한 번`, async () => {
         await page.getByRole("button", { name: "편집", exact: true }).click();
         for (const [i, sub] of rest.entries()) {
           const n = i + 2;
