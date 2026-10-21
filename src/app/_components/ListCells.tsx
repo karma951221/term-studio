@@ -2,15 +2,17 @@
  * L1 목록의 두 줄 칸 (디자인원칙 §2 L1, 2026-10-21) — 짝으로 다니는 두 열을 한 열 두 줄로 묶는다.
  *
  * - `IdentCell` — 조회 대상의 코드 · 이름. 1줄째 코드(mono · 옅은 색), 2줄째 이름(상세로 가는 링크).
+ *   하위 항목(담보속성의 값)의 코드 · 이름도 같은 칸이다 — 링크 없이. 편집 모드면 이름 자리에 입력칸이 선다 (2026-10-21).
  * - `AuditCell` — 최종수정. 1줄째 수정일자(mono), 2줄째 수정자.
  *
  * ListPage 의 `identCol` · `auditCol` 이 쓰고, ListPage 를 거치지 않는 표(폼 조회)도 같은 칸을 쓴다.
  */
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { formatDate, type AuditStamp } from "../_lib/list";
 
-export function IdentCell({ code, name, href }: { code: string; name: string; href?: string }) {
+export function IdentCell({ code, name, href }: { code: string; name: ReactNode; href?: string }) {
   return (
     <span className="ts-two-line ts-ident">
       <code className="ts-ident-code">{code}</code>

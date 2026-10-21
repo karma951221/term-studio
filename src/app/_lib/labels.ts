@@ -68,7 +68,6 @@ export const FIELD_LABEL = {
   missingTypes: "템플릿에 없는 유형",
   namingFragment: "상품담보명 표기",
   attributeCode: "담보속성 코드",
-  valueCode: "값 코드",
   order: "순서",
   actions: "조작",
   subCoverageName: "세부보장명",

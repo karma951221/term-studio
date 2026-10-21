@@ -5,6 +5,7 @@
 
 import { EmptyState } from "@/app/_components/EmptyState";
 import { InfoTip } from "@/app/_components/InfoTip";
+import { IdentCell } from "@/app/_components/ListCells";
 import { ListPage, auditCol, identCol, type ListColumn } from "@/app/_components/ListPage";
 import { ENTITY_LABEL, FIELD_LABEL, NAME_LABEL, NAMING_FRAGMENT_TIP, newLabel, searchPlaceholder } from "@/app/_lib/labels";
 import { paginate } from "@/app/_lib/list";
@@ -29,8 +30,8 @@ export default async function AttributesPage({ searchParams }: { searchParams: P
   const columns: readonly ListColumn<AttributeValueRow>[] = [
     // 한 유형이 값 수만큼 행에 걸친다 — 유형 칸 · 최종수정 칸은 유형마다 한 번만 (§2 L1, 2026-10-21)
     identCol(ENTITY_LABEL.attribute, (row) => ({ code: row.kind.code, name: row.kind.label }), (row) => `/attributes/${row.kind.code}`, { width: "ident", grouped: true }),
-    { header: FIELD_LABEL.valueCode, width: "sm", mono: true, cell: (row) => row.value?.code ?? "—" },
-    { header: FIELD_LABEL.valueName, width: "flex", nowrap: true, cell: (row) => row.value?.label ?? <span className="ts-muted">값 없음</span> },
+    // 값도 코드 · 이름 한 열 두 줄 (§2 L1 두 줄 칸, 2026-10-21) — 값에는 상세가 없어 링크 없음
+    { header: FIELD_LABEL.value, width: "flex", cell: (row) => (row.value ? <IdentCell code={row.value.code} name={row.value.label} /> : <span className="ts-muted">값 없음</span>) },
     {
       header: <>{FIELD_LABEL.namingFragment} <InfoTip text={NAMING_FRAGMENT_TIP} /></>,
       width: "md",
