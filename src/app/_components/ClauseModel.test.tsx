@@ -151,6 +151,23 @@ describe("ClauseModel — 사용처 자리 번호부터 잇는다 (2026-10-03 �
     expect(nums(renderToStaticMarkup(<ClauseModel clause={clause} selected={{}} references={new Map()} />))).toEqual(["①", "②"]);
   });
 
+  it("제 항 참조 칩도 자리 번호로 — ② 자리면 첫 항 참조는 「제2항」, 범위 이름(이 함수조항) 없이 (2026-10-21 사용자 QA)", () => {
+    const clause = {
+      ...base,
+      code: "C0014",
+      label: "자기 참조",
+      mode: "block",
+      body: [
+        { ...p("q1", "첫 항"), code: "P0100" },
+        { id: "q2", kind: "paragraph", code: "P0200", children: [{ id: "r", kind: "articleRef", targets: [{ code: "P0100" }], scope: "clause" }, { id: "q2t", kind: "text", text: "에 따라" }] },
+      ],
+    } as unknown as Clause;
+    const html = (at?: { n: number; label: string }) => renderToStaticMarkup(<ClauseModel clause={clause} selected={{}} references={new Map()} {...(at ? { at: { kind: "paragraph", ...at } } : {})} />);
+    expect(html({ n: 2, label: "②" })).toContain(">제2항</span>에 따라");
+    expect(html()).toContain(">제1항</span>에 따라");
+    expect(html()).not.toContain("이 함수조항");
+  });
+
   it("호 — 3. 자리면 목록이 3.부터 (counter-reset 2)", () => {
     const clause: Clause = { ...base, code: "C0200", label: "사유 호", mode: "item", body: [{ id: "i1", kind: "item", children: [] }, { id: "i2", kind: "item", children: [] }] };
     const html = renderToStaticMarkup(<ClauseModel clause={clause} selected={{}} references={new Map()} at={{ kind: "item", n: 3, label: "3." }} />);

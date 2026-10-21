@@ -368,7 +368,7 @@ function Blocks({ nodes, ctx }: { nodes: readonly Block[]; ctx: Ctx }): ReactNod
 export function ClauseModel(props: ClauseModelProps) {
   const { clause } = props;
   const tree = clauseBodyToTree(clause.mode, clause.body, clause.label);
-  const ctx: Ctx = { ...props, numbers: clauseModelNumbers(tree, props.at?.kind === "paragraph" ? props.at : undefined), positions: clausePositions(tree), fold: (clause.params ?? []).length > 0 };
+  const ctx: Ctx = { ...props, numbers: clauseModelNumbers(tree, props.at?.kind === "paragraph" ? props.at : undefined), positions: clausePositions(tree, props.at), fold: (clause.params ?? []).length > 0 };
   if (clause.body.length === 0) return <p className="ts-muted">본문이 비어 있다.</p>;
   return (
     <div className="ts-clause-model" aria-label={`함수조항 ${clause.label} 모델`}>
