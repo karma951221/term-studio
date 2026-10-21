@@ -115,8 +115,8 @@ export class Editor {
   }
 
   /** 조건식 폼 — 툴바 「조건식」 직후 편집 탭에 선다(문면 편집기). 함수조항 편집기는 본문 머리 줄 그 자리. */
-  condHead(root: Locator): Locator {
-    return this.editPanel.getByRole("region", { name: "조건식", exact: true }).or(root.locator("[data-cond-head]").first());
+  async condHead(root: Locator): Promise<Locator> {
+    return (await this.editPanel.count()) > 0 ? this.editPanel.getByRole("region", { name: "조건식", exact: true }) : root.locator("[data-cond-head]").first();
   }
 
   /** 거부 배너가 없어야 한다 — 명령이 편집본에 들어갔다. */
@@ -548,7 +548,7 @@ export class DocumentAuthoring {
       await this.page.keyboard.press(SELECT_ALL);
       await this.editor.runTool("조건식");
       // 식은 편집 탭의 조건식 폼에서 고르고 적용한다 (2026-10-21)
-      const head = this.editor.condHead(this.body);
+      const head = await this.editor.condHead(this.body);
       await expect(head).toBeVisible();
       await this.editor.fillHead(head, "IF", wrap);
       await this.editor.confirm(head, "적용");
