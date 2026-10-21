@@ -103,7 +103,8 @@ test(
     });
 
     await ev.action("인자#6", "그 사용처에서만 인자 연결을 새 구분자로 바꾸고 저장", async () => {
-      await body.locator("[data-clause-ref] .ts-doc-clause-opt").click();
+      // 띠 이름을 눌러도 편집 탭에 옵션 · 인자 폼 (기능/문면 §3.9, 2026-10-21)
+      await body.locator("[data-clause-ref] .ts-doc-clause-name").click();
       const dialog = editForm(page, "함수조항 옵션 · 인자");
       await dialog.getByLabel("인자 보험금명", { exact: true }).selectOption(`d:${bound}`);
       await applyFrom(page);

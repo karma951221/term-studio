@@ -3865,6 +3865,12 @@ button:where(:not([data-slot])).ts-doc-clause-opt {
   cursor: pointer;
 }
 
+/* 띠 글자색 그대로 — 공통 버튼 hover 배경(다크면 어두움)이 밝은 띠 위 글자를 덮지 않게 */
+button:where(:not([data-slot])).ts-doc-clause-opt:hover {
+  background: none;
+  text-decoration-style: solid;
+}
+
 .ts-doc-clause-head .ts-block-acts {
   margin-left: auto;
   color: inherit;
@@ -5812,7 +5818,13 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 
 /* 패널 폭(340)에 맞춰 폼 줄을 세로로 — 이름 위, 칸 아래 */
 .ts-edit-form .ts-form-row {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* 값 열(2)에 붙이던 칸 — 한 열이면 그 열로 (안 그러면 둘째 열이 생겨 이름 열이 짓눌린다) */
+.ts-edit-form .ts-form-row > .ts-ref-search + .ts-ref-tree,
+.ts-edit-form .ts-form-row > .ts-arg-const {
+  grid-column: 1;
 }
 
 .ts-edit-form .ts-cond-var {

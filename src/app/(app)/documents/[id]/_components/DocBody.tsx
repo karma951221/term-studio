@@ -361,7 +361,8 @@ function ClauseBlock({ node, ctx }: { node: ClauseBlockRefNode; ctx: DocCtx }) {
   return (
     <div className={`ts-doc-clause${flash(ctx, node.id)}`} data-block={node.id} data-node={node.id} data-clause-ref={node.id}>
       <DragHandle id={node.id} what="함수조항" ctx={ctx} acts={false} />
-      <div className="ts-doc-clause-head">
+      {/* 띠 어디를 눌러도(복제 · 삭제 단추 밖) 편집 탭에 옵션 · 인자 폼 (기능/문면 §3.9, 2026-10-21) */}
+      <div className="ts-doc-clause-head" onClick={edit && hasOptions ? (e) => { if (!(e.target as HTMLElement).closest("button")) edit.popup({ kind: "editChip", nodeId: node.id }, anchorOf(e.currentTarget)); } : undefined}>
         <span className="ts-doc-clause-name" title={`함수조항 · ${node.clauseCode}`}>
           <span className="ts-doc-clause-code">[{node.clauseCode}]</span> {label ?? "없는 함수조항"}
         </span>
@@ -404,7 +405,7 @@ function DynTableBand({ node, ctx }: { node: DynTableRefNode; ctx: DocCtx }) {
   return (
     <div className={`ts-doc-clause is-dyntable${flash(ctx, node.id)}`} data-block={node.id} data-node={node.id}>
       <DragHandle id={node.id} what="동적표" ctx={ctx} acts={false} />
-      <div className="ts-doc-clause-head">
+      <div className="ts-doc-clause-head" onClick={edit && def ? (e) => { if (!(e.target as HTMLElement).closest("button")) edit.popup({ kind: "editChip", nodeId: node.id }, anchorOf(e.currentTarget)); } : undefined}>
         <span className="ts-doc-clause-name" title={`동적표 · ${node.tableCode}`}>
           <span className="ts-doc-clause-code">[{node.tableCode}]</span> 동적표 {def?.label ?? "없는 동적표"}
         </span>
