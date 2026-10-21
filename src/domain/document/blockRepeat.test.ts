@@ -10,7 +10,7 @@ import { lostInnerCodeEntries, type RecheckDocument } from "./refs";
 import { nodeBuilders, sequentialIds } from "./builders";
 import { applyCommand } from "./commands";
 import { generalRefsOf } from "./edit";
-import { numberTree, referenceAncestorIds, referenceChunkLabel, referenceOutline, referenceTargetIndex, referenceTargetLabel, refTargetOf } from "./numbering";
+import { numberTree, provisionalNote, referenceAncestorIds, referenceChunkLabel, referenceOutline, referenceTargetIndex, referenceTargetLabel, refTargetOf } from "./numbering";
 import type { DocumentNode, ForBlockNode, TreeEnv } from "./nodes";
 import { indexTree, validateTree } from "./nodes";
 import { titleNodes } from "./title";
@@ -352,7 +352,7 @@ describe("조 참조 고르기 색인 — 반복 블록 · 함수조항 참조 �
     expect(referenceAncestorIds(index, [innerRow![0]])).toEqual(new Set([article, outer.id, paragraph.id, inner.id, ref.id]));
   });
 
-  it("반복 안 · 펼친 함수조항 안 줄은 가짜 번호 없이 머리 말 — 본문 칩 표기도 단계 + 코드(실제 번호는 미리보기 탭이 조립해 매긴다)", () => {
+  it("반복 안 · 펼친 함수조항 안 줄도 편집기 번호(원형 기준) — 고르기 줄은 번호 · 머리 말, 본문 칩은 번호, 코드는 툴팁 몫 (2026-10-21 사용자 QA)", () => {
     const { doc, outer, inner, ref, paragraph } = 납입면제조();
     outer.code = "P0100";
     paragraph.code = "P0200";
@@ -361,18 +361,23 @@ describe("조 참조 고르기 색인 — 반복 블록 · 함수조항 참조 �
     const index = referenceTargetIndex(doc, numberTree(doc), { clauseOf: (c) => [면제호, 부가항, 정의].find((x) => x.code === c), repeatCaption: () => "납입면제종마다" });
     const [group] = referenceOutline(index);
     const loopRow = group.rows[0].children[0];
-    expect(loopRow.label).toBe("반복 — 납입면제종마다");
+    expect(loopRow.label).toBe("제1항 · 반복 — 납입면제종마다");
     const paraRow = loopRow.children[0];
-    expect(paraRow.label).toBe("「으로 가입한 경우」");
-    expect(paraRow.children[0].label).toBe("반복 — 납입면제종마다"); // 머리 말 함수가 고정 글
-    expect(paraRow.children[0].children[0].label).toBe("함수조항 「납입면제 호」");
-    expect(paraRow.children[0].children[0].children[0].label).toBe("「사유 호」");
-    // 본문 칩 — 반복 블록 · 반복 안 대상은 번호 대신 단계 + 코드, 조가 다르면 조 표기 앞에
-    expect(referenceTargetLabel(index.get(paragraph.id)!)).toBe("제1조(보험료의 납입면제) 항 P0200");
-    expect(referenceTargetLabel(index.get(outer.id)!)).toBe("제1조(보험료의 납입면제) 반복 P0100");
-    expect(referenceTargetLabel(index.get(ref.id)!, index.get(paragraph.id))).toBe("호 P0400");
-    // 자리표시끼리는 구간을 만들지 않는다
-    expect(referenceChunkLabel([index.get(outer.id)!, index.get(paragraph.id)!, index.get(inner.id)!], "및")).toBe("제1조(보험료의 납입면제) 반복 P0100, 항 P0200 및 반복 P0300");
+    expect(paraRow.label).toBe("제1항 · 「으로 가입한 경우」");
+    expect(paraRow.children[0].label).toBe("제1호 · 반복 — 납입면제종마다"); // 머리 말 함수가 고정 글
+    expect(paraRow.children[0].children[0].label).toBe("제1호 · 함수조항 「납입면제 호」");
+    expect(paraRow.children[0].children[0].children[0].label).toBe("제1호 · 「사유 호」");
+    // 본문 칩 — 반복 안 대상은 원형 번호, 반복 블록 자체는 「(반복 전체)」
+    expect(referenceTargetLabel(index.get(paragraph.id)!)).toBe("제1조(보험료의 납입면제) 제1항");
+    expect(referenceTargetLabel(index.get(outer.id)!)).toBe("제1조(보험료의 납입면제) 제1항(반복 전체)");
+    expect(referenceTargetLabel(index.get(ref.id)!, index.get(paragraph.id))).toBe("제1호");
+    // 번호가 조립 때 바뀔 수 있는 대상끼리는 구간을 만들지 않는다
+    expect(referenceChunkLabel([index.get(outer.id)!, index.get(paragraph.id)!, index.get(inner.id)!], "및")).toBe("제1조(보험료의 납입면제) 제1항(반복 전체), 제1항 및 제1호(반복 전체)");
+    // 툴팁 — 번호는 조립 때 확정 · 코드
+    expect(provisionalNote([index.get(paragraph.id)!])).toBe("번호는 조립 때 확정 · 코드 P0200");
+    expect(provisionalNote([index.get(outer.id)!, index.get(ref.id)!])).toBe("번호는 조립 때 확정 · 코드 P0100 · P0400");
+    const innerRow = [...index.values()].find((t) => t.via === "P0400")!;
+    expect(provisionalNote([innerRow])).toBe("번호는 조립 때 확정 · 코드 P0400 안 P0100");
   });
 
   it("반복 줄 머리는 바깥 반복을 알고 이름을 짓는다 — 안쪽 목록 반복은 「납입면제사유마다」(필드 키 「reasons마다」가 아니다)", () => {

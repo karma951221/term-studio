@@ -423,3 +423,32 @@ describe("조의 준용하기 옵션 — 조 바로 위 평문 (보통약관 템
     expect(html(withMode("all"), true)).toMatch(/<button type="button" class="ts-doc-cond-head ts-doc-cond-btn" title="준용하기 고치기">준용하기 — 전체항 모으기<\/button>/);
   });
 });
+
+describe("펼친 함수조항 안 항을 가리키는 조 참조 칩 — 「제2조(소멸) 제2항」 · 툴팁에 코드 (2026-10-21 사용자 QA)", () => {
+  const twoParas = {
+    code: "C0146",
+    label: "특별약관의 무효",
+    mode: "block",
+    options: [],
+    required: { discriminators: [], attributes: [] },
+    body: [
+      { id: "x1", kind: "paragraph", code: "P0100", children: [{ id: "xt1", kind: "text", text: "첫 항" }] },
+      { id: "x2", kind: "paragraph", code: "P0200", children: [{ id: "xt2", kind: "text", text: "둘째 항" }] },
+    ],
+  } as unknown as Clause;
+
+  it("칩은 번호, 「항 P0200」이 아니다", () => {
+    const b = nodeBuilders(sequentialIds("r"));
+    const ref = b.clauseBlock("C0146", {});
+    ref.code = "P0100";
+    const target = b.article("소멸", [ref]);
+    const chip = { id: "chip", kind: "articleRef", targets: [{ articleId: target.id, code: "P0100", innerCode: "P0200" }], scope: "self" };
+    const tree: DocumentNode = b.document("D", [b.article("가", [b.paragraph([chip as never])]), target]);
+    const numbers = numberTree(tree, { clauseSpan: () => 2 });
+    const ctx: DocCtx = { ...ctxOf(tree, false), clauses: [twoParas], clauseLabel: new Map([["C0146", "특별약관의 무효"]]), references: { self: referenceTargetIndex(tree, numbers, { clauseOf: () => twoParas }), general: new Map() } };
+    const html = renderToStaticMarkup(<Block nodes={(tree.children[0] as { children: DocumentNode["children"] }).children} ctx={ctx} />);
+    expect(html).toContain("제2조(소멸) 제2항");
+    expect(html).not.toContain("항 P0200");
+    expect(html).toContain("번호는 조립 때 확정 · 코드 P0100 안 P0200");
+  });
+});
