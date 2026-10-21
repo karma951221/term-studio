@@ -1,6 +1,7 @@
 import { type Locator, type Page } from "@playwright/test";
 
 import { pickCombo } from "./_lib/combo";
+import { editFoot, editForm, insertFrom } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 
 /**
@@ -77,10 +78,9 @@ test(
       await title.fill("보험료의 납입면제");
       await title.click();
       await tool("반복").click();
-      const dialog = page.getByRole("dialog", { name: "반복 블록 넣기", exact: true });
+      const dialog = editForm(page, "반복 블록 넣기");
       await dialog.getByLabel("반복 원천").selectOption({ label: "납입면제종마다 — 적용여부 = 예인 선택지" });
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await insertFrom(page, dialog);
       await expect(repeats).toHaveCount(1);
       await expect(repeats.first().locator(".ts-doc-cond-head")).toContainText("⟳ 납입면제종마다");
       const paragraph = repeats.first().getByRole("textbox", { name: "항", exact: true });
@@ -92,12 +92,11 @@ test(
     await ev.action("반복#5", "항에 커서를 두고 「반복」 ▾ → 「반복 블록(호) 추가…」 — 원천은 바깥 종의 목록뿐(「납입면제사유마다」)", async () => {
       await tool("반복").click();
       await page.getByRole("menuitem", { name: "반복 블록(호) 추가…", exact: true }).click();
-      const dialog = page.getByRole("dialog", { name: "반복 블록 넣기", exact: true });
+      const dialog = editForm(page, "반복 블록 넣기");
       const source = dialog.getByLabel("반복 원천");
       await expect(source.locator("option")).toHaveText(["— 고른다 —", "납입면제사유마다 — 현재 종의 목록"]);
       await source.selectOption({ label: "납입면제사유마다 — 현재 종의 목록" });
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await insertFrom(page, dialog);
       await expect(repeats).toHaveCount(2);
       await expect(repeats.nth(1).locator(".ts-doc-cond-head")).toContainText("⟳ 납입면제사유마다");
     });
@@ -105,11 +104,10 @@ test(
     await ev.action("반복#6", "안쪽 반복 머리 줄 오른쪽 클릭 → 「이 반복에 함수조항(호) 추가…」 — 인자 사유 ← 「현재 원소 — 납입면제사유마다」", async () => {
       await repeats.nth(1).locator(".ts-doc-cond-head").click({ button: "right" });
       await page.getByRole("menuitem", { name: "이 반복에 함수조항(호) 추가…", exact: true }).click();
-      const dialog = page.getByRole("dialog", { name: "함수조항(호) 넣기", exact: true });
+      const dialog = editForm(page, "함수조항(호) 넣기");
       await pickCombo(dialog.locator("#pop-clause"), { value: code });
       await dialog.getByLabel("인자 사유").selectOption({ label: "현재 원소 — 납입면제사유마다" });
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await insertFrom(page, dialog);
       const placed = repeats.nth(1).locator("[data-clause-ref]");
       await expect(placed).toHaveCount(1);
       await expect(placed.locator(".ts-doc-clause-head")).toContainText("사유 ← 현재 ⟳ 납입면제사유마다");
@@ -134,16 +132,15 @@ test(
       await paragraph.fill("면제 사유는 ");
       await paragraph.press("End");
       await tool("조 참조").click();
-      const d = page.getByRole("dialog", { name: "조 참조 넣기" });
+      const d = editForm(page, "조 참조 넣기");
       await d.getByRole("button", { name: /펴기$/ }).first().click();
       await d.getByRole("treeitem", { level: 2 }).first().getByRole("checkbox").check();
       const and = d.getByRole("radio", { name: "및", exact: true });
       await expect(and).toBeEnabled();
-      await d.getByRole("button", { name: "넣기", exact: true }).click();
+      await editFoot(page, "넣기").click();
       await expect(d).toContainText("연결어(및 · 또는)를 고른다");
       await and.check();
-      await d.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(d).toHaveCount(0);
+      await insertFrom(page, d);
       await submit(page, page.getByRole("button", { name: "저장", exact: true }));
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
     });
@@ -159,7 +156,7 @@ test(
       await next.fill("상해 사유 호는 ");
       await next.press("End");
       await tool("조 참조").click();
-      const d = page.getByRole("dialog", { name: "조 참조 넣기" });
+      const d = editForm(page, "조 참조 넣기");
       const clauseRow = d.locator("[data-ref-row]").filter({ hasText: `함수조항 「${clauseName}」` });
       // 조 › 반복 블록 › 항 › 안쪽 반복 블록을 차례로 편다 — 편집기는 반복 본문 한 벌을 원형으로 싣는다
       for (let i = 0; i < 4 && (await clauseRow.count()) === 0; i++) await d.getByRole("button", { name: /펴기$/ }).first().click();
@@ -169,11 +166,10 @@ test(
       await clauseRow.getByRole("checkbox").check();
       await d.getByLabel("값 한정").selectOption("values");
       await d.getByRole("checkbox", { name: "급성심근경색증", exact: true }).check();
-      await d.getByRole("button", { name: "넣기", exact: true }).click();
+      await editFoot(page, "넣기").click();
       await expect(d).toContainText("연결어(및 · 또는)를 고른다");
       await d.getByRole("radio", { name: "및", exact: true }).check();
-      await d.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(d).toHaveCount(0);
+      await insertFrom(page, d);
       await expect(body.locator(".ts-doc-ref").filter({ hasText: "⟨값 = 급성심근경색증⟩" })).toHaveCount(1);
       await submit(page, page.getByRole("button", { name: "저장", exact: true }));
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
@@ -225,3 +221,4 @@ test(
     });
   },
 );
+

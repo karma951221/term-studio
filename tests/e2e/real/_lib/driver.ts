@@ -1,7 +1,8 @@
 /**
  * 약관 에디터 운전 — 시드 트리 한 벌을 **화면 조작으로** 다시 친다 (문면 저작 · 함수조항 본문 공용).
  *
- * 사람이 하는 것과 같은 길만 쓴다: 툴바 버튼 · 그 자리 팝업 · 문장 칸에 글 치기 · 커서 끝으로 가기 · 글 골라 「조건식」 · 「문장 안 조건」.
+ * 사람이 하는 것과 같은 길만 쓴다: 툴바 버튼 · 고치기 · 넣기 폼 · 문장 칸에 글 치기 · 커서 끝으로 가기 · 글 골라 「조건식」 · 「문장 안 조건」.
+ * 폼은 문면 편집기면 우측 패널 「편집」 탭(맨 아래 고정 줄 「적용」 · 「넣기」 — 2026-10-21), 함수조항 편집기면 그 자리 팝업이다.
  * 편집본을 직접 만지거나 서버 액션을 부르지 않는다.
  *
  * 두 단계로 친다 (조 참조가 뒤 조 · 항을 가리킬 수 있어서 — 고르기 트리는 이미 있는 대상만 보인다):
@@ -77,14 +78,45 @@ export class Editor {
     await button.click();
   }
 
-  dialog(name: string): Locator {
-    return this.page.getByRole("dialog", { name, exact: true });
+  /** 우측 패널 「편집」 탭 — 문면 편집기에만 있다. */
+  get editPanel(): Locator {
+    return this.page.locator("#ts-side-panel-edit");
   }
 
-  /** 팝업 확인 — 닫힐 때까지. */
+  /** 폼 하나 — 그 자리 팝업(함수조항 편집기) 또는 편집 탭의 폼 영역(문면 편집기). */
+  dialog(name: string): Locator {
+    return this.page.getByRole("dialog", { name, exact: true }).or(this.editPanel.getByRole("region", { name, exact: true }));
+  }
+
+  /** 편집 탭 폼인가 (그 자리 팝업이 아니라). */
+  private async inPanel(form: Locator): Promise<boolean> {
+    return (await form.evaluate((el) => el.tagName)) !== "DIALOG";
+  }
+
+  /**
+   * 확인 — 팝업이면 그 버튼을 누르고 닫힐 때까지. 편집 탭이면 고정 줄의 「넣기」(넣기 폼 — 폼이 넣은 것의 폼으로 바뀔 때까지) ·
+   * 「적용」(고치기 폼 — 고친 것이 없어 꺼져 있으면 누르지 않는다).
+   */
   async confirm(dialog: Locator, label: string): Promise<void> {
-    await dialog.getByRole("button", { name: label, exact: true }).click();
-    await expect(dialog).toHaveCount(0);
+    if (!(await this.inPanel(dialog))) {
+      await dialog.getByRole("button", { name: label, exact: true }).click();
+      await expect(dialog).toHaveCount(0);
+      return;
+    }
+    const insert = label === "넣기" || label === "표 만들기";
+    const button = this.editPanel.locator(".ts-edit-foot").getByRole("button", { name: insert ? "넣기" : "적용", exact: true });
+    if (insert) {
+      await button.click();
+      await expect(dialog).toHaveCount(0);
+      return;
+    }
+    if (await button.isEnabled()) await button.click();
+    await expect(button).toBeDisabled();
+  }
+
+  /** 조건식 폼 — 툴바 「조건식」 직후 편집 탭에 선다(문면 편집기). 함수조항 편집기는 본문 머리 줄 그 자리. */
+  condHead(root: Locator): Locator {
+    return this.editPanel.getByRole("region", { name: "조건식", exact: true }).or(root.locator("[data-cond-head]").first());
   }
 
   /** 거부 배너가 없어야 한다 — 명령이 편집본에 들어갔다. */
@@ -310,6 +342,9 @@ export class Editor {
       await expect(popup.locator(".ts-pop-branch")).toHaveCount(i + 1 + (hasElse ? 1 : 0));
     }
     for (const [i, branch] of conditions.entries()) await this.fillHead(popup.locator(".ts-pop-branch").nth(i), i === 0 ? "IF" : "ELIF", branch.when!);
+    // 편집 탭이면 식 · 가지 추가 · 삭제는 「적용」 때 들어간다 — 새 가지의 문장 칸은 적용한 뒤에 선다
+    const panel = await this.inPanel(popup);
+    if (panel) await this.confirm(popup, "적용");
     for (const [i, branch] of branches.entries()) {
       await reopen();
       const editor = () => popup.locator(".ts-pop-branch").nth(i).getByRole("textbox");
@@ -330,8 +365,11 @@ export class Editor {
       await editor().blur();
     }
     await reopen();
-    await popup.getByRole("button", { name: "닫기", exact: true }).click();
-    await expect(popup).toHaveCount(0);
+    if (panel) await this.confirm(popup, "적용");
+    else {
+      await popup.getByRole("button", { name: "닫기", exact: true }).click();
+      await expect(popup).toHaveCount(0);
+    }
     await this.noBanner();
   }
 
@@ -509,9 +547,11 @@ export class DocumentAuthoring {
       await this.article.locator("h3 [role=textbox]").focus();
       await this.page.keyboard.press(SELECT_ALL);
       await this.editor.runTool("조건식");
-      const head = this.body.locator("[data-cond-head]").first();
+      // 식은 편집 탭의 조건식 폼에서 고르고 적용한다 (2026-10-21)
+      const head = this.editor.condHead(this.body);
       await expect(head).toBeVisible();
       await this.editor.fillHead(head, "IF", wrap);
+      await this.editor.confirm(head, "적용");
     }
     await this.editor.noBanner();
   }
@@ -584,7 +624,7 @@ export class DocumentAuthoring {
         // 블록 머리의 옵션 단추 → 「함수조항 옵션」 팝업에서 옵션마다 선택지 (인자가 있는 함수조항이면 「함수조항 옵션 · 인자」 — 값 인자는 기본 연결 그대로)
         const block = this.article.locator("[data-clause-ref]").filter({ hasText: `[${node.clauseCode}] ${this.clauseLabels.get(node.clauseCode)}` }).last();
         await block.locator(".ts-doc-clause-opt").click();
-        const d = this.page.getByRole("dialog", { name: /^함수조항 옵션( · 인자)?$/ });
+        const d = this.page.getByRole("dialog", { name: /^함수조항 옵션( · 인자)?$/ }).or(this.editor.editPanel.getByRole("region", { name: /^함수조항 옵션( · 인자)?$/ }));
         for (const [option, value] of Object.entries(node.options)) await d.locator(`#pop-opt-${option}`).selectOption(value);
         const params = SEED_CLAUSE_PARAMS.get(node.clauseCode) ?? [];
         for (const [name, b] of refBindings) {
