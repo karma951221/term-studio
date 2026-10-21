@@ -96,8 +96,8 @@ test.describe.serial("실물 재현(화면) ① 카탈로그", () => {
           if (value.fragment) await rows.nth(i).getByRole("textbox", { name: /^상품담보명 표기/ }).fill(value.fragment);
         }
         await saveEdit(page);
-        // 저장 뒤 읽기 모드가 서버 채번 코드(1 · 2)를 보인다 — 「새 값」으로 남지 않는다 (EditShell 결함 수정 2026-09-28)
-        await expect(page.locator("table.ts-attr-values tbody td.col-code")).toHaveText(spec.values.map((v) => v.code));
+        // 저장 뒤 읽기 모드가 서버 채번 코드(1 · 2)를 값 칸 1줄째에 보인다 — 「새 값」으로 남지 않는다 (EditShell 결함 수정 2026-09-28)
+        await expect(page.locator("table.ts-attr-values tbody .ts-ident-code")).toHaveText(spec.values.map((v) => v.code));
       });
     }
   });

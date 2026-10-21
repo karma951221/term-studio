@@ -4,6 +4,7 @@ import { useRef } from "react";
 
 import { EditShell, Field, useEditField } from "@/app/_components/EditShell";
 import { InfoTip } from "@/app/_components/InfoTip";
+import { IdentCell } from "@/app/_components/ListCells";
 import { ADD_ROW_LABEL, ValueRowsTable } from "@/app/_components/ValueRowsTable";
 import { ENTITY_LABEL, FIELD_LABEL, NAME_LABEL, NAMING_FRAGMENT_TIP, newLabel } from "@/app/_lib/labels";
 import { sortAttributeValues, type AttributeKind } from "@/domain/product";
@@ -12,7 +13,7 @@ import { removeAttributeEditAction, saveAttributeEditAction } from "../edit-acti
 import type { AttributeEditData, AttributeEditValue } from "../edit-types";
 
 /**
- * 유효값 표 (기능/담보속성 §4 상세, 2026-09-28) — 코드 · 값 이름 · 상품담보명 표기. 편집은 값 행 표 문법(`ValueRowsTable`, 2026-10-01).
+ * 유효값 표 (기능/담보속성 §4 상세, 2026-09-28) — 값(코드 · 이름 한 칸 두 줄, 2026-10-21) · 상품담보명 표기. 편집은 값 행 표 문법(`ValueRowsTable`, 2026-10-01).
  *
  * - 코드 `1` · `2` … 가 곧 순서라 순서 칸 · 끌기 손잡이가 없다. 새 값은 표 끝에 붙고 저장할 때 다음 번호를 받는다.
  * - 편집 모드에서만 행 앞 ⊖ 「행 삭제 · {값 이름}」 · 마지막 행 아래 ⊕ 「행 추가 · 값」 — 누르면 빈 행이 생기고 그 값 이름 칸에 커서가 간다.
@@ -45,16 +46,21 @@ export function ValuesEditor() {
           onAdd={add}
           onRemove={(value) => field.setValue(field.value.filter((item) => item.code !== value.code))}
           columns={[
-            { key: "code", header: FIELD_LABEL.code, className: "col-code", cell: (value) => (isSaved(value) ? <code>{value.code}</code> : <span className="ts-muted">{newLabel(FIELD_LABEL.value)}</span>) },
-            { key: "label", header: FIELD_LABEL.valueName, cell: (value) => (editing ? (
-              <input
-                className="ts-field-direct"
-                value={value.label}
-                aria-label={`${FIELD_LABEL.valueName}${isSaved(value) ? ` ${value.code}` : ""}`}
-                placeholder={FIELD_LABEL.valueName}
-                onChange={(event) => patch(value.code, { label: event.target.value })}
+            // 값 = 코드 · 이름 한 칸 두 줄 (§2 L1 두 줄 칸, 2026-10-21) — 편집 모드는 코드 줄 아래에 값 이름 입력칸
+            { key: "value", header: FIELD_LABEL.value, className: "col-flex", cell: (value) => (
+              <IdentCell
+                code={isSaved(value) ? value.code : newLabel(FIELD_LABEL.value)}
+                name={editing ? (
+                  <input
+                    className="ts-field-direct"
+                    value={value.label}
+                    aria-label={`${FIELD_LABEL.valueName}${isSaved(value) ? ` ${value.code}` : ""}`}
+                    placeholder={FIELD_LABEL.valueName}
+                    onChange={(event) => patch(value.code, { label: event.target.value })}
+                  />
+                ) : value.label}
               />
-            ) : value.label) },
+            ) },
             { key: "fragment", header: <>{FIELD_LABEL.namingFragment} <InfoTip text={NAMING_FRAGMENT_TIP} /></>, className: "col-fragment", cell: (value) => (editing ? (
               <input
                 className="ts-field-direct"

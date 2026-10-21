@@ -2317,8 +2317,15 @@ input:where(:not([data-slot])).ts-option-title {
   min-width: 200px;
 }
 
-.ts-attr-values td > input:where(:not([data-slot])) {
+.ts-attr-values td > input:where(:not([data-slot])),
+.ts-attr-values .ts-ident-name > input:where(:not([data-slot])) {
   width: 100%;
+}
+
+/* 편집 모드의 값 칸 — 코드 줄 아래 값 이름 입력칸 (2026-10-21). 입력칸 테두리 · 포커스 링이 잘리지 않게 */
+.ts-attr-values .ts-ident-name:has(> input) {
+  overflow: visible;
+  font-weight: normal;
 }
 
 .ts-table-add td {
