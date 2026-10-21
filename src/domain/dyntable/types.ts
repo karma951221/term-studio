@@ -63,7 +63,7 @@ export interface DynBenefit {
   key: string;
   /** 급부명 — 행 기준. 같으면 한 행으로 묶인다 (§3.2 · §3.4). */
   name: string;
-  /** 지급률 `pay.rate` (%). undefined = 미입력. */
+  /** 지급률 `pay.rate` (%). undefined = 안 적음 = 100 (`DEFAULT_PAY_RATE`). */
   payRate?: number;
   /** 감액 구간 — undefined = 감액 폼을 열지 않음(모든 열 100). */
   reduction?: ReductionPeriods;
@@ -81,7 +81,7 @@ export interface ExpandedDynTable {
   /** `[구분 칸 머리글, 열1 머리글 .. 열N 머리글]`. */
   header: Inline[][];
   rows: ExpandedDynTableRow[];
-  /** 연결 오류(argUnbound 등) · 미입력(notEntered) · 묶기 충돌 경고(dynTableMergeConflict). 표 구조는 그래도 돌려준다. */
+  /** 연결 오류(argUnbound 등) · 묶기 충돌 경고(dynTableMergeConflict). 표 구조는 그래도 돌려준다. */
   issues: Issue[];
 }
 
