@@ -7,10 +7,13 @@
  * - 자리표시자: 템플릿의 슬롯 노드(표 슬롯 · 인자 슬롯). 펼침이 같은 노드 id(「참조 id / 템플릿 노드 id @ 행 · 열」)의 글로 바꾸므로
  *   펼친 글 노드의 템플릿 id 가 슬롯 id 면 그 글은 자리표시자에 들어간 값이다.
  *
+ * - 인자 쓰임(`paramUsage`): 인자마다 그 인자를 읽는 템플릿 영역 — 상세 화면 인자 표의 「쓰이는 곳」.
+ *
  * DB·React import 금지 (순수층).
  */
 import type { Inline } from "../clause/nodes";
-import type { DynTable, ExpandedDynTable } from "./types";
+import { extractRefs, parse } from "../expression";
+import type { DynTable, DynTableTemplateKey, ExpandedDynTable } from "./types";
 
 export type DynTableColumnRegion = "first" | "middle" | "last" | "single";
 export type DynTableRegion = "corner" | DynTableColumnRegion | "cell" | "row";
@@ -61,5 +64,40 @@ export function placeholderIds(def: Pick<DynTable, "headers" | "cell">): Set<str
     }
   };
   for (const t of [def.headers.first, def.headers.middle, def.headers.last, def.headers.single, def.cell]) walk(t);
+  return out;
+}
+
+const TEMPLATE_ORDER: readonly DynTableTemplateKey[] = ["first", "middle", "last", "single", "cell"];
+
+/** 식이 읽는 인자 이름 — 파싱이 안 되면 없음(저장 검사가 잡는다). */
+function paramNamesOf(src: string): string[] {
+  const parsed = parse(src);
+  if (!parsed.ok) return [];
+  return extractRefs(parsed.value).flatMap(({ ref }) => (ref.kind === "param" ? [ref.name] : []));
+}
+
+/** 인자마다 읽는 템플릿 영역(첫 · 가운데 · 마지막 · 단일 · 셀 순) — 슬롯 · 조건 · 값별 분기 대상, 조건 가지 · 분기 칸 안까지. 선언 순서대로 키를 둔다. */
+export function paramUsage(def: Pick<DynTable, "params" | "headers" | "cell">): Record<string, DynTableTemplateKey[]> {
+  const out: Record<string, DynTableTemplateKey[]> = {};
+  for (const p of def.params) out[p.name] = [];
+  for (const key of TEMPLATE_ORDER) {
+    const reads = new Set<string>();
+    const walk = (list: readonly Inline[]) => {
+      for (const n of list) {
+        if (n.kind === "slot") paramNamesOf(n.ref).forEach((x) => reads.add(x));
+        else if (n.kind === "inlineCond")
+          for (const br of n.branches) {
+            if (br.when !== undefined) paramNamesOf(br.when).forEach((x) => reads.add(x));
+            walk(br.children);
+          }
+        else if (n.kind === "inlineSwitch") {
+          paramNamesOf(n.on).forEach((x) => reads.add(x));
+          for (const k of n.cases) walk(k.children);
+        }
+      }
+    };
+    walk(key === "cell" ? def.cell : def.headers[key]);
+    for (const name of reads) if (out[name]) out[name].push(key);
+  }
   return out;
 }

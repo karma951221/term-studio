@@ -22,6 +22,11 @@ describe("checkDynTable", () => {
     expect(checkDynTable(dynTableFixtureR())).toEqual([]);
   });
 
+  it("표 모양 — 첫 · 가운데 · 마지막 중 일부만 채우면 빈 쪽 자리에 structure", () => {
+    const bad = withHeaders(dynTableFixtureA(), { middle: [] });
+    expect(checkDynTable(bad)).toEqual([expect.objectContaining({ kind: "structure", at: expect.objectContaining({ refPath: "headers.middle" }) })]);
+  });
+
   it("이름이 비면 structure", () => {
     expect(checkDynTable({ ...dynTableFixtureA(), label: " " })).toEqual([expect.objectContaining({ kind: "structure", at: expect.objectContaining({ refPath: "label" }) })]);
   });

@@ -5,9 +5,10 @@
  * 돌려주는 표는 인라인 노드 그대로다 — 셀 템플릿의 「해당보장의」 조건(`count(builtin.subCoverage.name) >= 2`)처럼 담보 문맥이 필요한 조건은
  * 남겨 두고, 조립(Walker)이 담보 문맥에서 평가해 `RTable` 로 낸다. 표 슬롯(`builtin.table.*`)은 여기서 전부 글로 바꾸므로 뒤쪽이 볼 일이 없다.
  *
- * - 열: 열 기준 「감액 구간」이면 모든 급부의 감액 경계(`end`) 합집합(오름차순 · 중복 없음), k 개 → 열 k + 1. 「없음」이거나 비면 열 하나(단일 열 템플릿).
+ * - 열: 표 모양(`tableShape` — 머리글 구조, §3.2)이 감액 구간형이면 모든 급부의 감액 경계(`end`) 합집합(오름차순 · 중복 없음), k 개 → 열 k + 1.
+ *   단일형(첫 · 가운데 · 마지막 머리글이 모두 빔)이거나 합집합이 비면 열 하나(단일 열 템플릿).
  * - 열 j 의 감액비율: 구간 [b(j−1), b(j)) 에서 `end ≥ b(j)` 인 첫 구간의 `rate`, 없으면 `afterRate`. 마지막 열 = `afterRate`. 감액 없음 = 100.
- *   열 기준 「없음」이면 감액을 보지 않는다(비율 = 지급률 — (갱신) 표).
+ *   단일형이면 감액을 보지 않는다(비율 = 지급률 — (갱신) 표).
  * - 셀 비율 = 지급률 × 감액비율 / 100. 정수가 아니면 소수 한 자리까지 자른다(반올림 없음).
  *   지급률 미입력은 100% 로 읽는다 — 지급률은 선택 필드이고 안 적으면 100 이다 (기능/담보 §3.4, 2026-10-21).
  * - 행: 급부명이 같고 열마다 비율이 모두 같으면 한 행(처음 나온 자리). 어느 열이든 다르면 그 급부명은 급부마다 따로(트리 순) + 경고 `dynTableMergeConflict`.
@@ -20,6 +21,7 @@ import { effectiveBindings, type Bindings } from "../clause/params";
 import { formatPeriod } from "../master/table";
 import type { Coordinate, Id, Issue } from "../types";
 import { headerRegion } from "./regions";
+import { tableShape } from "./shape";
 import { DYN_TABLE_SLOTS, isDynTableSlotRef, type DynBenefit, type DynTable, type DynTableSlotRef, type ExpandedDynTable, type ExpandedDynTableRow } from "./types";
 
 export interface DynTableInput {
@@ -104,7 +106,8 @@ export function expandDynTable(def: DynTable, input: DynTableInput, bindings: Bi
   };
 
   // 2. 경계 합집합 → 열
-  const boundaries = def.columnBasis === "reduction" ? [...new Set(input.benefits.flatMap((b) => b.reduction?.periods.map((p) => p.end) ?? []))].sort((a, b) => a - b) : [];
+  const split = tableShape(def.headers) === "split";
+  const boundaries = split ? [...new Set(input.benefits.flatMap((b) => b.reduction?.periods.map((p) => p.end) ?? []))].sort((a, b) => a - b) : [];
   const columns = boundaries.length + 1;
 
   // 3. 머리글 — 열 하나 = 단일, 둘 = 첫 + 마지막, 셋 이상 = 첫 + 가운데(열마다) + 마지막
@@ -126,7 +129,7 @@ export function expandDynTable(def: DynTable, input: DynTableInput, bindings: Bi
   // 4. 셀 비율 — 급부마다 열마다
   const computed: Computed[] = input.benefits.map((benefit) => {
     const payRate = benefit.payRate ?? DEFAULT_PAY_RATE;
-    const reduction = def.columnBasis === "reduction" ? benefit.reduction : undefined;
+    const reduction = split ? benefit.reduction : undefined;
     return { benefit, ratios: Array.from({ length: columns }, (_, j) => formatRatio(payRate, reductionRateAt(reduction, boundaries, j))) };
   });
 

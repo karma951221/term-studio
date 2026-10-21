@@ -2,7 +2,8 @@
  * 동적표 정의 타입 (순수) — 기능/동적표 §3.1 ~ §3.3.
  *
  * - 동적표는 함수조항과 같은 뼈대의 독립 객체: 코드(시스템 발급) · 이름 · 인자(값 인자만 — `ParamDef`) · 본문 대신 **표 규칙**.
- * - 표 규칙 = 행 기준(급부명, 고정) · 열 기준(감액 구간 / 없음) · 구분 칸 머리글 · 열 머리글 템플릿 네 벌(첫 · 가운데 · 마지막 · 단일) · 셀 템플릿.
+ * - 표 규칙 = 행 기준(급부명, 고정) · 구분 칸 머리글 · 열 머리글 템플릿 네 벌(첫 · 가운데 · 마지막 · 단일) · 셀 템플릿.
+ *   열을 감액 구간으로 나눌지는 머리글 구조가 정한다(`tableShape` — 첫 · 가운데 · 마지막을 모두 비우면 늘 열 하나, 2026-10-21 열 기준 폐지).
  * - 템플릿은 인라인 노드(`Inline[]`, clause/nodes.ts) — 글 + 슬롯 + 조건 · 값별 분기. 조건 · 분기는 `arg.X` 만 읽고(§3.1),
  *   셀 템플릿의 「해당보장의」 조건만 담보 구조 내장값(`count(builtin.subCoverage.name) >= 2`)을 읽는다 — 그것은 조립이 담보 문맥에서 평가한다.
  * - 표 슬롯은 내장 경로 `builtin.table.<슬롯>` 으로 적는다(`DYN_TABLE_SLOTS`) — 펼침(`expandDynTable`)이 글로 바꾼 뒤 돌려주므로 평가 문맥에는 오지 않는다.
@@ -13,9 +14,6 @@ import type { Inline } from "../clause/nodes";
 import type { ParamDef } from "../clause/params";
 import type { ReductionPeriods } from "../coverage/traits";
 import type { Code, Id, Issue } from "../types";
-
-/** 열 기준 — 감액 구간(경계 합집합으로 열을 나눈다) 또는 없음(열 하나, 단일 열 템플릿). */
-export type ColumnBasis = "reduction" | "none";
 
 /** 열 머리글 템플릿 네 벌 — 열 하나 = 단일, 둘 = 첫 + 마지막, 셋 이상 = 첫 + 가운데(열마다) + 마지막 (§3.3). */
 export interface DynTableHeaders {
@@ -32,7 +30,6 @@ export interface DynTable {
   label: string;
   /** 값 인자만 (§3.1) — 조 참조 인자는 저장 검사가 거부한다. */
   params: ParamDef[];
-  columnBasis: ColumnBasis;
   /** 구분 칸 머리글 — 기본 「구 분」. */
   rowHeader: string;
   headers: DynTableHeaders;
@@ -51,7 +48,6 @@ export type NewDynTable = Omit<DynTable, "id" | "code" | "createdAt" | "updatedA
 export interface DynTableSummary {
   code: Code;
   label: string;
-  columnBasis: ColumnBasis;
   updatedAt?: Date;
   updatedBy?: Id;
 }

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { plainConst } from "../clause/bind";
 import { expandDynTable } from "./expand";
 import { dynTableFixtureA, dynTableFixtureAPrime, dynTableFixtureR } from "./fixture";
-import { headerRegion, placeholderIds, regionsOf, templateNodeId } from "./regions";
+import { headerRegion, paramUsage, placeholderIds, regionsOf, templateNodeId } from "./regions";
 import type { DynBenefit, DynTable } from "./types";
 
 const deps = { formatConst: plainConst, refId: "ref1" };
@@ -31,9 +31,21 @@ describe("regionsOf — 펼친 표의 칸마다 영역", () => {
     expect(regionsOf(out)).toEqual({ header: ["corner", "first", "middle", "last"], rows: [["row", "cell", "cell", "cell"]] });
   });
 
-  it("열 기준 「없음」 — 구분 칸 + 단일 열", () => {
-    const out = expandDynTable(R, { benefits: [benefit("골절진단비", [])] }, undefined, deps);
+  it("단일형(첫 · 가운데 · 마지막 비움) — 감액이 있어도 구분 칸 + 단일 열", () => {
+    const out = expandDynTable(R, { benefits: [benefit("골절진단비", [[12, 50]])] }, undefined, deps);
     expect(regionsOf(out)).toEqual({ header: ["corner", "single"], rows: [["row", "cell"]] });
+  });
+});
+
+describe("paramUsage — 인자마다 읽는 템플릿 영역", () => {
+  it("조건 · 슬롯 · 값별 분기가 읽는 arg.X 를 영역 순서로 모은다", () => {
+    expect(paramUsage(dynTableFixtureA())).toEqual({ 갱신형: ["first", "middle", "last"] });
+    expect(paramUsage(dynTableFixtureAPrime())).toEqual({ 갱신형: ["first", "middle", "last"], 단서: ["first", "last"] });
+  });
+
+  it("아무 영역도 읽지 않는 인자는 빈 목록 · 인자가 없으면 빈 객체", () => {
+    expect(paramUsage({ ...dynTableFixtureR(), params: [{ name: "안씀", type: { kind: "boolean" } }] })).toEqual({ 안씀: [] });
+    expect(paramUsage(dynTableFixtureR())).toEqual({});
   });
 });
 
