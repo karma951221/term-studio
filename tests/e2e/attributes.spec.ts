@@ -22,17 +22,23 @@ test(
   async ({ page, ev }) => {
     await ev.action("담보속성#1", "관리자로 로그인한다", () => login(page));
 
-    await ev.action("담보속성#2", "조회 — 컬럼에 「수」가 없고, 갱신유형 · 부가유형의 값이 각각 한 행(코드 1 · 2)", async () => {
+    await ev.action("담보속성#2", "조회 — 컬럼에 「수」가 없고, 갱신유형 · 부가유형의 값이 각각 한 행(코드 1 · 2) · 담보속성 칸(코드 · 이름 두 줄)은 유형마다 한 번", async () => {
       await page.goto("/attributes");
-      await expect(page.locator("table.ts-table thead th")).toHaveText(["담보속성 코드", "담보속성명", "값 코드", "값 이름", "상품담보명 표기", "최종수정", "수정자"]);
+      await expect(page.locator("table.ts-table thead th")).toHaveText(["담보속성", "값 코드", "값 이름", "상품담보명 표기", "최종수정"]);
       const rows = page.locator("table.ts-table tbody tr");
       await expect(rows).toHaveCount(4);
-      const cells = await rows.evaluateAll((trs) => trs.map((tr) => [...tr.querySelectorAll("td")].slice(0, 4).map((td) => td.textContent?.trim())));
+      // 담보속성 칸은 묶음 첫 행에만(rowSpan) — 두 줄은 「/」로 이어 읽는다 (디자인원칙 §2 L1, 2026-10-21)
+      const cells = await rows.evaluateAll((trs) =>
+        trs.map((tr) => [...tr.querySelectorAll("td")].map((td) => {
+          const lines = td.querySelector(".ts-two-line");
+          return lines ? [...lines.children].map((c) => c.textContent?.trim()).join("/") : td.textContent?.trim();
+        }).slice(0, tr.querySelector("td[rowspan], td.ts-group-cell") ? 3 : 2)),
+      );
       expect(cells).toEqual([
-        ["A0001", "갱신유형", "1", "비갱신형"],
-        ["A0001", "갱신유형", "2", "갱신형"],
-        ["A0002", "부가유형", "1", "기본"],
-        ["A0002", "부가유형", "2", "추가"],
+        ["A0001/갱신유형", "1", "비갱신형"],
+        ["2", "갱신형"],
+        ["A0002/부가유형", "1", "기본"],
+        ["2", "추가"],
       ]);
       await expect(page.getByText("명명")).toHaveCount(0);
     });

@@ -7,7 +7,7 @@
  * 상태(미사용/적용/확정)는 도메인에 없다 — 도메인에 없는 값을 화면이 지어내지 않는다.
  */
 import { EmptyState } from "@/app/_components/EmptyState";
-import { ListPage, codeCol, dateCol, nameCol, type ListColumn } from "@/app/_components/ListPage";
+import { ListPage, auditCol, identCol, type ListColumn } from "@/app/_components/ListPage";
 import { includesQuery, paginate } from "@/app/_lib/list";
 import { ENTITY_LABEL, FIELD_LABEL, NAME_LABEL, newLabel, searchPlaceholder } from "@/app/_lib/labels";
 import type { CoverageSummary } from "@/db/repo/coverage";
@@ -31,10 +31,9 @@ export default async function CoveragesPage({
   const { rows, total, page } = paginate(filtered, sp.page, PAGE_SIZE);
 
   const columns: readonly ListColumn<CoverageSummary>[] = [
-    codeCol((c) => c.code),
-    nameCol(NAME_LABEL.coverage, (c) => c.name, (c) => `/coverages/${c.id}`),
+    identCol(ENTITY_LABEL.coverage, (c) => ({ code: c.code, name: c.name }), (c) => `/coverages/${c.id}`),
     { header: "담보분류", width: "md", cell: (c) => coverageCategoryLabel(c.category, categoryEnum) ?? <span className="ts-muted">—</span> },
-    dateCol(FIELD_LABEL.updatedAt, (c) => c.updatedAt),
+    auditCol((c) => c), // 수정자는 담보 스키마에 없다 — 날짜 한 줄
   ];
 
   return (

@@ -59,3 +59,29 @@ export function formatDateTime(d: Date): string {
   const hour = get("hour") === "24" ? "00" : get("hour");
   return `${get("year")}-${get("month")}-${get("day")} ${hour}:${get("minute")}`;
 }
+
+/**
+ * 묶음 칸의 rowSpan (디자인원칙 §2 L1, 2026-10-21) — 같은 대상이 이어지는 행이면 그 묶음의 첫 행에 길이, 이어지는 행은 0(칸을 그리지 않는다).
+ * 보이는 행(검색 · 페이징 뒤)만 본다 — 묶음이 페이지 경계에 걸리면 다음 페이지 첫 행에서 다시 선다.
+ */
+export function groupSpans(keys: readonly string[]): number[] {
+  return keys.map((key, i) => {
+    if (i > 0 && keys[i - 1] === key) return 0;
+    let n = 1;
+    while (i + n < keys.length && keys[i + n] === key) n++;
+    return n;
+  });
+}
+
+/** 마지막 수정 한 건 — 날짜 · 수정자(id). */
+export interface AuditStamp {
+  updatedAt: Date;
+  updatedBy?: string | null;
+}
+
+/** 묶음의 「최종수정」 — 묶인 행들 중 가장 최근 것 하나. */
+export function latestAudit(stamps: readonly (AuditStamp | undefined)[]): AuditStamp | undefined {
+  let latest: AuditStamp | undefined;
+  for (const stamp of stamps) if (stamp && (!latest || stamp.updatedAt > latest.updatedAt)) latest = stamp;
+  return latest;
+}

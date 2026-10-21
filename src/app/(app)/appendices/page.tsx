@@ -8,8 +8,8 @@
  * (2026-09-09: 행마다 입력칸과 저장 버튼이 서 있던 편집형 목록을 접었다).
  */
 import { EmptyState } from "@/app/_components/EmptyState";
-import { ListPage, codeCol, nameCol, type ListColumn } from "@/app/_components/ListPage";
-import { formatDate, includesQuery, paginate } from "@/app/_lib/list";
+import { ListPage, auditCol, identCol, type ListColumn } from "@/app/_components/ListPage";
+import { includesQuery, paginate } from "@/app/_lib/list";
 import { ENTITY_LABEL, FIELD_LABEL, NAME_LABEL, newLabel, searchPlaceholder } from "@/app/_lib/labels";
 import type { Appendix } from "@/domain/document";
 import { getServices } from "@/lib/services";
@@ -39,10 +39,8 @@ export default async function AppendicesPage({ searchParams }: { searchParams: P
   const { rows, total, page } = paginate(filtered, sp.page, PAGE_SIZE);
 
   const columns: readonly ListColumn<Appendix>[] = [
-    codeCol((a) => a.code),
-    nameCol(NAME_LABEL.appendix, (a) => a.name, (a) => `/appendices/${encodeURIComponent(a.code)}`),
-    { header: FIELD_LABEL.updatedAt, width: "md", mono: true, cell: (a) => { const audit = audits.get(a.code); return audit ? formatDate(audit.updatedAt) : "—"; } },
-    { header: FIELD_LABEL.updatedBy, width: "md", cell: (a) => { const by = audits.get(a.code)?.updatedBy; return (by && userName.get(by)) ?? "—"; } },
+    identCol(ENTITY_LABEL.appendix, (a) => ({ code: a.code, name: a.name }), (a) => `/appendices/${encodeURIComponent(a.code)}`),
+    auditCol((a) => audits.get(a.code), userName),
   ];
 
   return (

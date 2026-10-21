@@ -5,8 +5,8 @@
  * 검색은 그대로 제목까지 본다.
  */
 import { EmptyState } from "@/app/_components/EmptyState";
-import { ListPage, codeCol, nameCol, type ListColumn } from "@/app/_components/ListPage";
-import { formatDate, includesQuery, paginate } from "@/app/_lib/list";
+import { ListPage, auditCol, identCol, type ListColumn } from "@/app/_components/ListPage";
+import { includesQuery, paginate } from "@/app/_lib/list";
 import { ENTITY_LABEL, FIELD_LABEL, NAME_LABEL, newLabel, searchPlaceholder } from "@/app/_lib/labels";
 import type { Box } from "@/domain/document";
 import { getServices } from "@/lib/services";
@@ -32,10 +32,8 @@ export default async function BoxesPage({ searchParams }: { searchParams: Promis
   const { rows, total, page } = paginate(filtered, sp.page, PAGE_SIZE);
 
   const columns: readonly ListColumn<Box>[] = [
-    codeCol((x) => x.code),
-    nameCol(NAME_LABEL.box, (x) => x.name, (x) => `/boxes/${encodeURIComponent(x.code)}`),
-    { header: FIELD_LABEL.updatedAt, width: "md", mono: true, cell: (x) => { const audit = audits.get(x.code); return audit ? formatDate(audit.updatedAt) : "—"; } },
-    { header: FIELD_LABEL.updatedBy, width: "md", cell: (x) => { const by = audits.get(x.code)?.updatedBy; return (by && userName.get(by)) ?? "—"; } },
+    identCol(ENTITY_LABEL.box, (x) => ({ code: x.code, name: x.name }), (x) => `/boxes/${encodeURIComponent(x.code)}`),
+    auditCol((x) => audits.get(x.code), userName),
   ];
 
   return (

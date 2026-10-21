@@ -43,13 +43,20 @@ describe("담보 조회 — 담보분류 열 (ADR-0090 · 기능/담보 §4)", (
 });
 
 describe("담보 조회 — 담보코드", () => {
-  it("1열이 코드 — 헤더 「코드」 · 행마다 COV 코드 · 검색창은 코드 · 담보명", async () => {
+  it("1열이 담보 — 1줄째 코드 · 2줄째 담보명(상세로) 두 줄 한 칸 · 검색창은 코드 · 담보명 (2026-10-21)", async () => {
     const html = await render();
-    expect(html.indexOf("<th class=\"col-code\">코드</th>")).toBeGreaterThan(-1);
-    expect(html.indexOf("<th class=\"col-code\">")).toBeLessThan(html.indexOf("<th class=\"col-flex\">"));
-    expect(html).toContain("<code>COV000001</code>");
-    expect(html).toContain("<code>COV000002</code>");
+    expect(html.indexOf("<th class=\"col-flex\">담보</th>")).toBeGreaterThan(-1);
+    expect(html).not.toContain("<th class=\"col-code\">");
+    expect(html).toMatch(/<td class="col-flex"><span class="ts-two-line ts-ident"><code class="ts-ident-code">COV000001<\/code><a class="ts-ident-name" href="\/coverages\/c1">일반상해사망보장<\/a><\/span><\/td>/);
+    expect(html).toContain(">COV000002</code>");
     expect(html).toContain('placeholder="코드 · 담보명"');
+  });
+
+  it("최종수정은 날짜 한 줄 — 담보에는 수정자가 없다", async () => {
+    const html = await render();
+    expect(html.match(/<th[^>]*>최종수정<\/th>/g)).toHaveLength(1);
+    expect(html).not.toContain("수정자");
+    expect(html).toContain('<span class="ts-two-line ts-audit"><span class="ts-mono">2026-09-27</span></span>');
   });
 
   it("코드로 검색하면 그 담보만", async () => {

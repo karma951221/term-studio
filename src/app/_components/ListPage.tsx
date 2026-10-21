@@ -16,14 +16,17 @@ import { ErrorBanner } from "./ErrorBanner";
 import { ColumnFilter, ListFilterBar, type ColumnFilterSpec } from "./ListFilters";
 import { ListShell } from "./ListShell";
 import { IconPlus } from "./icons";
+import { AuditCell, IdentCell } from "./ListCells";
 import { MoreMenu, type MoreMenuItem } from "./MoreMenu";
-import { formatDate, todayInSeoul } from "../_lib/list";
+import { groupSpans, latestAudit, todayInSeoul, type AuditStamp } from "../_lib/list";
 import { FIELD_LABEL } from "../_lib/labels";
 
 /** 컬럼 폭은 이름으로 고른다 — 화면마다 `col-fixed-md` 를 외우지 않게. */
 const WIDTH_CLASS = {
   code: "col-code",
   flex: "col-flex",
+  /** 코드 · 이름 두 줄 칸이 가변 열이 아닐 때(담보속성 — 남는 폭은 값 이름이 먹는다). */
+  ident: "col-ident",
   sm: "col-fixed-sm",
   md: "col-fixed-md",
   num: "col-num",
@@ -40,11 +43,21 @@ export interface ListColumn<T> {
   width?: keyof typeof WIDTH_CLASS;
   /** 코드 · 날짜처럼 세로줄이 맞아야 하는 칸. */
   mono?: boolean;
+  /** 짧은 값이 「비갱\n신형」처럼 쪼개지지 않게 — 줄바꿈 없이 한 줄. */
+  nowrap?: boolean;
+  /**
+   * 묶음 칸 — 표에 `groupKey` 가 있으면 같은 대상이 이어지는 행들에 한 번만 선다(rowSpan, 2026-10-21).
+   * 칸 내용은 `groupCell(묶인 행들)`, 없으면 첫 행의 `cell`.
+   */
+  grouped?: boolean;
+  groupCell?: (rows: readonly T[]) => ReactNode;
   cell: (row: T) => ReactNode;
 }
 
-function cellClass<T>(column: ListColumn<T>): string {
-  return [WIDTH_CLASS[column.width ?? "flex"], column.mono ? "ts-mono" : null].filter(Boolean).join(" ");
+function cellClass<T>(column: ListColumn<T>, grouped = false): string {
+  return [WIDTH_CLASS[column.width ?? "flex"], column.mono ? "ts-mono" : null, column.nowrap ? "ts-nowrap" : null, grouped ? "ts-group-cell" : null]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function ListPage<T>({
@@ -56,6 +69,7 @@ export function ListPage<T>({
   columns,
   rows,
   rowKey,
+  groupKey,
   total,
   page,
   pageSize,
@@ -80,6 +94,11 @@ export function ListPage<T>({
   columns: readonly ListColumn<T>[];
   rows: readonly T[];
   rowKey: (row: T) => string;
+  /**
+   * 한 대상이 여러 행에 걸치는 표(담보속성 — 한 행 = 값 하나)의 묶음 키. 주면 `grouped` 컬럼이 묶음마다 한 번만 서고,
+   * 괘선은 묶음 사이에만 긋는다. 보이는 행만 묶는다 — 페이지 경계에 걸리면 다음 페이지에서 다시 선다 (§2 L1, 2026-10-21).
+   */
+  groupKey?: (row: T) => string;
   total: number;
   page: number;
   pageSize: number;
@@ -103,6 +122,8 @@ export function ListPage<T>({
       ) : null}
     </div>
   );
+
+  const spans = groupKey ? groupSpans(rows.map(groupKey)) : undefined;
 
   return (
     <div>
@@ -141,15 +162,31 @@ export function ListPage<T>({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={rowKey(row)}>
-                {columns.map((column, index) => (
-                  <td key={index} className={cellClass(column)}>
-                    {column.cell(row)}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {rows.map((row, i) => {
+              const span = spans ? spans[i]! : 1;
+              const groupRows = spans && span > 0 ? rows.slice(i, i + span) : [row];
+              // 묶음 안의 행(다음 행이 같은 묶음)은 괘선을 긋지 않는다 — 괘선은 묶음 사이에만
+              const inner = spans !== undefined && i + 1 < rows.length && spans[i + 1] === 0;
+              return (
+                <tr key={rowKey(row)} className={inner ? "ts-group-inner" : undefined}>
+                  {columns.map((column, index) => {
+                    if (!spans || !column.grouped) {
+                      return (
+                        <td key={index} className={cellClass(column)}>
+                          {column.cell(row)}
+                        </td>
+                      );
+                    }
+                    if (span === 0) return null;
+                    return (
+                      <td key={index} className={cellClass(column, true)} rowSpan={span > 1 ? span : undefined}>
+                        {column.groupCell ? column.groupCell(groupRows) : column.cell(row)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </ListShell>
@@ -160,21 +197,47 @@ export function ListPage<T>({
 
 /* ── 되풀이되는 컬럼 ──────────────────────────────────────────────────────── */
 
-/** 1열의 코드 — mono 고정폭. 코드는 식별자이므로 코드처럼 보인다 (§2 L1). */
-export function codeCol<T>(get: (row: T) => string): ListColumn<T> {
-  return { header: FIELD_LABEL.code, width: "code", cell: (row) => <code>{get(row)}</code> };
+/**
+ * 조회 대상의 코드 · 이름을 한 열 두 줄로 (§2 L1, 2026-10-21) — 1줄째 코드(mono · 옅은 색), 2줄째 이름(상세로).
+ * 머리글은 대상 이름 하나(「담보속성」). 기본은 남는 폭을 먹는 가변 열이다.
+ */
+export function identCol<T>(
+  header: string,
+  get: (row: T) => { code: string; name: string },
+  href: (row: T) => string,
+  options: { width?: "flex" | "ident"; grouped?: boolean } = {},
+): ListColumn<T> {
+  return {
+    header,
+    width: options.width ?? "flex",
+    ...(options.grouped ? { grouped: true } : {}),
+    cell: (row) => {
+      const { code, name } = get(row);
+      return <IdentCell code={code} name={name} href={href(row)} />;
+    },
+  };
 }
 
-/** 상세로 들어가는 이름 칸 — 남는 폭을 먹는 단 하나의 컬럼. */
+/** 이름만 있는 대상(상품 · 약관 템플릿)의 상세로 들어가는 이름 칸 — 남는 폭을 먹는 단 하나의 컬럼. */
 export function nameCol<T>(header: string, get: (row: T) => string, href: (row: T) => string): ListColumn<T> {
   return { header, width: "flex", cell: (row) => <Link href={href(row)}>{get(row)}</Link> };
 }
 
-export function dateCol<T>(header: string, get: (row: T) => Date): ListColumn<T> {
-  return { header, width: "md", mono: true, cell: (row) => formatDate(get(row)) };
-}
-
-/** 마지막으로 저장한 사람 — id 를 이름으로 바꿔 보인다 (§9.4 실체는 표시명으로 부른다). */
-export function userCol<T>(header: string, get: (row: T) => string, names: Map<string, string>): ListColumn<T> {
-  return { header, width: "md", cell: (row) => names.get(get(row)) ?? "—" };
+/**
+ * 「최종수정」 한 열 두 줄 (§2 L1, 2026-10-21) — 1줄째 수정일자, 2줄째 수정자(id 를 표시명으로, §9.4).
+ * `names` 를 안 주면 날짜 한 줄(수정자가 스키마에 없는 대상). 묶음 칸이면 묶인 행들 중 가장 최근 것 하나.
+ */
+export function auditCol<T>(
+  get: (row: T) => AuditStamp | undefined,
+  names?: ReadonlyMap<string, string>,
+  options: { grouped?: boolean } = {},
+): ListColumn<T> {
+  return {
+    header: FIELD_LABEL.updatedAt,
+    width: "md",
+    nowrap: true,
+    ...(options.grouped ? { grouped: true } : {}),
+    groupCell: (rows) => <AuditCell audit={latestAudit(rows.map(get))} {...(names ? { names } : {})} />,
+    cell: (row) => <AuditCell audit={get(row)} {...(names ? { names } : {})} />,
+  };
 }

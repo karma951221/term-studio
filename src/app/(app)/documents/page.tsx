@@ -10,7 +10,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { EmptyState } from "@/app/_components/EmptyState";
-import { ListPage, dateCol, nameCol, userCol, type ListColumn } from "@/app/_components/ListPage";
+import { ListPage, auditCol, nameCol, type ListColumn } from "@/app/_components/ListPage";
 import { ENTITY_LABEL, newLabel } from "@/app/_lib/labels";
 import { includesQuery, paginate } from "@/app/_lib/list";
 import type { DocumentSummary } from "@/db/repo/document";
@@ -42,10 +42,7 @@ export default async function DocumentsPage({
   const q = (sp.q ?? "").trim();
   const slice = paginate(docs.filter((d) => includesQuery(q, [d.title])), sp.page, PAGE_SIZE);
 
-  const audit: readonly ListColumn<DocumentSummary>[] = [
-    dateCol("최종수정", (d) => d.updatedAt),
-    userCol("수정자", (d) => d.updatedBy ?? "", userName),
-  ];
+  const audit: readonly ListColumn<DocumentSummary>[] = [auditCol((d) => d, userName)];
 
   const columns: readonly ListColumn<DocumentSummary>[] =
     kind === "general"

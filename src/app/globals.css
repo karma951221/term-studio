@@ -2387,6 +2387,58 @@ td.col-act {
   text-align: right;
 }
 
+/* 두 줄 칸 (§2 L1, 2026-10-21) — 짝으로 다니는 두 열을 한 열에. 코드 · 이름은 1줄째 코드(옅은 mono) · 2줄째 이름,
+ * 최종수정은 1줄째 날짜 · 2줄째 수정자. 줄마다 끊기지 않게 nowrap — 넘치면 말줄임. */
+.ts-two-line {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.ts-two-line > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ts-table .ts-ident-code {
+  font-size: 11px;
+  color: var(--ts-ink-3);
+}
+
+.ts-ident-name {
+  font-weight: 600;
+}
+
+.ts-audit-by {
+  font-size: 12px;
+  color: var(--ts-ink-3);
+}
+
+/* 코드 · 이름 칸이 가변 열이 아닐 때(담보속성 — 남는 폭은 값 이름이 먹는다) */
+th.col-ident,
+td.col-ident {
+  width: 180px;
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.ts-table td.ts-nowrap {
+  white-space: nowrap;
+}
+
+/* 묶음 칸 — 한 대상이 여러 행에 걸치면 그 대상 칸은 한 번만(rowSpan). 위에서부터 읽히게 위 정렬,
+ * 괘선은 묶음 사이에만 — 묶음 안의 행은 아래 괘선을 지운다(묶음 칸은 제 아래 괘선이 곧 묶음 경계). */
+.ts-table td.ts-group-cell {
+  vertical-align: top;
+  padding-top: 6px;
+}
+
+.ts-table tr.ts-group-inner > td:not(.ts-group-cell) {
+  border-bottom-color: transparent;
+}
+
 /* 「총 N건 · 1/1」 + 앞뒤 이동 (§2 L1 — 무한 스크롤을 쓰지 않는다) */
 .ts-pager {
   position: sticky;
