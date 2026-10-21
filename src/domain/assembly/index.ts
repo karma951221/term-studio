@@ -13,6 +13,7 @@
  * - sameness.ts   : 「같다」 — 함수조항 동일 가드 · 항 단위 · 참조 대치
  * - articlePreview.ts : previewArticle — 문면 저작 화면 미리보기(고른 상품 문맥으로 조 하나)
  * - explain.ts    : explainArticle — 설명 모드(출처 패널, ADR-0092): 조 하나의 원본 · 결정 노드 기록 · 생략 · 제1절 판정 기록
+ * - sourceView.ts : buildSourceView — 출처 패널의 재료(원본 조 · 대치 한 줄 · 결과 값 조각 · 이름표)
  * - fixture.ts    : 관통 1 축약 픽스처 (AssemblyInput)
  *
  * DB·React import 금지.
@@ -20,6 +21,7 @@
 export * from "./booklet";
 export * from "./articlePreview";
 export * from "./explain";
+export * from "./sourceView";
 export * from "./compare";
 export * from "./application";
 export * from "./base";
