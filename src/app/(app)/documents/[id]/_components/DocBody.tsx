@@ -32,6 +32,7 @@ import {
   type TableNode,
   type TreeIndex,
 } from "@/domain/document";
+import { tableShape } from "@/domain/dyntable/shape";
 import type { Code, Id } from "@/domain/types";
 
 import { BoxView } from "@/app/_components/BoxView";
@@ -382,7 +383,7 @@ function DynTableBand({ node, ctx }: { node: DynTableRefNode; ctx: DocCtx }) {
         <BlockActs id={node.id} what={`동적표 ${def?.label ?? node.tableCode}`} ctx={ctx} inline />
       </div>
       <p className="ts-muted ts-doc-clause-body">
-        {def ? `열 기준 ${def.columnBasis === "reduction" ? "감액 구간" : "없음"} · 조립이 이 상품담보의 급부를 급부명 · 지급률 · 감액 구간으로 펼쳐 표로 낸다 — 미리보기 탭에서 본다.` : "약관 조문 › 동적표에서 정의를 확인한다."}
+        {def ? `${tableShape(def.headers) === "split" ? "감액 구간으로 열을 나누는 표" : "열 하나 표"} · 조립이 이 상품담보의 급부를 급부명 · 지급률 · 감액 구간으로 펼쳐 표로 낸다 — 미리보기 탭에서 본다.` : "약관 조문 › 동적표에서 정의를 확인한다."}
       </p>
     </div>
   );
