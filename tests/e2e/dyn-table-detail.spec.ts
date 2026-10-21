@@ -9,6 +9,7 @@ import { expect, test } from "./_lib/fixtures";
  * 편집 중 템플릿을 고치면 저장 전에 표가 바로 바뀐다. 저장하지 않으므로 시드는 그대로다.
  * 배치는 세 섹션 기본 → 인자(읽기 전용 표) → 구조(2단: 미리보기 · 영역별 템플릿) — 앱 오른쪽 창 폭(640px)에서도 구조는 2단이다.
  * 인자는 편집 모드에서도 고치지 않는다. 열 기준은 없다 — DT000002 는 첫 · 가운데 · 마지막을 비운 단일형이라 읽기 모드에 단일 열 줄만 있다.
+ * 구조 섹션 머리의 모양 한 줄과 견본 설명은 정의 모양별 — 단일형(DT000002)에서 감액 견본 설명은 열 하나를 말한다(2026-10-21).
  */
 
 async function login(page: Page): Promise<void> {
@@ -29,6 +30,8 @@ test(
     await ev.action("동적표상세#2", "DT000001 을 열면 견본 「감액 3구간」 표 — 구분 칸 + 첫 · 가운데 · 마지막 열", async () => {
       await page.goto("/dyntables/DT000001");
       await expect(page.getByLabel("견본", { exact: true })).toHaveValue("reduction3");
+      await expect(page.getByTestId("dyn-shape-line")).toHaveText("표 모양: 감액 구간형 — 감액 경계로 열을 나눈다");
+      await expect(page.locator(".ts-dyn-sample-desc")).toHaveText("급부 하나, 감액 경계 둘 → 첫 · 가운데 · 마지막 열이 모두 쓰인다.");
       await expect(headerCells).toHaveCount(4);
       await expect(headerCells).toHaveText(["구 분", "계약일부터 1년경과시점 전일 이전", "계약일부터 1년경과시점 이후 계약일부터 2년경과시점 전일 이전", "계약일부터 2년경과시점 이후"]);
       await expect(table.locator("tbody tr").first().locator("th, td")).toHaveText(["사망보험금", "보험가입금액의 25%", "보험가입금액의 50%", "보험가입금액의 100%"]);
@@ -111,6 +114,20 @@ test(
       await page.getByRole("button", { name: "편집", exact: true }).click();
       await expect(page.locator('[data-dyn-field="first"]')).toBeVisible();
       await page.getByRole("button", { name: /편집 취소/ }).click();
+    });
+
+    await ev.action("동적표상세#10", "DT000002 — 모양 한 줄은 단일형, 견본 설명은 이 정의에서 보이는 것(감액 구간은 안 나옴 · 갱신형 인자 없음)", async () => {
+      const desc = page.locator(".ts-dyn-sample-desc");
+      await expect(page.getByTestId("dyn-shape-line")).toHaveText("표 모양: 단일형 — 늘 열 하나");
+      await expect(page.getByLabel("견본", { exact: true })).toHaveValue("reduction3");
+      await expect(desc).toHaveText("이 정의는 감액이 있어도 열 하나 — 감액 구간(1년 25% · 2년 50%)은 표에 나오지 않고 비율은 지급률(100%).");
+      await expect(desc).not.toContainText("가운데");
+      await page.getByLabel("견본", { exact: true }).selectOption("multiBenefit");
+      await expect(headerCells).toHaveText(["구 분", "지급금액"]);
+      await expect(table.locator("tbody tr")).toHaveCount(2);
+      await expect(desc).toContainText("급부마다 한 행, 열은 하나");
+      await page.getByLabel("견본", { exact: true }).selectOption("renewal");
+      await expect(desc).toHaveText("이 정의는 갱신형 인자를 읽지 않는다 — 감액 3구간과 같은 표.");
     });
   },
 );

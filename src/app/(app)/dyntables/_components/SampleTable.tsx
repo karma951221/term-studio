@@ -25,6 +25,8 @@ export const REGION_LABEL: Record<DynTableRegion, string> = {
 
 export interface SampleTableProps {
   sample: DynTableSample;
+  /** 견본 설명 — 정의 모양별(`sampleDescription`). */
+  description: string;
   onSample: (id: string) => void;
   view: DynTableSampleView;
   selected?: DynTableRegion;
@@ -50,7 +52,7 @@ function CellText({ cell }: { cell: SampleCell }) {
   );
 }
 
-export function SampleTable({ sample, onSample, view, selected, hovered, onSelect, onHover }: SampleTableProps) {
+export function SampleTable({ sample, description, onSample, view, selected, hovered, onSelect, onHover }: SampleTableProps) {
   const cell = (c: SampleCell, key: number, head: boolean) => {
     const on = c.region === selected;
     const cls = [on ? "is-on" : "", !on && c.region === hovered ? "is-hover" : "", c.region === "row" ? "is-rowhead" : ""].filter(Boolean).join(" ");
@@ -85,7 +87,7 @@ export function SampleTable({ sample, onSample, view, selected, hovered, onSelec
           ))}
         </select>
       </div>
-      <p className="ts-muted ts-dyn-sample-desc">{sample.description}</p>
+      <p className="ts-muted ts-dyn-sample-desc">{description}</p>
       <div className="ts-dyn-table-wrap" onMouseLeave={() => onHover(undefined)}>
         <table className="ts-dyn-table" style={{ "--dyn-cols": view.header.length } as CSSProperties} aria-label={`견본 「${sample.label}」으로 펼친 표`}>
           <thead>

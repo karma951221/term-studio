@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { EnumDef } from "../catalog";
 import { dynTableFixtureA, dynTableFixtureAPrime, dynTableFixtureR } from "./fixture";
 import { cellText, renderDynTableSample } from "./sampleView";
-import { DYN_TABLE_SAMPLES, dynTableSample, sampleArgValues } from "./samples";
+import { DYN_TABLE_SAMPLES, dynTableSample, sampleArgValues, sampleDescription } from "./samples";
 
 const A = dynTableFixtureA();
 const view = (id: string) => {
@@ -63,6 +63,49 @@ describe("DYN_TABLE_SAMPLES — 견본 다섯", () => {
   it("단일형 정의(첫 · 가운데 · 마지막 비움)는 어느 견본이든 단일 열", () => {
     const R = dynTableFixtureR();
     for (const s of DYN_TABLE_SAMPLES) expect(renderDynTableSample(R, s.benefits, sampleArgValues(R.params, s)).header.map((c) => c.region)).toEqual(["corner", "single"]);
+  });
+});
+
+describe("sampleDescription — 견본 설명은 정의 모양별", () => {
+  const R = dynTableFixtureR();
+  const d = (id: string, def = A) => sampleDescription(dynTableSample(id), def);
+
+  it("감액 구간형(A)이면 견본의 감액 구간형 설명 그대로", () => {
+    expect(d("reduction3")).toBe("급부 하나, 감액 경계 둘 → 첫 · 가운데 · 마지막 열이 모두 쓰인다.");
+    expect(d("renewal")).toContain("머리글 기준일이 「계약일」에서 「최초계약일」로 바뀐다");
+  });
+
+  it("단일형(R) — 감액 견본은 열 하나, 감액 구간은 표에 나오지 않는다", () => {
+    expect(d("reduction3", R)).toBe("이 정의는 감액이 있어도 열 하나 — 감액 구간(1년 25% · 2년 50%)은 표에 나오지 않고 비율은 지급률(100%).");
+    expect(d("reduction1", R)).toBe("이 정의는 감액이 있어도 열 하나 — 감액 구간(1년 50%)은 표에 나오지 않고 비율은 지급률(100%).");
+    expect(d("noReduction", R)).toBe("감액이 없다 — 이 정의는 늘 열 하나라 감액 견본과 모양이 같다(급부 하나 · 열 하나).");
+    expect(d("multiBenefit", R)).toBe("급부마다 한 행, 열은 하나 — 경계가 달라도 열을 나누지 않고 비율은 급부별 지급률(100% · 20%). 세부보장이 둘이라 셀 앞에 「해당보장의」.");
+  });
+
+  it("갱신형 담보 — 인자 갱신형이 없는 정의면 감액 3구간과 같은 표(모양과 무관)", () => {
+    expect(d("renewal", R)).toBe("이 정의는 갱신형 인자를 읽지 않는다 — 감액 3구간과 같은 표.");
+    expect(d("renewal", { ...A, params: [] })).toBe("이 정의는 갱신형 인자를 읽지 않는다 — 감액 3구간과 같은 표.");
+  });
+
+  it("갱신형 담보 — 단일형이라도 인자 갱신형이 있으면 그 인자가 켜진다", () => {
+    expect(d("renewal", { ...R, params: A.params })).toBe("인자 갱신형이 켜진다 — 이 정의는 열 하나라 감액 구간은 나오지 않고, 갱신형을 읽는 자리만 감액 3구간과 달라진다.");
+  });
+
+  it("단일형 설명이 말하는 비율 · 행이 실제 견본 표와 맞다", () => {
+    const rows = (id: string) => {
+      const s = dynTableSample(id);
+      return renderDynTableSample(R, s.benefits, sampleArgValues(R.params, s)).rows.map((r) => r.map(cellText));
+    };
+    expect(rows("reduction3")).toEqual([["사망보험금", "보험가입금액의 100%"]]);
+    expect(rows("renewal")).toEqual(rows("reduction3"));
+    expect(rows("multiBenefit")).toEqual([
+      ["뇌졸중진단비", "해당보장의 보험가입금액의 100%"],
+      ["급성심근경색진단비", "해당보장의 보험가입금액의 20%"],
+    ]);
+  });
+
+  it("단일형 설명엔 첫 · 가운데 · 마지막 열 이야기가 없다", () => {
+    for (const s of DYN_TABLE_SAMPLES) expect(sampleDescription(s, R)).not.toMatch(/첫 · 가운데|가운데 열|마지막 열/);
   });
 });
 

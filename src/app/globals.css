@@ -1355,6 +1355,12 @@ button:where(:not([data-slot])).danger:focus-visible {
   border-bottom: 1px solid var(--ts-rule-strong);
 }
 
+/* 구조 섹션 머리 — 정의 모양 한 줄(머리글 구조가 정한다) */
+.ts-dyn-shape-line {
+  margin: 0;
+  font-size: 13px;
+}
+
 .ts-dyn-basics {
   display: flex;
   flex-wrap: wrap;
