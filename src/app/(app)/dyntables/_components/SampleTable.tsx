@@ -7,6 +7,8 @@
  * 칸은 버튼이다(키보드로 고른다): 누르면 같은 영역 칸 전부와 오른쪽 그 필드가 강조되고, 다시 누르면 풀린다. 마우스를 올리면 옅게 미리 칠한다.
  * 자리표시자에 들어간 값은 굵은 밑줄, 조건이 고른 글은 점선. 강조는 색 + 안쪽 띠 + 굵기.
  */
+import type { CSSProperties } from "react";
+
 import type { DynTableRegion } from "@/domain/dyntable/regions";
 import type { DynTableSampleView, SampleCell } from "@/domain/dyntable/sampleView";
 import { DYN_TABLE_SAMPLES, type DynTableSample } from "@/domain/dyntable/samples";
@@ -85,7 +87,7 @@ export function SampleTable({ sample, onSample, view, selected, hovered, onSelec
       </div>
       <p className="ts-muted ts-dyn-sample-desc">{sample.description}</p>
       <div className="ts-dyn-table-wrap" onMouseLeave={() => onHover(undefined)}>
-        <table className="ts-dyn-table" aria-label={`견본 「${sample.label}」으로 펼친 표`}>
+        <table className="ts-dyn-table" style={{ "--dyn-cols": view.header.length } as CSSProperties} aria-label={`견본 「${sample.label}」으로 펼친 표`}>
           <thead>
             <tr>{view.header.map((c, j) => cell(c, j, true))}</tr>
           </thead>

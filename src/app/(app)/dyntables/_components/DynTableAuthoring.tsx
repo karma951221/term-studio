@@ -3,8 +3,9 @@
 /**
  * 동적표 에디터 — `/dyntables/new`(생성) · `/dyntables/<code>`(상세) 한 벌 (기능/동적표 §4.2).
  *
- * 2단 — 왼쪽 견본 표(`SampleTable` — 시스템 견본을 골라 조립과 같은 펼침으로 늘 그린다), 오른쪽 템플릿 패널(기본정보 · 열 기준 · 인자(`ParamsPane`) ·
- * 행 머리(시스템) · 구분 칸 머리글 · 열 머리글 네 줄 · 셀 템플릿). 좁으면 세로로 쌓인다.
+ * 위→아래 — 기본 정보 줄(코드 · 동적표명 · 열 기준) → 인자(`ParamsPane`, 전체 폭) → 2단: 왼쪽 미리보기(`SampleTable` — 시스템 견본을 골라
+ * 조립과 같은 펼침으로 늘 그린다, 오른쪽이 길어도 화면 안에 머문다), 오른쪽 영역별 템플릿(행 머리(시스템) · 구분 칸 머리글 · 열 머리글 네 줄 · 셀 템플릿).
+ * 2단은 본문 폭 기준(컨테이너 쿼리) — 아주 좁을 때(520px 미만)만 세로로 쌓인다.
  * 템플릿 줄마다 `TemplateEditor`(문면 인라인 편집기) — 그 줄에서 쓸 수 있는 표 슬롯(`DYN_TABLE_ALLOWED_SLOTS`)과 인자 슬롯 · 조건을 넣는다.
  * 칸 ↔ 필드: 표 칸을 누르면 그 칸을 만든 영역의 칸 전부 + 오른쪽 그 필드가 강조되고(다시 누르면 풀림) 필드로 스크롤한다. 필드에 들어가면(포커스 · 클릭) 표의 그 영역이 칠해진다.
  * 견본에 없는 영역의 필드는 흐리게 + 「이 견본엔 없음」. 편집 중에는 편집본으로 그려 저장 전에 바로 보인다.
@@ -253,48 +254,48 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
             )}
           </div>
         )}
-        <div className="ts-dyn-layout">
-          <SampleTable sample={sample} onSample={setSampleId} view={view} selected={selected} hovered={hovered} onSelect={pickFromTable} onHover={setHovered} />
-
-          <div className="ts-dyn-panel" aria-label="템플릿">
-            <section className="ts-basics" aria-label="동적표 기본정보">
-              {!isNew && (
-                <div className="ts-form-row">
-                  <span className="ts-form-label">코드</span>
-                  <span className="ts-clause-meta-value ts-mono">{code}</span>
+        <div className="ts-dyn-page">
+          <section className="ts-dyn-basics" aria-label="동적표 기본정보">
+            {!isNew && (
+              <div className="ts-dyn-basic">
+                <span className="ts-form-label">코드</span>
+                <span className="ts-clause-meta-value ts-mono">{code}</span>
+              </div>
+            )}
+            <div className="ts-dyn-basic is-name">
+              <label htmlFor="dyn-label" className="ts-form-label">
+                {NAME_LABEL.dynTable}
+              </label>
+              {editing ? (
+                <input id="dyn-label" className="ts-field-direct" value={draft.label} onChange={(e) => patch({ label: e.target.value })} placeholder="예: 감액 지급금액 표" autoFocus={isNew} aria-invalid={placed?.label ? true : undefined} />
+              ) : (
+                <span className="ts-clause-meta-value">{props.table.label}</span>
+              )}
+            </div>
+            <div className="ts-dyn-basic is-basis">
+              <span className="ts-form-label">열 기준</span>
+              {editing ? (
+                <div className="ts-clause-mode" role="radiogroup" aria-label="열 기준">
+                  {COLUMN_BASIS_OPTIONS.map((o) => (
+                    <label key={o.value} className={`ts-clause-mode-option${shown.columnBasis === o.value ? " is-on" : ""}`}>
+                      <input type="radio" name="dyn-basis" value={o.value} checked={shown.columnBasis === o.value} onChange={() => patch({ columnBasis: o.value as ColumnBasis })} />
+                      <span className="ts-clause-mode-name">{o.label}</span>
+                      <span className="ts-clause-mode-hint">{o.hint}</span>
+                    </label>
+                  ))}
                 </div>
+              ) : (
+                <span className="ts-clause-meta-value">{COLUMN_BASIS_OPTIONS.find((o) => o.value === shown.columnBasis)?.label}</span>
               )}
-              <div className="ts-form-row">
-                <label htmlFor="dyn-label">{NAME_LABEL.dynTable}</label>
-                {editing ? (
-                  <input id="dyn-label" className="ts-field-direct" value={draft.label} onChange={(e) => patch({ label: e.target.value })} placeholder="예: 감액 지급금액 표" autoFocus={isNew} aria-invalid={placed?.label ? true : undefined} />
-                ) : (
-                  <span className="ts-clause-meta-value">{props.table.label}</span>
-                )}
-              </div>
-              {placed?.label && (
-                <p className="ts-form-error" role="alert">
-                  {placed.label}
-                </p>
-              )}
-              <div className="ts-form-row">
-                <span className="ts-form-label">열 기준</span>
-                {editing ? (
-                  <div className="ts-clause-mode" role="radiogroup" aria-label="열 기준">
-                    {COLUMN_BASIS_OPTIONS.map((o) => (
-                      <label key={o.value} className={`ts-clause-mode-option${shown.columnBasis === o.value ? " is-on" : ""}`}>
-                        <input type="radio" name="dyn-basis" value={o.value} checked={shown.columnBasis === o.value} onChange={() => patch({ columnBasis: o.value as ColumnBasis })} />
-                        <span className="ts-clause-mode-name">{o.label}</span>
-                        <span className="ts-clause-mode-hint">{o.hint}</span>
-                      </label>
-                    ))}
-                  </div>
-                ) : (
-                  <span className="ts-clause-meta-value">{COLUMN_BASIS_OPTIONS.find((o) => o.value === shown.columnBasis)?.label}</span>
-                )}
-              </div>
-            </section>
+            </div>
+            {placed?.label && (
+              <p className="ts-form-error ts-dyn-basics-error" role="alert">
+                {placed.label}
+              </p>
+            )}
+          </section>
 
+          <div className="ts-dyn-params">
             <ParamsPane params={shown.params} editing={editing} onChange={(next: ParamDef[]) => patch({ params: next })} discriminators={data.condition.discriminators} enums={data.enums} forms={data.planForms} />
             {placed?.params && (
               <p className="ts-form-error" role="alert">
@@ -302,35 +303,41 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
               </p>
             )}
             <p className="ts-muted ts-clause-sec-note">{PARAM_NOTE}</p>
+          </div>
 
-            <section aria-label="행">
-              <h2 className="ts-clause-sec">행</h2>
-              <RegionField region="row" {...fieldState("row")} badge="시스템">
-                <p className="ts-dyn-field-static">급부명 — 급부마다 한 행(같은 급부명은 열마다 비율이 같을 때 한 행). 모델링하지 않는다.</p>
-              </RegionField>
-            </section>
+          <div className="ts-dyn-layout">
+            <SampleTable sample={sample} onSample={setSampleId} view={view} selected={selected} hovered={hovered} onSelect={pickFromTable} onHover={setHovered} />
 
-            <section aria-label="머리글">
-              <h2 className="ts-clause-sec">
-                머리글
-                <InfoTip text="열 하나면 단일 열, 둘이면 첫 + 마지막, 셋 이상이면 첫 + 가운데(열마다) + 마지막. 슬롯 {경계} · {앞경계} 는 펼칠 때 기간 글로 바뀐다." />
-              </h2>
-              <RegionField region="corner" {...fieldState("corner")} labelFor={editing ? "dyn-rowheader" : undefined}>
-                {editing ? <input id="dyn-rowheader" className="ts-field-direct" value={draft.rowHeader} onChange={(e) => patch({ rowHeader: e.target.value })} placeholder="구 분" /> : <span className="ts-clause-meta-value">{props.table.rowHeader}</span>}
-              </RegionField>
-              {rows.map((r) => (
-                <RegionField key={r.key} region={r.key} {...fieldState(r.key)} sub={r.hint}>
-                  <TemplateEditor id={`dyn-h-${r.key}`} value={shown.headers[r.key]} onChange={(next) => setHeader(r.key, next)} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS[r.key]} placeholder={`${REGION_LABEL[r.key]} 머리글`} {...(placed?.templates[r.key] ? { error: placed.templates[r.key] } : {})} />
+            <div className="ts-dyn-panel" aria-label="템플릿">
+              <section aria-label="행">
+                <h2 className="ts-clause-sec">행</h2>
+                <RegionField region="row" {...fieldState("row")} badge="시스템">
+                  <p className="ts-dyn-field-static">급부명 — 급부마다 한 행(같은 급부명은 열마다 비율이 같을 때 한 행). 모델링하지 않는다.</p>
                 </RegionField>
-              ))}
-            </section>
+              </section>
 
-            <section aria-label="본문">
-              <h2 className="ts-clause-sec">본문</h2>
-              <RegionField region="cell" {...fieldState("cell")} sub="{비율} = 급부 지급률 × 감액 지급률. 세부보장이 둘 이상일 때만 붙일 글은 조건 count(builtin.subCoverage.name) >= 2 로.">
-                <TemplateEditor id="dyn-cell" value={shown.cell} onChange={(next) => patch({ cell: next })} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS.cell} placeholder="셀 템플릿" {...(placed?.templates.cell ? { error: placed.templates.cell } : {})} />
-              </RegionField>
-            </section>
+              <section aria-label="머리글">
+                <h2 className="ts-clause-sec">
+                  머리글
+                  <InfoTip text="열 하나면 단일 열, 둘이면 첫 + 마지막, 셋 이상이면 첫 + 가운데(열마다) + 마지막. 슬롯 {경계} · {앞경계} 는 펼칠 때 기간 글로 바뀐다." />
+                </h2>
+                <RegionField region="corner" {...fieldState("corner")} labelFor={editing ? "dyn-rowheader" : undefined}>
+                  {editing ? <input id="dyn-rowheader" className="ts-field-direct" value={draft.rowHeader} onChange={(e) => patch({ rowHeader: e.target.value })} placeholder="구 분" /> : <span className="ts-clause-meta-value">{props.table.rowHeader}</span>}
+                </RegionField>
+                {rows.map((r) => (
+                  <RegionField key={r.key} region={r.key} {...fieldState(r.key)} sub={r.hint}>
+                    <TemplateEditor id={`dyn-h-${r.key}`} value={shown.headers[r.key]} onChange={(next) => setHeader(r.key, next)} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS[r.key]} placeholder={`${REGION_LABEL[r.key]} 머리글`} {...(placed?.templates[r.key] ? { error: placed.templates[r.key] } : {})} />
+                  </RegionField>
+                ))}
+              </section>
+
+              <section aria-label="본문">
+                <h2 className="ts-clause-sec">본문</h2>
+                <RegionField region="cell" {...fieldState("cell")} sub="{비율} = 급부 지급률 × 감액 지급률. 세부보장이 둘 이상일 때만 붙일 글은 조건 count(builtin.subCoverage.name) >= 2 로.">
+                  <TemplateEditor id="dyn-cell" value={shown.cell} onChange={(next) => patch({ cell: next })} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS.cell} placeholder="셀 템플릿" {...(placed?.templates.cell ? { error: placed.templates.cell } : {})} />
+                </RegionField>
+              </section>
+            </div>
           </div>
         </div>
       </div>

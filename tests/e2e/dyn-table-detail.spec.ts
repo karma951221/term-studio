@@ -7,6 +7,7 @@ import { expect, test } from "./_lib/fixtures";
  * 시드 DT000001 「감액 지급금액 표」를 연다. 견본 「감액 3구간」이면 열 머리글이 첫 · 가운데 · 마지막, 「감액 없음」이면 단일 열 하나.
  * 칸을 누르면 같은 영역 칸 전부와 오른쪽 그 필드가 강조되고, 다시 누르면 풀린다. 필드에 들어가면 표의 그 영역이 칠해진다.
  * 편집 중 템플릿을 고치면 저장 전에 표가 바로 바뀐다. 저장하지 않으므로 시드는 그대로다.
+ * 배치는 기본 정보 줄 → 인자 → 2단(미리보기 · 영역별 템플릿) — 앱 오른쪽 창 폭(640px)에서도 2단이다.
  */
 
 async function login(page: Page): Promise<void> {
@@ -71,6 +72,26 @@ test(
       await page.getByRole("button", { name: "저장하지 않고 나가기", exact: true }).click();
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
       await expect(headerCells.first()).toHaveText("구 분");
+    });
+
+    await ev.action("동적표상세#8", "배치 — 기본 정보 줄 → 인자 → 2단, 앱 오른쪽 창 폭(640px)에서도 미리보기 · 템플릿이 나란히", async () => {
+      await page.setViewportSize({ width: 640, height: 900 });
+      // 미리보기는 sticky — 맨 위로 되돌린 뒤 잰다
+      await page.locator(".ts-l3-body").evaluate((el) => el.scrollTo(0, 0));
+      const box = async (selector: string) => {
+        const b = await page.locator(selector).first().boundingBox();
+        if (!b) throw new Error(`${selector} 가 보이지 않는다`);
+        return b;
+      };
+      const basics = await box(".ts-dyn-basics");
+      const params = await box(".ts-dyn-params");
+      const sample = await box(".ts-dyn-sample");
+      const panel = await box(".ts-dyn-panel");
+      expect(basics.y).toBeLessThan(params.y);
+      expect(params.y).toBeLessThan(sample.y);
+      expect(sample.x + sample.width).toBeLessThanOrEqual(panel.x);
+      expect(Math.abs(sample.y - panel.y)).toBeLessThan(4);
+      await expect(page.locator(".ts-dyn-basics")).toContainText("열 기준");
     });
   },
 );
