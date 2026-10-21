@@ -19,6 +19,7 @@ import type { Inline, InlineBranch, SwitchCase } from "../clause/nodes";
 import { effectiveBindings, type Bindings } from "../clause/params";
 import { formatPeriod } from "../master/table";
 import type { Coordinate, Id, Issue } from "../types";
+import { headerRegion } from "./regions";
 import { DYN_TABLE_SLOTS, isDynTableSlotRef, type DynBenefit, type DynTable, type DynTableSlotRef, type ExpandedDynTable, type ExpandedDynTableRow } from "./types";
 
 export interface DynTableInput {
@@ -116,12 +117,7 @@ export function expandDynTable(def: DynTable, input: DynTableInput, bindings: Bi
         return "";
     }
   };
-  const headerTemplate = (j: number): Inline[] => {
-    if (columns === 1) return tmpl.single;
-    if (j === 0) return tmpl.first;
-    if (j === columns - 1) return tmpl.last;
-    return tmpl.middle;
-  };
+  const headerTemplate = (j: number): Inline[] => tmpl[headerRegion(j, columns)];
   const header: Inline[][] = [[{ id: tagOf("h", 0)("rowHeader"), kind: "text", text: def.rowHeader }]];
   for (let j = 0; j < columns; j++) header.push(instantiate(headerTemplate(j), tagOf("h", j + 1), headerText(j)));
 
