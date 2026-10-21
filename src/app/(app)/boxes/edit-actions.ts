@@ -1,7 +1,7 @@
 "use server";
 
 /**
- * 박스 상세의 저장 · 삭제 — 화면 하나에 저장은 하나다 (디자인원칙 §2 L2). 서비스 `saveBox` 가 이름 · 제목 · 줄을 한 트랜잭션에 검사 · 저장한다.
+ * 박스 상세의 저장 · 삭제 — 화면 하나에 저장은 하나다 (디자인원칙 §2 L2). 서비스 `saveBox` 가 제목 · 줄(본문)을 한 트랜잭션에 검사 · 저장한다.
  */
 import type { EditOutcome } from "@/app/_lib/edit";
 import { describeRejection } from "@/app/_lib/rejection";
@@ -18,7 +18,7 @@ function failed<T>(result: Result<T>, token: string): EditOutcome | undefined {
 }
 
 export async function saveBoxEditAction(code: Code, input: BoxEditData): Promise<EditOutcome> {
-  const result = await getServices().document.saveBox(await currentActor(), code, { name: input.name, title: input.title, lines: boxLinesFromText(input.lines) });
+  const result = await getServices().document.saveBox(await currentActor(), code, { title: input.title, lines: boxLinesFromText(input.lines) });
   return failed(result, "save") ?? { ok: true };
 }
 

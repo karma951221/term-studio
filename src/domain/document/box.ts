@@ -115,10 +115,18 @@ export function boxLabel(box: Pick<Box, "title" | "lines">): string {
   return gist === "" ? "(제목 없음)" : `(제목 없음) ${gist}`;
 }
 
-/** 고르는 곳의 힌트 — 같은 제목이 여럿이어도 가를 수 있게 코드 · 본문 앞머리. */
-export function boxHint(box: Box): string {
+/** 고르는 칸(검색 콤보)의 줄 — 「【제목】 본문 앞머리」(코드는 힌트로 따로). 같은 제목이 여럿이어도 본문으로 가른다. */
+export function boxGistLabel(box: Pick<Box, "title" | "lines">): string {
+  if (box.title === "") return boxLabel(box);
   const gist = boxGist(box);
-  return gist === "" ? box.code : `${box.code} · ${gist}`;
+  return gist === "" ? boxHeading(box.title) : `${boxHeading(box.title)} ${gist}`;
+}
+
+/** 고르기 목록 한 줄 — 「【제목】(코드) 본문 앞머리」. 같은 제목이 여럿이어도 코드 · 본문으로 가른다. */
+export function boxPickLabel(box: Box): string {
+  const gist = boxGist(box);
+  const head = `${box.title === "" ? "(제목 없음)" : boxHeading(box.title)}(${box.code})`;
+  return gist === "" ? head : `${head} ${gist}`;
 }
 
 /** 검색이 보는 글 — 코드 · 제목(괄호 없이 · 【】 포함) · 본문 줄. */

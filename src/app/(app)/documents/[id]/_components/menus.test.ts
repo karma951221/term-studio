@@ -129,8 +129,9 @@ describe("오른쪽 클릭 메뉴 — 허용 자식 규칙대로 (기능/문면 
   });
 
   it("툴바 「박스」 — 정적 마스터 박스마다 한 줄, 고르면 그 자리에 박스 참조를 곧바로 넣는다 · 조 제목의 「박스 추가…」는 조 끝 고르기 팝업", () => {
-    const items = boxPickItems([{ code: "BX000001", name: "보험연도" }], { parentId: "n3", slot: "items", index: 1 }, sequentialIds("k"));
-    expect(items.map((i) => i.label)).toEqual(["보험연도(BX000001)"]);
+    // 같은 제목이 여럿이어도 가르도록 코드 · 본문 앞머리를 함께 (2026-10-21)
+    const items = boxPickItems([{ code: "BX000001", title: "보험연도", lines: ["보험연도란 …"] }, { code: "BX000002", title: "보험연도", lines: ["다른 글"] }], { parentId: "n3", slot: "items", index: 1 }, sequentialIds("k"));
+    expect(items.map((i) => i.label)).toEqual(["【보험연도】(BX000001) 보험연도란 …", "【보험연도】(BX000002) 다른 글"]);
     expect(items[0].action).toMatchObject({ do: "ops", ops: [{ type: "insert", node: { kind: "boxRef", boxCode: "BX000001" }, at: { parentId: "n3", slot: "items", index: 1 } }] });
     const item = articleMenu(env(tree()), "n4").flat().find((i) => i.label === "박스 추가…");
     expect(item?.action).toEqual({ do: "popup", popup: { kind: "boxPick", at: { parentId: "n4" } } });

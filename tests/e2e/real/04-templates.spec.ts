@@ -2,7 +2,7 @@ import { pickCombo } from "../_lib/combo";
 import { expect, test } from "../_lib/fixtures";
 import { NO_COORD, arrive, login, open } from "./_lib/app";
 import { DocumentAuthoring } from "./_lib/driver";
-import { HUMAN, SEED, generalAncestors, generalTreeOf, outlinePaths } from "./_lib/seed";
+import { BOX_PICK_LABELS, HUMAN, SEED, generalAncestors, generalTreeOf, outlinePaths } from "./_lib/seed";
 
 /**
  * ★ 실물 재현(화면) ④ 담보약관 템플릿 — 담보마다 한 벌. 알파Plus 9벌(수술비 1벌을 비갱신 · 갱신 두 탑재가 함께 쓴다) + 메리츠 9벌. 모델명세 §7 · 메리츠_모델명세 §7.
@@ -12,7 +12,6 @@ import { HUMAN, SEED, generalAncestors, generalTreeOf, outlinePaths } from "./_l
  */
 
 const clauseLabels = new Map(SEED.clauses.map((c) => [c.code, c.label]));
-const boxNames = new Map(SEED.boxes.map((b) => [b.code, b.name]));
 
 test.describe.serial("실물 재현(화면) ④ 담보약관 템플릿", () => {
   // 사람처럼 넣는 템플릿(말기신부전증)은 03b-human 이 친다
@@ -21,7 +20,7 @@ test.describe.serial("실물 재현(화면) ④ 담보약관 템플릿", () => {
     test(`${coverage.code} ${spec.tree.title}`, NO_COORD, async ({ page, ev }) => {
       test.setTimeout(600_000);
       const general = generalTreeOf(spec.general);
-      const authoring = new DocumentAuthoring(page, spec.tree, { selfPaths: outlinePaths(spec.tree), generalAncestors: generalAncestors(general) }, clauseLabels, boxNames);
+      const authoring = new DocumentAuthoring(page, spec.tree, { selfPaths: outlinePaths(spec.tree), generalAncestors: generalAncestors(general) }, clauseLabels, BOX_PICK_LABELS);
       await ev.action("실물화면#4.1", "관리자로 로그인한다", () => login(page));
       await ev.action("실물화면#4.2", `담보약관 템플릿 목록 「+」 — 담보 ${coverage.code} 를 골라 만든다`, async () => {
         await open(page, "/documents?kind=coverage");

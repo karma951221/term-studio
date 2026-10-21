@@ -1,5 +1,5 @@
 /**
- * 박스 상세 (L2) — 코드(불변) · 이름 · 제목 · 줄 (기능/박스 §4.3). 사용처는 관계정보 메뉴에서 본다 (2026-10-01).
+ * 박스 상세 (L2) — 코드(불변) · 제목 · 본문(줄) (기능/박스 §4.3). 사용처는 관계정보 메뉴에서 본다 (2026-10-01).
  */
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { ENTITY_LABEL } from "@/app/_lib/labels";

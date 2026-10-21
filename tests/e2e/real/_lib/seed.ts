@@ -9,7 +9,7 @@ import path from "node:path";
 
 import { findMasterField } from "../../../../src/domain/master";
 import type { Clause } from "../../../../src/domain/clause";
-import { numberTree, referenceOutline, referenceTargetIndex, refKey, refTargetOf, type DocumentNode, type InlineNode, type Node } from "../../../../src/domain/document";
+import { boxPickLabel, numberTree, referenceOutline, referenceTargetIndex, refKey, refTargetOf, type DocumentNode, type InlineNode, type Node } from "../../../../src/domain/document";
 
 const DATA = path.join(process.cwd(), "src/db/seed/data");
 const read = <T>(file: string): T => JSON.parse(readFileSync(path.join(DATA, file), "utf8")) as T;
@@ -111,6 +111,9 @@ export const SEED = {
   generals: SCREEN_GENERALS,
   products: read<ProductSpec[]>("products.json").map((p) => ({ ...p, mounts: p.mounts.filter((m) => !m.auto) })),
 };
+
+/** 박스 코드 → 툴바 「박스」 고르기 메뉴의 줄 이름(「【제목】(코드) 본문 앞머리」 — 기능/박스 §4.4, 2026-10-21). */
+export const BOX_PICK_LABELS: ReadonlyMap<string, string> = new Map(SEED.boxes.map((b) => [b.code, boxPickLabel(b)]));
 
 /**
  * 조 참조 고르기 트리의 줄 표기 경로 — 대상 열쇠(`refKey` — 조 id · 조#P코드) → [「제1조(…)」, 「제1항」, 「제2호」].
