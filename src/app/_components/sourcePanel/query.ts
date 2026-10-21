@@ -1,4 +1,4 @@
-import type { ExplainTarget } from "@/domain/assembly";
+import type { ExplainTarget, PendingBranch } from "@/domain/assembly";
 
 /**
  * 출처 패널의 URL 상태 (기능/조립산출 §4.1) — 새로고침 · 공유해도 같은 패널이 열린다.
@@ -20,7 +20,6 @@ type Raw = string | string[] | undefined;
 function one(v: Raw): string | undefined {
   const s = Array.isArray(v) ? v[0] : v;
   if (s === undefined || s === "" || s.length > 300) return undefined;
-  // eslint-disable-next-line no-control-regex
   return /[\u0000-\u001f\u007f]/.test(s) ? undefined : s;
 }
 
@@ -45,4 +44,13 @@ export function panelQuery(state: PanelQueryState): string {
   if (state.showOmitted === false) q.set("omitted", "off");
   const s = q.toString();
   return s === "" ? "" : `?${s}`;
+}
+
+/** 막힌 분기 한 줄 → 그 조의 패널 + 그 분기 강조 (기능/조립산출 §4.1 「평가 대기」). 결과 좌표에 조가 없으면 없다. */
+export function pendingPanel(p: PendingBranch): PanelQueryState | undefined {
+  const { at } = p;
+  if (!at.articleId) return undefined;
+  if (at.document === "general") return { target: { document: "general", articleId: at.articleId }, node: p.nodeId };
+  if (at.document === "special" && at.ownerId) return { target: { document: "special", productCoverageId: at.ownerId, articleId: at.articleId }, node: p.nodeId };
+  return undefined;
 }

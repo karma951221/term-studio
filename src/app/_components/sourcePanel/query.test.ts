@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parsePanelQuery, panelQuery } from "./query";
+import { parsePanelQuery, panelQuery, pendingPanel } from "./query";
 
 /**
  * 출처 패널의 URL (기능/조립산출 §4.1) — `?article=<조 id>` (특약 · 블록 조면 `&pc=<상품담보 id>`) · 값 조각 · 막힌 분기 강조 `&node=<노드 id>` ·
@@ -49,5 +49,17 @@ describe("panelQuery — 거꾸로(링크)", () => {
     const state = { target: { document: "special" as const, productCoverageId: "pc", articleId: "a" }, node: "x@1", showOmitted: false };
     const sp = Object.fromEntries(new URLSearchParams(panelQuery(state)));
     expect(parsePanelQuery(sp)).toEqual(state);
+  });
+});
+
+describe("pendingPanel — 「평가 대기」 줄의 「미리보기에서 보기」 = 그 조 패널 + 그 분기 강조", () => {
+  it("보통약관 자리 — article + node", () => {
+    expect(pendingPanel({ nodeId: "c1", at: { document: "general", ownerId: "g-doc", articleId: "g-a" }, message: "" })).toEqual({ target: { document: "general", articleId: "g-a" }, node: "c1" });
+  });
+  it("특약 · 블록 자리 — 결과 좌표의 ownerId 가 상품담보", () => {
+    expect(pendingPanel({ nodeId: "ref/sw", at: { document: "special", ownerId: "pc-1", articleId: "s-a" }, message: "" })).toEqual({ target: { document: "special", productCoverageId: "pc-1", articleId: "s-a" }, node: "ref/sw" });
+  });
+  it("조를 모르면(조 자리 조건 등) 없다", () => {
+    expect(pendingPanel({ nodeId: "c", at: { document: "general" }, message: "" })).toBeUndefined();
   });
 });
