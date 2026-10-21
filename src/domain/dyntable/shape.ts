@@ -22,6 +22,12 @@ export function isBlankTemplate(inlines: readonly Inline[] | undefined): boolean
   return (inlines ?? []).every((n) => n.kind === "text" && n.text.trim() === "");
 }
 
+/** 구조 섹션 머리(견본 위)의 모양 한 줄 — 편집 중 머리글을 비우거나 채우면 바로 바뀐다. */
+export const TABLE_SHAPE_LINE: Record<DynTableShape, string> = {
+  split: "표 모양: 감액 구간형 — 감액 경계로 열을 나눈다",
+  single: "표 모양: 단일형 — 늘 열 하나",
+};
+
 const SPLIT_KEYS = ["first", "middle", "last"] as const;
 
 const SPLIT_LABEL: Record<(typeof SPLIT_KEYS)[number], string> = { first: "첫 열", middle: "가운데 열", last: "마지막 열" };

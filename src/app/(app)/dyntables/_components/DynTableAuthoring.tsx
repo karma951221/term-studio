@@ -30,8 +30,8 @@ import type { Inline } from "@/domain/clause/nodes";
 import { formatCoordinate } from "@/domain/coordinate";
 import type { DynTableRegion } from "@/domain/dyntable/regions";
 import { renderDynTableSample } from "@/domain/dyntable/sampleView";
-import { DYN_TABLE_SAMPLES, dynTableSample, sampleArgValues } from "@/domain/dyntable/samples";
-import { tableShape } from "@/domain/dyntable/shape";
+import { DYN_TABLE_SAMPLES, dynTableSample, sampleArgValues, sampleDescription } from "@/domain/dyntable/samples";
+import { TABLE_SHAPE_LINE, tableShape } from "@/domain/dyntable/shape";
 import { DYN_TABLE_ALLOWED_SLOTS, type DynTableHeaders, type DynTableTemplateKey, type NewDynTable } from "@/domain/dyntable/types";
 import type { Impact, Issue } from "@/domain/types";
 
@@ -305,8 +305,11 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
             <h2 id="dyn-sec-structure" className="ts-dyn-section-title">
               구조
             </h2>
+            <p className="ts-muted ts-dyn-shape-line" data-testid="dyn-shape-line">
+              {TABLE_SHAPE_LINE[tableShape(shown.headers)]}
+            </p>
             <div className="ts-dyn-layout">
-              <SampleTable sample={sample} onSample={setSampleId} view={view} selected={selected} hovered={hovered} onSelect={pickFromTable} onHover={setHovered} />
+              <SampleTable sample={sample} description={sampleDescription(sample, shown)} onSample={setSampleId} view={view} selected={selected} hovered={hovered} onSelect={pickFromTable} onHover={setHovered} />
 
               <div className="ts-dyn-panel" aria-label="템플릿">
                 <section aria-label="행">
