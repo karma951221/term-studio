@@ -7,7 +7,8 @@ import { expect, test } from "./_lib/fixtures";
  * 시드 DT000001 「감액 지급금액 표」를 연다. 견본 「감액 3구간」이면 열 머리글이 첫 · 가운데 · 마지막, 「감액 없음」이면 단일 열 하나.
  * 칸을 누르면 같은 영역 칸 전부와 오른쪽 그 필드가 강조되고, 다시 누르면 풀린다. 필드에 들어가면 표의 그 영역이 칠해진다.
  * 편집 중 템플릿을 고치면 저장 전에 표가 바로 바뀐다. 저장하지 않으므로 시드는 그대로다.
- * 배치는 기본 정보 줄 → 인자 → 2단(미리보기 · 영역별 템플릿) — 앱 오른쪽 창 폭(640px)에서도 2단이다.
+ * 배치는 세 섹션 기본 → 인자(읽기 전용 표) → 구조(2단: 미리보기 · 영역별 템플릿) — 앱 오른쪽 창 폭(640px)에서도 구조는 2단이다.
+ * 인자는 편집 모드에서도 고치지 않는다. 열 기준은 없다 — DT000002 는 첫 · 가운데 · 마지막을 비운 단일형이라 읽기 모드에 단일 열 줄만 있다.
  */
 
 async function login(page: Page): Promise<void> {
@@ -64,8 +65,13 @@ test(
       await expect(table.locator("tbody tr").nth(1).locator("th, td")).toHaveText(["급성심근경색진단비", "해당보장의 보험가입금액의 6%", "해당보장의 보험가입금액의 12%", "해당보장의 보험가입금액의 20%"]);
     });
 
-    await ev.action("동적표상세#7", "편집 — 구분 칸 머리글을 고치면 저장 전에 표가 바로 바뀌고, 취소하면 원래대로", async () => {
+    await ev.action("동적표상세#7", "편집 — 구분 칸 머리글을 고치면 저장 전에 표가 바로 바뀌고, 인자는 편집 중에도 읽기 전용 표, 취소하면 원래대로", async () => {
       await page.getByRole("button", { name: "편집", exact: true }).click();
+      const params = page.getByRole("table", { name: "인자 목록" });
+      await expect(params.locator("thead th")).toHaveText(["이름", "타입", "값을 대는 곳", "쓰이는 곳"]);
+      await expect(params.locator("tbody tr")).toHaveText([/갱신형\s*참거짓\s*담보약관에서 연결\s*첫 열 · 가운데 열 · 마지막 열/]);
+      await expect(page.getByLabel("새 인자 이름")).toHaveCount(0);
+      await expect(params.locator("input, select")).toHaveCount(0);
       await page.locator("#dyn-rowheader").fill("구분");
       await expect(headerCells.first()).toHaveText("구분");
       await page.getByRole("button", { name: /편집 취소/ }).click();
@@ -74,7 +80,7 @@ test(
       await expect(headerCells.first()).toHaveText("구 분");
     });
 
-    await ev.action("동적표상세#8", "배치 — 기본 정보 줄 → 인자 → 2단, 앱 오른쪽 창 폭(640px)에서도 미리보기 · 템플릿이 나란히", async () => {
+    await ev.action("동적표상세#8", "배치 — 기본 → 인자 → 구조 세 섹션, 앱 오른쪽 창 폭(640px)에서도 미리보기 · 템플릿이 나란히", async () => {
       await page.setViewportSize({ width: 640, height: 900 });
       // 미리보기는 sticky — 맨 위로 되돌린 뒤 잰다
       await page.locator(".ts-l3-body").evaluate((el) => el.scrollTo(0, 0));
@@ -84,14 +90,27 @@ test(
         return b;
       };
       const basics = await box(".ts-dyn-basics");
-      const params = await box(".ts-dyn-params");
+      const params = await box(".ts-dyn-params-table");
       const sample = await box(".ts-dyn-sample");
       const panel = await box(".ts-dyn-panel");
       expect(basics.y).toBeLessThan(params.y);
       expect(params.y).toBeLessThan(sample.y);
       expect(sample.x + sample.width).toBeLessThanOrEqual(panel.x);
       expect(Math.abs(sample.y - panel.y)).toBeLessThan(4);
-      await expect(page.locator(".ts-dyn-basics")).toContainText("열 기준");
+      await expect(page.locator(".ts-dyn-section-title")).toHaveText(["기본", "인자", "구조"]);
+      await expect(page.locator(".ts-dyn-page")).not.toContainText("열 기준");
+    });
+
+    await ev.action("동적표상세#9", "DT000002 — 인자 없음 한 줄, 단일형이라 읽기 모드 열 머리글 필드는 단일 열 하나 · 감액 3구간 견본도 열 하나", async () => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto("/dyntables/DT000002");
+      await expect(page.locator(".ts-dyn-params-none")).toHaveText("인자 없음");
+      await expect(page.locator('[data-dyn-field="single"]')).toBeVisible();
+      await expect(page.locator('[data-dyn-field="first"]')).toHaveCount(0);
+      await expect(headerCells).toHaveText(["구 분", "지급금액"]);
+      await page.getByRole("button", { name: "편집", exact: true }).click();
+      await expect(page.locator('[data-dyn-field="first"]')).toBeVisible();
+      await page.getByRole("button", { name: /편집 취소/ }).click();
     });
   },
 );
