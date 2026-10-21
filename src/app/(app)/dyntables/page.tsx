@@ -7,8 +7,6 @@ import { includesQuery, paginate } from "@/app/_lib/list";
 import type { DynTableSummary } from "@/domain/dyntable/types";
 import { getServices } from "@/lib/services";
 
-import { COLUMN_BASIS_LABEL } from "./_components/basis";
-
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
@@ -31,7 +29,6 @@ export default async function DynTablesPage({ searchParams }: { searchParams: Pr
 
   const columns: readonly ListColumn<DynTableSummary>[] = [
     identCol(ENTITY_LABEL.dynTable, (t) => ({ code: t.code, name: t.label }), (t) => `/dyntables/${t.code}`),
-    { header: "열 기준", width: "sm", cell: (t) => COLUMN_BASIS_LABEL[t.columnBasis] },
     auditCol((t) => (t.updatedAt ? { updatedAt: t.updatedAt, updatedBy: t.updatedBy ?? null } : undefined), userName),
   ];
 

@@ -1,11 +1,11 @@
 /**
  * 동적표 표본 정의 — QA/인수기준 「동적표(감액 지급금액 표) 인수 케이스」가 쓰는 정의 셋 (순수, JSON 으로 그대로 저장할 수 있는 모양).
  *
- * - A  (감액 표)   : 열 기준 「감액 구간」 · 인자 `갱신형`(boolean). 〔기준일〕 = 조건 `arg.갱신형` → 「최초계약일」, 그 밖 「계약일」.
+ * - A  (감액 표)   : 첫 · 가운데 · 마지막 머리글을 채운 감액 구간형 · 인자 `갱신형`(boolean). 〔기준일〕 = 조건 `arg.갱신형` → 「최초계약일」, 그 밖 「계약일」.
  *                    첫 「〔기준일〕부터 {경계}경과시점 전일 이전」 · 가운데 「〔기준일〕부터 {앞경계}경과시점 이후 〔기준일〕부터 {경계}경과시점 전일 이전」 ·
  *                    마지막 「〔기준일〕부터 {경계}경과시점 이후」 · 단일 「지급금액」 · 셀 「〔세부보장 수 ≥ 2 이면 「해당보장의 」〕보험가입금액의 {비율}%」.
  * - A′ (주요치료비) : A + 글 인자 `단서` — 첫 · 마지막 열 끝에 ` {arg.단서}`.
- * - R  ((갱신) 표)  : 열 기준 「없음」 · 단일 「지급금액」 · 셀은 A 와 같다.
+ * - R  ((갱신) 표)  : 첫 · 가운데 · 마지막을 비운 단일형 · 단일 「지급금액」 · 셀은 A 와 같다.
  *
  * 노드 id 는 고정이라 시드 · 테스트가 같은 정의를 본다. 테스트 전용이 아니다 — 시드(뒷 단계)가 그대로 쓴다.
  */
@@ -70,7 +70,6 @@ export function dynTableFixtureA(): NewDynTable {
   return {
     label: "감액 지급금액 표",
     params: [{ name: "갱신형", type: { kind: "boolean" } }],
-    columnBasis: "reduction",
     rowHeader: DEFAULT_ROW_HEADER,
     headers: { first: firstHeader(), middle: middleHeader(), last: lastHeader(), single: singleHeader() },
     cell: cellTemplate(),
@@ -92,12 +91,11 @@ export function dynTableFixtureAPrime(): NewDynTable {
   };
 }
 
-/** 정의 R — (갱신) 표: 열 기준 「없음」, 단일 열 「지급금액」, 셀은 A 와 같다. */
+/** 정의 R — (갱신) 표: 단일형(첫 · 가운데 · 마지막 비움), 단일 열 「지급금액」, 셀은 A 와 같다. */
 export function dynTableFixtureR(): NewDynTable {
   return {
     label: "(갱신) 지급금액 표",
     params: [],
-    columnBasis: "none",
     rowHeader: DEFAULT_ROW_HEADER,
     headers: { first: [], middle: [], last: [], single: singleHeader() },
     cell: cellTemplate(),

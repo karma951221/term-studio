@@ -246,6 +246,13 @@
       "when": 1792572402422,
       "tag": "0034_drop_claim_name",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792580000268,
+      "tag": "0035_drop_dyn_table_column_basis",
+      "breakpoints": true
     }
   ]
 }

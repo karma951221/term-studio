@@ -116,7 +116,6 @@ export function createDynTableService(db: Db, deps: DynTableServiceDeps = {}): D
       (await repo.listDynTables(db)).map((d) => ({
         code: d.code,
         label: d.label,
-        columnBasis: d.columnBasis,
         ...(d.updatedAt ? { updatedAt: d.updatedAt } : {}),
         ...(d.updatedBy ? { updatedBy: d.updatedBy } : {}),
       })),

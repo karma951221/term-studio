@@ -40,7 +40,7 @@ describe("renderDynTableSample — 글", () => {
     expect(out.header[1].parts.at(-1)).toEqual({ text: "〔단서〕", value: true });
   });
 
-  it("열 기준 「없음」(R) — 단일 열 「지급금액」, 비율 = 지급률 · 급부가 비면 머리글만", () => {
+  it("단일형(R) — 단일 열 「지급금액」, 비율 = 지급률 · 급부가 비면 머리글만", () => {
     const out = renderDynTableSample(dynTableFixtureR(), [benefit("S", "항암치료비", 20)], {});
     expect(out.header.map(cellText)).toEqual(["구 분", "지급금액"]);
     expect(out.rows.map((r) => r.map(cellText))).toEqual([["항암치료비", "보험가입금액의 20%"]]);

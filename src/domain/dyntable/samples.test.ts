@@ -60,7 +60,7 @@ describe("DYN_TABLE_SAMPLES — 견본 다섯", () => {
     expect(cellText(out.header[1])).toBe("최초계약일부터 1년경과시점 전일 이전");
   });
 
-  it("열 기준 「없음」 정의는 어느 견본이든 단일 열", () => {
+  it("단일형 정의(첫 · 가운데 · 마지막 비움)는 어느 견본이든 단일 열", () => {
     const R = dynTableFixtureR();
     for (const s of DYN_TABLE_SAMPLES) expect(renderDynTableSample(R, s.benefits, sampleArgValues(R.params, s)).header.map((c) => c.region)).toEqual(["corner", "single"]);
   });

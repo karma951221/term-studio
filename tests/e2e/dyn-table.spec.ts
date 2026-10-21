@@ -37,7 +37,8 @@ test(
       const row = page.getByRole("row").filter({ hasText: "DT000001" });
       await expect(row).toHaveCount(1);
       await expect(row.getByRole("link", { name: "감액 지급금액 표", exact: true })).toBeVisible();
-      await expect(row).toContainText("감액 구간");
+      // 열 기준은 폐지됐다(2026-10-21) — 표 모양은 머리글 구조가 정하므로 목록에 열이 없다
+      await expect(page.getByRole("columnheader", { name: "열 기준" })).toHaveCount(0);
     });
 
     await ev.action("동적표#3", "새 담보 — 세부보장 1 · 급부 「질병80%이상후유장해」 · 지급률 100 · 감액 1Y 50%", async () => {

@@ -1323,7 +1323,7 @@ button:where(:not([data-slot])).danger:focus-visible {
   vertical-align: -2px;
 }
 
-/* ── 동적표 상세 — 위→아래: 기본 정보 줄 → 인자(전체 폭) → 2단(왼쪽 미리보기 · 오른쪽 영역별 템플릿) · 칸 ↔ 필드 강조 (기능/동적표 §4.2) ──
+/* ── 동적표 상세 — 위→아래 세 섹션: 기본 → 인자(읽기 전용 표) → 구조(2단: 왼쪽 미리보기 · 오른쪽 영역별 템플릿) · 칸 ↔ 필드 강조 (기능/동적표 §4.2) ──
  * 영역마다 --rc(영역 색). 표 칸 강조 = 옅은 바탕 + 안쪽 띠 + 굵게, 필드 강조 = 왼쪽 띠 + 라벨 색 + 굵게.
  * 2단 기준은 창이 아니라 본문 폭(.ts-dyn-page 컨테이너) — 앱 오른쪽 브라우저 창 정도(본문 400~640px)에서도 2단을 지키고 오른쪽을 줄인다.
  * 본문 400px 미만에서만 세로로 쌓는다. 왼쪽 미리보기는 오른쪽이 길어 스크롤돼도 화면 안에 머문다(sticky — 스크롤 칸은 .ts-l3-body).
@@ -1332,8 +1332,27 @@ button:where(:not([data-slot])).danger:focus-visible {
   container: dyn / inline-size;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 22px;
   max-width: 1440px;
+}
+
+/* 섹션 — 제목(굵게 + 아래 선)이 섹션을 가른다 */
+.ts-dyn-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ts-dyn-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding-bottom: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--ts-rule-strong);
 }
 
 .ts-dyn-basics {
@@ -1341,8 +1360,28 @@ button:where(:not([data-slot])).danger:focus-visible {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 6px 28px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--ts-rule);
+}
+
+/* 인자 — 읽기 전용 표, 좁으면 가로 스크롤 */
+.ts-dyn-params-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ts-dyn-params-table {
+  width: auto;
+  min-width: min(100%, 560px);
+}
+
+.ts-dyn-params-table tbody th {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ts-ink);
+  white-space: nowrap;
+}
+
+.ts-dyn-params-none {
+  margin: 0;
 }
 
 .ts-dyn-basic {
@@ -1364,12 +1403,6 @@ button:where(:not([data-slot])).danger:focus-visible {
 
 .ts-dyn-basic.is-name > input:where(:not([data-slot])) {
   width: min(360px, 100%);
-}
-
-/* 편집 중 열 기준 — 고르는 칸 둘이 한 줄을 다 쓴다 */
-.ts-dyn-basic.is-basis:has(.ts-clause-mode) {
-  flex-basis: 100%;
-  align-items: start;
 }
 
 .ts-dyn-basics-error {

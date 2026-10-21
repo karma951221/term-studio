@@ -28,7 +28,7 @@ export default async function DynTableDetailPage({ params }: { params: Promise<{
       // 저장 뒤 새로 받은 정의로 화면을 다시 짓는다 — 편집본은 편집을 시작할 때 원본에서 만든다
       key={`${table.code}:${table.updatedAt?.getTime() ?? 0}`}
       code={table.code}
-      table={{ label: table.label, params: table.params, columnBasis: table.columnBasis, rowHeader: table.rowHeader, headers: table.headers, cell: table.cell }}
+      table={{ label: table.label, params: table.params, rowHeader: table.rowHeader, headers: table.headers, cell: table.cell }}
       data={data}
     />
   );

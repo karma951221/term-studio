@@ -46,7 +46,7 @@ describe("동적표 서비스 (기능/동적표 §3.1 · §3.6)", () => {
     expect(created.code).toBe("DT000001");
     expect(created.label).toBe("감액 지급금액 표");
     expect((await s.dynTable.list()).map((d) => d.code)).toEqual(["DT000001"]);
-    expect((await s.dynTable.summaries()).map((d) => [d.code, d.columnBasis])).toEqual([["DT000001", "reduction"]]);
+    expect((await s.dynTable.summaries()).map((d) => [d.code, d.label])).toEqual([["DT000001", "감액 지급금액 표"]]);
     expect((await s.dynTable.get("DT000001"))?.params[0]?.default).toEqual({ kind: "const", value: true });
   });
 

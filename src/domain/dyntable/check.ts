@@ -8,7 +8,8 @@
  * - 읽는 인자는 선언돼 있어야 하고(brokenRef), 표 슬롯은 그 템플릿에서 쓸 수 있는 것이어야 한다(`DYN_TABLE_ALLOWED_SLOTS`, structure).
  * - 값별 분기: 대상은 열거형 인자 하나, 칸 값은 그 열거형의 값(`env.enumValues` 를 줬을 때 — 함수조항 `switchValueIssues` 와 같은 규칙).
  * - 인라인 조건 · 분기의 중첩 금지 · else 가지는 마지막에만 · 노드 id 는 정의 전체에서 유일 (함수조항 본문과 같다).
- * - 열 기준 「없음」이어도 첫 · 가운데 · 마지막 템플릿은 검사한다(쓰이지 않을 뿐 — 기준을 바꾸면 바로 쓰인다).
+ * - 표 모양(`tableShapeIssues`, §3.2): 첫 · 가운데 · 마지막은 모두 채우거나(감액 구간형) 모두 비운다(단일형) — 일부만 채우면 빈 쪽 자리에 structure.
+ *   단일 열 머리글은 두 모양 모두 쓰이므로 비면 structure.
  *
  * 좌표: `refPath` = 템플릿 자리(`headers.first` · `cell`) 또는 인자(`arg.X`), `nodePath` = 그 템플릿 안 노드 id 경로.
  */
@@ -18,6 +19,7 @@ import { checkParams, valueParamTypes, type BindingEnv, type ParamDef } from "..
 import { isParticlePreset, PARTICLE_PRESET_MESSAGE } from "../document/particles";
 import { extractRefs, parse, refPath, type Expr } from "../expression";
 import type { Coordinate, Id, Issue } from "../types";
+import { tableShapeIssues } from "./shape";
 import { DYN_TABLE_ALLOWED_SLOTS, DYN_TABLE_SLOT_LABEL, isDynTableSlotRef, type DynTable, type DynTableTemplateKey, type NewDynTable } from "./types";
 
 export const DYN_TABLE_READS_MESSAGE = "동적표 템플릿은 인자와 표 슬롯만 읽는다";
@@ -130,6 +132,9 @@ export function checkDynTable(def: NewDynTable | DynTable, env: BindingEnv = {},
   checkTemplate("last", def.headers?.last);
   checkTemplate("single", def.headers?.single);
   checkTemplate("cell", def.cell);
+
+  // 4. 표 모양 — 머리글 구조가 정한다
+  if (def.headers) for (const i of tableShapeIssues(def.headers)) issues.push({ ...i, at: { ...at, ...i.at } });
 
   return issues;
 }

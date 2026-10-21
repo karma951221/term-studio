@@ -42,7 +42,6 @@ function toDynTable(row: DynTableRow): DynTable {
     code: row.code,
     label: row.label,
     params: row.params ?? [],
-    columnBasis: row.columnBasis,
     rowHeader: row.rowHeader,
     headers: row.headers,
     cell: row.cell,
@@ -56,7 +55,6 @@ function toRow(def: NewDynTable) {
   return {
     label: def.label,
     params: def.params ?? [],
-    columnBasis: def.columnBasis,
     rowHeader: def.rowHeader,
     headers: def.headers,
     cell: def.cell,

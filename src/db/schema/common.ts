@@ -20,7 +20,7 @@ import type { ParamDef } from "@/domain/clause/params";
 import type { PresetDef } from "@/domain/clause/presets";
 import type { ClauseBody, ClauseMode, OptionDef } from "@/domain/clause/types";
 import type { Inline } from "@/domain/clause/nodes";
-import type { ColumnBasis, DynTableHeaders } from "@/domain/dyntable/types";
+import type { DynTableHeaders } from "@/domain/dyntable/types";
 import type { Code } from "@/domain/types";
 
 export const clauses = pgTable("clauses", {
@@ -54,7 +54,8 @@ export const clauses = pgTable("clauses", {
 /**
  * 동적표 정의 — 기능/동적표 §3.1 (감액 지급금액 표).
  *
- * - 동적표 1건 = 행 1건. 함수조항과 같은 뼈대(코드 · 이름 · 인자)에 본문 대신 **표 규칙**(행 기준은 급부명 고정 · 열 기준 · 구분 칸 머리글 · 열 머리글 템플릿 네 벌 · 셀 템플릿).
+ * - 동적표 1건 = 행 1건. 함수조항과 같은 뼈대(코드 · 이름 · 인자)에 본문 대신 **표 규칙**(행 기준은 급부명 고정 · 구분 칸 머리글 · 열 머리글 템플릿 네 벌 · 셀 템플릿).
+ *   열을 감액 구간으로 나눌지는 머리글 구조가 정한다(열 기준 컬럼은 0035 에서 폐지, 2026-10-21).
  * - 템플릿은 인라인 노드 배열(jsonb) — 함수조항 본문과 같은 결. 인자는 값 인자만(저장 검사가 거부).
  * - 코드는 code_sequences (kind `dynTable`, scope "") 로 채번한다 — `DT000001` … (불변 · 유일).
  * - 사용처(담보약관의 `dynTableRef`) 역인덱스는 refs 영역 몫 — 여기에는 없다.
@@ -66,8 +67,6 @@ export const dynTables = pgTable("dyn_tables", {
   label: text("label").notNull(),
   /** 인자 선언 목록 (ParamDef[] — 값 인자만). 빈 목록 = 인자 0개. */
   params: jsonb("params").$type<ParamDef[]>().notNull().default([]),
-  /** 열 기준 — "reduction"(감액 구간) | "none"(열 하나). */
-  columnBasis: text("column_basis").$type<ColumnBasis>().notNull(),
   /** 구분 칸 머리글 — 기본 「구 분」. */
   rowHeader: text("row_header").notNull(),
   /** 열 머리글 템플릿 네 벌 { first, middle, last, single } — 각각 Inline[]. */

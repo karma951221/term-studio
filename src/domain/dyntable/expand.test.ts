@@ -330,7 +330,7 @@ describe("동적표 펼침 — 규칙", () => {
     expect(slots).toEqual([]);
   });
 
-  it("열 기준 「없음」이면 감액이 있어도 열 하나 · 비율 = 지급률", () => {
+  it("첫 · 가운데 · 마지막 머리글이 모두 빈 정의(단일형)는 감액이 있어도 열 하나 · 비율 = 지급률", () => {
     const list = benefits([{ sub: "S", name: "a", rate: 60, reduction: { periods: [[12, 50]] } }]);
     const t = expand(R, list, undefined);
     expect(lines(t, list)).toEqual(["[구 분 │ 지급금액]", "[a │ 보험가입금액의 60%]"]);

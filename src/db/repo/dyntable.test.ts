@@ -39,7 +39,7 @@ describe("dyn_tables repo (PGlite)", () => {
 
     const r = await updateDynTable(t.db, "DT000002", { ...dynTableFixtureR(), label: "(갱신) 표" }, who);
     expect(r.label).toBe("(갱신) 표");
-    expect(r.columnBasis).toBe("none");
+    expect(r.headers).toEqual(dynTableFixtureR().headers);
 
     await deleteDynTable(t.db, "DT000001");
     expect((await listDynTables(t.db)).map((d) => d.code)).toEqual(["DT000002"]);
