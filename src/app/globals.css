@@ -3871,6 +3871,12 @@ button:where(:not([data-slot])).ts-doc-clause-opt {
   cursor: pointer;
 }
 
+/* 띠 글자색 그대로 — 공통 버튼 hover 배경(다크면 어두움)이 밝은 띠 위 글자를 덮지 않게 */
+button:where(:not([data-slot])).ts-doc-clause-opt:hover {
+  background: none;
+  text-decoration-style: solid;
+}
+
 .ts-doc-clause-head .ts-block-acts {
   margin-left: auto;
   color: inherit;
@@ -5762,6 +5768,97 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 
 .ts-pop .ts-cond-value {
   width: 110px;
+}
+
+/* ── 우측 패널 「편집」 탭 (2026-10-21, 기능/문면 §4.3) — 고른 것의 고치기 폼 · 넣기 폼, 맨 아래 고정 줄 〔되돌리기 · 적용〕 ── */
+.ts-side-tab-dot {
+  margin-left: 4px;
+  font-size: 9px;
+  vertical-align: top;
+  color: var(--ts-warn);
+}
+
+/* 편집 탭이 보일 때 오른쪽에서 미끄러져 들어온다 — hidden 이 풀릴 때마다 다시 돈다 */
+@keyframes ts-edit-slide-in {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.ts-side-edit:not([hidden]) {
+  animation: ts-edit-slide-in 0.28s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-side-edit:not([hidden]) {
+    animation: none;
+  }
+}
+
+.ts-edit-empty {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--ts-ink-3);
+}
+
+.ts-edit-tab {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.ts-edit-body {
+  flex: 1;
+}
+
+.ts-edit-form-title {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: var(--ts-ink);
+}
+
+/* 패널 폭(340)에 맞춰 폼 줄을 세로로 — 이름 위, 칸 아래 */
+.ts-edit-form .ts-form-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* 값 열(2)에 붙이던 칸 — 한 열이면 그 열로 (안 그러면 둘째 열이 생겨 이름 열이 짓눌린다) */
+.ts-edit-form .ts-form-row > .ts-ref-search + .ts-ref-tree,
+.ts-edit-form .ts-form-row > .ts-arg-const {
+  grid-column: 1;
+}
+
+.ts-edit-form .ts-cond-var {
+  width: calc(150px - var(--ts-paren-room, 0px));
+}
+
+.ts-edit-form .ts-cond-value {
+  width: 100px;
+}
+
+/* 고정 줄 — 패널(스크롤 칸, 안쪽 여백 12) 맨 아래에 붙는다 */
+.ts-edit-foot {
+  position: sticky;
+  bottom: -12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 12px -12px -12px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--ts-rule);
+  background: var(--ts-surface);
+}
+
+/* 편집 모드 블록 조건 머리 줄 — 읽기용 한 줄, 누르면 편집 탭 */
+button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* ── 상품 상세 「안 2」 (2026-09-28) — 기본정보 › 상품정보 표 · 상품담보 표 묶음 · 보통약관 탭 ── */

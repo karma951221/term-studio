@@ -1,5 +1,6 @@
 import { type Locator, type Page } from "@playwright/test";
 
+import { editForm, insertFrom } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 import { pickCombo } from "./_lib/combo";
 
@@ -85,10 +86,9 @@ test(
       await title.fill("면제 안내");
       await title.click();
       await tool("반복").click();
-      const dialog = page.getByRole("dialog", { name: "반복 블록 넣기", exact: true });
+      const dialog = editForm(page, "반복 블록 넣기");
       await dialog.getByLabel("반복 원천").selectOption({ label: "납입면제종마다 — 적용여부 = 예인 선택지" });
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await insertFrom(page, dialog);
       const paragraph = repeat.getByRole("textbox", { name: "항", exact: true });
       await paragraph.click();
       await paragraph.fill(bodyText);

@@ -1,6 +1,7 @@
 import { type Locator, type Page } from "@playwright/test";
 
 import { pickCombo } from "./_lib/combo";
+import { editForm, insertFrom } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 import { productWithSpecial } from "./_lib/product";
 
@@ -87,11 +88,12 @@ test(
       await title.fill("보험금의 지급사유");
       await title.press("Enter");
       await toolbar.getByRole("button", { name: "동적표", exact: true }).click();
-      const dialog = page.getByRole("dialog", { name: "동적표 넣기", exact: true });
+      const dialog = editForm(page, "동적표 넣기");
       await pickCombo(dialog.locator("#pop-dyntable"), { value: "DT000001" });
       await dialog.getByLabel("인자 갱신형", { exact: true }).selectOption("c:false");
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await insertFrom(page, dialog);
+      // 넣은 동적표가 고른 것 — 편집 탭은 그 인자 연결 폼으로 이어진다
+      await expect(editForm(page, "동적표 인자 연결")).toBeVisible();
       const band = body.locator(".ts-doc-clause.is-dyntable");
       await expect(band).toHaveCount(1);
       await expect(band.locator(".ts-doc-clause-head")).toContainText("[DT000001] 동적표 감액 지급금액 표");

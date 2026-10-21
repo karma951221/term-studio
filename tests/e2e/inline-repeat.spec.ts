@@ -1,6 +1,7 @@
 import { type Locator, type Page } from "@playwright/test";
 
 import { pickCombo } from "./_lib/combo";
+import { editFoot, editForm, insertFrom } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 
 /**
@@ -89,17 +90,16 @@ test(
 
     await ev.action("문장반복#3", "툴바 「문장 안 반복」 → 원천 「납입면제사유 합집합마다 — 적용여부 = 예인 선택지」 · 연결어는 골라야 넣어진다", async () => {
       await tool("문장 안 반복").click();
-      const dialog = page.getByRole("dialog", { name: "문장 안 반복 넣기", exact: true });
+      const dialog = editForm(page, "문장 안 반복 넣기");
       await dialog.getByLabel("반복 원천").selectOption({ label: "납입면제사유 합집합마다 — 적용여부 = 예인 선택지" });
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
+      await editFoot(page, "넣기").click();
       await expect(dialog).toContainText("연결어(및 · 또는 · 쉼표만)를 고른다");
       await dialog.getByRole("radio", { name: "및", exact: true }).check();
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await insertFrom(page, dialog);
     });
 
     await ev.action("문장반복#4", "이어 열린 반복 창 — 본문은 「현재 값」의 약관표시명 슬롯(값 이름 아님), 「비었을 때」 칸에 「해당 사유 없음」을 쓰고 닫는다", async () => {
-      const dialog = page.getByRole("dialog", { name: "문장 안 반복", exact: true });
+      const dialog = editForm(page, "문장 안 반복");
       await expect(dialog).toBeVisible();
       const each = dialog.getByRole("textbox", { name: "원소마다", exact: true });
       await expect(each).toContainText("builtin.value.F01");
@@ -108,8 +108,8 @@ test(
       await fallback.click();
       await fallback.fill("해당 사유 없음");
       await fallback.press("Enter");
-      await dialog.getByRole("button", { name: "닫기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      // 본문 · 「비었을 때」 칸은 본문 문장처럼 초점이 떠날 때 편집본에 들어간다 — 원천 · 연결어 · 이름을 안 고쳤으면 적용할 것이 없다
+      await expect(editFoot(page, "적용")).toBeDisabled();
       // 편집기 본문은 자리 말 칩 하나 — 원소는 상품 문맥 없이 모른다 (ADR-0088 결정 6)
       await expect(body.locator(".ts-doc-inline-chip.is-repeat")).toHaveText("〔납입면제사유 합집합마다〕");
       const paragraph = body.getByRole("textbox", { name: "항", exact: true });

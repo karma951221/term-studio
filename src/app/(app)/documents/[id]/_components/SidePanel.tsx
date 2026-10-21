@@ -1,18 +1,23 @@
 /**
- * L3 우측 패널 — **보조 정보만** 둔다. 입력칸이 없다 (기능/문면 §4.3).
+ * L3 우측 패널 (기능/문면 §4.3).
  *
- * 탭 셋(담보약관) 〔미리보기 | 구분자 | 검증 N〕 — 보통약관은 구분자 없이 둘 (2026-10-10):
+ * 편집 모드면 탭 줄 맨 앞에 「편집」 탭 — 본문에서 고른 칩 · 함수조항 · 조건식 · 동적표의 고치기 폼과 넣기 폼이 여기 선다(2026-10-21, 예전 본문 위 팝업).
+ * 적용하지 않은 변경이 있으면 탭 이름 옆에 점. 탭 전환 규칙은 `editTabRules.ts`, 폼은 `EditTab` · `PopupHost`.
+ *
+ * 그 밖의 탭(담보약관) 〔미리보기 | 구분자 | 검증 N〕 — 보통약관은 구분자 없이 둘 (2026-10-10):
  * - 미리보기 — 가운데 조 하나를 고른 상품의 조립 문맥으로 (`PreviewTab`, §3.9). 처음 탭.
  * - 검증 — 저장 검증 목록(편집 중이면 편집본, 「고칠 자리로」는 가운데에서 그 조를 열고 그 자리를 강조). 편집 중이면 그 위에 템플릿 이름 · 대응 보통약관.
- *   코드 충돌(이동 충돌) · 형식 오류 줄에는 「코드 수정」 — 그 자리의 코드 수정 창을 추천값으로 연다(ADR-0072 결정 5).
+ *   코드 충돌(이동 충돌) · 형식 오류 줄에는 「코드 수정」 — 편집 탭에 그 자리의 코드 고치기 폼을 추천값으로 연다(ADR-0072 결정 5).
  * 구분자 — 미리보기에서 고른 상품담보의 키 경로 잎과 지금 값 (`LeafPanelTab`, ADR-0087).
- * 탭 모두 그려 두고 숨긴다 — 탭을 오가도 미리보기의 고른 상품 · 받은 재료가 남는다.
+ * 탭 모두 그려 두고 숨긴다 — 탭을 오가도 미리보기의 고른 상품 · 받은 재료 · 고치던 편집 폼이 남는다.
  */
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { SeverityGlyph } from "@/app/_components/IssueList";
 import { formatCoordinate } from "@/domain/coordinate";
 import type { Id, Issue } from "@/domain/types";
+
+import { panelTabsFor, type PanelTab } from "./editTabRules";
 
 export interface PanelData {
   /** 편집본(읽기 모드면 원본)의 저장 검증 — 경고 포함. */
@@ -27,7 +32,7 @@ export interface PanelData {
   leaves?: ReactNode;
   /** 「고칠 자리로」 — 가운데에서 그 조를 열고 그 자리를 강조한다. */
   go: (nodeId: Id) => void;
-  /** 코드 충돌 · 형식 오류 줄의 「코드 수정」 — 그 자리의 코드 수정 창을 추천값으로 연다(편집 중만, ADR-0072 결정 5). */
+  /** 코드 충돌 · 형식 오류 줄의 「코드 수정」 — 편집 탭에 그 자리의 코드 고치기 폼을 추천값으로 연다(편집 중만, ADR-0072 결정 5). */
   fixCode?: CodeFix;
 }
 
@@ -82,33 +87,45 @@ export function DraftIssues({ go, issues, fixCode }: { go: (nodeId: Id) => void;
   );
 }
 
-type PanelTab = "preview" | "leaves" | "issues";
+const TAB_LABEL: Record<PanelTab, string> = { edit: "편집", preview: "미리보기", leaves: "구분자", issues: "검증" };
 
-export function SidePanel({ docKind, editing, data }: { docKind: "special" | "general"; editing: boolean; data: PanelData }) {
-  const [tab, setTab] = useState<PanelTab>("preview");
-  const tabs: { key: PanelTab; label: string }[] = [
-    { key: "preview", label: "미리보기" },
-    ...(docKind === "special" ? [{ key: "leaves" as const, label: "구분자" }] : []),
-    { key: "issues", label: `검증 ${data.issues.length}` },
-  ];
+/** 편집 탭 — 편집 모드에만. `dirty` 면 탭 이름 옆에 점(적용하지 않은 변경). */
+export interface EditTabSlot {
+  content: ReactNode;
+  dirty: boolean;
+}
+
+export function SidePanel({ docKind, editing, data, tab, onTab, edit }: { docKind: "special" | "general"; editing: boolean; data: PanelData; tab: PanelTab; onTab: (tab: PanelTab) => void; edit?: EditTabSlot }) {
+  const tabs = panelTabsFor(docKind, editing && edit !== undefined);
+  const shown = tabs.includes(tab) ? tab : "preview";
   return (
     <aside className="ts-l3-side" id="ts-l3-side">
       <div className="ts-basic-tabs ts-side-tabs" role="tablist" aria-label="우측 패널">
-        {tabs.map((t) => (
-          <button key={t.key} type="button" role="tab" id={`ts-side-tab-${t.key}`} aria-selected={tab === t.key} aria-controls={`ts-side-panel-${t.key}`} onClick={() => setTab(t.key)}>
-            {t.label}
+        {tabs.map((key) => (
+          <button key={key} type="button" role="tab" id={`ts-side-tab-${key}`} aria-selected={shown === key} aria-controls={`ts-side-panel-${key}`} onClick={() => onTab(key)}>
+            {key === "issues" ? `검증 ${data.issues.length}` : TAB_LABEL[key]}
+            {key === "edit" && edit?.dirty && (
+              <span className="ts-side-tab-dot" role="img" aria-label="적용하지 않은 변경">
+                ●
+              </span>
+            )}
           </button>
         ))}
       </div>
-      <div role="tabpanel" id="ts-side-panel-preview" aria-labelledby="ts-side-tab-preview" hidden={tab !== "preview"}>
+      {edit && editing && (
+        <div role="tabpanel" id="ts-side-panel-edit" aria-labelledby="ts-side-tab-edit" className="ts-side-edit" hidden={shown !== "edit"}>
+          {edit.content}
+        </div>
+      )}
+      <div role="tabpanel" id="ts-side-panel-preview" aria-labelledby="ts-side-tab-preview" hidden={shown !== "preview"}>
         {data.preview}
       </div>
       {docKind === "special" && (
-        <div role="tabpanel" id="ts-side-panel-leaves" aria-labelledby="ts-side-tab-leaves" hidden={tab !== "leaves"}>
+        <div role="tabpanel" id="ts-side-panel-leaves" aria-labelledby="ts-side-tab-leaves" hidden={shown !== "leaves"}>
           {data.leaves}
         </div>
       )}
-      <div role="tabpanel" id="ts-side-panel-issues" aria-labelledby="ts-side-tab-issues" hidden={tab !== "issues"}>
+      <div role="tabpanel" id="ts-side-panel-issues" aria-labelledby="ts-side-tab-issues" hidden={shown !== "issues"}>
         {editing && (
           <>
             <dl className="ts-side-facts">
@@ -124,7 +141,7 @@ export function SidePanel({ docKind, editing, data }: { docKind: "special" | "ge
                 </>
               )}
             </dl>
-            <p className="ts-muted">이름 · 대응 보통약관은 바의 더보기에서 바꾼다.</p>
+            <p className="ts-muted">이름 · 대응 보통약관은 바의 더보기에서 연다 — 편집 탭에서 고친다.</p>
           </>
         )}
         {data.issues.length === 0 ? <p className="ts-ok">문제 없음.</p> : <DraftIssues go={data.go} issues={data.issues} {...(data.fixCode ? { fixCode: data.fixCode } : {})} />}

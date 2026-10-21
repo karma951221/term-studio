@@ -1,3 +1,4 @@
+import { applyFrom, editForm } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 
 /**
@@ -61,9 +62,9 @@ test(
       await page.getByRole("button", { name: "편집", exact: true }).click();
       await expect(page.getByRole("button", { name: "저장", exact: true })).toBeVisible();
       await open();
-      const dialog = page.getByRole("dialog", { name: "준용하기" });
-      await dialog.locator("select[name=joinMode]").selectOption(value);
-      await dialog.getByRole("button", { name: "확인", exact: true }).click();
+      const form = editForm(page, "준용하기");
+      await form.locator("select[name=joinMode]").selectOption(value);
+      await applyFrom(page);
       await page.getByRole("button", { name: "저장", exact: true }).click();
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible({ timeout: 60_000 });
     };

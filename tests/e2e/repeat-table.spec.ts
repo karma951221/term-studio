@@ -1,6 +1,7 @@
 import { type Locator, type Page } from "@playwright/test";
 
 import { comboOptionCount, pickCombo } from "./_lib/combo";
+import { applyFrom, editForm, insertFrom } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 import { productWithSpecial } from "./_lib/product";
 
@@ -89,11 +90,11 @@ test(
       await expect(page.getByRole("heading", { name: "제1조(감액 지급)" })).toBeVisible();
       await menu(page.getByRole("heading", { name: "제1조(감액 지급)" }), "항 추가");
       await menu(body.locator(".ts-doc-paragraph").first(), "아래에 표 추가…");
-      const pop = page.getByRole("dialog", { name: "표 넣기" });
+      const pop = editForm(page, "표 넣기");
       await pop.getByLabel("행 수").fill("2");
       await pop.getByLabel("열 수").fill("2");
       await pop.getByLabel("표 제목").fill("세부보장별 감액");
-      await pop.getByRole("button", { name: "표 만들기" }).click();
+      await insertFrom(page, pop);
       await expect(body.locator("table.ts-doc-table")).toHaveCount(1);
       await cell("1행 1열").fill("세부보장");
       await cell("1행 2열").fill("비고");
@@ -107,18 +108,18 @@ test(
       const bar = page.getByRole("toolbar", { name: "2행 1열 셀 조작" });
       await expect(bar).toBeVisible();
       await bar.getByRole("button", { name: "이 행 반복…" }).click();
-      const pop = page.getByRole("dialog", { name: "행 반복" });
+      const pop = editForm(page, "행 반복");
       await expect(pop.getByLabel("행 반복").locator("option")).toHaveText(["없음", "세부보장마다", "세부보장 › 급부마다"]);
       await pop.getByLabel("행 반복").selectOption({ label: "세부보장마다" });
-      await pop.getByRole("button", { name: "확인" }).click();
+      await applyFrom(page);
       await expect(body.locator(".ts-doc-for-band")).toHaveText("세부보장마다");
     });
 
     await ev.action("반복표#6", "템플릿 셀(2행 1열)을 오른쪽 클릭 › 구조 표기 「세부보장」 — 칩으로 선다", async () => {
       await menu(cell("2행 1열"), "구조 표기…");
-      const pop = page.getByRole("dialog", { name: "구조 표기 넣기" });
+      const pop = editForm(page, "구조 표기 넣기");
       await pop.getByLabel("구조 표기").selectOption("subCoverage");
-      await pop.getByRole("button", { name: "넣기" }).click();
+      await insertFrom(page, pop);
       await expect(body.locator("table.ts-doc-table")).toContainText("[세부보장명]");
     });
 

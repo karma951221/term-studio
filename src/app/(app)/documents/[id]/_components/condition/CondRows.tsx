@@ -144,6 +144,7 @@ export function CondRows({
   when,
   context,
   onCommit,
+  onChange,
   focus,
   onFocused,
   tools,
@@ -154,6 +155,10 @@ export function CondRows({
   when: string;
   context: ConditionContext;
   onCommit: (source: string) => void;
+  /**
+   * 칸을 바꿀 때마다(값 칸 입력 중 포함) 지금 식 — 편집 탭 폼이 「고친 것」을 곧바로 알게 (2026-10-21). 넘긴 식이 `when` 으로 되돌아와도 다시 풀지 않는다.
+   */
+  onChange?: (source: string) => void;
   /** 그려지자마자 첫 칸에 초점 (툴바 「조건식」 · 가지 추가 직후). */
   focus?: boolean;
   onFocused?: () => void;
@@ -194,6 +199,11 @@ export function CondRows({
 
   const update = (next: HeadModel, commit: boolean) => {
     setModel(next);
+    if (onChange) {
+      const draft = sourceOf(next);
+      setSeen(draft);
+      onChange(draft);
+    }
     if (!commit) return;
     const source = sourceOf(next);
     if (source === when) return;

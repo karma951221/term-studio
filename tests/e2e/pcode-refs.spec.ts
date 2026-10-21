@@ -1,5 +1,7 @@
+
 import { type Locator, type Page } from "@playwright/test";
 
+import { editForm, insertFrom } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 
 /**
@@ -63,12 +65,11 @@ test(
       await paragraphs.first().click();
       await paragraphs.first().press("End");
       await tool("조 참조").click();
-      const d = page.getByRole("dialog", { name: "조 참조 넣기" });
+      const d = editForm(page, "조 참조 넣기");
       await expect(d).toBeVisible();
       await d.getByRole("button", { name: /펴기$/ }).first().click();
       await d.getByRole("treeitem", { level: 2 }).nth(1).getByRole("checkbox").check();
-      await d.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(d).toHaveCount(0);
+      await insertFrom(page, d);
       await expect(body.locator("[data-chip]")).toContainText(["제2항"]);
     });
 
@@ -96,3 +97,4 @@ test(
     });
   },
 );
+

@@ -47,7 +47,9 @@ export type PopupSpec =
   /** 준용하기 옵션 — 보통약관 템플릿 조만(없음 · 공통항 모으기 · 전체항 모으기, ADR-0082 결정 5 · 기능/문면 §4 노드별 폼). */
   | { kind: "joinMode"; articleId: Id }
   | { kind: "docTitle" }
-  | { kind: "general" };
+  | { kind: "general" }
+  /** 블록 조건 가지의 식 — 머리 줄(읽기용 `IF …` 한 줄)을 누르면 편집 탭에서 고친다 (2026-10-21, 문면 편집기만). `focus` 면 첫 칸에 초점. */
+  | { kind: "condHead"; branchId: Id; focus?: boolean };
 
 export type MenuAction =
   /**

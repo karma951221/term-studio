@@ -111,8 +111,13 @@ export interface EditHandlers {
   /** 조 · 관 · 문서 제목. */
   setTitle: (nodeId: Id, title: string) => void;
   setBox: (nodeId: Id, title: string, lines: string[]) => void;
-  /** 그 자리에 팝업을 연다. */
+  /** 고치기 · 넣기 폼을 연다 — 문면 편집기는 우측 패널 「편집」 탭, 다른 편집기는 그 자리 팝업. */
   popup: (spec: PopupSpec, anchor: Anchor) => void;
+  /**
+   * 블록 조건 머리 줄을 읽기용 `IF …` 한 줄로 두고 누르면 편집 탭에서 고친다(`condHead`, 2026-10-21 — 문면 편집기).
+   * 없으면 예전처럼 머리 줄이 그 자리에서 고치는 조건식 줄(`CondRows`)이다(함수조항 · 상품 조 사본 편집기).
+   */
+  headsInPanel?: boolean;
   /** 문장 칸에 초점이 왔다 — 표 셀이면 셀 조작 줄을 그 셀에 띄운다. */
   focusInline: (at: InlineAt) => void;
   /** 셀 조작 줄이 떠 있는 셀. 행 · 열을 넣고 빼면 조작 줄이 옮겨 가거나(`setActiveCell`) 닫힌다. */
