@@ -11,6 +11,7 @@ import type { DocumentNode } from "../document/nodes";
 import type { Id, Issue } from "../types";
 import { assembleGeneral, assembleSpecial } from "./booklet";
 import { planForm } from "./section";
+import { liveSourceView, type SourceView } from "./sourceView";
 import type { MasterBundle, ProductInput, RenderedArticle, RenderedDoc } from "./types";
 
 export type ArticlePreviewTarget =
@@ -82,4 +83,25 @@ export function previewArticle(master: MasterBundle, product: ProductInput, targ
     ...(base !== undefined ? { replacedByBase: base } : {}),
     ...(base === undefined && product.product.articleCopies?.has(articleId) ? { articleCopy: true as const } : {}),
   };
+}
+
+export type ArticleSourceOutcome = { kind: "ok"; view: SourceView } | { kind: "unavailable"; message: string };
+
+/**
+ * 미리보기 탭의 출처 패널 재료 (기능/문면 §3.9 · 조립산출 §4.2) — `previewArticle` 과 같이 넘긴 트리(편집 중이면 편집본)를
+ * 그 문서 자리에 끼워 설명 모드로 조립한다. 편집 중인 글이 원본이고 결과 값도 편집본의 계산이다.
+ */
+export function previewSourceView(master: MasterBundle, product: ProductInput, target: ArticlePreviewTarget, articleId: Id): ArticleSourceOutcome {
+  if (target.document === "special") {
+    const pc = product.coverages.find((c) => c.snapshot.id === target.productCoverageId);
+    if (!pc) return { kind: "unavailable", message: "그 상품담보를 찾을 수 없다" };
+    const specialDocuments = new Map(master.specialDocuments);
+    specialDocuments.set(pc.snapshot.coverageId, target.tree);
+    return { kind: "ok", view: liveSourceView({ ...master, specialDocuments }, product, { document: "special", productCoverageId: pc.snapshot.id, articleId }) };
+  }
+  const generalId = product.product.generalDocumentId;
+  if (generalId === undefined) return { kind: "unavailable", message: "이 상품은 보통약관 템플릿을 고르지 않았다" };
+  const generalDocuments = new Map(master.generalDocuments);
+  generalDocuments.set(generalId, target.tree);
+  return { kind: "ok", view: liveSourceView({ ...master, generalDocuments }, product, { document: "general", articleId }) };
 }

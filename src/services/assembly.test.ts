@@ -552,6 +552,28 @@ describe("assembly 서비스 (PGlite) — 관통 1 통합", () => {
     });
   });
 
+  describe("explainLive — 실시간 화면의 출처 (기능/조립산출 §4.2 — 오래된 결과 차단 없음)", () => {
+    it("저장본 없이도 지금 입력으로 설명한다 — 원본 · 결과 자리 · 결과 값 조각", async () => {
+      const r = unwrap(await svc.explainLive(productId, { document: "special", productCoverageId: pcBasic, articleId: "s-art-reduce" }));
+      expect(r.explanation.status).toBe("shown");
+      expect(r.sources[0].article?.id).toBe("s-art-reduce");
+      expect(r.place).toMatch(/제\d+조\(보험금의 감액지급\)$/);
+      expect(Object.keys(r.values)).toContain("s-slot-reduce");
+    });
+
+    it("저장본이 오래돼도 지금 입력으로 설명한다 (본문도 지금 입력의 계산)", async () => {
+      unwrap(await svc.run(editor, productId));
+      const opt = (await product.listPlanOptions(productId)).find((o) => o.axis === "type")!;
+      unwrap(await product.setPlanOptionValue(editor, opt.id, "waiver.applies", true));
+      expect(unwrap(await svc.explainLive(productId, { document: "general", articleId: "g-art-def" })).explanation.status).toBe("shown");
+    });
+
+    it("없는 상품은 notFound", async () => {
+      const r = await svc.explainLive("00000000-0000-4000-8000-0000000000fe", { document: "general", articleId: "g-art-def" });
+      expect(!r.ok && r.rejection.reason).toBe("notFound");
+    });
+  });
+
   describe("재료 분리 · 상수 쿼리 · 결정성 (ADR-0034 결정 2·3·4)", () => {
     const count = async (fn: () => Promise<unknown>) => {
       t.resetQueryCount();

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { IssueList } from "@/app/_components/IssueList";
+import type { ScreenPanel } from "@/app/_components/sourcePanel/PanelHost";
 import { RenderedBlocksView, RenderedDoc } from "@/app/_components/RenderedDoc";
 import { bookletForm, type Booklet } from "@/domain/assembly";
 import type { EnumDef } from "@/domain/catalog";
@@ -61,6 +62,8 @@ export interface GeneralTabProps {
   bookletNote: string | undefined;
   /** `?art=` — 고른 조. 없거나 없는 조면 첫 조. */
   articleId: Id | undefined;
+  /** 출처 패널 (기능/조립산출 §4.2) — 미리보기 패널 안에서 한 겹 덮는다. URL `&article=<조>`. */
+  panel?: ScreenPanel;
   confirm: string | undefined;
   confirmNode: ReactNode;
 }
@@ -98,6 +101,7 @@ export function GeneralTab({
   booklet,
   bookletNote,
   articleId,
+  panel,
   confirm,
   confirmNode,
 }: GeneralTabProps) {
@@ -228,6 +232,7 @@ export function GeneralTab({
           panes={panes}
           initialArticleId={currentArticleId}
           requestedArticleId={articleId}
+          {...(panel ? { panel } : {})}
           {...(copyEditorData && generalDocumentId && templateTree ? { copyEditor: { ...copyEditorData, templateId: generalDocumentId, template: templateTree } } : {})}
         />
       )}

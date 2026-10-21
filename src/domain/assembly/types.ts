@@ -780,4 +780,10 @@ export interface SpecialPreview {
   trace: ContextTrace[];
   /** 막힌 분기 — 보통약관 + 이 담보약관 한 벌 (`Booklet.pending` 과 같은 뜻). */
   pending?: PendingBranch[];
+  /** 상품의 형태 — 절 형태면 `general` 은 제1절. */
+  form: BookletForm;
+  /** 절 형태의 블록 상품담보 — `doc` 이 제2절 블록이다. */
+  block?: true;
+  /** 절 형태: 상품 전체의 제1절 판정 기록(`Booklet.firstSection`) — 블록 조 생략 · 분리 자리의 재료. */
+  firstSection?: FirstSectionRecord[];
 }

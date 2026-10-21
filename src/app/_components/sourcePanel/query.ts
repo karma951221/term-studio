@@ -46,6 +46,38 @@ export function panelQuery(state: PanelQueryState): string {
   return s === "" ? "" : `?${s}`;
 }
 
+const PANEL_KEYS = ["article", "pc", "node", "omitted"] as const;
+
+/**
+ * 다른 쿼리를 쓰는 화면(상품 탭 `tab` · `art` · `cov` · `pc`)에 패널 상태를 합친다 (기능/조립산출 §4.2) — 화면 쿼리는 그대로 두고 패널 키만 바꾼다.
+ * - `own` — 화면도 쓰는 패널 키(특별약관 탭의 `pc` = 고른 상품담보). 닫아도 남기고, 특약 대상이면 그 값으로 맞춘다.
+ * - `set` — 화면 쿼리를 함께 바꾼다(값 없음 = 뺀다). 보통약관 탭은 연 조를 `art` 로도 남겨 새로고침하면 같은 관이 열린다.
+ * 오류 배너(`error`)는 지나간 일이라 버린다.
+ */
+export function mergePanelQuery(search: string, state: PanelQueryState, opts: { own?: readonly string[]; set?: Record<string, string | undefined> } = {}): string {
+  const q = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  const own = new Set(opts.own ?? []);
+  q.delete("error");
+  for (const k of PANEL_KEYS) if (!own.has(k)) q.delete(k);
+  q.delete("article");
+  q.delete("node");
+  for (const [k, v] of Object.entries(opts.set ?? {})) {
+    if (v === undefined) q.delete(k);
+    else q.set(k, v);
+  }
+  const t = state.target;
+  if (t) {
+    if (t.document === "special" && own.has("pc")) q.set("pc", t.productCoverageId);
+    q.set("article", t.articleId);
+    if (t.document === "special" && !own.has("pc")) q.set("pc", t.productCoverageId);
+    if (state.node) q.set("node", state.node);
+  }
+  if (state.showOmitted === false) q.set("omitted", "off");
+  else q.delete("omitted");
+  const s = q.toString();
+  return s === "" ? "" : `?${s}`;
+}
+
 /** 막힌 분기 한 줄 → 그 조의 패널 + 그 분기 강조 (기능/조립산출 §4.1 「평가 대기」). 결과 좌표에 조가 없으면 없다. */
 export function pendingPanel(p: PendingBranch): PanelQueryState | undefined {
   const { at } = p;

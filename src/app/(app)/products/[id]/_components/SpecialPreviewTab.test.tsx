@@ -12,6 +12,9 @@ import type { ProductCoverage } from "@/domain/product";
 import type { Result } from "@/domain/types";
 
 import { resolveSpecialSelection, specialCoverageGroups } from "../../lib";
+
+// 미리보기 패널의 출처 패널 이동(usePanelNav)이 라우터를 쓴다 — 정적 렌더라 누르지는 않는다
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {}, replace: () => {}, refresh: () => {} }) }));
 import { SpecialPreviewTab } from "./SpecialPreviewTab";
 import { titleNodes } from "@/domain/document/title";
 

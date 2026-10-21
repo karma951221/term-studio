@@ -9,12 +9,16 @@
  *
  * 패널마다 머리 띠(`.ts-terms-panel-head` — 특별약관 탭과 같은 규칙, 스크롤해도 위에 붙는다): 「목차」 · 「모델링 — 관」 · 「미리보기 — 관」.
  *
+ * 출처 패널 (기능/조립산출 §4.2): 미리보기의 조를 누르면 미리보기 패널 안에서 한 겹 덮어 그 조의 출처를 연다 — ✕ 로 미리보기로 돌아온다.
+ * URL `&article=<조>`(연 조는 `art` 로도 — 새로고침하면 같은 관 · 같은 패널). 목차로 다른 조를 고르면 덮개를 걷는다(주소도 `?art=` 만 남는다).
+ *
  * 편집 중이면 패널이 둘이다 (ADR-0079 · 기능/상품 §4.6) — 목차(노출 체크 · 사본 점)와 **조 편집**(고른 조 하나를 문면 편집기로,
  * `ArticleCopyEditor`), 그 위에 깨지는 참조 목록(`RefBreakList`, ADR-0081). 미리보기는 숨긴다 — 저장 전에는 저장된 조립이라 고친 것과 어긋난다. 모델링도 조 편집이 대신한다.
  */
 import { Fragment, useState, type ReactNode } from "react";
 
 import { foldTitle } from "@/domain/document";
+import { panelKey, PanelClicks, SourceOverlay, usePanelNav, type ScreenPanel } from "@/app/_components/sourcePanel/PanelHost";
 import type { Id, Issue } from "@/domain/types";
 
 import { generalArticlePath } from "../../lib";
@@ -81,6 +85,7 @@ export function GeneralPanels({
   initialArticleId,
   requestedArticleId,
   copyEditor,
+  panel,
 }: {
   productId: Id;
   toc: readonly TocSection[];
@@ -90,6 +95,8 @@ export function GeneralPanels({
   requestedArticleId?: Id | undefined;
   /** 편집 중 조 편집 패널의 재료 — 없으면 편집 중에도 세 패널(템플릿이 없는 화면 · 단독 렌더). */
   copyEditor?: CopyEditorData;
+  /** 출처 패널 — 서버가 URL 로 계산한 내용. */
+  panel?: ScreenPanel;
 }) {
   const [current, setCurrent] = useState(initialArticleId);
   // 서버가 다른 조로 다시 그렸으면(`?art=` 로 돌아온 저장 등) 그 조를 따른다 — 렌더 중 상태 맞추기(React 권장 패턴)
@@ -101,9 +108,13 @@ export function GeneralPanels({
     setCurrent(initialArticleId);
     setScrollTo(initialScrollTarget(requestedArticleId, initialArticleId));
   }
+  // 출처 덮개 — 목차로 조를 바꾸면 걷는다(서버가 내린 같은 패널을 다시 덮지 않게 열쇠로 기억), 미리보기 조를 누르면 다시 연다
+  const [dismissed, setDismissed] = useState<string>();
+  const goPanel = usePanelNav({ set: (next) => (next.target ? { art: next.target.articleId } : {}) });
   const select = (articleId: Id) => {
     setCurrent(articleId);
     setScrollTo(articleId);
+    if (panel?.content) setDismissed(panelKey(panel.state));
   };
   const edit = useGeneralEdit();
   const editing = edit?.editing ?? false;
@@ -136,6 +147,8 @@ export function GeneralPanels({
     );
   }
 
+  const target = panel?.state.target;
+  const overlay = panel?.content && target && pane?.articleIds.includes(target.articleId) && dismissed !== panelKey(panel.state) ? panel.content : undefined;
   return (
     <div className="ts-terms-panels">
       <section className="ts-terms-panel" aria-label="목차">
@@ -155,7 +168,18 @@ export function GeneralPanels({
           <h3 className="ts-terms-panel-title">미리보기 — {label}</h3>
           {editing && <span className="ts-terms-panel-hint">저장하면 미리보기에 반영됩니다</span>}
         </div>
-        {pane && <Fragment key={pane.key}>{pane.right}</Fragment>}
+        {pane && (
+          <SourceOverlay {...(overlay ? { content: overlay } : {})} {...(panel?.state.node ? { focus: panel.state.node } : {})} onClose={() => goPanel({ showOmitted: panel?.state.showOmitted ?? true })}>
+            <PanelClicks
+              onPick={(hit) => {
+                setDismissed(undefined);
+                goPanel({ ...hit, showOmitted: panel?.state.showOmitted ?? true });
+              }}
+            >
+              <Fragment key={pane.key}>{pane.right}</Fragment>
+            </PanelClicks>
+          </SourceOverlay>
+        )}
       </section>
       <PanelScrollSync articleId={scrollTo} />
     </div>

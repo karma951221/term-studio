@@ -19,8 +19,8 @@ import { foldTitle } from "../document/title";
 import { VERDICT_WORD, verdictText } from "../product/judgment";
 import type { ProductCoverageSnapshot } from "../product/types";
 import type { Code, Id } from "../types";
-import type { ArticleExplanation, ArticleSource, ExplainTarget } from "./explain";
-import type { Booklet, ErrorNode, MasterBundle, ProductInput, RenderedArticle, RenderedDoc, RenderedInline, RenderedStatic } from "./types";
+import { explainRun, type ArticleExplanation, type ArticleSource, type ExplainTarget } from "./explain";
+import type { Booklet, ErrorNode, MasterBundle, ProductInput, RenderedArticle, RenderedDoc, RenderedInline, RenderedStatic, SpecialPreview } from "./types";
 
 /** 원본 하나의 그릴 재료 — `explanation.sources` 와 같은 순. */
 export interface SourceViewSource {
@@ -295,3 +295,24 @@ export function buildSourceView(master: MasterBundle, product: ProductInput, exp
   };
 }
 
+/**
+ * 실시간 화면의 출처 재료 (기능/조립산출 §4.2) — 지금 입력으로 설명 모드 한 번, 그 조립의 책자에서 결과 값 조각을 꺼낸다.
+ * 본문도 지금 입력의 계산이라 오래된 결과 차단이 없다(ADR-0092 결정 5).
+ */
+export function liveSourceView(master: MasterBundle, product: ProductInput, target: ExplainTarget): SourceView {
+  const { explanation, booklet } = explainRun(master, product, target);
+  return buildSourceView(master, product, explanation, booklet);
+}
+
+/** 특약 한 건 미리보기(`assembleSpecial`)를 책자 모양으로 — 생략 자리(`omissionSlots`) · 결과 자리 문구가 책자와 같게. 블록이면 제2절에 둔다. */
+export function specialAsBooklet(preview: SpecialPreview): Pick<Booklet, "form" | "general" | "specials" | "blocks" | "omitted" | "firstSection"> {
+  const group = [{ id: preview.block ? "block" : "special", docs: [preview.doc] }];
+  return {
+    form: preview.form,
+    general: preview.general,
+    specials: preview.block ? [] : group,
+    blocks: preview.block ? group : [],
+    omitted: preview.omitted,
+    ...(preview.firstSection ? { firstSection: preview.firstSection } : {}),
+  };
+}

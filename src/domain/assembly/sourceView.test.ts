@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { assemble } from "./booklet";
 import { explainArticle, type ExplainTarget } from "./explain";
 import { alphaPlusFixture } from "./fixture";
-import { buildSourceView, locateRendered, renderedValues } from "./sourceView";
+import { buildSourceView, liveSourceView, locateRendered, renderedValues } from "./sourceView";
 import type { RenderedArticle } from "./types";
 
 const input = alphaPlusFixture();
@@ -162,5 +162,17 @@ describe("buildSourceView — 조건식 한국어 표기 재료 (§3.7)", () => 
     const v = buildSourceView(changed, changed, explainArticle(changed, changed, target), assemble(changed, changed));
     expect(v.clauses.C0001?.paramEnums).toEqual({ 사유: e.code });
     expect(v.enums[e.code]?.fields).toEqual({ F01: "약관표시명" });
+  });
+});
+
+describe("liveSourceView — 실시간 화면의 출처 재료 (기능/조립산출 §4.2)", () => {
+  it("설명 모드 한 번 — 값 조각까지 buildSourceView(explainArticle, assemble) 와 같다", () => {
+    for (const t of [
+      { document: "special", productCoverageId: "pc-basic", articleId: "s-art-pay" },
+      { document: "general", articleId: "g-art-pay" },
+      { document: "general", articleId: "g-art-def" },
+    ] as ExplainTarget[]) {
+      expect(liveSourceView(input, input, t)).toEqual(view(t));
+    }
   });
 });
