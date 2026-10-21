@@ -46,6 +46,14 @@
   --ts-work-blue: #1d5fbf;
   --ts-work-green: #1f7a3a;
   --ts-work-orange: #b35900;
+  /* 동적표 상세 — 견본 표 칸 ↔ 템플릿 필드의 영역 색 (기능/동적표 §4.2). 강조는 색 + 띠 + 굵기로 함께 말한다 */
+  --ts-region-corner: #4a6f98;
+  --ts-region-first: #8a6410;
+  --ts-region-middle: #3f6b3a;
+  --ts-region-last: #94456f;
+  --ts-region-single: #64519a;
+  --ts-region-cell: #b4432b;
+  --ts-region-row: #2f6f6a;
 
   /* 글꼴 — 디자인원칙 §3. 맑은 고딕은 시스템 설치본만 부른다(웹폰트 배포 불가) */
   --sans: "Malgun Gothic", "맑은 고딕", AppleSDGothicNeo-Regular, "Apple SD Gothic Neo",
@@ -85,6 +93,13 @@
     --ts-work-blue: #8cb8ff;
     --ts-work-green: #7ed49a;
     --ts-work-orange: #ffb35c;
+    --ts-region-corner: #8fb3d9;
+    --ts-region-first: #e0b45c;
+    --ts-region-middle: #9ccf8a;
+    --ts-region-last: #d98fb6;
+    --ts-region-single: #b39ddb;
+    --ts-region-cell: #d97757;
+    --ts-region-row: #7fc9c4;
 
     color-scheme: dark;
   }
@@ -1221,6 +1236,202 @@ button:where(:not([data-slot])).danger:focus-visible {
 
 .ts-clause-warnings .ts-icon {
   vertical-align: -2px;
+}
+
+/* ── 동적표 상세 — 2단: 왼쪽 견본 표, 오른쪽 템플릿 패널 · 칸 ↔ 필드 강조 (기능/동적표 §4.2) ──
+ * 영역마다 --rc(영역 색). 표 칸 강조 = 옅은 바탕 + 안쪽 띠 + 굵게, 필드 강조 = 왼쪽 띠 + 라벨 색 + 굵게. 좁으면 세로로 쌓는다.
+ */
+.ts-dyn-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 440px);
+  gap: 24px;
+  align-items: start;
+  max-width: 1440px;
+}
+
+.ts-dyn-sample {
+  position: sticky;
+  top: 0;
+  min-width: 0;
+}
+
+.ts-dyn-panel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 960px) {
+  .ts-dyn-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ts-dyn-sample {
+    position: static;
+  }
+}
+
+[data-region="corner"] { --rc: var(--ts-region-corner); }
+[data-region="first"] { --rc: var(--ts-region-first); }
+[data-region="middle"] { --rc: var(--ts-region-middle); }
+[data-region="last"] { --rc: var(--ts-region-last); }
+[data-region="single"] { --rc: var(--ts-region-single); }
+[data-region="cell"] { --rc: var(--ts-region-cell); }
+[data-region="row"] { --rc: var(--ts-region-row); }
+
+.ts-dyn-sample-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.ts-dyn-sample-pick select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ts-dyn-sample-desc,
+.ts-dyn-sample-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+.ts-dyn-sample-hint {
+  margin: 10px 0 0;
+}
+
+.ts-dyn-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--ts-rule);
+  border-radius: 3px;
+  background: var(--ts-surface);
+}
+
+.ts-dyn-table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+}
+
+.ts-dyn-table th,
+.ts-dyn-table td {
+  padding: 0;
+  border: 1px solid var(--ts-rule);
+  vertical-align: middle;
+  transition: background-color 0.12s, box-shadow 0.12s;
+}
+
+.ts-dyn-table th {
+  font-weight: 400;
+}
+
+.ts-dyn-table .ts-dyn-cellbtn {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ts-ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.ts-dyn-table .is-rowhead .ts-dyn-cellbtn {
+  white-space: nowrap;
+}
+
+.ts-dyn-table .ts-dyn-cellbtn:hover {
+  background: transparent;
+}
+
+.ts-dyn-table .ts-dyn-cellbtn:focus-visible {
+  outline: 2px solid var(--rc);
+  outline-offset: -3px;
+}
+
+.ts-dyn-table .is-hover {
+  background: color-mix(in srgb, var(--rc) 10%, transparent);
+}
+
+.ts-dyn-table .is-on {
+  background: color-mix(in srgb, var(--rc) 20%, transparent);
+  box-shadow: inset 0 0 0 2px var(--rc);
+}
+
+.ts-dyn-table .is-on .ts-dyn-cellbtn {
+  font-weight: 700;
+}
+
+/* 자리표시자에 들어간 값 = 굵은 밑줄, 인자 · 조건에 따라 바뀌는 글 = 점선 */
+.ts-dyn-v {
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.ts-dyn-c {
+  border-bottom: 1px dotted var(--ts-ink-3);
+}
+
+.ts-dyn-field {
+  margin: 0 0 12px -12px;
+  padding-left: 9px;
+  border-left: 3px solid transparent;
+  transition: border-color 0.12s;
+}
+
+.ts-dyn-field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  color: var(--ts-ink-2);
+  transition: color 0.12s;
+}
+
+.ts-dyn-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--rc);
+}
+
+.ts-dyn-field-na {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ts-ink-3);
+}
+
+.ts-dyn-field.is-absent .ts-dyn-field-label > :not(.ts-dyn-field-na) {
+  opacity: 0.45;
+}
+
+.ts-dyn-field.is-on {
+  border-left-color: var(--rc);
+}
+
+.ts-dyn-field.is-on .ts-dyn-field-label {
+  color: var(--rc);
+  font-weight: 700;
+}
+
+.ts-dyn-field-sub {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: var(--ts-ink-3);
+}
+
+.ts-dyn-field-static {
+  margin: 0;
+  color: var(--ts-ink-2);
 }
 
 /* 단위 규칙 경고 — 저장은 된다, 읽고 넘어갈 줄 (기능/함수조항 §3.1) */

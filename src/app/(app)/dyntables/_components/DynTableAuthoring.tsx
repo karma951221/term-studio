@@ -3,13 +3,16 @@
 /**
  * 동적표 에디터 — `/dyntables/new`(생성) · `/dyntables/<code>`(상세) 한 벌 (기능/동적표 §4.2).
  *
- * 위에서 아래로 기본정보(코드 · 동적표명) → 인자(함수조항 인자 표 그대로 `ParamsPane`) → 열 기준 → 머리글(구분 칸 · 템플릿 네 줄) → 셀 템플릿 → 미리보기.
+ * 2단 — 왼쪽 견본 표(`SampleTable` — 시스템 견본을 골라 조립과 같은 펼침으로 늘 그린다), 오른쪽 템플릿 패널(기본정보 · 열 기준 · 인자(`ParamsPane`) ·
+ * 행 머리(시스템) · 구분 칸 머리글 · 열 머리글 네 줄 · 셀 템플릿). 좁으면 세로로 쌓인다.
  * 템플릿 줄마다 `TemplateEditor`(문면 인라인 편집기) — 그 줄에서 쓸 수 있는 표 슬롯(`DYN_TABLE_ALLOWED_SLOTS`)과 인자 슬롯 · 조건을 넣는다.
+ * 칸 ↔ 필드: 표 칸을 누르면 그 칸을 만든 영역의 칸 전부 + 오른쪽 그 필드가 강조되고(다시 누르면 풀림) 필드로 스크롤한다. 필드에 들어가면(포커스 · 클릭) 표의 그 영역이 칠해진다.
+ * 견본에 없는 영역의 필드는 흐리게 + 「이 견본엔 없음」. 편집 중에는 편집본으로 그려 저장 전에 바로 보인다.
  *
  * 저장 한 번: 상세는 읽기로 시작 → `편집` → 칸 전부가 함께 수정 가능 → `저장`(한 트랜잭션, 검사 §3.6). 거부면 편집 유지 + 그 칸(인자 · 템플릿 줄) 아래 사유.
- * 생성은 처음부터 편집 중이고, 저장하는 순간 만들어진다. 미리보기는 늘 보이고 표본은 저장하지 않는다.
+ * 생성은 처음부터 편집 중이고, 저장하는 순간 만들어진다. 견본은 시스템 고정이라 저장하지 않는다.
  */
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
@@ -24,13 +27,16 @@ import { ParamsPane } from "@/app/(app)/functions/_components/ParamsPane";
 import type { ParamDef } from "@/domain/clause";
 import type { Inline } from "@/domain/clause/nodes";
 import { formatCoordinate } from "@/domain/coordinate";
+import type { DynTableRegion } from "@/domain/dyntable/regions";
+import { renderDynTableSample } from "@/domain/dyntable/sampleView";
+import { DYN_TABLE_SAMPLES, dynTableSample, sampleArgValues } from "@/domain/dyntable/samples";
 import { DYN_TABLE_ALLOWED_SLOTS, type ColumnBasis, type DynTableHeaders, type DynTableTemplateKey, type NewDynTable } from "@/domain/dyntable/types";
 import type { Impact, Issue } from "@/domain/types";
 
 import { createDynTableAction, removeDynTableAction, saveDynTableAction } from "../actions";
 import type { DynTableEditorData } from "../editorData";
 import { COLUMN_BASIS_OPTIONS } from "./basis";
-import { DynTablePreview } from "./DynTablePreview";
+import { REGION_LABEL, SampleTable } from "./SampleTable";
 import { TemplateEditor } from "./TemplateEditor";
 
 export interface DynTableAuthoringProps {
@@ -42,12 +48,42 @@ export interface DynTableAuthoringProps {
 
 type Banner = { message: string; issues?: readonly Issue[] };
 
-const HEADER_ROWS: readonly { key: keyof DynTableHeaders; label: string; hint: string }[] = [
-  { key: "first", label: "첫 열", hint: "열이 둘 이상일 때 첫 열 — {경계}" },
-  { key: "middle", label: "가운데 열", hint: "열이 셋 이상일 때 가운데 열마다 — {앞경계} · {경계}" },
-  { key: "last", label: "마지막 열", hint: "열이 둘 이상일 때 마지막 열 — {경계}" },
-  { key: "single", label: "단일 열", hint: "열이 하나일 때(경계 없음 · 열 기준 「없음」)" },
+const HEADER_ROWS: readonly { key: keyof DynTableHeaders; hint: string }[] = [
+  { key: "first", hint: "{경계} = 첫 구간의 끝 · 열이 둘 이상일 때 첫 열" },
+  { key: "middle", hint: "{앞경계} = 구간의 시작 · {경계} = 구간의 끝 · 열이 셋 이상일 때 가운데 열마다" },
+  { key: "last", hint: "{경계} = 마지막 경계 · 열이 둘 이상일 때 마지막 열" },
+  { key: "single", hint: "감액이 없어 열이 하나일 때(열 기준 「없음」 포함)" },
 ];
+
+interface RegionFieldProps {
+  region: DynTableRegion;
+  on: boolean;
+  absent: boolean;
+  onActivate: () => void;
+  /** 라벨이 가리킬 입력 id — 없으면 글 라벨. */
+  labelFor?: string | undefined;
+  /** 라벨 오른쪽 작은 표시(「시스템」). */
+  badge?: string;
+  sub?: string;
+  children: ReactNode;
+}
+
+/** 템플릿 필드 하나 — 영역 색 점 + 라벨, 강조면 왼쪽 띠 · 라벨 색 · 굵기. 포커스 · 클릭이 표의 그 영역을 칠한다. */
+function RegionField({ region, on, absent, onActivate, labelFor, badge, sub, children }: RegionFieldProps) {
+  const label = REGION_LABEL[region];
+  return (
+    <div className={`ts-dyn-field${on ? " is-on" : ""}${absent ? " is-absent" : ""}`} data-region={region} data-dyn-field={region} onFocusCapture={onActivate} onClick={onActivate}>
+      <div className="ts-dyn-field-label">
+        <span className="ts-dyn-dot" aria-hidden="true" />
+        {labelFor ? <label htmlFor={labelFor}>{label}</label> : <span>{label}</span>}
+        {absent && <span className="ts-dyn-field-na">이 견본엔 없음</span>}
+        {badge && <span className="ts-dyn-field-na">{badge}</span>}
+      </div>
+      {children}
+      {sub && <p className="ts-dyn-field-sub">{sub}</p>}
+    </div>
+  );
+}
 
 const PARAM_NOTE = "템플릿이 arg.<이름> 으로 읽는 값 인자 — 사용처(담보약관)가 넣는 자리에서 구분자 · 상수를 댄다. 조 참조 인자는 둘 수 없다.";
 
@@ -80,6 +116,9 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
   const [placed, setPlaced] = useState<ReturnType<typeof placeIssues>>();
   const [discard, setDiscard] = useState<{ go: () => void }>();
   const [removal, setRemoval] = useState<Impact>();
+  const [sampleId, setSampleId] = useState<string>(DYN_TABLE_SAMPLES[0].id);
+  const [selected, setSelected] = useState<DynTableRegion>();
+  const [hovered, setHovered] = useState<DynTableRegion>();
 
   const shown = editing ? draft : props.table;
   const dirty = editing && (isNew ? draft.label.trim() !== "" || draft.params.length > 0 || JSON.stringify(draft) !== JSON.stringify(props.table) : JSON.stringify(draft) !== JSON.stringify(props.table));
@@ -90,6 +129,16 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
   /** 조건 · 슬롯 문맥 — 변수는 인자 칸뿐(§3.1 — 구분자 · 세목 · 담보속성은 인자로 받아 연결한다). */
   const condition = useMemo(() => ({ ...data.condition, discriminators: paramEntries(shown.params, data.enums), attributes: [], quick: [] }), [data.condition, data.enums, shown.params]);
   const enumDefs = useMemo(() => enumDefsOf(data.enums), [data.enums]);
+
+  // 견본 표 — 편집 중이면 편집본으로(저장 전에 바로 보인다)
+  const sample = dynTableSample(sampleId);
+  const view = useMemo(() => renderDynTableSample(shown, sample.benefits, sampleArgValues(shown.params, sample, enumDefs), enumDefs), [shown, sample, enumDefs]);
+  const fieldState = (region: DynTableRegion) => ({ on: selected === region, absent: region !== "row" && !view.regions.includes(region), onActivate: () => setSelected(region) });
+  const pickFromTable = (region: DynTableRegion) => {
+    const next = selected === region ? undefined : region;
+    setSelected(next);
+    if (next) document.querySelector(`[data-dyn-field="${next}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  };
 
   const startEdit = () => {
     setDraft(props.table);
@@ -204,82 +253,85 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
             )}
           </div>
         )}
-        <div className="ts-clause-main ts-dyn-main">
-          <section className="ts-basics" aria-label="동적표 기본정보">
-            {!isNew && (
-              <div className="ts-form-row">
-                <span className="ts-form-label">코드</span>
-                <span className="ts-clause-meta-value ts-mono">{code}</span>
-              </div>
-            )}
-            <div className="ts-form-row">
-              <label htmlFor="dyn-label">{NAME_LABEL.dynTable}</label>
-              {editing ? (
-                <input id="dyn-label" className="ts-field-direct" value={draft.label} onChange={(e) => patch({ label: e.target.value })} placeholder="예: 감액 지급금액 표" autoFocus={isNew} aria-invalid={placed?.label ? true : undefined} />
-              ) : (
-                <span className="ts-clause-meta-value">{props.table.label}</span>
+        <div className="ts-dyn-layout">
+          <SampleTable sample={sample} onSample={setSampleId} view={view} selected={selected} hovered={hovered} onSelect={pickFromTable} onHover={setHovered} />
+
+          <div className="ts-dyn-panel" aria-label="템플릿">
+            <section className="ts-basics" aria-label="동적표 기본정보">
+              {!isNew && (
+                <div className="ts-form-row">
+                  <span className="ts-form-label">코드</span>
+                  <span className="ts-clause-meta-value ts-mono">{code}</span>
+                </div>
               )}
-            </div>
-            {placed?.label && (
+              <div className="ts-form-row">
+                <label htmlFor="dyn-label">{NAME_LABEL.dynTable}</label>
+                {editing ? (
+                  <input id="dyn-label" className="ts-field-direct" value={draft.label} onChange={(e) => patch({ label: e.target.value })} placeholder="예: 감액 지급금액 표" autoFocus={isNew} aria-invalid={placed?.label ? true : undefined} />
+                ) : (
+                  <span className="ts-clause-meta-value">{props.table.label}</span>
+                )}
+              </div>
+              {placed?.label && (
+                <p className="ts-form-error" role="alert">
+                  {placed.label}
+                </p>
+              )}
+              <div className="ts-form-row">
+                <span className="ts-form-label">열 기준</span>
+                {editing ? (
+                  <div className="ts-clause-mode" role="radiogroup" aria-label="열 기준">
+                    {COLUMN_BASIS_OPTIONS.map((o) => (
+                      <label key={o.value} className={`ts-clause-mode-option${shown.columnBasis === o.value ? " is-on" : ""}`}>
+                        <input type="radio" name="dyn-basis" value={o.value} checked={shown.columnBasis === o.value} onChange={() => patch({ columnBasis: o.value as ColumnBasis })} />
+                        <span className="ts-clause-mode-name">{o.label}</span>
+                        <span className="ts-clause-mode-hint">{o.hint}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="ts-clause-meta-value">{COLUMN_BASIS_OPTIONS.find((o) => o.value === shown.columnBasis)?.label}</span>
+                )}
+              </div>
+            </section>
+
+            <ParamsPane params={shown.params} editing={editing} onChange={(next: ParamDef[]) => patch({ params: next })} discriminators={data.condition.discriminators} enums={data.enums} forms={data.planForms} />
+            {placed?.params && (
               <p className="ts-form-error" role="alert">
-                {placed.label}
+                {placed.params}
               </p>
             )}
-          </section>
+            <p className="ts-muted ts-clause-sec-note">{PARAM_NOTE}</p>
 
-          <ParamsPane params={shown.params} editing={editing} onChange={(next: ParamDef[]) => patch({ params: next })} discriminators={data.condition.discriminators} enums={data.enums} forms={data.planForms} />
-          {placed?.params && (
-            <p className="ts-form-error" role="alert">
-              {placed.params}
-            </p>
-          )}
-          <p className="ts-muted ts-clause-sec-note">{PARAM_NOTE}</p>
+            <section aria-label="행">
+              <h2 className="ts-clause-sec">행</h2>
+              <RegionField region="row" {...fieldState("row")} badge="시스템">
+                <p className="ts-dyn-field-static">급부명 — 급부마다 한 행(같은 급부명은 열마다 비율이 같을 때 한 행). 모델링하지 않는다.</p>
+              </RegionField>
+            </section>
 
-          <section aria-label="열 기준">
-            <h2 className="ts-clause-sec">열 기준</h2>
-            {editing ? (
-              <div className="ts-clause-mode" role="radiogroup" aria-label="열 기준">
-                {COLUMN_BASIS_OPTIONS.map((o) => (
-                  <label key={o.value} className={`ts-clause-mode-option${shown.columnBasis === o.value ? " is-on" : ""}`}>
-                    <input type="radio" name="dyn-basis" value={o.value} checked={shown.columnBasis === o.value} onChange={() => patch({ columnBasis: o.value as ColumnBasis })} />
-                    <span className="ts-clause-mode-name">{o.label}</span>
-                    <span className="ts-clause-mode-hint">{o.hint}</span>
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <p>{COLUMN_BASIS_OPTIONS.find((o) => o.value === shown.columnBasis)?.label}</p>
-            )}
-          </section>
+            <section aria-label="머리글">
+              <h2 className="ts-clause-sec">
+                머리글
+                <InfoTip text="열 하나면 단일 열, 둘이면 첫 + 마지막, 셋 이상이면 첫 + 가운데(열마다) + 마지막. 슬롯 {경계} · {앞경계} 는 펼칠 때 기간 글로 바뀐다." />
+              </h2>
+              <RegionField region="corner" {...fieldState("corner")} labelFor={editing ? "dyn-rowheader" : undefined}>
+                {editing ? <input id="dyn-rowheader" className="ts-field-direct" value={draft.rowHeader} onChange={(e) => patch({ rowHeader: e.target.value })} placeholder="구 분" /> : <span className="ts-clause-meta-value">{props.table.rowHeader}</span>}
+              </RegionField>
+              {rows.map((r) => (
+                <RegionField key={r.key} region={r.key} {...fieldState(r.key)} sub={r.hint}>
+                  <TemplateEditor id={`dyn-h-${r.key}`} value={shown.headers[r.key]} onChange={(next) => setHeader(r.key, next)} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS[r.key]} placeholder={`${REGION_LABEL[r.key]} 머리글`} {...(placed?.templates[r.key] ? { error: placed.templates[r.key] } : {})} />
+                </RegionField>
+              ))}
+            </section>
 
-          <section aria-label="머리글">
-            <h2 className="ts-clause-sec">
-              머리글
-              <InfoTip text="열 하나면 단일 열, 둘이면 첫 + 마지막, 셋 이상이면 첫 + 가운데(열마다) + 마지막. 슬롯 {경계} · {앞경계} 는 펼칠 때 기간 글로 바뀐다." />
-            </h2>
-            <div className="ts-form-row">
-              <label htmlFor="dyn-rowheader">구분 칸 머리글</label>
-              {editing ? <input id="dyn-rowheader" className="ts-field-direct" value={draft.rowHeader} onChange={(e) => patch({ rowHeader: e.target.value })} placeholder="구 분" /> : <span className="ts-clause-meta-value">{props.table.rowHeader}</span>}
-            </div>
-            {rows.map((r) => (
-              <div key={r.key} className="ts-form-row ts-form-full ts-dyn-row">
-                <span className="ts-form-label" title={r.hint}>
-                  {r.label}
-                </span>
-                <TemplateEditor id={`dyn-h-${r.key}`} value={shown.headers[r.key]} onChange={(next) => setHeader(r.key, next)} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS[r.key]} placeholder={`${r.label} 머리글`} {...(placed?.templates[r.key] ? { error: placed.templates[r.key] } : {})} />
-              </div>
-            ))}
-          </section>
-
-          <section aria-label="셀 템플릿">
-            <h2 className="ts-clause-sec">
-              셀 템플릿
-              <InfoTip text="행 × 열마다 이 템플릿이 들어간다. {비율} 은 지급률 × 감액비율. 세부보장이 둘 이상일 때만 붙일 글은 조건 count(builtin.subCoverage.name) >= 2 로." />
-            </h2>
-            <TemplateEditor id="dyn-cell" value={shown.cell} onChange={(next) => patch({ cell: next })} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS.cell} placeholder="셀 템플릿" {...(placed?.templates.cell ? { error: placed.templates.cell } : {})} />
-          </section>
-
-          <DynTablePreview table={shown} enums={enumDefs} />
+            <section aria-label="본문">
+              <h2 className="ts-clause-sec">본문</h2>
+              <RegionField region="cell" {...fieldState("cell")} sub="{비율} = 급부 지급률 × 감액 지급률. 세부보장이 둘 이상일 때만 붙일 글은 조건 count(builtin.subCoverage.name) >= 2 로.">
+                <TemplateEditor id="dyn-cell" value={shown.cell} onChange={(next) => patch({ cell: next })} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS.cell} placeholder="셀 템플릿" {...(placed?.templates.cell ? { error: placed.templates.cell } : {})} />
+              </RegionField>
+            </section>
+          </div>
         </div>
       </div>
 
