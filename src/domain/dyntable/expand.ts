@@ -9,7 +9,7 @@
  * - 열 j 의 감액비율: 구간 [b(j−1), b(j)) 에서 `end ≥ b(j)` 인 첫 구간의 `rate`, 없으면 `afterRate`. 마지막 열 = `afterRate`. 감액 없음 = 100.
  *   열 기준 「없음」이면 감액을 보지 않는다(비율 = 지급률 — (갱신) 표).
  * - 셀 비율 = 지급률 × 감액비율 / 100. 정수가 아니면 소수 한 자리까지 자른다(반올림 없음).
- *   지급률 미입력은 그 행 `notEntered`(좌표 = 행) + 그 행의 셀은 빈 인라인(인라인에는 오류 노드가 없다 — 오류 자리는 issues 가 가리킨다).
+ *   지급률 미입력은 100% 로 읽는다 — 지급률은 선택 필드이고 안 적으면 100 이다 (기능/담보 §3.4, 2026-10-21).
  * - 행: 급부명이 같고 열마다 비율이 모두 같으면 한 행(처음 나온 자리). 어느 열이든 다르면 그 급부명은 급부마다 따로(트리 순) + 경고 `dynTableMergeConflict`.
  * - 노드 id: `${refId}/${템플릿 노드 id}@r{행}c{열}` (머리글 행 = h, 구분 칸 = c0). 구분 칸 · 급부명 칸은 글 노드 하나(`rowHeader` · `row`).
  * - 연결 오류(argUnbound 등)는 `issues` 에 모으고 표 구조는 그대로 돌려준다 — 막을지는 호출처(조립 · 미리보기)가 정한다.
@@ -34,6 +34,9 @@ export interface DynTableDeps {
 }
 
 // ───────────────────────────── 셀 비율 ─────────────────────────────
+
+/** 지급률을 안 적은 급부의 지급률(%) — `pay.rate` 는 선택 필드이고 비어 있으면 100 이다 (기능/담보 §3.4). */
+export const DEFAULT_PAY_RATE = 100;
 
 /** 열 j (0 부터, 마지막 열 = boundaries.length) 의 감액비율 (§3.4). */
 export function reductionRateAt(reduction: DynBenefit["reduction"], boundaries: readonly number[], j: number): number {
@@ -75,9 +78,8 @@ function instantiate(template: readonly Inline[], tag: (id: Id) => Id, slotText:
 
 interface Computed {
   benefit: DynBenefit;
-  /** 열마다 셀 비율 글. 지급률 미입력이면 전부 빈 글(셀도 비운다). */
+  /** 열마다 셀 비율 글. */
   ratios: string[];
-  entered: boolean;
 }
 
 export function expandDynTable(def: DynTable, input: DynTableInput, bindings: Bindings | undefined, deps: DynTableDeps, at: Coordinate = {}): ExpandedDynTable {
@@ -127,13 +129,9 @@ export function expandDynTable(def: DynTable, input: DynTableInput, bindings: Bi
 
   // 4. 셀 비율 — 급부마다 열마다
   const computed: Computed[] = input.benefits.map((benefit) => {
-    if (benefit.payRate === undefined) {
-      issues.push({ kind: "notEntered", message: `${owner} — 급부 ${benefit.name} 의 지급률이 미입력이라 셀 비율을 계산할 수 없습니다`, at: here(`${owner} › 행 ${benefit.name}`) });
-      return { benefit, ratios: Array.from({ length: columns }, () => ""), entered: false };
-    }
-    const payRate = benefit.payRate;
+    const payRate = benefit.payRate ?? DEFAULT_PAY_RATE;
     const reduction = def.columnBasis === "reduction" ? benefit.reduction : undefined;
-    return { benefit, ratios: Array.from({ length: columns }, (_, j) => formatRatio(payRate, reductionRateAt(reduction, boundaries, j))), entered: true };
+    return { benefit, ratios: Array.from({ length: columns }, (_, j) => formatRatio(payRate, reductionRateAt(reduction, boundaries, j))) };
   });
 
   // 5. 행 묶기 — 급부명이 같은 급부는 열마다 비율이 모두 같을 때만 한 행. 어느 열이든 다르면 그 급부명은 전부 따로(트리 순) + 경고
@@ -164,7 +162,7 @@ export function expandDynTable(def: DynTable, input: DynTableInput, bindings: Bi
     }
     const i = rows.length + 1;
     const cells: Inline[][] = [[{ id: tagOf(String(i), 0)("row"), kind: "text", text: name }]];
-    for (let j = 0; j < columns; j++) cells.push(c.entered ? instantiate(tmpl.cell, tagOf(String(i), j + 1), () => c.ratios[j]) : []);
+    for (let j = 0; j < columns; j++) cells.push(instantiate(tmpl.cell, tagOf(String(i), j + 1), () => c.ratios[j]));
     const row: ExpandedDynTableRow = { name, benefitKeys: [c.benefit.key], cells };
     rows.push(row);
     if (!conflicted.has(name)) rowOf.set(name, row);

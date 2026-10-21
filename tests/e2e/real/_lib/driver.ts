@@ -578,7 +578,9 @@ export class DocumentAuthoring {
       await this.page.getByRole("menuitem", { name: `${this.clauseLabels.get(node.clauseCode)}(${node.clauseCode})`, exact: true }).click();
       // 조 참조 인자 연결 — 이 문서의 조 · 항을 대상 트리에서 고른다 (ADR-0083 결정 4 · 7). 대상은 앞 조라 이미 서 있다
       const refBindings = Object.entries(node.bindings ?? {}).filter(([, b]) => b.kind === "articleRef");
-      if (Object.keys(node.options).length > 0 || refBindings.length > 0) {
+      // 값 인자의 상수 연결 — 「상수 직접 입력」 칸 (보험금명 등, ADR-0091)
+      const constBindings = Object.entries(node.bindings ?? {}).filter(([, b]) => b.kind === "const");
+      if (Object.keys(node.options).length > 0 || refBindings.length > 0 || constBindings.length > 0) {
         // 블록 머리의 옵션 단추 → 「함수조항 옵션」 팝업에서 옵션마다 선택지 (인자가 있는 함수조항이면 「함수조항 옵션 · 인자」 — 값 인자는 기본 연결 그대로)
         const block = this.article.locator("[data-clause-ref]").filter({ hasText: `[${node.clauseCode}] ${this.clauseLabels.get(node.clauseCode)}` }).last();
         await block.locator(".ts-doc-clause-opt").click();
@@ -588,6 +590,10 @@ export class DocumentAuthoring {
         for (const [name, b] of refBindings) {
           if (b.kind !== "articleRef") continue;
           await this.editor.pickTargets(d.getByRole("group", { name: `인자 ${name}`, exact: true }), b, `pop-arg-ref-${params.indexOf(name)}`);
+        }
+        for (const [name, b] of constBindings) {
+          if (b.kind !== "const") continue;
+          await d.getByLabel(`인자 ${name} 상수 직접 입력`, { exact: true }).fill(String(b.value));
         }
         await this.editor.confirm(d, "확인");
       }

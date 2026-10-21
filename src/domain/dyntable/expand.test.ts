@@ -281,12 +281,12 @@ describe("동적표 펼침 — 규칙", () => {
     ]);
   });
 
-  it("지급률 미입력 — 그 행 notEntered, 셀은 빈 글, 표 구조는 그대로", () => {
+  it("지급률 미입력 = 100% — 미입력 사유 없이 감액비율 그대로 찍는다 (기능/담보 §3.4, 2026-10-21)", () => {
     const list = benefits([{ sub: "S", name: "a", reduction: { periods: [[12, 50]] } }, { sub: "S", name: "b", rate: 100 }]);
     const t = expand(A, list, 비갱신);
     expect(t.rows).toHaveLength(2);
-    expect(lines(t, list)[1]).toBe("[a │  │ ]");
-    expect(t.issues).toEqual([expect.objectContaining({ kind: "notEntered", at: expect.objectContaining({ refPath: "동적표 T0001 › 행 a" }) })]);
+    expect(lines(t, list)[1]).toBe("[a │ 보험가입금액의 50% │ 보험가입금액의 100%]");
+    expect(t.issues).toEqual([]);
   });
 
   it("구분자 연결 — arg.갱신형 이 구분자 코드로 바뀌어 조건에 남는다(사용처 문맥에서 늦게 평가)", () => {

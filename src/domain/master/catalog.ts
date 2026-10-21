@@ -11,11 +11,11 @@
  *   (단일이면 하나 · 통합이면 둘 이상), 건강고지 → 건강고지유형 E0004 (하나 이상). 조건 값은 열거형 값 코드다 — 코드는 불변이다.
  * - 납입면제 · 무저해지 · 계약전환 · 영위업종적용은 **세목(plan)** — 값을 갖는 것이 세목 선택지라
  *   상품 레벨로 올리면 종 · 형 축이 성립하지 않는다.
- * - 담보 기본{보험금명}은 **담보(coverage)** — 문면 값 슬롯이 투영 구분자로 이 자리를 찍는다.
- *   갱신유형은 담보속성(A0001)이라 마스터에 없다 (기능/담보 §4 「상세」 — 담보속성은 어느 탭에도 없다).
- * - 보험금지급{면책여부 · 지급률}은 **급부(benefit)** — 기능/구분자 §3.2 가 집계의 본보기로 드는 자리
- *   (`면책구분 = any(pay.exempt)`). 하위 레벨 자리가 하나도 없으면 집계 규칙이 죽은 길이 된다. 둘 다 선택 필드다.
+ * - **담보(coverage)** 레벨 폼은 없다 — 보험금명(`coverage_basic.claim_name`)은 2026-10-21 뺐다: 담보약관 템플릿은 담보 하나가 한 벌
+ *   소유라 조문의 보험금 이름은 그 담보약관에 글자로 쓴다 (ADR-0091 · 마이그레이션 0034). 갱신유형은 담보속성(A0001)이라 마스터에 없다.
+ * - 보험금지급{지급률}은 **급부(benefit)** — 선택 필드이고 안 적으면 100% 다 (기능/담보 §3.4 · 동적표가 100 으로 읽는다).
  *   최초1회한(`pay.first_only`)은 2026-09-27 뺐다 — 필요 없는 칸 (기능/마스터 §6.2 · 마이그레이션 0016 이 값 행을 지운다).
+ *   면책여부(`pay.exempt`)는 2026-10-21 뺐다 — 면책은 면책 특성(`exemption`)이 붙었는지로만 정한다 (기능/담보 §6.2 · 마이그레이션 0033).
  *
  * enum 코드(E0001 · E0002)는 데이터(열거형변수)를 가리킨다 — 값은 배포 없이 늘어난다 (ADR-0037 §5).
  */
@@ -163,27 +163,13 @@ export const MASTER: readonly MasterForm[] = [
     fields: [{ key: "applies", label: "적용여부", type: { kind: "boolean" } }],
   },
   {
-    key: "coverage_basic",
-    label: "담보 기본",
-    level: "coverage",
-    fields: [
-      {
-        key: "claim_name",
-        label: "보험금명",
-        type: { kind: "string" },
-        description: "조문의 지급 문장에 찍히는 보험금 이름 — 담보명과 다를 수 있다 (예: 「보험가입금액을 사망보험금으로 지급합니다」)",
-      },
-    ],
-  },
-  {
     key: "pay",
     label: "보험금지급",
     level: "benefit",
     description: "급부 하나의 지급 조건 — 담보 레벨 구분자가 집계로 읽는 자리",
     fields: [
-      // 선택 필드 — 필요한 급부만 「⊕ 면책여부」 · 「⊕ 지급률」로 더한다 (2026-09-27)
-      { key: "exempt", label: "면책여부", type: { kind: "boolean" }, optional: true },
-      { key: "rate", label: "지급률", type: { kind: "number" }, optional: true },
+      // 선택 필드 — 필요한 급부만 급부 이름 줄의 「지급률 ⊕」로 더한다. 안 적으면 100% (2026-10-21)
+      { key: "rate", label: "지급률", type: { kind: "number" }, unit: "%", optional: true },
     ],
   },
   {
@@ -234,5 +220,7 @@ export const MASTER: readonly MasterForm[] = [
   },
 ];
 
+/** 지급률 값 자리 — 급부 카드 머리 줄의 「지급률 ⊕」 (기능/담보 §3.6). 안 적으면 100% (동적표 `DEFAULT_PAY_RATE`). */
+export const PAY_RATE_PATH = "pay.rate";
 export const REDUCTION_FORM = "reduction";
 export const EXEMPTION_FORM = "exemption";

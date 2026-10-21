@@ -4815,7 +4815,7 @@
     "code": "C0056",
     "label": "보험금의 지급사유(골절진단비)",
     "mode": "block",
-    "description": "골절(치아파절 제외)진단비의 지급사유 — 두 상품이 같은 글이다. 보험금명은 담보 값(D0001)",
+    "description": "골절(치아파절 제외)진단비의 지급사유 — 두 상품이 같은 글이다. 보험금명은 사용처가 상수로 연결한다",
     "body": [
       {
         "id": "c-fracture-cause-n1",
@@ -4856,10 +4856,6 @@
         "name": "담보명",
         "type": {
           "kind": "string"
-        },
-        "default": {
-          "kind": "discriminator",
-          "code": "D0001"
         }
       }
     ]
@@ -4868,7 +4864,7 @@
     "code": "C0057",
     "label": "보험금의 지급사유(골절수술비)",
     "mode": "block",
-    "description": "골절수술비의 지급사유 — 두 상품이 같은 글이다. 보험금명은 담보 값(D0001)",
+    "description": "골절수술비의 지급사유 — 두 상품이 같은 글이다. 보험금명은 사용처가 상수로 연결한다",
     "body": [
       {
         "id": "c-fracture-surgery-cause-n1",
@@ -4909,10 +4905,6 @@
         "name": "담보명",
         "type": {
           "kind": "string"
-        },
-        "default": {
-          "kind": "discriminator",
-          "code": "D0001"
         }
       }
     ]
@@ -5772,7 +5764,7 @@
     "code": "C0064",
     "label": "특별약관의 소멸(지급사유 발생)",
     "mode": "block",
-    "description": "소멸 급부가 담보 전체 — 제1조의 지급사유가 생기면 소멸 · 해약환급금 미지급 · 사망 시 소멸. 보험금명은 담보 값(D0001), 「그 때부터」 유무가 상품마다 다르다",
+    "description": "소멸 급부가 담보 전체 — 제1조의 지급사유가 생기면 소멸 · 해약환급금 미지급 · 사망 시 소멸. 보험금명은 사용처가 상수로 연결한다, 「그 때부터」 유무가 상품마다 다르다",
     "body": [
       {
         "id": "c-lapse-claim-n1",
@@ -5896,10 +5888,6 @@
         "name": "담보명",
         "type": {
           "kind": "string"
-        },
-        "default": {
-          "kind": "discriminator",
-          "code": "D0001"
         }
       }
     ]
@@ -6089,10 +6077,6 @@
         "name": "담보명",
         "type": {
           "kind": "string"
-        },
-        "default": {
-          "kind": "discriminator",
-          "code": "D0001"
         }
       }
     ]
@@ -14177,10 +14161,6 @@
         "name": "담보명",
         "type": {
           "kind": "string"
-        },
-        "default": {
-          "kind": "discriminator",
-          "code": "D0001"
         }
       }
     ]

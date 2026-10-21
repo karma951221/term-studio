@@ -242,7 +242,16 @@ async function loadEnums(services: Services, actor: Actor, upTo?: number): Promi
 
 /** 구분자 — 코드는 시스템 채번이라 JSON 순서대로. `upTo` 가 있으면 그 개수까지만 만든다. */
 async function loadDiscriminators(services: Services, actor: Actor, upTo?: number): Promise<void> {
+  let next = 1;
   for (const raw of (discriminators as unknown as Array<Record<string, unknown> & { code: Code }>).slice(0, upTo)) {
+    // 없앤 구분자의 코드 빈자리(옛 「담보명」 D0001 — ADR-0091)는 채번값이라 건너뛸 수 없다 — 자리표시 구분자를 만들고 지운다(화면에서 지우는 것과 같다)
+    for (const seq = parseCode(raw.code)?.seq ?? next; next < seq; next++) {
+      const label = `(지운 구분자 ${formatCode("discriminator", next)})`;
+      const gap = unwrap(await services.catalog.create(actor, { label, level: "product", expression: "'-'", resultType: { kind: "string" } }));
+      expectCode(gap.code, formatCode("discriminator", next));
+      unwrap(await services.catalog.remove(actor, gap.code, { confirm: true }));
+    }
+    next++;
     const created = unwrap(await services.catalog.create(actor, omit(raw, ["code"]) as unknown as NewDiscriminator));
     expectCode(created.code, raw.code);
   }

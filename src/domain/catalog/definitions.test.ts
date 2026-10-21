@@ -64,7 +64,7 @@ const 면책구분: Discriminator = {
   label: "면책구분",
   description: "",
   level: "coverage",
-  expression: "any(pay.exempt)",
+  expression: "exist(exemption.months)",
   resultType: { kind: "boolean" },
 };
 
@@ -75,7 +75,7 @@ function catalogOf(...defs: Discriminator[]): ReadonlyMap<string, Discriminator>
 const 담보명: NewDiscriminator = {
   label: "담보명",
   level: "coverage",
-  expression: "coverage_basic.claim_name",
+  expression: "builtin.coverage.name",
   resultType: { kind: "string" },
 };
 
@@ -87,7 +87,7 @@ describe("구분자정의 S1 — 채번: 코드 불변 + 표시명 가변", () =
       label: "담보명",
       description: "",
       level: "coverage",
-      expression: "coverage_basic.claim_name",
+      expression: "builtin.coverage.name",
       resultType: { kind: "string" },
     });
     const second = unwrap(
@@ -100,7 +100,7 @@ describe("구분자정의 S1 — 채번: 코드 불변 + 표시명 가변", () =
     const input: NewDiscriminator = {
       label: "담보명",
       level: "coverage",
-      expression: "coverage_basic.claim_name",
+      expression: "builtin.coverage.name",
       // @ts-expect-error code 는 입력 항목이 아니다
       code: "claim",
     };
@@ -142,7 +142,8 @@ describe("구분자정의 — 식은 저장 시 검증한다 (ADR-0037)", () => 
   });
 
   it("항등 투영은 허용한다 — 필드를 문면에 내는 유일한 길이다 (ADR-0036 §2)", async () => {
-    expect(unwrap(await createDiscriminator(담보명, ctx())).expression).toBe("coverage_basic.claim_name");
+    const 지급률 = { label: "지급률", level: "benefit" as const, expression: "pay.rate", resultType: { kind: "number" as const } };
+    expect(unwrap(await createDiscriminator(지급률, ctx())).expression).toBe("pay.rate");
   });
 
   it("카탈로그를 안 주면 구분자 참조는 모르는 참조라 거부한다", async () => {
@@ -157,15 +158,15 @@ describe("구분자정의 — 식은 저장 시 검증한다 (ADR-0037)", () => 
 
   it("식 수정은 비파괴이고 같은 검증을 거친다", async () => {
     const def = unwrap(await createDiscriminator(담보명, ctx()));
-    expect(unwrap(setExpression(def, "coverage_basic.claim_name ≠ ''", {}, { resultType: { kind: "boolean" } })).expression).toBe(
-      "coverage_basic.claim_name ≠ ''",
+    expect(unwrap(setExpression(def, "builtin.coverage.name ≠ ''", {}, { resultType: { kind: "boolean" } })).expression).toBe(
+      "builtin.coverage.name ≠ ''",
     );
     expect(rejection(setExpression(def, "D0009"))).toBe("invalid");
-    expect(def.expression).toBe("coverage_basic.claim_name"); // 원본은 그대로
+    expect(def.expression).toBe("builtin.coverage.name"); // 원본은 그대로
   });
 
   it("자기 참조는 거부한다", () => {
-    const r = setExpression(면책구분, "D0002 and any(pay.exempt)", { catalog: catalogOf(면책구분) });
+    const r = setExpression(면책구분, "D0002 and exist(exemption.months)", { catalog: catalogOf(면책구분) });
     expect(r.ok).toBe(false);
     if (r.ok || r.rejection.reason !== "invalid") throw new Error("기대: invalid");
     expect(r.rejection.issues[0]).toMatchObject({ kind: "typeMismatch", at: { refPath: "D0002" } });
@@ -174,7 +175,7 @@ describe("구분자정의 — 식은 저장 시 검증한다 (ADR-0037)", () => 
 
   it("순환(A → B → A)은 저장 시 거부한다 — 카탈로그 전체를 따라간다", () => {
     const A: Discriminator = { code: "D0010", label: "A", description: "", level: "coverage", expression: "D0011", resultType: { kind: "boolean" } };
-    const B: Discriminator = { code: "D0011", label: "B", description: "", level: "coverage", expression: "any(pay.exempt)", resultType: { kind: "boolean" } };
+    const B: Discriminator = { code: "D0011", label: "B", description: "", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } };
     const C: Discriminator = { code: "D0012", label: "C", description: "", level: "coverage", expression: "D0011 or D0002", resultType: { kind: "boolean" } };
     const catalog = catalogOf(면책구분, A, B, C);
     // B 가 A 를 부르면 A → B → A
@@ -229,7 +230,7 @@ describe("구분자정의 — 식은 저장 시 검증한다 (ADR-0037)", () => 
       label: "담보명",
       description: "",
       level: "coverage",
-      expression: "coverage_basic.claim_name",
+      expression: "builtin.coverage.name",
       resultType: { kind: "string" },
     };
     expect(Object.keys(def)).not.toContain("setLevel");
@@ -343,7 +344,7 @@ describe("구분자정의 — 참조된 구분자의 식이 바뀌면 의존 구
   it("의존 구분자의 식 검사는 통과해도 명시 결과 타입과 어긋나면 거부한다", () => {
     // D0005(boolean) ← D0011 = `D0005`(명시 boolean). D0005 를 number 식 · number 타입으로 함께 바꾸면
     // checkDependents 의 타입검사 자체는 통과하지만(둘 다 bare 참조라 타입 제약이 없다) D0011 의 명시 boolean 과 어긋난다.
-    const D0005: Discriminator = { code: "D0005", label: "D5", description: "", level: "coverage", expression: "any(pay.exempt)", resultType: { kind: "boolean" } };
+    const D0005: Discriminator = { code: "D0005", label: "D5", description: "", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } };
     const D0011: Discriminator = {
       code: "D0011",
       label: "D11",

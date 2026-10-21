@@ -232,6 +232,20 @@
       "when": 1792572400422,
       "tag": "0032_box_title_only",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792572401422,
+      "tag": "0033_drop_pay_exempt",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792572402422,
+      "tag": "0034_drop_claim_name",
+      "breakpoints": true
     }
   ]
 }

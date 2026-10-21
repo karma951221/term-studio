@@ -18,8 +18,11 @@
  *   필드 행이 카드 본문에 바로 선다. 폼이 둘 이상 보이거나(급부 — 보험금지급 + 감액) 선택 폼이면 작은 제목 한 줄만.
  * - **선택 필드(`optional` — 면책여부 · 지급률)도 더하기 전엔 자리가 없다 (2026-09-27)**: 값이 없으면 읽기 모드에 행이 없고,
  *   편집 모드에서는 그 폼 맨 아래 「⊕ {라벨}」 한 줄. 더한 필드는 라벨 옆 ⊖ 로 뺀다(값을 지운다). 보일 행이 하나도 없는 폼은 그리지 않는다.
- * - **선택 폼(감액 · 면책, `optional`)은 더하기 전엔 자리가 없다 (ADR-0065 §4 · 2026-09-27)**: 닫힌 선택 폼은 읽기 모드에서
- *   아무것도 그리지 않고, 편집 모드에서는 폼 맨 아래 한 줄 「⊕ 감액 · ⊕ 면책」 으로만 선다. 연 폼은 제목 옆 ⊖ 로 닫는다(값을 지운다).
+ * - **선택 폼(감액 · 면책, `optional`) = 특성 (ADR-0065 §4 · 2026-10-21)**: 닫힌 특성은 읽기 모드에서 아무것도 그리지 않는다.
+ *   편집 모드에서는 라벨 행 「특성 ⊕」 하나 — 누르면 아직 안 붙은 특성(감액 · 면책) 메뉴, 고르면 그 특성 박스가 그 아래 생긴다.
+ *   모두 붙었으면 ⊕ 는 잠긴다. 연 특성 박스는 왼쪽 위 ⊖ 로 닫는다(값을 지운다).
+ * - **머리 줄 필드(`headPaths` · `frame`, 2026-10-21)**: 선택 필드 하나를 본문 행 대신 노드 카드 머리 줄에 작게 — 급부 이름 줄 오른쪽 「지급률 ⊕」.
+ *   더하면 그 자리에 「지급률 [__]%」 + ⊖(빼면 값 삭제 — 안 적으면 100%), 읽기 모드는 값이 있을 때만 「지급률 n%」. 「미입력」 배지는 없다.
  *
  * 상호작용 로직은 전부 `formReducer`(순수)에 있다. 여기는 이벤트 → 액션 변환과 마크업뿐.
  */
@@ -44,6 +47,7 @@ import {
   type Draft,
   type FieldState,
   type FieldView,
+  type FormCard,
   type FormModel,
   type FormState,
   type Submission,
@@ -88,6 +92,10 @@ export interface StructFormProps {
    * 필드 행을 카드 본문에 바로 놓는다. 폼이 둘 이상 보이거나 선택 폼이면 작은 제목 한 줄만 (2026-09-27).
    */
   flat?: boolean;
+  /** 본문 행 대신 머리 줄에 작게 둘 선택 필드 경로 — `frame` 이 머리 줄 자리를 준다 (급부 카드의 지급률, 2026-10-21). */
+  headPaths?: readonly string[];
+  /** 폼을 노드 카드 틀에 끼운다 — `head` = 머리 줄 필드, `body` = 폼 본문. 없으면 폼만 그린다(머리 줄 필드도 그리지 않는다). */
+  frame?: (parts: { head: ReactNode; body: ReactNode }) => ReactNode;
 }
 
 // ───────────────────────────── 타입별 입력 ─────────────────────────────
@@ -459,6 +467,104 @@ function FieldRow({ idBase, field, externalIssues, onEdit, onRevert, onRemove, s
   );
 }
 
+// ───────────────────────────── 머리 줄 필드 · 특성 ─────────────────────────────
+
+/**
+ * 머리 줄에 작게 선 선택 필드 — 급부 이름 줄 오른쪽 「지급률 ⊕」 (2026-10-21).
+ * 자리가 없으면 「{라벨} ⊕」 버튼, 있으면 「{라벨} [__]{단위}」 + ⊖. 읽기 모드는 값이 있을 때만 「{라벨} {값}」.
+ * 비어 있어도 「미입력」이 없다 — 안 적으면 기본(지급률 100%)이다.
+ */
+function HeadField({ idBase, field, absent, readOnly, issues, onAdd, onRemove, onEdit }: {
+  idBase: string;
+  field: FieldState;
+  absent: boolean;
+  readOnly?: boolean;
+  issues: Issue[];
+  onAdd: () => void;
+  onRemove: () => void;
+  onEdit: (draft: Draft) => void;
+}) {
+  const { view } = field;
+  if (readOnly) {
+    const shown = formatValue(view);
+    return shown === undefined ? null : (
+      <span className="ts-head-field" data-path={view.path}>
+        <span className="ts-form-label">{view.label}</span> {shown}
+      </span>
+    );
+  }
+  if (absent) {
+    return (
+      <button type="button" className="ts-form-optional-btn ts-head-add" title={`${view.label} 추가`} data-path={view.path} onClick={onAdd}>
+        {view.label} <IconPlusCircle />
+      </button>
+    );
+  }
+  const id = `${idBase}-${view.path.replace(".", "-")}`;
+  const Input = INPUT_BY_KIND[view.type.kind];
+  return (
+    <span className="ts-head-field" data-path={view.path}>
+      <label id={`${id}-label`} htmlFor={id} className="ts-form-label">
+        {view.label}
+      </label>
+      <Input id={id} field={field} onEdit={onEdit} className="ts-field-direct" />
+      <IconButton className="ts-form-field-remove" danger icon={<IconMinusCircle />} label={`${view.label} 빼기 — 값을 지운다(100%)`} onClick={onRemove} />
+      {field.error !== undefined && (
+        <span className="ts-form-error" role="alert">
+          {field.error}
+        </span>
+      )}
+      {issues.map((issue, i) => (
+        <span key={i} className="ts-form-error" role="alert">
+          {issue.message}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** 「특성 ⊕」 — 아직 안 붙은 특성(닫힌 여는 폼)을 고르는 메뉴. 다 붙었으면 ⊕ 가 잠긴다 (2026-10-21). */
+function TraitAdd({ closed, onOpen }: { closed: readonly FormCard[]; onOpen: (form: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const none = closed.length === 0;
+  return (
+    <div className="ts-form-row ts-trait-add">
+      <span className="ts-form-label-cell">
+        <span className="ts-form-label">특성</span>
+        <IconButton
+          className="ts-label-add"
+          icon={<IconPlusCircle />}
+          label="특성 추가"
+          disabled={none}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        />
+      </span>
+      <div className="ts-form-control">
+        {open && !none && (
+          <span className="ts-trait-menu" role="menu" aria-label="붙일 특성">
+            {closed.map((card) => (
+              <button
+                key={card.key}
+                type="button"
+                role="menuitem"
+                className="ts-trait-menu-item"
+                onClick={() => {
+                  onOpen(card.key);
+                  setOpen(false);
+                }}
+              >
+                {card.label}
+              </button>
+            ))}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ───────────────────────────── 폼 ─────────────────────────────
 
 /** 저장소 기준 값 상태의 지문 — 서버가 새 모델을 내려보내면(저장 직후) 편집 상태를 그것에 맞춘다. */
@@ -479,6 +585,8 @@ export function StructForm({
   highlightPath,
   initialState,
   flat,
+  headPaths = [],
+  frame,
 }: StructFormProps) {
   const [state, dispatch] = useReducer(formReducer, initialState, (restored) => restored ?? initFormState(model));
   const [submitIssues, setSubmitIssues] = useState<Issue[]>([]);
@@ -523,11 +631,12 @@ export function StructForm({
   // 오류가 걸렸거나 강조로 건너온 자리는 숨기지 않는다 (기능/담보 §3.4).
   const pinned = (path: string) => issuesAt(path).length > 0 || highlightPath === path;
   // 카드마다 그릴 행 · 더할 수 있는 선택 필드. 읽기 모드에서 보일 행이 하나도 없는 카드는 통째로 그리지 않는다 (2026-09-27).
+  const inHead = (path: string) => frame !== undefined && headPaths.includes(path);
   const visibleCards = shownCards
     .map((card) => {
-      const absent = card.fields.filter((view) => isFieldAbsent(live, view.path) && !pinned(view.path));
+      const absent = card.fields.filter((view) => !inHead(view.path) && isFieldAbsent(live, view.path) && !pinned(view.path));
       const rows = card.fields
-        .filter((view) => !absent.includes(view))
+        .filter((view) => !inHead(view.path) && !absent.includes(view))
         .map((view) =>
           // 기본 숨김 — 기본값 그대로면 칸 대신 작은 링크 하나. 읽기 모드는 아무것도 안 보인다.
           isFieldHidden(live, view.path) && !pinned(view.path) ? (
@@ -558,84 +667,75 @@ export function StructForm({
     })
     .filter(({ rows, addable }) => rows.length > 0 || addable.length > 0);
 
-  return (
+  const renderCard = ({ card, rows, addable }: (typeof visibleCards)[number]) => {
+    const remove = card.optional && !readOnly && (
+      // 연 특성 박스 — 왼쪽 위 ⊖ 는 그 자리를 지운다(값도). 다시 더하려면 「특성 ⊕」 (ADR-0065 §4 · 2026-10-21)
+      <IconButton
+        className="ts-form-card-remove"
+        danger
+        icon={<IconMinusCircle />}
+        label={`${card.label} 없음으로 — 값을 지운다`}
+        onClick={() => dispatch({ type: "closeForm", form: card.key })}
+      />
+    );
+    const addRow = addable.length > 0 && (
+      // 자리 없는 선택 필드 — 폼 맨 아래 한 줄의 작은 더하기 버튼 (2026-09-27)
+      <p className="ts-form-optional-add ts-form-field-add">
+        {addable.map((view) => (
+          <button
+            key={view.path}
+            type="button"
+            className="ts-form-optional-btn"
+            title={`${view.label} 추가`}
+            data-path={view.path}
+            onClick={() => dispatch({ type: "addField", path: view.path })}
+          >
+            <IconPlusCircle /> {view.label}
+          </button>
+        ))}
+      </p>
+    );
+    if (flat) {
+      // 노드 카드 안 — 폼마다 테두리 상자를 두르지 않는다. 폼이 둘 이상 보이면 작은 제목 한 줄만 (2026-09-27).
+      // 특성(여는 폼)은 박스 하나 — 왼쪽 위 ⊖ + 제목 (2026-10-21)
+      const titled = card.optional || visibleCards.length > 1;
+      return (
+        <div key={card.key} role="group" className={card.optional ? "ts-form-group ts-trait-box" : "ts-form-group"} aria-label={card.label} data-form={card.key}>
+          {titled && (
+            <p className="ts-form-group-title">
+              {remove}
+              {card.label}
+              {card.description && <InfoTip text={card.description} />}
+            </p>
+          )}
+          {rows}
+          {addRow}
+        </div>
+      );
+    }
+    return (
+      // 폼 하나 = 카드 하나 (기능/마스터 §3.5). fieldset 의 aria-label 이 카드의 접근성 이름이다
+      <fieldset key={card.key} className="ts-form-card" aria-label={card.label}>
+        <legend className="ts-form-card-title">
+          {remove}
+          {card.label}
+          {card.description && <InfoTip text={card.description} />}
+        </legend>
+        {rows}
+        {addRow}
+      </fieldset>
+    );
+  };
+  // 특성(여는 폼)이 있는 레벨 — 편집 모드에 「특성 ⊕」 라벨 행 하나, 그 아래 붙은 특성 박스 (2026-10-21)
+  const hasTraits = model.cards.some((card) => card.optional);
+
+  const body = (
     <form className={readOnly ? "ts-form ts-form-read" : "ts-form"} data-level={model.level} onSubmit={handleSubmit}>
       <h2 className="ts-form-title">{model.label}</h2>
       {model.cards.length === 0 && <p className="ts-form-empty">입력할 값 자리가 없습니다.</p>}
-      {visibleCards.map(({ card, rows, addable }) => {
-        const remove = card.optional && !readOnly && (
-          // 연 선택 폼 — ⊖ 는 그 자리를 지운다(값도). 다시 더하려면 폼 아래 「⊕ {폼}」 (ADR-0065 §4)
-          <IconButton
-            className="ts-form-card-remove"
-            danger
-            icon={<IconMinusCircle />}
-            label={`${card.label} 없음으로 — 값을 지운다`}
-            onClick={() => dispatch({ type: "closeForm", form: card.key })}
-          />
-        );
-        const addRow = addable.length > 0 && (
-          // 자리 없는 선택 필드 — 폼 맨 아래 한 줄의 작은 더하기 버튼 (「⊕ 감액」과 같은 모양, 2026-09-27)
-          <p className="ts-form-optional-add ts-form-field-add">
-            {addable.map((view) => (
-              <button
-                key={view.path}
-                type="button"
-                className="ts-form-optional-btn"
-                title={`${view.label} 추가`}
-                data-path={view.path}
-                onClick={() => dispatch({ type: "addField", path: view.path })}
-              >
-                <IconPlusCircle /> {view.label}
-              </button>
-            ))}
-          </p>
-        );
-        if (flat) {
-          // 노드 카드 안 — 폼마다 테두리 상자를 두르지 않는다. 폼이 둘 이상 보이거나 선택 폼이면 작은 제목 한 줄만 (2026-09-27)
-          const titled = card.optional || visibleCards.length > 1;
-          return (
-            <div key={card.key} role="group" className="ts-form-group" aria-label={card.label} data-form={card.key}>
-              {titled && (
-                <p className="ts-form-group-title">
-                  {card.label}
-                  {card.description && <InfoTip text={card.description} />}
-                  {remove}
-                </p>
-              )}
-              {rows}
-              {addRow}
-            </div>
-          );
-        }
-        return (
-          // 폼 하나 = 카드 하나 (기능/마스터 §3.5). fieldset 의 aria-label 이 카드의 접근성 이름이다
-          <fieldset key={card.key} className="ts-form-card" aria-label={card.label}>
-            <legend className="ts-form-card-title">
-              {card.label}
-              {card.description && <InfoTip text={card.description} />}
-              {remove}
-            </legend>
-            {rows}
-            {addRow}
-          </fieldset>
-        );
-      })}
-      {!readOnly && closedCards.length > 0 && (
-        // 닫힌 선택 폼 — 자리 대신 폼 맨 아래 한 줄의 작은 더하기 버튼 (ADR-0065 §4)
-        <p className="ts-form-optional-add">
-          {closedCards.map((card) => (
-            <button
-              key={card.key}
-              type="button"
-              className="ts-form-optional-btn"
-              title={`${card.label} 추가`}
-              onClick={() => dispatch({ type: "openForm", form: card.key })}
-            >
-              <IconPlusCircle /> {card.label}
-            </button>
-          ))}
-        </p>
-      )}
+      {visibleCards.filter(({ card }) => !card.optional).map(renderCard)}
+      {!readOnly && hasTraits && <TraitAdd closed={closedCards} onOpen={(form) => dispatch({ type: "openForm", form })} />}
+      {visibleCards.filter(({ card }) => card.optional).map(renderCard)}
       {unplaced.length > 0 && (
         <ul className="ts-form-issues" role="alert">
           {unplaced.map((issue, i) => (
@@ -661,4 +761,22 @@ export function StructForm({
       )}
     </form>
   );
+  if (!frame) return body;
+  // 머리 줄 필드 — 노드 카드 머리 줄 자리에 (급부 이름 줄의 「지급률 ⊕」, 2026-10-21)
+  const head = model.fields
+    .filter((view) => inHead(view.path) && live.fields[view.path])
+    .map((view) => (
+      <HeadField
+        key={view.path}
+        idBase={idBase}
+        field={live.fields[view.path]}
+        absent={isFieldAbsent(live, view.path) && !pinned(view.path)}
+        readOnly={readOnly}
+        issues={issuesAt(view.path)}
+        onAdd={() => dispatch({ type: "addField", path: view.path })}
+        onRemove={() => dispatch({ type: "removeField", path: view.path })}
+        onEdit={(draft) => dispatch({ type: "edit", path: view.path, draft })}
+      />
+    ));
+  return <>{frame({ head: head.length > 0 ? head : null, body })}</>;
 }

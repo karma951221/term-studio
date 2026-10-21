@@ -26,16 +26,16 @@ describe("마스터 경로 — 폼키.필드키", () => {
     expect(masterPath("waiver", "applies")).toBe("waiver.applies");
   });
 
-  it("MVP 정본 — 폼 11벌 · 필드 24자리, 선언 순서", () => {
+  it("MVP 정본 — 폼 10벌 · 필드 22자리, 선언 순서 — 담보 레벨 폼은 없다 (보험금명 2026-10-21 삭제)", () => {
     expect(MASTER.map((f) => f.key)).toEqual([
-      "disclosure", "feature", "booklet", "waiver", "no_surrender", "conversion", "business_type", "coverage_basic", "pay", "reduction", "exemption",
+      "disclosure", "feature", "booklet", "waiver", "no_surrender", "conversion", "business_type", "pay", "reduction", "exemption",
     ]);
     expect(allMasterFields().map((r) => r.path)).toEqual([
       "disclosure.avg_rate",
       "feature.contract_kind", "feature.renewable", "feature.fetal", "feature.group_contract", "feature.notice_kind", "feature.review_scope", "feature.review_type", "feature.notice_type",
       "booklet.group_titles",
       "waiver.applies", "waiver.reasons", "no_surrender.type", "conversion.converts", "business_type.applies",
-      "coverage_basic.claim_name", "pay.exempt", "pay.rate",
+      "pay.rate",
       "reduction.periods", "reduction.after_rate", "reduction.new_only",
       "exemption.months", "exemption.age15_only", "exemption.new_only",
     ]);
@@ -45,9 +45,9 @@ describe("마스터 경로 — 폼키.필드키", () => {
     expect(findMasterField("pay.first_only")).toBeUndefined();
   });
 
-  it("보험금지급의 면책여부 · 지급률은 선택 필드다 (2026-09-27)", () => {
-    expect(findMasterField("pay.exempt")?.field.optional).toBe(true);
+  it("보험금지급의 지급률은 선택 필드다 (2026-09-27) — 면책여부(pay.exempt)는 없다: 면책은 면책 특성이 붙었는지로만 (2026-10-21)", () => {
     expect(findMasterField("pay.rate")?.field.optional).toBe(true);
+    expect(findMasterField("pay.exempt")).toBeUndefined();
   });
 
   it("폼키는 전역 유일 · 필드키는 폼 안에서 유일", () => {
@@ -65,7 +65,7 @@ describe("마스터 경로 — 폼키.필드키", () => {
     expect(formsOfLevel("product").map((f) => f.key)).toEqual(["disclosure", "feature", "booklet"]);
     expect(formsOfLevel("subCoverage")).toEqual([]);
     expect(fieldsOfLevel("benefit").map((r) => r.path)).toEqual([
-      "pay.exempt", "pay.rate",
+      "pay.rate",
       "reduction.periods", "reduction.after_rate", "reduction.new_only",
       "exemption.months", "exemption.age15_only", "exemption.new_only",
     ]);

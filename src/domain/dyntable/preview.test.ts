@@ -47,9 +47,9 @@ describe("previewDynTable — 표본으로 펼친 글 표", () => {
     expect(previewDynTable(dynTableFixtureR(), { benefits: [] }, {}).rows).toEqual([]);
   });
 
-  it("지급률 미입력 급부는 셀이 비고 사유가 선다", () => {
+  it("지급률 미입력 급부는 100% 로 읽는다 — 사유가 서지 않는다", () => {
     const out = previewDynTable(dynTableFixtureR(), { benefits: [benefit("S", "급부", undefined)] }, {});
-    expect(out.rows).toEqual([["급부", ""]]);
-    expect(out.issues.some((m) => m.includes("지급률"))).toBe(true);
+    expect(out.rows).toEqual([["급부", "보험가입금액의 100%"]]);
+    expect(out.issues.some((m) => m.includes("지급률"))).toBe(false);
   });
 });

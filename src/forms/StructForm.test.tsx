@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
@@ -318,10 +319,14 @@ describe("StructForm — 여는 폼 카드 (ADR-0065 §4)", () => {
     },
   ];
 
-  it("닫힌 채 렌더되면 카드 없이 폼 아래 「⊕ 감액」 더하기 버튼만 — 입력칸이 없다", () => {
+  it("닫힌 채 렌더되면 카드 없이 라벨 행 「특성 ⊕」 하나 — 입력칸 · 폼마다의 「⊕ 감액」 버튼이 없다 (2026-10-21)", () => {
     const model = buildForm("benefit", enums, new Map(), undefined, openableMaster);
     const html = renderToStaticMarkup(<StructForm model={model} onSubmit={() => {}} />);
-    expect(tagsWith(html, 'title="감액 추가"')).toHaveLength(1);
+    const add = tagsWith(html, 'aria-label="특성 추가"');
+    expect(add).toHaveLength(1);
+    expect(add[0]).not.toContain('disabled=""');
+    expect(html).toContain(">특성<");
+    expect(html).not.toContain('title="감액 추가"');
     expect(html).not.toContain("<fieldset");
     expect(html).not.toContain("없음으로");
     expect(html).not.toContain("<table");
@@ -339,13 +344,24 @@ describe("StructForm — 여는 폼 카드 (ADR-0065 §4)", () => {
     const html = renderToStaticMarkup(<StructForm model={model} onSubmit={() => {}} />);
     expect(html).toContain("<table");
     expect(html).toContain('aria-label="감액 없음으로 — 값을 지운다"');
-    expect(html).not.toContain("감액 추가");
+    // 특성이 모두 붙었다 — 「특성 ⊕」는 잠긴다
+    expect(tagsWith(html, 'aria-label="특성 추가"')[0]).toContain('disabled=""');
+  });
+
+  it("연 특성 박스의 ⊖ 는 박스 왼쪽 위 — 제목보다 앞 (2026-10-21)", () => {
+    const model = buildForm("benefit", enums, new Map<string, ValueSlot>([["reduction.periods", entered([{ end: 12, rate: 50 }])]]), undefined, openableMaster);
+    const html = renderToStaticMarkup(<StructForm model={model} embedded flat />);
+    const title = html.match(/<p class="ts-form-group-title">[\s\S]*?<\/p>/)?.[0] ?? "";
+    expect(title.indexOf("없음으로")).toBeGreaterThan(-1);
+    expect(title.indexOf("없음으로")).toBeLessThan(title.indexOf("감액<"));
+    expect(html).toContain("ts-trait-box");
   });
 
   it("읽기 전용이면 닫힌 선택 폼은 아무것도 그리지 않는다 — 더하기 · 빼기 버튼도 없다", () => {
     const model = buildForm("benefit", enums, new Map(), undefined, openableMaster);
     const html = renderToStaticMarkup(<StructForm model={model} embedded readOnly />);
     expect(html).not.toContain("감액");
+    expect(html).not.toContain("특성");
     expect(html).not.toContain("없음으로");
   });
 
@@ -432,7 +448,8 @@ describe("StructForm — 기본 숨김 필드 (감액 「이후 지급률」, �
 });
 
 describe("StructForm — 노드 카드 안(flat)은 폼 상자가 없다 (2026-09-27)", () => {
-  const coverageModel = () => buildForm("coverage", () => undefined, new Map([["coverage_basic.claim_name", entered("사망보험금")]]));
+  const coverageMaster: MasterForm[] = [{ key: "basic", label: "담보 기본", level: "coverage", fields: [{ key: "memo", label: "메모", type: { kind: "string" } }] }];
+  const coverageModel = () => buildForm("coverage", () => undefined, new Map([["basic.memo", entered("메모")]]), undefined, coverageMaster);
 
   it("폼 하나뿐이면 fieldset · legend · 폼 제목 없이 필드 행이 바로 선다", () => {
     const html = renderToStaticMarkup(<StructForm model={coverageModel()} embedded readOnly flat />);
@@ -441,7 +458,7 @@ describe("StructForm — 노드 카드 안(flat)은 폼 상자가 없다 (2026-0
     expect(html).not.toContain("ts-form-card");
     expect(html).not.toContain("ts-form-group-title");
     expect(html).not.toContain(">담보 기본<");
-    expect(html).toContain('data-path="coverage_basic.claim_name"');
+    expect(html).toContain('data-path="basic.memo"');
     // 접근성 이름은 그대로 — 폼 묶음은 role=group + aria-label
     expect(html).toContain('role="group"');
     expect(html).toContain('aria-label="담보 기본"');
@@ -495,14 +512,14 @@ describe("StructForm — 선택 필드 (면책여부 · 지급률, 2026-09-27)",
     expect(html).not.toContain("빼기");
   });
 
-  it("편집 모드 — 값이 없으면 칸 대신 폼 아래 「⊕ 면책여부」「⊕ 지급률」 버튼 (「⊕ 감액」과 같은 모양)", () => {
+  it("편집 모드 — 값이 없으면 칸 대신 폼 아래 「⊕ 면책여부」「⊕ 지급률」 버튼 · 닫힌 특성은 「특성 ⊕」 한 줄", () => {
     const html = renderToStaticMarkup(<StructForm model={modelOf()} embedded flat />);
     expect(html).not.toContain('name="pay.exempt"');
     expect(html).not.toContain('name="pay.rate"');
     const buttons = tagsWith(html, 'class="ts-form-optional-btn"');
     expect(buttons.some((t) => t.includes('title="면책여부 추가"'))).toBe(true);
     expect(buttons.some((t) => t.includes('title="지급률 추가"'))).toBe(true);
-    expect(buttons.some((t) => t.includes('title="감액 추가"'))).toBe(true);
+    expect(tagsWith(html, 'aria-label="특성 추가"')).toHaveLength(1);
   });
 
   it("편집 모드 — 더한(addField) 필드는 칸이 보이고 라벨 옆 ⊖ 가 있다 · 그 필드의 ⊕ 는 사라진다", () => {
@@ -524,5 +541,55 @@ describe("StructForm — 선택 필드 (면책여부 · 지급률, 2026-09-27)",
     const after = renderToStaticMarkup(<StructForm model={model} embedded flat initialState={removed} />);
     expect(after).not.toContain('name="pay.exempt"');
     expect(after).toContain('title="면책여부 추가"');
+  });
+});
+
+describe("StructForm — 머리 줄 필드(headPaths · frame) — 급부 이름 줄의 「지급률 ⊕」 (2026-10-21)", () => {
+  const payMaster: MasterForm[] = [
+    { key: "pay", label: "보험금지급", level: "benefit", fields: [{ key: "rate", label: "지급률", type: { kind: "number" }, unit: "%", optional: true }] },
+    { key: "reduction", label: "감액", level: "benefit", optional: true, fields: [{ key: "new_only", label: "신규만", type: { kind: "boolean" } }] },
+  ];
+  const modelOf = (...slots: [string, ValueSlot][]) => buildForm("benefit", enums, new Map(slots), undefined, payMaster);
+  const frame = ({ head, body }: { head: ReactNode; body: ReactNode }) => (
+    <section>
+      <div className="HEAD">{head}</div>
+      <div className="BODY">{body}</div>
+    </section>
+  );
+  const parts = (html: string) => ({ head: html.slice(html.indexOf('class="HEAD"'), html.indexOf('class="BODY"')), body: html.slice(html.indexOf('class="BODY"')) });
+
+  it("편집 · 값 없음 — 머리 줄에 「지급률 ⊕」 버튼만, 본문엔 지급률 행 · 「⊕ 지급률」 · 「미입력」이 없다", () => {
+    const { head, body } = parts(renderToStaticMarkup(<StructForm model={modelOf()} embedded flat headPaths={["pay.rate"]} frame={frame} />));
+    expect(tagsWith(head, 'title="지급률 추가"')).toHaveLength(1);
+    expect(head).not.toContain('name="pay.rate"');
+    expect(body).not.toContain("지급률");
+    expect(body).not.toContain("미입력");
+    expect(body).toContain('aria-label="특성 추가"');
+  });
+
+  it("편집 · 더함 — 머리 줄에 「지급률 [__]%」 칸 + ⊖, 비어 있어도 「미입력」이 없다(안 적으면 100%)", () => {
+    const model = modelOf();
+    const added = formReducer(initFormState(model), { type: "addField", path: "pay.rate" });
+    const { head } = parts(renderToStaticMarkup(<StructForm model={model} embedded flat headPaths={["pay.rate"]} frame={frame} initialState={added} />));
+    expect(tagsWith(head, 'name="pay.rate"')).toHaveLength(1);
+    expect(head).toContain("%");
+    expect(head).toContain('aria-label="지급률 빼기 — 값을 지운다(100%)"');
+    expect(head).not.toContain("미입력");
+    expect(head).not.toContain('title="지급률 추가"');
+  });
+
+  it("편집 · 저장 값 있음 — 처음부터 칸이 열려 값이 보인다", () => {
+    const { head } = parts(renderToStaticMarkup(<StructForm model={modelOf(["pay.rate", entered(80)])} embedded flat headPaths={["pay.rate"]} frame={frame} />));
+    expect(tagsWith(head, 'name="pay.rate"')[0]).toContain('value="80"');
+  });
+
+  it("읽기 — 값이 있을 때만 「지급률 80%」 글자, 없으면 아무것도 없다", () => {
+    const shown = parts(renderToStaticMarkup(<StructForm model={modelOf(["pay.rate", entered(80)])} embedded readOnly flat headPaths={["pay.rate"]} frame={frame} />));
+    expect(shown.head).toContain("지급률");
+    expect(shown.head).toContain("80%");
+    expect(shown.head).not.toContain("<input");
+    const none = parts(renderToStaticMarkup(<StructForm model={modelOf()} embedded readOnly flat headPaths={["pay.rate"]} frame={frame} />));
+    expect(none.head).not.toContain("지급률");
+    expect(none.body).not.toContain("지급률");
   });
 });

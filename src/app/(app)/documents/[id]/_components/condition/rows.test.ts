@@ -13,7 +13,7 @@ const defs: Discriminator[] = [
   { code: "D0002", label: "감액여부", level: "benefit", expression: "exist(reduction.periods)", description: "" },
   { code: "D0007", label: "감액여부", level: "subCoverage", expression: "any(D0002)", description: "" },
   { code: "D0009", label: "감액여부", level: "coverage", expression: "any(D0002)", description: "" },
-  { code: "D0001", label: "담보명", level: "coverage", expression: "coverage_basic.claim_name", description: "" },
+  { code: "D0001", label: "담보명", level: "coverage", expression: "builtin.coverage.name", description: "" },
 ];
 
 describe("조건 머리 줄 — 줄 ⇄ 식 (기능/문면 §4.3, 2026-09-28)", () => {

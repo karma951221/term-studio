@@ -4449,15 +4449,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   white-space: nowrap;
 }
 
-.ts-cov-add {
-  color: var(--ts-ink-2);
-  text-decoration: none;
-}
-
-.ts-cov-add:hover {
-  color: var(--ts-ink);
-}
-
 .ts-detach {
   margin: 2px 0 0;
 }
@@ -4577,16 +4568,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   background: var(--ts-surface-2);
 }
 
-/* 「+ 급부」 — 세부보장 카드 맨 아래 작은 링크 버튼 */
-.ts-cov-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-top: 6px;
-  font-size: 12px;
-}
-
-.ts-cov-add .ts-icon,
 .ts-cov-add-tile .ts-icon {
   width: 12px;
   height: 12px;
@@ -4595,6 +4576,104 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-cov-card-note {
   margin: 0 0 6px;
   font-size: 12px;
+}
+
+/* 담보 카드는 머리 줄이 없다 — 본문 첫 행 「담보 [이름]」이 담보분류 · 값 행과 같은 라벨 열에 선다 (2026-10-21) */
+.ts-cov-card[data-level="coverage"] > .ts-cov-card-body {
+  margin-top: 0;
+}
+
+.ts-cov-name-row .ts-cov-card-input {
+  flex: 1 1 240px;
+  max-width: 420px;
+}
+
+/* 「라벨 ⊕」 — 라벨 옆 작은 파란 ⊕. 누르면 그 아래 목록 끝에 박스가 생긴다 (세부보장 · 급부 · 특성, 2026-10-21) */
+.ts-form-label-cell .ts-iconbtn.ts-label-add {
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  vertical-align: -4px;
+  color: var(--ts-work-blue);
+}
+
+.ts-form-label-cell .ts-iconbtn.ts-label-add[disabled] {
+  color: var(--ts-ink-3);
+}
+
+.ts-cov-add-row {
+  min-height: 22px;
+}
+
+/* 급부 이름 줄 오른쪽 — 「지급률 ⊕」 · 「지급률 [__]% ⊖」 · 읽기 「지급률 80%」 */
+.ts-cov-head-extra {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.ts-cov-head-extra + .ts-row-actions {
+  margin-left: 4px;
+}
+
+.ts-head-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ts-head-field .ts-form-label {
+  padding: 0;
+}
+
+.ts-head-field input:where(:not([data-slot]))[type="number"] {
+  width: 56px;
+  min-width: 0;
+}
+
+.ts-head-field .ts-iconbtn.ts-form-field-remove {
+  width: 16px;
+  height: 16px;
+  color: var(--ts-error);
+}
+
+.ts-head-add .ts-icon {
+  color: var(--ts-work-blue);
+}
+
+/* 특성 박스 — 「특성 ⊕」 메뉴로 붙인 감액 · 면책. 왼쪽 위 ⊖ 로 닫는다 */
+.ts-trait-box {
+  border: 1px solid var(--ts-rule);
+  border-radius: 6px;
+  padding: 4px 8px 2px;
+  margin-top: 6px;
+}
+
+.ts-trait-box .ts-form-group-title .ts-iconbtn.ts-form-card-remove {
+  margin: 0 4px 0 -4px;
+}
+
+.ts-trait-menu {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ts-trait-menu-item {
+  padding: 1px 8px;
+  border: 1px solid var(--ts-rule-strong);
+  border-radius: 4px;
+  background: var(--ts-surface);
+  color: var(--ts-ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ts-trait-menu-item:hover {
+  background: var(--ts-surface-2);
 }
 
 /* 카드 머리가 이름이라 값 폼의 레벨 제목 · 구획 괘선은 겹친다 */

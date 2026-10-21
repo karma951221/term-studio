@@ -157,12 +157,13 @@ test(
 
     await ev.action("툴바#8", "머리 줄에서 변수 · 연산자 · 값을 고른다 — 가지 조작이 켜지고, 저장 한 번 · 새로 읽으면 초록 상자 안 IF 한 줄", async () => {
       const head = body.locator("[data-cond-head]");
-      // 시드 구분자는 원문 모델링이 쓰는 담보명(D0001, string) 하나뿐이다 — 값은 글자 칸 (알파플러스_모델명세 §2)
-      await pickCombo(head.getByRole("combobox", { name: "IF 1번 줄 변수" }), { value: "D0001" });
+      // 시드 구분자는 참거짓뿐이다(문자 구분자 담보명 D0001 은 2026-10-21 삭제 — ADR-0091) — 갱신형 상품(D0006) = 참, 값은 참 · 거짓 고르기
+      await pickCombo(head.getByRole("combobox", { name: "IF 1번 줄 변수" }), { value: "D0006" });
       await expect(head.getByRole("combobox", { name: "IF 1번 줄 연산자" })).toHaveValue("=");
-      const value = head.getByRole("textbox", { name: "IF 1번 줄 값" });
-      await value.fill("사망보험금");
-      await value.press("Enter");
+      const value = head.getByRole("combobox", { name: "IF 1번 줄 값" });
+      await value.selectOption("true");
+      // 참거짓 값은 고르기(select)다 — 글자 칸의 Enter 와 달리 커서가 머리 줄에 남도록 다시 짚는다(조건 편집 묶음은 머리 줄을 골랐을 때 선다)
+      await value.focus();
       await expect(tool("그 밖의 경우 추가")).toBeEnabled();
       await submit(page, page.getByRole("button", { name: "저장", exact: true }));
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
@@ -171,7 +172,7 @@ test(
       await expect(body.locator("[data-cond-head]")).toHaveCount(0);
       await expect(body.locator(".ts-doc-cond .ts-doc-cond-head")).toHaveCount(1);
       await expect(body.locator(".ts-doc-cond .ts-doc-cond-head")).toContainText("IF");
-      await expect(body.locator(".ts-doc-cond .ts-doc-cond-head")).toContainText("사망보험금");
+      await expect(body.locator(".ts-doc-cond .ts-doc-cond-head")).toContainText("갱신형 상품");
       await expect(body.locator(".ts-doc-cond .ts-doc-paragraph")).toHaveCount(2);
       await expect(body.locator(".ts-doc-cond select")).toHaveCount(0);
     });
@@ -179,12 +180,10 @@ test(
     await ev.action("툴바#9", "머리 줄을 셋으로 늘려 결합을 섞으면 왼쪽부터 묶이는 괄호가 보이고, 같게 바꾸면 사라진다 (기능/문면 §3.3)", async () => {
       await page.getByRole("button", { name: "편집", exact: true }).click();
       const head = body.locator("[data-cond-head]");
-      for (const [n, value] of [[2, "암"], [3, "수술비"]] as const) {
+      for (const [n, code] of [[2, "D0002"], [3, "D0004"]] as const) {
         await head.getByRole("button", { name: `IF ${n - 1}번 줄 뒤에 조건 줄 추가` }).click();
-        await pickCombo(head.getByRole("combobox", { name: `IF ${n}번 줄 변수` }), { value: "D0001" });
-        const input = head.getByRole("textbox", { name: `IF ${n}번 줄 값` });
-        await input.fill(value);
-        await input.press("Enter");
+        await pickCombo(head.getByRole("combobox", { name: `IF ${n}번 줄 변수` }), { value: code });
+        await head.getByRole("combobox", { name: `IF ${n}번 줄 값` }).selectOption("true");
       }
       // 괄호가 있으면 모든 줄이 여는 자리(변수 앞) · 닫는 자리(값 뒤)를 갖는다 — 빈 글자일 수 있다
       const opens = head.locator(".ts-cond-paren-open");
@@ -281,10 +280,10 @@ test(
       await expect(page.locator(".ts-clause-editor")).toContainText("〔제한 사유〕");
     });
 
-    await ev.action("함수조항생성#6a", "「인자 추가」 — 인자 보험금명(문자 · 기본 연결 담보명 D0001). 함수조항은 구분자를 직접 읽지 않고 인자만 읽는다(기능/함수조항 §3.3)", async () => {
+    await ev.action("함수조항생성#6a", "「인자 추가」 — 인자 보험금명(문자 · 기본 연결 없음 — 넣는 자리에서 연결). 함수조항은 구분자를 직접 읽지 않고 인자만 읽는다(기능/함수조항 §3.3)", async () => {
       await page.getByLabel("새 인자 이름", { exact: true }).fill("보험금명");
       await page.getByLabel("새 인자 타입", { exact: true }).selectOption("string");
-      await page.getByLabel("새 인자 기본 연결", { exact: true }).selectOption("d:D0001");
+      await page.getByLabel("새 인자 기본 연결", { exact: true }).selectOption("");
       await page.getByRole("button", { name: "인자 추가" }).click();
     });
 

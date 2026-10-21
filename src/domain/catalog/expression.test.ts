@@ -32,8 +32,8 @@ function typeOf(source: string, level: Parameters<typeof checkDiscriminatorExpre
 const CATALOG: ReadonlyMap<string, Discriminator> = new Map(
   (
     [
-      ["D0001", "coverage", "coverage_basic.claim_name"],
-      ["D0002", "coverage", "any(pay.exempt)"],
+      ["D0001", "coverage", "builtin.coverage.name"],
+      ["D0002", "coverage", "exist(exemption.months)"],
       ["D0004", "product", "any(waiver.applies)"],
       ["D0005", "product", "not all(waiver.applies)"],
       ["D0006", "product", "D0004 and D0005"],
@@ -41,7 +41,7 @@ const CATALOG: ReadonlyMap<string, Discriminator> = new Map(
       ["D0008", "product", "notexist(no_surrender.type) or any(D0007)"],
       ["D0012", "plan", "not D0007"],
       ["D0013", "plan", "builtin.plan.name = '무배당'"],
-      ["D0020", "benefit", "pay.exempt"],
+      ["D0020", "benefit", "exist(exemption.months)"],
       // 순환 — 정의 저장은 거부되지만 카탈로그에 이미 있다고 치고 타입 조회가 멈추는지 본다
       ["D0090", "product", "D0091"],
       ["D0091", "product", "D0090"],
@@ -113,13 +113,13 @@ describe("규칙 1 — 마스터 필드와 구분자를 참조한다 (기능/구
   });
 
   it("마스터에 없는 경로는 brokenRef 다 — 파서는 모양만 보고, 존재는 여기서 본다 (기능/마스터 §3.2)", () => {
-    expect(issues("coverage_basic.nope", "coverage")[0]).toMatchObject({
+    expect(issues("pay.nope", "coverage")[0]).toMatchObject({
       kind: "brokenRef",
-      at: { refPath: "coverage_basic.nope" },
+      at: { refPath: "pay.nope" },
     });
-    expect(issues("nope.claim_name", "coverage")[0]).toMatchObject({
+    expect(issues("nope.rate", "coverage")[0]).toMatchObject({
       kind: "brokenRef",
-      at: { refPath: "nope.claim_name" },
+      at: { refPath: "nope.rate" },
     });
   });
 
@@ -146,7 +146,7 @@ describe("세목 레벨 구분자는 폼 하나만 읽는다 (설계 §2.3 항�
   });
 
   it("세목 폼이 아닌 자리(하위 레벨 집계 · 내장 경로)는 폼 수에 안 든다", () => {
-    expect(typeIn("no_surrender.type = 'V01' and exist(coverage_basic.claim_name)", "plan")).toEqual({ kind: "boolean" });
+    expect(typeIn("no_surrender.type = 'V01' and exist(pay.rate)", "plan")).toEqual({ kind: "boolean" });
     expect(typeIn("D0007 and builtin.plan.name = '무배당'", "plan")).toEqual({ kind: "boolean" });
   });
 
@@ -167,7 +167,7 @@ describe("planFormOf — 세목 레벨 구분자가 읽는 폼키", () => {
 
   it("세목 폼을 하나도 안 읽으면 undefined 다 — planFormScope 는 「전부」(all)", () => {
     expect(planFormOf(CATALOG.get("D0013")!, CATALOG)).toBeUndefined();
-    expect(planFormOf({ level: "plan", expression: "exist(coverage_basic.claim_name)" }, CATALOG)).toBeUndefined();
+    expect(planFormOf({ level: "plan", expression: "exist(pay.rate)" }, CATALOG)).toBeUndefined();
     expect(planFormScope(CATALOG.get("D0013")!, CATALOG)).toEqual({ kind: "all" });
     expect(planFormScope(CATALOG.get("D0007")!, CATALOG)).toEqual({ kind: "form", form: "no_surrender" });
   });
@@ -191,20 +191,20 @@ describe("planFormOf — 세목 레벨 구분자가 읽는 폼키", () => {
 
 describe("규칙 2 · 3 — 같은 레벨은 직접 · 하위는 집계 안 · 상위는 거부", () => {
   it("같은 레벨 필드는 그대로 쓴다", () => {
-    expect(typeOf("coverage_basic.claim_name", "coverage")).toEqual({ kind: "string" });
+    expect(typeOf("pay.rate", "benefit")).toEqual({ kind: "number" });
     expect(typeOf("waiver.applies", "plan")).toEqual({ kind: "boolean" });
   });
 
   it("하위 레벨 필드를 집계 없이 쓰면 거부한다", () => {
-    const found = issues("coverage_basic.claim_name", "plan");
+    const found = issues("pay.rate", "plan");
     expect(found).toHaveLength(1);
     expect(found[0].message).toContain("집계");
-    expect(found[0].at.refPath).toBe("coverage_basic.claim_name");
+    expect(found[0].at.refPath).toBe("pay.rate");
   });
 
   it("하위 레벨 필드는 집계 안에서 쓸 수 있다", () => {
-    expect(typeOf("count(coverage_basic.claim_name)", "plan")).toEqual({ kind: "number" });
-    expect(typeOf("exist(coverage_basic.claim_name)", "product")).toEqual({ kind: "boolean" });
+    expect(typeOf("count(pay.rate)", "plan")).toEqual({ kind: "number" });
+    expect(typeOf("exist(pay.rate)", "product")).toEqual({ kind: "boolean" });
   });
 
   it("상위 레벨 필드는 집계가 있든 없든 거부한다 (MVP 는 상위 → 하위만)", () => {
@@ -218,12 +218,12 @@ describe("규칙 2 · 3 — 같은 레벨은 직접 · 하위는 집계 안 · �
 describe("규칙 4 — 파서 · 타입 검사", () => {
   it("빈 식 · 문법 오류를 거부한다", () => {
     expect(issues("   ", "coverage")[0].kind).toBe("syntax");
-    expect(issues("coverage_basic.claim_name and", "coverage")[0].kind).toBe("syntax");
+    expect(issues("pay.rate and", "benefit")[0].kind).toBe("syntax");
   });
 
   it("타입이 맞지 않으면 typeMismatch 다", () => {
     expect(issues("waiver.applies > 1", "plan")[0].kind).toBe("typeMismatch");
-    expect(issues("any(coverage_basic.claim_name)", "plan")[0].kind).toBe("typeMismatch"); // any 는 boolean 경로만
+    expect(issues("any(pay.rate)", "plan")[0].kind).toBe("typeMismatch"); // any 는 boolean 경로만 (pay.rate 는 number)
   });
 
   it("구분자 식은 인자(arg.X)를 읽을 수 없다 — 인자는 함수조항 본문 문맥에서만 (경계, 최종 결정 2)", () => {
@@ -296,7 +296,7 @@ describe("discriminatorResultType — 명시 타입이 있으면 그것을 그�
     const def = {
       code: "D0099",
       level: "coverage" as const,
-      expression: "coverage_basic.claim_name", // 식은 string 이지만
+      expression: "builtin.coverage.name", // 식은 string 이지만
       resultType: { kind: "boolean" as const }, // 명시 타입이 정본이다
     };
     expect(discriminatorResultType(def)).toEqual({ kind: "boolean" });
@@ -305,7 +305,7 @@ describe("discriminatorResultType — 명시 타입이 있으면 그것을 그�
 
 describe("checkReferenceRules — 참조 규칙만 따로", () => {
   it("여러 위반을 한 번에 모은다", () => {
-    const parsed = parse("D0001 = 'x' and coverage_basic.claim_name ≠ 'y'");
+    const parsed = parse("D0001 = 'x' and pay.rate ≠ 1");
     if (!parsed.ok) throw new Error("파싱 실패");
     expect(checkReferenceRules(parsed.value, "plan").map((i) => i.kind)).toEqual([
       "brokenRef", // 카탈로그 없음 — 구분자 D0001 을 모른다
@@ -336,12 +336,12 @@ describe("discriminatorWarnings — 별칭 경고 (기능/구분자 §3.2)", () 
   });
 
   it("식이 마스터 필드 하나뿐이어도 별칭 경고 — 항등 투영은 허용하되 경고 (ADR-0036 §2)", () => {
-    const w = discriminatorWarnings({ expression: "coverage_basic.claim_name", level: "coverage" }, {});
-    expect(w.map((i) => [i.kind, i.severity, i.at.refPath])).toEqual([["alias", "warning", "coverage_basic.claim_name"]]);
+    const w = discriminatorWarnings({ expression: "pay.rate", level: "benefit" }, {});
+    expect(w.map((i) => [i.kind, i.severity, i.at.refPath])).toEqual([["alias", "warning", "pay.rate"]]);
   });
 
   it("집계 하나 · 비교 · 리터럴 · 내장 경로 · 담보속성은 별칭이 아니다", () => {
-    for (const source of ["any(pay.exempt)", "coverage_basic.claim_name = 'x'", "'2.5%'", "builtin.plan.name", "attr.A0001", "not D0002"]) {
+    for (const source of ["exist(exemption.months)", "builtin.coverage.name = 'x'", "'2.5%'", "builtin.plan.name", "attr.A0001", "not D0002"]) {
       expect(discriminatorWarnings({ expression: source, level: "coverage" }, { catalog: CATALOG }), source).toEqual([]);
     }
   });
@@ -370,7 +370,7 @@ describe("checkReferenceCycle — 자기 참조 · 순환 (기능/구분자 §3.
 
 describe("inspectExpression — 오류 · 경고 · 추론 타입을 한 번에 (기능/구분자 §3.3)", () => {
   it("오류 없는 식 — errors 비고 inferred 가 채워진다", () => {
-    const r = inspectExpression({ expression: "any(pay.exempt)", level: "coverage" }, { catalog: CATALOG });
+    const r = inspectExpression({ expression: "exist(exemption.months)", level: "coverage" }, { catalog: CATALOG });
     expect(r).toEqual({ errors: [], warnings: [], inferred: { kind: "boolean" } });
   });
 
@@ -389,7 +389,7 @@ describe("inspectExpression — 오류 · 경고 · 추론 타입을 한 번에 
   });
 
   it("명시 타입 ≠ 추론 타입은 errors 에 들고 inferred 는 그대로 온다 (채울 수 있으니)", () => {
-    const r = inspectExpression({ expression: "any(pay.exempt)", level: "coverage", resultType: { kind: "string" } }, { catalog: CATALOG });
+    const r = inspectExpression({ expression: "exist(exemption.months)", level: "coverage", resultType: { kind: "string" } }, { catalog: CATALOG });
     expect(r.errors).toEqual([expect.objectContaining({ kind: "typeMismatch" })]);
     expect(r.errors[0].message).toContain("명시한 결과 타입 string");
     expect(r.inferred).toEqual({ kind: "boolean" });
@@ -420,7 +420,7 @@ describe("inspectExpression — 오류 · 경고 · 추론 타입을 한 번에 
 describe("inferMissingResultTypes — 결과 타입 미지정 기존분 이행 (기능/구분자 §3.1, 2026-10-17)", () => {
   it("미지정인 것만 추론 타입으로 채운다 — 구분자 참조는 카탈로그로 풀고, 이미 있는 타입은 건드리지 않는다", () => {
     const rows = [
-      { code: "D0001", level: "coverage" as const, expression: "coverage_basic.claim_name" },
+      { code: "D0001", level: "coverage" as const, expression: "builtin.coverage.name" },
       { code: "D0002", level: "coverage" as const, expression: "D0001 ≠ ''" },
       { code: "D0003", level: "plan" as const, expression: "no_surrender.type", resultType: { kind: "enum" as const, enumCode: "E0002" } },
       { code: "D0004", level: "plan" as const, expression: "no_surrender.type" },

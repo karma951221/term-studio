@@ -4,7 +4,7 @@
  * 근거: docs/기능/구분자/구분자.md §3.1 · §3.2 · ADR-0005 · ADR-0036 · ADR-0037.
  *
  * **구분자는 식 하나다.** 종류(scalar · struct · const · derived)는 없다 —
- * 필드를 그대로 잇든(`담보명 = coverage_basic.claim_name`) 계산하든(`면책구분 = any(pay.exempt)`)
+ * 필드를 그대로 잇든(`갱신형 상품 = feature.renewable`) 계산하든(`면책 있음 = exist(exemption.months)`)
  * 같은 자리에 쓰고, 결과 타입은 식에서 추론되며 저장 때 명시 타입(필수)과 대조한다.
  *
  * 구분자는 **값 행을 갖지 않는다.** 값 자리는 노드 × 마스터 필드고 (domain/master),

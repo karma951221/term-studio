@@ -34,28 +34,30 @@ describe("master 서비스 (PGlite)", () => {
     // MVP 마스터가 가리키는 열거형변수 둘 — 없으면 마스터 필드의 타입 간선이 깨진 참조가 된다
     unwrap(await s.catalog.createEnum(editor, { label: "납입면제사유", values: [{ label: "질병" }, { label: "상해" }] }));
     unwrap(await s.catalog.createEnum(editor, { label: "해약환급금유형", values: [{ label: "지급형" }, { label: "미지급형" }] }));
-    unwrap(await s.catalog.create(editor, { label: "담보명", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } })); // D0001
+    // 담보 레벨 폼은 없다(보험금명 2026-10-21 삭제) — 필드 → 구분자 → 문면 추적은 급부 지급률의 투영으로 본다
+    unwrap(await s.catalog.create(editor, { label: "지급률", level: "benefit", expression: "pay.rate", resultType: { kind: "number" } })); // D0001
   });
   afterAll(async () => {
     await t.close();
   });
 
   describe("valueNodes — 그 레벨 노드 전부 · 미입력 포함", () => {
-    it("담보 둘 중 하나에만 값을 쓰면 total 2 · entered 1 · notEntered 1, href 는 담보 화면의 값 자리", async () => {
+    it("급부 둘 중 하나에만 값을 쓰면 total 2 · entered 1 · notEntered 1, href 는 담보 화면의 값 자리", async () => {
       death = unwrap(await s.coverage.create(editor, { name: "일반상해사망", benefitName: "사망보험금" }));
       surgery = unwrap(await s.coverage.create(editor, { name: "수술비", benefitName: "수술보험금" }));
-      unwrap(await s.coverage.writeValue(editor, { level: "coverage", id: death.id }, "coverage_basic.claim_name", "사망보험금"));
+      const deathBenefit = death.subCoverages[0].benefits[0];
+      unwrap(await s.coverage.writeValue(editor, { level: "benefit", id: deathBenefit.id }, "pay.rate", 80));
 
-      const page = await s.master.valueNodes("coverage_basic.claim_name");
+      const page = await s.master.valueNodes("pay.rate");
       expect(page).toMatchObject({ total: 2, entered: 1, notEntered: 1, page: 1, pageSize: 20 });
       expect(page.rows).toHaveLength(2);
 
-      const deathRow = page.rows.find((r) => r.ownerId === death.id)!;
-      expect(deathRow).toMatchObject({ ownerKind: "coverage", label: "일반상해사망", value: "사망보험금" });
-      expect(deathRow.href).toBe(`/coverages/${death.id}?node=coverage:${death.id}&field=coverage_basic.claim_name`);
+      const deathRow = page.rows.find((r) => r.ownerId === deathBenefit.id)!;
+      expect(deathRow).toMatchObject({ ownerKind: "benefit", value: 80 });
+      expect(deathRow.href).toBe(`/coverages/${death.id}?node=benefit:${deathBenefit.id}&field=pay.rate`);
 
-      const surgeryRow = page.rows.find((r) => r.ownerId === surgery.id)!;
-      expect(surgeryRow.label).toBe("수술비");
+      const surgeryRow = page.rows.find((r) => r.ownerId === surgery.subCoverages[0].benefits[0].id)!;
+      expect(surgeryRow.label).toBe(`수술비 › ${surgery.subCoverages[0].name} › 수술보험금`);
       expect("value" in surgeryRow).toBe(false);
     });
 
@@ -76,16 +78,16 @@ describe("master 서비스 (PGlite)", () => {
   });
 
   describe("fieldUsage — 마스터 필드 → 구분자 → 문면", () => {
-    it("D0001(식 coverage_basic.claim_name)을 담보약관 슬롯이 읽으면 discriminators[0] 이 D0001 이고 documents 가 1건 이상", async () => {
-      const art = b.article("보험금의 지급사유", [b.paragraph([b.text("담보명 "), b.slot("D0001")])]);
+    it("D0001(식 pay.rate)을 담보약관 슬롯이 읽으면 discriminators[0] 이 D0001 이고 documents 가 1건 이상", async () => {
+      const art = b.article("보험금의 지급사유", [b.paragraph([b.text("지급률 "), b.slot("D0001")])]);
       const special = await insertDocument(s.db, { kind: "special", ownerId: death.id, title: "일반상해사망 특별약관", tree: b.document("일반상해사망 특별약관", [art]) }, editor.userId);
       unwrap(await s.coverage.setDocument(editor, death.id, special.id));
 
-      const usage = await s.master.fieldUsage("coverage_basic.claim_name");
-      expect(usage.path).toBe("coverage_basic.claim_name");
+      const usage = await s.master.fieldUsage("pay.rate");
+      expect(usage.path).toBe("pay.rate");
       expect(usage.discriminators).toHaveLength(1);
       const d = usage.discriminators[0];
-      expect(d).toMatchObject({ code: "D0001", label: "담보명", expression: "coverage_basic.claim_name", level: "coverage" });
+      expect(d).toMatchObject({ code: "D0001", label: "지급률", expression: "pay.rate", level: "benefit" });
       expect(d.documents.length).toBeGreaterThanOrEqual(1);
       expect(d.documents[0].via).toBe("slot");
       expect(d.documents[0].at).toMatchObject({ document: "special", ownerId: death.id, articleId: art.id });
@@ -112,7 +114,8 @@ describe("master 서비스 (PGlite)", () => {
       expect(await s.master.formNodeCount(findForm("conversion")!)).toBe(0);
       // MVP 마스터에 상품 폼은 없다 — 레벨만 보는 규칙이라 가짜 폼으로 확인한다
       expect(await s.master.formNodeCount({ key: "product_x", label: "상품", level: "product", fields: [] })).toBe(1);
-      expect(await s.master.formNodeCount(findForm("coverage_basic")!)).toBe(2);
+      // 담보 레벨 폼도 MVP 마스터에 없다(보험금명 2026-10-21 삭제) — 가짜 폼으로 확인한다
+      expect(await s.master.formNodeCount({ key: "coverage_x", label: "담보", level: "coverage", fields: [] })).toBe(2);
       expect(await s.master.formNodeCount(findForm("pay")!)).toBe(2);
     });
 
@@ -130,19 +133,19 @@ describe("master 서비스 (PGlite)", () => {
   });
 
   describe("페이저 — 라벨 오름차순 · 20건", () => {
-    it("담보 25개 → page 1 은 20행, page 2 는 5행", async () => {
+    it("담보 25개(급부 25개) → page 1 은 20행, page 2 는 5행", async () => {
       for (let i = 3; i <= 25; i += 1) {
         unwrap(await s.coverage.create(editor, { name: `담보${String(i).padStart(2, "0")}`, benefitName: `급부${i}` }));
       }
-      const p1 = await s.master.valueNodes("coverage_basic.claim_name");
+      const p1 = await s.master.valueNodes("pay.rate");
       expect(p1).toMatchObject({ total: 25, page: 1, pageSize: 20 });
       expect(p1.rows).toHaveLength(20);
-      const p2 = await s.master.valueNodes("coverage_basic.claim_name", 2);
+      const p2 = await s.master.valueNodes("pay.rate", 2);
       expect(p2).toMatchObject({ total: 25, page: 2 });
       expect(p2.rows).toHaveLength(5);
       // 마지막을 넘는 페이지는 마지막으로, 0 이하는 1 로 죈다
-      expect(await s.master.valueNodes("coverage_basic.claim_name", 9)).toMatchObject({ page: 2, rows: p2.rows });
-      expect((await s.master.valueNodes("coverage_basic.claim_name", 0)).page).toBe(1);
+      expect(await s.master.valueNodes("pay.rate", 9)).toMatchObject({ page: 2, rows: p2.rows });
+      expect((await s.master.valueNodes("pay.rate", 0)).page).toBe(1);
       // 두 페이지를 이으면 라벨 오름차순 (localeCompare ko)
       const labels = [...p1.rows, ...p2.rows].map((r) => r.label);
       expect(labels).toEqual([...labels].sort((a, c) => a.localeCompare(c, "ko")));

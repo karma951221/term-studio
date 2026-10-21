@@ -6,8 +6,9 @@
  * 서버 액션을 이벤트 핸들러로 호출하는 패턴(Next.js 「Event Handlers」)을 쓴다.
  */
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 
+import { PAY_RATE_PATH } from "@/domain/master";
 import type { Issue } from "@/domain/types";
 import { StructForm, type FormModel, type Submission } from "@/forms";
 
@@ -23,6 +24,7 @@ export function ValueForm({
   showCodes,
   highlightPath,
   flat,
+  cardHead,
 }: {
   model: FormModel;
   /** 저장 서버 액션 — 실패하면 issues 를 실어 돌려준다. */
@@ -34,6 +36,11 @@ export function ValueForm({
   highlightPath?: string;
   /** 노드 카드 안에 얹힌 폼 — 폼 상자 없이 필드 행을 바로 (StructForm 에 그대로 넘긴다). */
   flat?: boolean;
+  /**
+   * 노드 카드 머리 줄(레벨 라벨 · 이름) — 주면 카드 머리 · 본문째 그리고, 급부의 지급률을 머리 줄 오른쪽 「지급률 ⊕」로 둔다
+   * (상품담보 값 화면 — 담보 상세와 같은 급부 카드, 기능/담보 §3.6 · 2026-10-21).
+   */
+  cardHead?: ReactNode;
 }) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [pending, startTransition] = useTransition();
@@ -48,6 +55,20 @@ export function ValueForm({
       showCodes={showCodes}
       highlightPath={highlightPath}
       flat={flat}
+      {...(cardHead !== undefined
+        ? {
+            headPaths: [PAY_RATE_PATH],
+            frame: ({ head, body }: { head: ReactNode; body: ReactNode }) => (
+              <>
+                <div className="ts-cov-card-head">
+                  {cardHead}
+                  {head ? <span className="ts-cov-head-extra">{head}</span> : null}
+                </div>
+                <div className="ts-cov-card-body">{body}</div>
+              </>
+            ),
+          }
+        : {})}
       onSubmit={(submission) => {
         startTransition(async () => {
           const r = await action(submission);
