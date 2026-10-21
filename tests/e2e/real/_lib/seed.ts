@@ -47,7 +47,6 @@ export interface CoverageSpec {
 /** 정적 마스터 박스 — 코드 · 이름 · 제목 · 줄 (기능/박스 §3.1). */
 export interface BoxSpec {
   code: string;
-  name: string;
   title: string;
   lines: string[];
 }

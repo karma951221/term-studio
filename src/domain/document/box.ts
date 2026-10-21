@@ -1,12 +1,13 @@
 /**
  * 박스 마스터 — 정적 마스터의 하위 (기능/박스 · ADR-0076 결정 11 · 최종 결정 9).
  *
- * - 박스 = 놓인 자리에 내용이 그대로 들어가는 고정 글(직접참조). 코드 · 이름 · 제목 · 줄뿐이다.
+ * - 박스 = 놓인 자리에 내용이 그대로 들어가는 고정 글(직접참조). 코드 · 제목 · 줄뿐이다.
  *   **안에 참조 · 슬롯 · 옵션을 두지 않는다** — 줄은 글 한 줄(string). 박스 안 「제2항」은 고정 글이다(기존 한계).
  * - 문서 · 함수조항 본문은 박스 참조 노드(`boxRef`)에 코드만 저장하고, 조립이 이 마스터에서 내용을 읽어 그 자리에 편다.
  * - 코드는 **시스템 자동 채번 · 등록 후 불변** — `BX000001` 부터. 순번은 `code_sequences` kind `box`(별표와 같은 방식).
- * - 이름은 비울 수 없고 **중복을 허용하지 않는다** — 넣을 때 이름으로 고르므로(별표는 중복 허용).
- * - 줄은 하나 이상. 가운데 빈 줄은 간격으로 남는다(실물 박스에 있다). 제목은 비워도 된다(실물 박스에 있다).
+ * - **박스 이름은 따로 없다** — 제목이 곧 이름이다(2026-10-21). 제목은 괄호 없이 적고, 화면 · 출력에서 시스템이 【】로 감싼다.
+ *   제목은 비워도 되고(실물 박스에 있다) 같은 제목이 여럿이어도 된다 — 고르는 곳은 코드 · 본문 앞머리를 함께 보인다.
+ * - 줄은 하나 이상. 가운데 빈 줄은 간격으로 남는다(실물 박스에 있다).
  */
 
 import { ok, reject } from "../types";
@@ -14,8 +15,7 @@ import type { Code, Result } from "../types";
 
 export interface Box {
   code: Code;
-  name: string;
-  /** 박스 머리 제목 — 비울 수 있다. */
+  /** 박스 머리 제목 — 괄호 없이(표시 · 출력에서 【】로 감싼다). 비울 수 있고 겹쳐도 된다. */
   title: string;
   /** 줄 — 글 한 줄씩. 하나 이상. */
   lines: string[];
@@ -23,14 +23,12 @@ export interface Box {
 
 /** 생성 입력에 code 는 없다 — 코드는 시스템이 채번한다 (타입으로 강제). */
 export interface NewBox {
-  name: string;
   title?: string;
   lines: readonly string[];
 }
 
-/** 상세 저장 한 번의 최종 상태 — 이름 · 제목 · 줄 (디자인원칙: 편집 화면 하나 = 저장 하나). */
+/** 상세 저장 한 번의 최종 상태 — 제목 · 줄 (디자인원칙: 편집 화면 하나 = 저장 하나). */
 export interface BoxRevision {
-  name: string;
   title: string;
   lines: readonly string[];
 }
@@ -59,31 +57,73 @@ export function isValidBoxCode(code: string): boolean {
 
 /* ── 규칙 ─────────────────────────────────────────────────────────────────── */
 
-/** 이름 · 줄 검사 — 통과하면 정리한 값. `takenNames` 는 다른 박스들의 이름(자기 것 제외). */
-function checked(input: BoxRevision, takenNames: readonly string[]): Result<Omit<Box, "code">> {
-  const name = input.name.trim();
-  if (name === "") return invalid("박스 이름은 비울 수 없습니다");
-  if (takenNames.some((n) => n.trim() === name)) return invalid(`이미 있는 박스 이름입니다: ${name}`);
-  if (input.lines.length === 0) return invalid("박스에는 줄이 하나 이상 있어야 합니다");
-  return ok({ name, title: input.title.trim(), lines: [...input.lines] });
+/** 제목 정리 — 앞뒤 공백을 떼고, 통째로 【…】에 싸여 들어오면 벗긴다(사람이 【】를 쳐도 이중으로 감싸지 않게). */
+export function normalizeBoxTitle(raw: string): string {
+  const t = raw.trim();
+  const m = /^【([^【】]*)】$/.exec(t);
+  return m ? m[1].trim() : t;
 }
 
-/**
- * 박스 등록. 검사를 먼저 하고 채번한다 — 거절된 등록이 순번을 태우지 않게.
- * `takenNames` = 이미 있는 박스 이름들.
- */
-export async function createBox(input: NewBox, takenNames: readonly string[], nextSeq: BoxNextSeq): Promise<Result<Box>> {
-  const r = checked({ name: input.name, title: input.title ?? "", lines: input.lines }, takenNames);
+/** 제목 · 줄 검사 — 통과하면 정리한 값. */
+function checked(input: BoxRevision): Result<Omit<Box, "code">> {
+  const title = normalizeBoxTitle(input.title);
+  if (/[【】]/.test(title)) return invalid("제목에 【】를 넣지 않는다 — 시스템이 【제목】으로 감싼다");
+  if (input.lines.length === 0) return invalid("박스에는 줄이 하나 이상 있어야 합니다");
+  return ok({ title, lines: [...input.lines] });
+}
+
+/** 박스 등록. 검사를 먼저 하고 채번한다 — 거절된 등록이 순번을 태우지 않게. */
+export async function createBox(input: NewBox, nextSeq: BoxNextSeq): Promise<Result<Box>> {
+  const r = checked({ title: input.title ?? "", lines: input.lines });
   if (!r.ok) return r;
   return ok({ code: formatBoxCode(await nextSeq()), ...r.value });
 }
 
-/** 상세 저장 — 이름 · 제목 · 줄의 최종 상태를 한 번에 검사한다. `takenNames` 에 자기 이름이 있어도 된다. */
-export function reviseBox(box: Box, input: BoxRevision, takenNames: readonly string[]): Result<Box> {
-  const others = takenNames.filter((n) => n.trim() !== box.name.trim());
-  const r = checked(input, others);
+/** 상세 저장 — 제목 · 줄의 최종 상태를 한 번에 검사한다. */
+export function reviseBox(box: Box, input: BoxRevision): Result<Box> {
+  const r = checked(input);
   if (!r.ok) return r;
   return ok({ code: box.code, ...r.value });
+}
+
+/* ── 표시 ─────────────────────────────────────────────────────────────────── */
+
+/** 박스 머리 — 「【제목】」, 제목이 없으면 빈 글(머리 줄 없음). 출력 · 미리보기 · 목록이 같은 모양을 쓴다. */
+export function boxHeading(title: string): string {
+  return title === "" ? "" : `【${title}】`;
+}
+
+const GIST_MAX = 20;
+
+/** 본문 앞머리 — 첫 글 있는 줄을 낱말 단위로 20자 안쪽까지, 잘렸으면 「…」. */
+export function boxGist(box: Pick<Box, "lines">): string {
+  const line = (box.lines.find((l) => l.trim() !== "") ?? "").replace(/\s+/g, " ").trim();
+  if ([...line].length <= GIST_MAX) return line;
+  let out = "";
+  for (const word of line.split(" ")) {
+    const next = out === "" ? word : `${out} ${word}`;
+    if ([...next].length > GIST_MAX) break;
+    out = next;
+  }
+  return `${out === "" ? [...line].slice(0, GIST_MAX).join("") : out}…`;
+}
+
+/** 박스를 부르는 이름 — 「【제목】」, 제목 없는 박스는 「(제목 없음) 본문 앞머리」 (목록 · 경로 · 고르기 목록). */
+export function boxLabel(box: Pick<Box, "title" | "lines">): string {
+  if (box.title !== "") return boxHeading(box.title);
+  const gist = boxGist(box);
+  return gist === "" ? "(제목 없음)" : `(제목 없음) ${gist}`;
+}
+
+/** 고르는 곳의 힌트 — 같은 제목이 여럿이어도 가를 수 있게 코드 · 본문 앞머리. */
+export function boxHint(box: Box): string {
+  const gist = boxGist(box);
+  return gist === "" ? box.code : `${box.code} · ${gist}`;
+}
+
+/** 검색이 보는 글 — 코드 · 제목(괄호 없이 · 【】 포함) · 본문 줄. */
+export function boxSearchTexts(box: Box): string[] {
+  return [box.code, ...(box.title === "" ? [] : [box.title, boxHeading(box.title)]), ...box.lines];
 }
 
 /* ── 줄 칸 ─────────────────────────────────────────────────────────────────── */

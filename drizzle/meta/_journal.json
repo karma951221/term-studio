@@ -225,6 +225,13 @@
       "when": 1792247078053,
       "tag": "0031_dyn_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792572400422,
+      "tag": "0032_box_title_only",
+      "breakpoints": true
     }
   ]
 }

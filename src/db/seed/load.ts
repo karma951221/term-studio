@@ -136,8 +136,8 @@ export function catalogUsedByGenerals(): { enums: number; discriminators: number
  * 보통약관이 놓는 박스가 앞 코드다(변환기 `orderBoxes`). `upTo` 가 있으면 그 개수까지만 만든다.
  */
 async function loadBoxes(services: Services, actor: Actor, upTo?: number): Promise<void> {
-  for (const box of (boxes as Array<{ code: string; name: string; title: string; lines: string[] }>).slice(0, upTo)) {
-    const created = unwrap(await services.document.createBox(actor, { name: box.name, title: box.title, lines: box.lines }));
+  for (const box of (boxes as Array<{ code: string; title: string; lines: string[] }>).slice(0, upTo)) {
+    const created = unwrap(await services.document.createBox(actor, { title: box.title, lines: box.lines }));
     expectCode(created.code, box.code);
   }
 }
