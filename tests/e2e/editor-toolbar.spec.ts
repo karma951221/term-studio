@@ -160,7 +160,10 @@ test(
       // 시드 구분자는 참거짓뿐이다(문자 구분자 담보명 D0001 은 2026-10-21 삭제 — ADR-0091) — 갱신형 상품(D0006) = 참, 값은 참 · 거짓 고르기
       await pickCombo(head.getByRole("combobox", { name: "IF 1번 줄 변수" }), { value: "D0006" });
       await expect(head.getByRole("combobox", { name: "IF 1번 줄 연산자" })).toHaveValue("=");
-      await head.getByRole("combobox", { name: "IF 1번 줄 값" }).selectOption("true");
+      const value = head.getByRole("combobox", { name: "IF 1번 줄 값" });
+      await value.selectOption("true");
+      // 참거짓 값은 고르기(select)다 — 글자 칸의 Enter 와 달리 커서가 머리 줄에 남도록 다시 짚는다(조건 편집 묶음은 머리 줄을 골랐을 때 선다)
+      await value.focus();
       await expect(tool("그 밖의 경우 추가")).toBeEnabled();
       await submit(page, page.getByRole("button", { name: "저장", exact: true }));
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
