@@ -121,11 +121,11 @@ describe("catalog 서비스 (PGlite)", () => {
   describe("구분자정의 — 식은 저장 시 검증한다 (ADR-0037)", () => {
     it("집계 구분자를 채번하고 식을 고친다 — 둘 다 편집자 가능 (D-P1-12)", async () => {
       const def = unwrap(
-        await svc.create(editor, { label: "면책구분", level: "coverage", expression: "any(pay.exempt)", resultType: { kind: "boolean" } }),
+        await svc.create(editor, { label: "면책구분", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } }),
       );
       expect(def.code).toBe("D0002");
-      const upd = unwrap(await svc.setExpression(editor, "D0002", "all(pay.exempt)"));
-      expect(upd.expression).toBe("all(pay.exempt)");
+      const upd = unwrap(await svc.setExpression(editor, "D0002", "notexist(exemption.months)"));
+      expect(upd.expression).toBe("notexist(exemption.months)");
       expect(await svc.get("D0002")).toEqual(upd);
     });
 
@@ -140,23 +140,23 @@ describe("catalog 서비스 (PGlite)", () => {
       // 상위 레벨(담보) 구분자를 급부 레벨에서 — 거부
       expect((await svc.create(editor, { label: "상위참조", level: "benefit", expression: "D0002", resultType: { kind: "boolean" } })).ok).toBe(false);
       // 자기 참조 — 거부
-      expect((await svc.setExpression(editor, "D0002", "D0002 and all(pay.exempt)")).ok).toBe(false);
+      expect((await svc.setExpression(editor, "D0002", "D0002 and notexist(exemption.months)")).ok).toBe(false);
       // 순환 — D0003 → D0002 를 만든 뒤(식 · 결과 타입을 함께 바꾼다) D0002 → D0003 은 거부
       expect((await svc.setExpression(editor, "D0003", "D0002 = true", { resultType: { kind: "boolean" } })).ok).toBe(true);
       expect((await svc.setExpression(editor, "D0002", "not D0003")).ok).toBe(false);
-      expect((await svc.get("D0002"))?.expression).toBe("all(pay.exempt)"); // 원본 그대로
+      expect((await svc.get("D0002"))?.expression).toBe("notexist(exemption.months)"); // 원본 그대로
       // 참조받는 쪽을 고쳐 참조하는 쪽이 깨지면 거부 — D0003 = `D0002 = true` 인데 D0002 가 string 이 되면 비교가 깨진다
       // (코덱스 리뷰 2026-09-14 Important-1: 저장 경로가 역방향 사용처를 재검사한다)
       const broken = await svc.setExpression(editor, "D0002", "coverage_basic.claim_name", { resultType: { kind: "string" } });
       expect(broken.ok).toBe(false);
       if (!broken.ok && broken.rejection.reason === "invalid") expect(broken.rejection.issues[0].message).toContain("D0003");
-      expect((await svc.get("D0002"))?.expression).toBe("all(pay.exempt)");
+      expect((await svc.get("D0002"))?.expression).toBe("notexist(exemption.months)");
       // 투영으로 되돌린다 (다른 시나리오의 전제)
       unwrap(await svc.setExpression(editor, "D0003", "coverage_basic.claim_name", { resultType: { kind: "string" } }));
     });
 
     it("하위 레벨 자리를 집계 없이 부르면 거부한다", async () => {
-      expect((await svc.create(editor, { label: "직접", level: "coverage", expression: "pay.exempt", resultType: { kind: "boolean" } })).ok).toBe(false);
+      expect((await svc.create(editor, { label: "직접", level: "coverage", expression: "exemption.months", resultType: { kind: "number" } })).ok).toBe(false);
     });
 
     it("담보속성 유효값을 주입하면 리터럴을 그 목록으로 검사한다", async () => {
@@ -299,8 +299,8 @@ describe("catalog 서비스 (PGlite)", () => {
     beforeAll(async () => {
       inspecting = createCatalogService(t.db, { impact: store.source, graph: () => loadGraph(t.db) });
       slotted = unwrap(await svc.create(editor, { label: "검사슬롯", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } })).code;
-      conditioned = unwrap(await svc.create(editor, { label: "검사조건", level: "coverage", expression: "any(pay.exempt)", resultType: { kind: "boolean" } })).code;
-      dependent = unwrap(await svc.create(editor, { label: "검사의존", level: "coverage", expression: `${conditioned} and all(pay.exempt)`, resultType: { kind: "boolean" } })).code;
+      conditioned = unwrap(await svc.create(editor, { label: "검사조건", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } })).code;
+      dependent = unwrap(await svc.create(editor, { label: "검사의존", level: "coverage", expression: `${conditioned} and notexist(exemption.months)`, resultType: { kind: "boolean" } })).code;
       const b = nodeBuilders();
       const art = b.article("검사 대상 조", [b.paragraph([b.text("이름 "), b.slot(slotted)])]);
       const cond = b.condBlock([b.branch(`${conditioned} = true`, [b.article("조건부 조", [b.paragraph([b.text("면책")])])])]);
@@ -317,7 +317,7 @@ describe("catalog 서비스 (PGlite)", () => {
     });
 
     it("슬롯이 읽는 구분자의 식을 boolean 으로 바꾸면 — 슬롯 사용처가 깨진다는 경고 (at = 사용처 · source = 구분자)", async () => {
-      const r = await inspecting.inspect({ code: slotted, expression: "any(pay.exempt)", level: "coverage" });
+      const r = await inspecting.inspect({ code: slotted, expression: "exist(exemption.months)", level: "coverage" });
       expect(r.errors).toEqual([]);
       expect(r.breaks).toHaveLength(1);
       expect(r.breaks[0]).toMatchObject({
@@ -364,7 +364,7 @@ describe("catalog 서비스 (PGlite)", () => {
       const art = b.article("경유 대상 조", [b.paragraph([b.text("별칭 "), b.slot(alias)])]);
       await insertDocument(t.db, { kind: "general", title: "경유용 보통약관", tree: b.document("경유용 보통약관", [art]) }, editor.userId);
 
-      const r = await inspecting.inspect({ code: origin, expression: "any(pay.exempt)", level: "coverage", resultType: { kind: "boolean" } });
+      const r = await inspecting.inspect({ code: origin, expression: "exist(exemption.months)", level: "coverage", resultType: { kind: "boolean" } });
       expect(r.errors).toHaveLength(1);
       expect(r.errors[0].message).toContain(alias);
       expect(r.errors[0].message).toContain("결과 타입이 어긋납니다");
@@ -384,7 +384,7 @@ describe("catalog 서비스 (PGlite)", () => {
     });
 
     it("그래프를 주입하지 않은 서비스도 검사는 된다 — breaks 만 비어 있다", async () => {
-      const r = await svc.inspect({ code: slotted, expression: "any(pay.exempt)", level: "coverage" });
+      const r = await svc.inspect({ code: slotted, expression: "exist(exemption.months)", level: "coverage" });
       expect(r.errors).toEqual([]);
       expect(r.breaks).toEqual([]);
     });

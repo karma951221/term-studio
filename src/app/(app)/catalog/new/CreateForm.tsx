@@ -106,7 +106,7 @@ export function CreateForm({
             </FormRow>
 
             <FormRow label={FIELD_LABEL.expression} htmlFor="new-expr">
-              <ExpressionInput inputRef={expressionRef} id="new-expr" name="expression" required placeholder="예: coverage_basic.claim_name · any(pay.exempt)" value={expression} onChange={changeExpression} />
+              <ExpressionInput inputRef={expressionRef} id="new-expr" name="expression" required placeholder="예: exist(exemption.months) · any(waiver.applies)" value={expression} onChange={changeExpression} />
               <p className="ts-form-hint">입력 항목과 다른 구분자를 부른다 — 같은 레벨은 그대로, 하위 레벨은 집계 안에서.</p>
             </FormRow>
 

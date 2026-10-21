@@ -69,7 +69,7 @@ describe("refs 서비스 · 주입 소스 (PGlite)", () => {
     unwrap(await catalog.create(editor, { label: "무저해지유형", level: "plan", expression: "no_surrender.type", resultType: { kind: "enum", enumCode: "E0002" } })); // D0002
     unwrap(await catalog.create(editor, { label: "지급률", level: "benefit", expression: "pay.rate", resultType: { kind: "number" } })); // D0003
     unwrap(await catalog.create(editor, { label: "평균공시이율", level: "product", expression: "'2.5%'", resultType: { kind: "string" } })); // D0004
-    unwrap(await catalog.create(editor, { label: "면책여부합", level: "coverage", expression: "any(pay.exempt)", resultType: { kind: "boolean" } })); // D0005
+    unwrap(await catalog.create(editor, { label: "면책여부합", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } })); // D0005
     unwrap(await catalog.create(editor, { label: "수술급여기준", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } })); // D0006
     unwrap(await catalog.create(editor, { label: "아무도 안 쓰는 것", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } })); // D0007
 

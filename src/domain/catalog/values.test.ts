@@ -86,7 +86,6 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
     expect(valueSlotsOf("product")).toEqual(["disclosure.avg_rate", "feature.contract_kind", "feature.renewable", "feature.fetal", "feature.group_contract", "feature.notice_kind", "feature.review_scope", "feature.review_type", "feature.notice_type", "booklet.group_titles"]);
     expect(valueSlotsOf("subCoverage")).toEqual([]);
     expect(valueSlotsOf("benefit")).toEqual([
-      "pay.exempt",
       "pay.rate",
       "reduction.periods",
       "reduction.after_rate",
@@ -216,9 +215,8 @@ describe("선택 필드(MasterField.optional) — 값이 없으면 세지 않는
   it("값 자리 목록(valueSlotsOf)에는 그대로 있다 — 자리는 늘 있고 보이는 방식만 다르다", () => {
     expect(valueSlotsOf("benefit", master)).toEqual(["pay.exempt", "pay.rate", "pay.note"]);
   });
-  it("정본 마스터 — 보험금지급의 면책여부 · 지급률이 선택 필드다", () => {
-    expect(slotType("benefit", "pay.exempt")).toEqual({ kind: "boolean" });
-    expect(countedSlotsOf("benefit", () => undefined).filter((p) => p.startsWith("pay."))).not.toContain("pay.exempt");
+  it("정본 마스터 — 보험금지급의 지급률이 선택 필드다 · 면책여부 자리는 없다(면책 특성으로만, 2026-10-21)", () => {
+    expect(slotType("benefit", "pay.exempt")).toBeUndefined();
     expect(countedSlotsOf("benefit", () => undefined).filter((p) => p.startsWith("pay."))).not.toContain("pay.rate");
   });
 });

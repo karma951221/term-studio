@@ -77,7 +77,7 @@ describe("container — createServices 관통 (PGlite)", () => {
     expect(unwrap(await s.catalog.create(editor, { label: "수술급여기준", level: "coverage", expression: "coverage_basic.claim_name", resultType: { kind: "string" } })).code).toBe("D0002");
     unwrap(await s.catalog.create(editor, { label: "지급률", level: "benefit", expression: "pay.rate", resultType: { kind: "number" } }));
     unwrap(await s.catalog.create(editor, { label: "평균공시이율", level: "product", expression: "'2.5%'", resultType: { kind: "string" } }));
-    unwrap(await s.catalog.create(editor, { label: "면책여부합", level: "coverage", expression: "any(pay.exempt)", resultType: { kind: "boolean" } }));
+    unwrap(await s.catalog.create(editor, { label: "면책여부합", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } }));
     // 구분자 → 구분자 참조는 마스터 필드와 같은 레벨 규칙이다 (기능/구분자 §3.2) — 상위(상품 D0004) · 집계 없는 하위(급부 D0003)는 거부
     expect(rejection(await s.catalog.create(editor, { label: "상위참조", level: "coverage", expression: "(D0004)", resultType: { kind: "string" } })).reason).toBe("invalid");
     expect(rejection(await s.catalog.create(editor, { label: "하위직접", level: "coverage", expression: "D0003 > 0", resultType: { kind: "boolean" } })).reason).toBe("invalid");
@@ -88,7 +88,6 @@ describe("container — createServices 관통 (PGlite)", () => {
     death = unwrap(await s.coverage.create(editor, { name: "일반상해사망", benefitName: "사망보험금" }));
     unwrap(await s.coverage.writeValue(editor, { level: "coverage", id: death.id }, "coverage_basic.claim_name", "사망보험금"));
     const benefit = death.subCoverages[0].benefits[0];
-    unwrap(await s.coverage.writeValue(editor, { level: "benefit", id: benefit.id }, "pay.exempt", false));
     unwrap(await s.coverage.writeValue(editor, { level: "benefit", id: benefit.id }, "pay.rate", 100));
     expect(unwrap(await s.coverage.completeness(death.id))).toEqual([]);
   });
@@ -207,7 +206,7 @@ describe("container — createServices 관통 (PGlite)", () => {
       { document: "special", ownerId: death.id, ownerName: "일반상해사망 특별약관" },
       { document: "special", ownerId: pcId, ownerName: "갱신형 일반상해사망" },
     ]);
-    expect(cov.valueRowsLost).toBe(3); // 담보명 + 급부 면책여부·지급률
+    expect(cov.valueRowsLost).toBe(2); // 담보명 + 급부 지급률
     // 급부 삭제는 최소 구조 위반 — 관리자도 거부
     expect(rejection(await s.coverage.removeBenefit(admin, death.subCoverages[0].benefits[0].id)).reason).toBe("minimumStructure");
     // 함수조항 삭제 → 참조 문서 (참조 노드 좌표)

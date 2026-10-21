@@ -349,3 +349,31 @@ describe("0018_enum_fields", () => {
     expect((await client.query<{ fields: unknown }>(`SELECT fields FROM enum_values`)).rows).toEqual([{ fields: {} }]);
   });
 });
+
+describe("0032_drop_pay_exempt", () => {
+  const put = (ownerKind: string, owner: string, fieldPath: string, value: string) =>
+    client.query(`INSERT INTO entity_values (owner_kind, owner_id, field_path, value) VALUES ($1, $2, $3, $4::jsonb)`, [ownerKind, owner, fieldPath, value]);
+  const rows = async () =>
+    (await client.query<{ owner_kind: string; field_path: string }>(`SELECT owner_kind, field_path FROM entity_values ORDER BY owner_kind, field_path`)).rows;
+  const apply0032 = async () =>
+    client.transaction(async (tx) => {
+      for (const s of statementsOf(tagOf(32))) await tx.exec(s);
+    });
+
+  it("담보 마스터 · 상품담보 스냅샷의 pay.exempt 값 행만 지운다 — 면책은 면책 특성(exemption)이 붙었는지로만 정해진다 · 두 번 돌려도 같다", async () => {
+    for (let idx = 6; idx <= 31; idx++) for (const s of statementsOf(tagOf(idx))) await client.exec(s);
+    const other = "22222222-2222-4222-8222-222222222222";
+    await put("benefit", OWNER, "pay.exempt", "true");
+    await put("benefit", OWNER, "pay.rate", "80");
+    await put("productBenefit", other, "pay.exempt", "false");
+    await put("productBenefit", other, "exemption.months", "3");
+    await apply0032();
+    const after = await rows();
+    expect(after).toEqual([
+      { owner_kind: "benefit", field_path: "pay.rate" },
+      { owner_kind: "productBenefit", field_path: "exemption.months" },
+    ]);
+    await apply0032();
+    expect(await rows()).toEqual(after);
+  });
+});

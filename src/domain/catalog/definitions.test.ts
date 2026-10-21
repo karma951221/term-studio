@@ -64,7 +64,7 @@ const 면책구분: Discriminator = {
   label: "면책구분",
   description: "",
   level: "coverage",
-  expression: "any(pay.exempt)",
+  expression: "exist(exemption.months)",
   resultType: { kind: "boolean" },
 };
 
@@ -165,7 +165,7 @@ describe("구분자정의 — 식은 저장 시 검증한다 (ADR-0037)", () => 
   });
 
   it("자기 참조는 거부한다", () => {
-    const r = setExpression(면책구분, "D0002 and any(pay.exempt)", { catalog: catalogOf(면책구분) });
+    const r = setExpression(면책구분, "D0002 and exist(exemption.months)", { catalog: catalogOf(면책구분) });
     expect(r.ok).toBe(false);
     if (r.ok || r.rejection.reason !== "invalid") throw new Error("기대: invalid");
     expect(r.rejection.issues[0]).toMatchObject({ kind: "typeMismatch", at: { refPath: "D0002" } });
@@ -174,7 +174,7 @@ describe("구분자정의 — 식은 저장 시 검증한다 (ADR-0037)", () => 
 
   it("순환(A → B → A)은 저장 시 거부한다 — 카탈로그 전체를 따라간다", () => {
     const A: Discriminator = { code: "D0010", label: "A", description: "", level: "coverage", expression: "D0011", resultType: { kind: "boolean" } };
-    const B: Discriminator = { code: "D0011", label: "B", description: "", level: "coverage", expression: "any(pay.exempt)", resultType: { kind: "boolean" } };
+    const B: Discriminator = { code: "D0011", label: "B", description: "", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } };
     const C: Discriminator = { code: "D0012", label: "C", description: "", level: "coverage", expression: "D0011 or D0002", resultType: { kind: "boolean" } };
     const catalog = catalogOf(면책구분, A, B, C);
     // B 가 A 를 부르면 A → B → A
@@ -343,7 +343,7 @@ describe("구분자정의 — 참조된 구분자의 식이 바뀌면 의존 구
   it("의존 구분자의 식 검사는 통과해도 명시 결과 타입과 어긋나면 거부한다", () => {
     // D0005(boolean) ← D0011 = `D0005`(명시 boolean). D0005 를 number 식 · number 타입으로 함께 바꾸면
     // checkDependents 의 타입검사 자체는 통과하지만(둘 다 bare 참조라 타입 제약이 없다) D0011 의 명시 boolean 과 어긋난다.
-    const D0005: Discriminator = { code: "D0005", label: "D5", description: "", level: "coverage", expression: "any(pay.exempt)", resultType: { kind: "boolean" } };
+    const D0005: Discriminator = { code: "D0005", label: "D5", description: "", level: "coverage", expression: "exist(exemption.months)", resultType: { kind: "boolean" } };
     const D0011: Discriminator = {
       code: "D0011",
       label: "D11",

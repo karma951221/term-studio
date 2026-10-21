@@ -33,7 +33,7 @@ const CATALOG: ReadonlyMap<string, Discriminator> = new Map(
   (
     [
       ["D0001", "coverage", "coverage_basic.claim_name"],
-      ["D0002", "coverage", "any(pay.exempt)"],
+      ["D0002", "coverage", "exist(exemption.months)"],
       ["D0004", "product", "any(waiver.applies)"],
       ["D0005", "product", "not all(waiver.applies)"],
       ["D0006", "product", "D0004 and D0005"],
@@ -41,7 +41,7 @@ const CATALOG: ReadonlyMap<string, Discriminator> = new Map(
       ["D0008", "product", "notexist(no_surrender.type) or any(D0007)"],
       ["D0012", "plan", "not D0007"],
       ["D0013", "plan", "builtin.plan.name = '무배당'"],
-      ["D0020", "benefit", "pay.exempt"],
+      ["D0020", "benefit", "exist(exemption.months)"],
       // 순환 — 정의 저장은 거부되지만 카탈로그에 이미 있다고 치고 타입 조회가 멈추는지 본다
       ["D0090", "product", "D0091"],
       ["D0091", "product", "D0090"],
@@ -341,7 +341,7 @@ describe("discriminatorWarnings — 별칭 경고 (기능/구분자 §3.2)", () 
   });
 
   it("집계 하나 · 비교 · 리터럴 · 내장 경로 · 담보속성은 별칭이 아니다", () => {
-    for (const source of ["any(pay.exempt)", "coverage_basic.claim_name = 'x'", "'2.5%'", "builtin.plan.name", "attr.A0001", "not D0002"]) {
+    for (const source of ["exist(exemption.months)", "coverage_basic.claim_name = 'x'", "'2.5%'", "builtin.plan.name", "attr.A0001", "not D0002"]) {
       expect(discriminatorWarnings({ expression: source, level: "coverage" }, { catalog: CATALOG }), source).toEqual([]);
     }
   });
@@ -370,7 +370,7 @@ describe("checkReferenceCycle — 자기 참조 · 순환 (기능/구분자 §3.
 
 describe("inspectExpression — 오류 · 경고 · 추론 타입을 한 번에 (기능/구분자 §3.3)", () => {
   it("오류 없는 식 — errors 비고 inferred 가 채워진다", () => {
-    const r = inspectExpression({ expression: "any(pay.exempt)", level: "coverage" }, { catalog: CATALOG });
+    const r = inspectExpression({ expression: "exist(exemption.months)", level: "coverage" }, { catalog: CATALOG });
     expect(r).toEqual({ errors: [], warnings: [], inferred: { kind: "boolean" } });
   });
 
@@ -389,7 +389,7 @@ describe("inspectExpression — 오류 · 경고 · 추론 타입을 한 번에 
   });
 
   it("명시 타입 ≠ 추론 타입은 errors 에 들고 inferred 는 그대로 온다 (채울 수 있으니)", () => {
-    const r = inspectExpression({ expression: "any(pay.exempt)", level: "coverage", resultType: { kind: "string" } }, { catalog: CATALOG });
+    const r = inspectExpression({ expression: "exist(exemption.months)", level: "coverage", resultType: { kind: "string" } }, { catalog: CATALOG });
     expect(r.errors).toEqual([expect.objectContaining({ kind: "typeMismatch" })]);
     expect(r.errors[0].message).toContain("명시한 결과 타입 string");
     expect(r.inferred).toEqual({ kind: "boolean" });
