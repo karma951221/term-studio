@@ -150,7 +150,7 @@ for (const seeded of SEED.products) {
         for (const mount of specials) {
           const group = String(categories.find((v) => v.code === coverageOf(mount.coverage).category)?.fields?.F01 ?? "—");
           const row = region.locator("tbody tr").filter({ has: page.locator("td.col-flex").getByText(mountName(mount), { exact: true }) });
-          await expect(row.locator("td").nth(4)).toHaveText(group);
+          await expect(row.locator("td").nth(3)).toHaveText(group);
         }
       });
     });

@@ -38,7 +38,7 @@ test.describe.serial("실물 재현(화면) ⑥ 사람처럼 — 알파Plus2607 
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
       await expect(region.locator("tbody tr")).toHaveCount(fixtures.specials.length + 1);
       const row = region.locator("tbody tr").filter({ has: page.locator("td.col-flex").getByText(NAME, { exact: true }) });
-      await expect(row.locator("td").nth(4)).toHaveText("질병 관련 특별약관");
+      await expect(row.locator("td").nth(3)).toHaveText("질병 관련 특별약관");
     });
   });
 
