@@ -166,15 +166,15 @@ describe("함수조항 블록 안 — 가운데는 모델, 미리보기는 문�
     return renderToStaticMarkup(<Block nodes={(tree.children[0] as { children: DocumentNode["children"] }).children} ctx={ctx} />);
   }
 
-  it("편집 · 읽기 모두 — 머리 「[코드] 이름」 · 옵션 자리(선택지 전부 + 고른 것 ✓) · 슬롯 칩 · IF 머리, 함수조항 화면 링크는 없다", () => {
+  it("편집 · 읽기 모두 — 머리 「[코드] 이름」 · 옵션 자리(고른 선택지 글만 — 2026-10-21) · 슬롯 칩 · IF 머리, 함수조항 화면 링크는 없다", () => {
     for (const edit of [true, false]) {
       const html = renderClause(edit);
       expect(html).toContain('<span class="ts-doc-clause-code">[C0002]</span> 대표자의 지정');
       expect(html).not.toContain("함수조항 (대표자의 지정)");
       expect(html).toContain('class="ts-clause-model"');
       expect(html).toContain("지정 주체");
-      expect(html).toContain("계약자");
-      expect(html).toContain("✓피보험자");
+      expect(html).toMatch(/<span class="ts-clause-model-opt"[^>]*>피보험자는<\/span>/);
+      expect(html).not.toContain("계약자는");
       expect(html).toContain("〔담보명〕");
       expect(html).toContain('<span class="ts-cond-badge">IF</span> 감액여부 = true');
       expect(html).not.toContain('href="/functions/C0002"');
