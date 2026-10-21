@@ -5758,6 +5758,91 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   width: 110px;
 }
 
+/* ── 우측 패널 「편집」 탭 (2026-10-21, 기능/문면 §4.3) — 고른 것의 고치기 폼 · 넣기 폼, 맨 아래 고정 줄 〔되돌리기 · 적용〕 ── */
+.ts-side-tab-dot {
+  margin-left: 4px;
+  font-size: 9px;
+  vertical-align: top;
+  color: var(--ts-warn);
+}
+
+/* 편집 탭이 보일 때 오른쪽에서 미끄러져 들어온다 — hidden 이 풀릴 때마다 다시 돈다 */
+@keyframes ts-edit-slide-in {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.ts-side-edit:not([hidden]) {
+  animation: ts-edit-slide-in 0.28s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-side-edit:not([hidden]) {
+    animation: none;
+  }
+}
+
+.ts-edit-empty {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--ts-ink-3);
+}
+
+.ts-edit-tab {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.ts-edit-body {
+  flex: 1;
+}
+
+.ts-edit-form-title {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: var(--ts-ink);
+}
+
+/* 패널 폭(340)에 맞춰 폼 줄을 세로로 — 이름 위, 칸 아래 */
+.ts-edit-form .ts-form-row {
+  grid-template-columns: 1fr;
+}
+
+.ts-edit-form .ts-cond-var {
+  width: calc(150px - var(--ts-paren-room, 0px));
+}
+
+.ts-edit-form .ts-cond-value {
+  width: 100px;
+}
+
+/* 고정 줄 — 패널(스크롤 칸, 안쪽 여백 12) 맨 아래에 붙는다 */
+.ts-edit-foot {
+  position: sticky;
+  bottom: -12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 12px -12px -12px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--ts-rule);
+  background: var(--ts-surface);
+}
+
+/* 편집 모드 블록 조건 머리 줄 — 읽기용 한 줄, 누르면 편집 탭 */
+button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* ── 상품 상세 「안 2」 (2026-09-28) — 기본정보 › 상품정보 표 · 상품담보 표 묶음 · 보통약관 탭 ── */
 .ts-basic-info th[scope="row"] { width: 160px; font-weight: 600; text-align: left; }
 .ts-basic-info input:where(:not([data-slot]))[type="text"] { width: 100%; min-height: 32px; box-sizing: border-box; }

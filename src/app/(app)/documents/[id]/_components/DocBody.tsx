@@ -5,17 +5,18 @@
  *
  * - 가운데는 **조 하나**다(`ArticleBody`) — 조 위에 소속 관 머리 줄, 조를 감싼 블록 조건이 있으면 그 띠와 머리 줄.
  *   산출물 꼴(조립 결과)은 우측 패널 미리보기 탭이 그린다(`PreviewTab` — 기능/문면 §3.9).
- * - 읽기 모드에는 조작이 없다. 편집 모드에서는 **그 자리가 편집기**다 — 제목 · 문장 · 조건 머리 줄은 그 자리에서 고치고, 칩은 누르면
- *   바로 아래에 팝업, 넣기 · 조건식은 본문 위 툴바(자리는 `data-*` 로 읽는다, 오른쪽 클릭 메뉴는 지름길). 블록은 왼쪽 손잡이로 끌어 옮기고,
+ * - 읽기 모드에는 조작이 없다. 편집 모드에서는 **그 자리가 편집기**다 — 제목 · 문장은 그 자리에서 고치고, 칩은 누르면
+ *   고치기 폼(문면 편집기는 우측 패널 편집 탭, 다른 편집기는 바로 아래 팝업), 넣기 · 조건식은 본문 위 툴바(자리는 `data-*` 로 읽는다, 오른쪽 클릭 메뉴는 지름길). 블록은 왼쪽 손잡이로 끌어 옮기고,
  *   복제 · 삭제는 고른 블록 오른쪽 여백의 작은 아이콘(`BlockActs`, 2026-10-01 툴바에서 내려옴)이다.
  * - 조건 블록은 테두리 상자(배경 없음)다 — 가지마다 머리 줄(IF / ELIF / ELSE) + 그 아래 내용. 편집 모드의 머리 줄은 늘 열린 조건식 줄
- *   (`CondRows` — 변수 · 연산자 · 값, ⊕ ⊖)과 끝의 작은 버튼(ELIF · ELSE · 풀기 · 삭제)이다. 팝업 없음 (2026-09-28).
+ *   (`CondRows` — 변수 · 연산자 · 값, ⊕ ⊖)과 끝의 작은 버튼(ELIF · ELSE · 풀기 · 삭제)이다. 문면 편집기는 머리 줄이 읽기용 `IF …` 한 줄이고
+ *   누르면 우측 패널 편집 탭에서 고친다(`headsInPanel`, 2026-10-21).
  * - 값별 분기(함수조항 편집기만, 최종 결정 5)는 조건 블록과 같은 상자 — 첫 칸 위에 대상 줄(대상 고르기 · 칸 없는 값 · 칸 추가 · 삭제),
  *   칸마다 머리 줄(값 칩 · 값 더하기 · 「문구 없음」 · 칸 삭제) + 그 칸 내용. 칸 머리는 조건 머리처럼 자리(`data-cond-head`)라 툴바가 그 칸을 본다.
  * - 함수조항(조 단위)은 머리 띠 「함수조항 (이름)」 + 🗑 · 그 아래 함수조항의 **모델**(슬롯 · 옵션 자리 · 조건 · 참조, 읽기 전용)을 든 상자다.
  * - 노드 id·8자리 접두를 화면에 내보내지 않는다 (리뷰 #25).
  */
-import { useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 
 import { IconButton, IconCopy, IconTrash } from "@/app/_components/icons";
 import { StaticTable } from "@/app/_components/StaticNodes";
@@ -153,6 +154,7 @@ function CondHead({ ctx, branch, label, first, ownerId }: { ctx: DocCtx; branch:
     );
   }
   const tools = <HeadTools ctx={ctx} branch={branch} first={first} {...(ownerId ? { ownerId } : {})} />;
+  if (edit.headsInPanel) return <CondHeadLine ctx={ctx} branch={branch} label={label} text={text} full={full} tools={tools} />;
   return (
     <div className="ts-doc-cond-head is-edit" data-cond-head={branch.id}>
       {branch.when === undefined ? (
@@ -174,6 +176,39 @@ function CondHead({ ctx, branch, label, first, ownerId }: { ctx: DocCtx; branch:
           tools={tools}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * 편집 모드의 블록 조건 머리 줄 — 읽기용 `IF 조건식` 한 줄 + 끝의 작은 버튼. 식을 누르면 우측 패널 편집 탭에서 고친다 (2026-10-21, 2026-09-28 제자리 편집 번복).
+ * 툴바 「조건식」 · 가지 추가 직후(초점 요청이 이 가지)면 곧바로 편집 탭을 연다.
+ */
+function CondHeadLine({ ctx, branch, label, text, full, tools }: { ctx: DocCtx; branch: BlockBranch; label: string; text: string; full: string; tools: ReactNode }) {
+  const edit = ctx.edit!;
+  const asked = edit.focusRequest === branch.id && branch.when !== undefined;
+  useEffect(() => {
+    if (!asked) return;
+    edit.focusDone();
+    edit.popup({ kind: "condHead", branchId: branch.id, focus: true }, { x: 0, y: 0 });
+  }, [asked, edit, branch.id]);
+  return (
+    <div className="ts-doc-cond-head is-edit" data-cond-head={branch.id}>
+      <div className="ts-cond-rows">
+        <div className="ts-cond-line">
+          {branch.when === undefined ? (
+            <>
+              <span className="ts-cond-badge">{label}</span>
+              <span className="ts-muted">그 밖의 경우</span>
+            </>
+          ) : (
+            <button type="button" className="ts-doc-cond-btn ts-cond-read" title={`${full} — 눌러서 편집 탭에서 고치기`} aria-label={`${label} 조건식 고치기`} onClick={(e) => edit.popup({ kind: "condHead", branchId: branch.id }, anchorOf(e.currentTarget))}>
+              <span className="ts-cond-badge">{label}</span> {branch.when.trim() === "" ? <span className="ts-muted">(조건 없음 — 눌러서 식을 고른다)</span> : text}
+            </button>
+          )}
+          {tools}
+        </div>
+      </div>
     </div>
   );
 }

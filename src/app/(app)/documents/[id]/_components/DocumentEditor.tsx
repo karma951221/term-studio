@@ -13,12 +13,15 @@
  * 가운데 = 그 자리 편집 (2026-09-27):
  * - 가운데에는 **조 하나**만 보인다 — 목차에서 고른 조, 처음은 제1조. 우측 패널 「미리보기」 탭이 같은 조를 고른 상품의 조립 문맥으로 보인다(§3.9).
  * - 조 제목 · 관 제목 · 문장은 그 자리에서 고치고, 초점이 떠나면 편집본에 들어간다(「적용」 단계 없음).
- * - 칩은 누르면 바로 아래에 팝업. 넣기 · 이동 · 복제 · 삭제 · 조건식은 본문 위 **툴바**가 입구다 — 가운데서 마지막으로
- *   누르거나 초점이 간 자리(`place`)로 버튼이 켜지고 꺼진다. 오른쪽 클릭 메뉴는 같은 목록의 지름길(조건 넣기는 툴바에만).
- * - 「조건식」은 팝업 없이 조건 블록(빈 IF 줄)을 세우고, 식은 그 머리 줄에서 그 자리로 고친다 (2026-09-28).
+ * - 칩 · 함수조항 머리 띠 · 조건 머리 줄을 누르면 우측 패널 **「편집」 탭**에 그 고치기 폼이 선다(2026-10-21, 예전 본문 위 팝업).
+ *   넣기 · 이동 · 복제 · 삭제 · 조건식은 본문 위 **툴바**가 입구다 — 가운데서 마지막으로 누르거나 초점이 간 자리(`place`)로 버튼이
+ *   켜지고 꺼진다. 넣기 폼도 편집 탭에 선다. 오른쪽 클릭 메뉴는 같은 목록의 지름길(조건 넣기는 툴바에만).
+ * - 편집 탭 폼은 고친 것을 모았다가 「적용」(넣기 폼은 「넣기」)으로 편집본에 넣는다. 적용하지 않은 변경이 있는 채 다른 것을 고르거나
+ *   저장 · ✕ · 경로 링크를 누르면 확인 카드(적용 / 버리기 / 돌아가기). 고른 것은 본문에 테두리, Esc · 빈 곳 클릭으로 푼다.
+ * - 「조건식」은 팝업 없이 조건 블록(빈 IF 줄)을 세우고 편집 탭에 그 식 폼을 연다. 머리 줄은 읽기용 `IF …` 한 줄이다(2026-10-21).
  * - 화면은 100vh 에 고정되고 목차 · 가운데 · 우측 패널이 각자 스크롤한다.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type MouseEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
@@ -89,7 +92,9 @@ import { EditorToolbar } from "./EditorToolbar";
 import { marksMenuItem, markSelectionOps, useMarksShown } from "./workMarks";
 import { DOCUMENT_TOOLS, allTools, itemsFor, type ToolId } from "./tools";
 import { useBlockDrag } from "./useBlockDrag";
-import { PopupHost, type PopupEnv } from "./Popups";
+import { type PopupEnv } from "./Popups";
+import { EDIT_FORM_ID, EditTab, PendingCard } from "./EditTab";
+import { followUpSpec, isInsertSpec, pickedOf, tabOnEnterEdit, tabOnLeaveEdit, tabOnPick, useEditGuard, type PanelTab, type TabState } from "./editTabRules";
 import { currentPlanOf, currentValueOf, loopsAround } from "./repeatSources";
 import { ContextMenu, Popover } from "./Popover";
 import { RemoveCard } from "./RemoveCard";
@@ -203,7 +208,16 @@ export function DocumentEditor(props: EditorProps) {
   /** 툴바 · 오른쪽 클릭이 짓는 자리 — 가운데서 마지막으로 누르거나 초점이 간 곳. 없거나 지워졌으면 지금 조. */
   const [place, setPlace] = useState<Place>();
   const placeAt = usePlaceGate<Place | undefined>(setPlace);
-  const [pop, setPop] = useState<{ spec: PopupSpec; anchor: Anchor }>();
+  /** 편집 탭이 지금 보이는 폼 — `n` 이 바뀌면 폼을 처음 값으로 다시 그린다(되돌리기 · 적용 뒤 · 새로 고름). */
+  const [pop, setPopState] = useState<{ spec: PopupSpec; n: number }>();
+  const setPop = (spec: PopupSpec | undefined) => {
+    setPopState((prev) => (spec ? { spec, n: (prev?.n ?? 0) + 1 } : undefined));
+    setFormDirty(false);
+  };
+  /** 편집 탭 폼에 적용하지 않은 변경이 있다. */
+  const [formDirty, setFormDirty] = useState(false);
+  const formGuard = useEditGuard(formDirty);
+  const [sideTab, setSideTab] = useState<TabState>({ tab: "preview", before: "preview" });
   const [removing, setRemoving] = useState<{ nodeId: Id; anchor: Anchor }>();
   const [activeCell, setActiveCell] = useState<CellAt>();
   const [focusRequest, setFocusRequest] = useState<Id>();
@@ -413,6 +427,8 @@ export function DocumentEditor(props: EditorProps) {
       }
       setDraft({ baseVersion: fresh.version, state: { tree: fresh.tree, ...(fresh.generalDocumentId ? { generalDocumentId: fresh.generalDocumentId } : {}) }, ops: [] });
       setMode("edit");
+      setSideTab(tabOnEnterEdit);
+      showSide();
       setBanner(undefined);
       setConflict(undefined);
       // 화면에 있던 원본이 낡았으면 읽기 화면도 새로 받는다 — 편집본은 방금 받은 판에서 시작한다
@@ -431,13 +447,14 @@ export function DocumentEditor(props: EditorProps) {
     setMenu(undefined);
     setPop(undefined);
     setActiveCell(undefined);
+    setSideTab(tabOnLeaveEdit);
   };
 
   const save = (confirm = false) => {
     // 문장 칸에 초점이 남아 있으면 먼저 편집본에 넣는다 (초점이 떠날 때 적용된다)
     (document.activeElement as HTMLElement | null)?.blur?.();
     const d = draftRef.current;
-    if (!d) return;
+    if (!d || d.ops.length === 0) return;
     startTransition(async () => {
       const out = await saveDocumentEditAction(doc.id, { baseVersion: d.baseVersion, ops: d.ops, confirm });
       if (out.ok === true) {
@@ -458,8 +475,39 @@ export function DocumentEditor(props: EditorProps) {
     });
   };
 
-  /** 고친 것이 있으면 「고친 내용을 버립니까?」 뒤에, 없으면 바로 (디자인원칙 §1.7). */
-  const leave = (go: () => void) => (dirty ? setDiscard({ go }) : go());
+  /** 고친 것이 있으면 「고친 내용을 버립니까?」 뒤에, 없으면 바로 (디자인원칙 §1.7). 편집 탭에 적용하지 않은 변경이 있으면 그 확인 카드가 먼저. */
+  const leave = (go: () => void) => formGuard.guard(() => ((draftRef.current?.ops.length ?? 0) > 0 ? setDiscard({ go }) : go()));
+
+  // ── 편집 탭 — 고른 것의 폼 (2026-10-21) ──
+  /** 좁은 폭이면(우측 패널이 접혀 숨었으면) 패널을 본문 위에 연다. */
+  const showSide = () => {
+    const side = document.getElementById("ts-l3-side");
+    if (side && getComputedStyle(side).display === "none") setSideOpen(true);
+  };
+  /** 폼을 편집 탭에 연다 — 적용하지 않은 변경이 있으면 확인 카드 뒤에. */
+  const openSpec = (spec: PopupSpec) =>
+    formGuard.guard(() => {
+      setPop(spec);
+      setSideTab(tabOnPick);
+      showSide();
+    });
+  /** 고른 것을 푼다 — 편집 탭은 그대로, 빈 상태. */
+  const clearPick = () => formGuard.guard(() => setPop(undefined));
+  /** 편집 탭 폼이 편집본에 들어갔다 — 넣은 것이면 그것이 고른 것(그 속성 폼), 고치기면 같은 폼을 새 값으로. */
+  const applied = useRef(false);
+  const onApplied = (ops: readonly EditOp[]) => {
+    applied.current = true;
+    const cur = pop?.spec;
+    const next = followUpSpec(ops) ?? (cur && !isInsertSpec(cur) ? cur : undefined);
+    setPop(next && "focus" in next ? { ...next, focus: false } : next);
+  };
+  /** 확인 카드의 「적용」 — 편집 탭 폼을 낸다. 거부되면(빈 칸 · 명령 거부) 폼에 남는다. */
+  const submitEditForm = (): boolean => {
+    const form = document.getElementById(EDIT_FORM_ID) as HTMLFormElement | null;
+    applied.current = false;
+    form?.requestSubmit();
+    return applied.current;
+  };
 
   // 새로고침 · 창 닫기 — 브라우저 경고. 편집본은 로컬에 백업하지 않는다.
   useEffect(() => {
@@ -472,9 +520,13 @@ export function DocumentEditor(props: EditorProps) {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
-  // 화면을 떠나는 링크(경로 · 내비 · 「고치러 가기」)는 고친 것이 있으면 확인을 거친다.
+  // 화면을 떠나는 링크(경로 · 내비 · 「고치러 가기」)는 고친 것이 있으면 확인을 거친다 — 편집 탭에 적용하지 않은 변경만 있어도.
+  const guardRef = useRef(formGuard.guard);
+  useLayoutEffect(() => {
+    guardRef.current = formGuard.guard;
+  });
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty && !formDirty) return;
     const onClick = (event: globalThis.MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
@@ -484,11 +536,30 @@ export function DocumentEditor(props: EditorProps) {
       event.preventDefault();
       event.stopPropagation();
       const href = url.origin === window.location.origin ? `${url.pathname}${url.search}${url.hash}` : url.href;
-      setDiscard({ go: () => (url.origin === window.location.origin ? router.push(href) : window.location.assign(href)) });
+      const go = () => (url.origin === window.location.origin ? router.push(href) : window.location.assign(href));
+      guardRef.current(() => ((draftRef.current?.ops.length ?? 0) > 0 ? setDiscard({ go }) : go()));
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
-  }, [dirty, router]);
+  }, [dirty, formDirty, router]);
+
+  // Esc — 고른 것을 푼다(입력칸 · 문장 칸 · 메뉴 · 확인 카드 안의 Esc 는 그쪽 몫)
+  const clearRef = useRef(clearPick);
+  useLayoutEffect(() => {
+    clearRef.current = clearPick;
+  });
+  useEffect(() => {
+    if (mode !== "edit") return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest?.("input, select, textarea, [contenteditable=true], [contenteditable=plaintext-only], dialog, [role=menu], [role=listbox]")) return;
+      if (document.querySelector("dialog[open], [role=dialog], [role=alertdialog]")) return;
+      clearRef.current();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mode]);
 
   // ── 툴바 · 오른쪽 클릭 메뉴 — 자리(data-*)로 목록을 짓는다 (menus.ts `placeMenu`) ──
   const menuEnv = (): MenuEnv => {
@@ -629,7 +700,7 @@ export function DocumentEditor(props: EditorProps) {
   const runMenu = (item: MenuItem, anchor: Anchor = menuAt.current) => {
     const a = item.action;
     if (a.do === "popup") {
-      setPop({ spec: a.popup, anchor });
+      openSpec(a.popup);
       return;
     }
     if (a.do === "remove") {
@@ -641,8 +712,10 @@ export function DocumentEditor(props: EditorProps) {
     const recorded = applyRecorded(ops);
     if (!recorded) return;
     if (a.focus) setFocusRequest(a.focus);
-    if (a.openChip) setPop({ spec: { kind: "editChip", nodeId: a.openChip }, anchor });
-    else if (!a.focus) focusInserted(recorded);
+    // 넣은 함수조항 · 동적표 블록은 고른 것이 되어 편집 탭에 그 속성 폼 (문장에 넣은 칩은 커서가 칩 뒤로 — 이어 쓴다)
+    const follow = a.openChip ? ({ kind: "editChip", nodeId: a.openChip } as const) : followUpSpec(recorded.filter((op) => op.type === "insert"));
+    if (follow) openSpec(follow);
+    if (!a.openChip && !a.focus) focusInserted(recorded);
     if (a.goArticle) {
       setArt(a.goArticle);
       setPlace({ kind: "article", id: a.goArticle });
@@ -688,7 +761,8 @@ export function DocumentEditor(props: EditorProps) {
     setBox: (nodeId, title, lines) => {
       apply([{ type: "setBox", nodeId, title: title.trim(), lines }]);
     },
-    popup: (spec, anchor) => setPop({ spec, anchor }),
+    popup: (spec) => openSpec(spec),
+    headsInPanel: true,
     focusInline: (at) => setActiveCell("tableId" in at ? at : undefined),
     ...(activeCell ? { activeCell } : {}),
     setActiveCell,
@@ -786,6 +860,8 @@ export function DocumentEditor(props: EditorProps) {
       }
       case "editChip":
         return withPlan(withRow(scopeOf(spec.nodeId), spec.nodeId), spec.nodeId);
+      case "condHead":
+        return withPlan(withRow(scopeOf(spec.branchId), spec.branchId), spec.branchId);
       default:
         return props.condition;
     }
@@ -819,11 +895,8 @@ export function DocumentEditor(props: EditorProps) {
       ? props.generals.find((g) => g.id === props.suggestedGeneralId)?.title
       : undefined;
 
-  // 코드 충돌(이동 충돌) · 형식 오류 줄의 「코드 수정」 — 코드 수정 창을 추천값으로 (ADR-0072 결정 5). 가운데에 그 자리를 여는 것은 줄의 `go`
-  const fixCode = useMemo(
-    (): CodeFix | undefined => (mode === "edit" ? { ids: codeIssueIds, open: (nodeId: Id, at: DOMRect) => setPop({ spec: { kind: "code", nodeId, suggest: true }, anchor: { x: at.left, y: at.bottom, top: at.top } }) } : undefined),
-    [mode, codeIssueIds],
-  );
+  // 코드 충돌(이동 충돌) · 형식 오류 줄의 「코드 수정」 — 편집 탭에 코드 고치기 폼을 추천값으로 (ADR-0072 결정 5). 가운데에 그 자리를 여는 것은 줄의 `go`
+  const fixCode: CodeFix | undefined = mode === "edit" ? { ids: codeIssueIds, open: (nodeId: Id) => openSpec({ kind: "code", nodeId, suggest: true }) } : undefined;
   const panel: PanelData = {
     issues,
     documentTitle: tree.title,
@@ -836,18 +909,23 @@ export function DocumentEditor(props: EditorProps) {
     ...(fixCode ? { fixCode } : {}),
   };
 
+  // 편집 탭의 폼 — 고른 것이 편집본에서 사라졌으면(삭제 · 풀기) 빈 상태
+  const pickedRaw = mode === "edit" && pop ? pickedOf(pop.spec) : undefined;
+  const pickedGone = pickedRaw !== undefined && !index.nodes.has(pickedRaw.id) && !index.branches.has(pickedRaw.id);
+  const pickedSpec = mode === "edit" && pop && !pickedGone ? pop.spec : undefined;
+  const picked = pickedSpec ? pickedRaw : undefined;
+
   const toolbarPlace = placeIn(index);
   const toolbarSections = mode === "edit" ? placeMenu({ tree, ix: index, docKind: doc.kind, newId: randomIds }, toolbarPlace) : [];
 
-  const popAt = (rect: DOMRect): Anchor => ({ x: rect.left, y: rect.bottom, top: rect.top });
   // 「수정 흔적 보기」는 더보기 첫 줄의 체크 항목 — 바의 「가」 아이콘은 툴바 「글자색」과 같아 헷갈렸다 (2026-10-10)
   const marksItem = marksMenuItem(marksShown, setMarksShown);
   const moreItems: MoreMenuItem[] =
     mode === "edit"
       ? [
           marksItem,
-          { label: "템플릿 이름…", onSelect: (rect) => setPop({ spec: { kind: "docTitle" }, anchor: popAt(rect) }) },
-          ...(doc.kind === "special" ? [{ label: "대응 보통약관…", onSelect: (rect: DOMRect) => setPop({ spec: { kind: "general" }, anchor: popAt(rect) }) }] : []),
+          { label: "템플릿 이름…", onSelect: () => openSpec({ kind: "docTitle" }) },
+          ...(doc.kind === "special" ? [{ label: "대응 보통약관…", onSelect: () => openSpec({ kind: "general" }) }] : []),
         ]
       : [marksItem, ...props.moreItems];
 
@@ -931,7 +1009,7 @@ export function DocumentEditor(props: EditorProps) {
                   })
                 }
               />
-              <button type="button" className="primary" disabled={!dirty || pending} onClick={() => save()}>
+              <button type="button" className="primary" disabled={(!dirty && !formDirty) || pending} onClick={() => formGuard.guard(() => save())}>
                 {pending ? "저장 중…" : "저장"}
               </button>
             </>
@@ -972,6 +1050,8 @@ export function DocumentEditor(props: EditorProps) {
           if (activeCell && !target.closest(".ts-doc-table")) setActiveCell(undefined);
           // 자리는 뗄 때 바꾼다 — 누르는 순간 툴바 묶음이 서며 본문이 밀려 누른 것이 빗나가지 않게 (placeGate)
           if (mode === "edit") placeAt.press(placeOf(target));
+          // 빈 곳(글 · 칩 · 버튼 · 입력칸 밖)을 누르면 고른 것을 푼다
+          if (mode === "edit" && pop && e.button === 0 && !target.closest("[contenteditable], button, input, select, textarea, a, label, [role=button], [data-chip], .ts-doc-toolbar, .ts-cell-bar")) clearPick();
         }}
         onFocus={(e) => {
           if (mode !== "edit") return;
@@ -1012,10 +1092,39 @@ export function DocumentEditor(props: EditorProps) {
         )}
       </div>
 
-      <SidePanel docKind={doc.kind} editing={mode === "edit"} data={panel} />
+      <SidePanel
+        docKind={doc.kind}
+        editing={mode === "edit"}
+        data={panel}
+        tab={sideTab.tab}
+        onTab={(tab: PanelTab) => setSideTab((s) => ({ ...s, tab }))}
+        {...(mode === "edit"
+          ? {
+              edit: {
+                dirty: formDirty,
+                content: (
+                  <EditTab
+                    env={popupEnv}
+                    {...(pickedSpec ? { spec: pickedSpec } : {})}
+                    formKey={pop?.n ?? 0}
+                    dirty={formDirty}
+                    onDirty={setFormDirty}
+                    onApplied={onApplied}
+                    onRevert={() => pop && setPop(pop.spec)}
+                    onClear={() => setPop(undefined)}
+                  />
+                ),
+              },
+            }
+          : {})}
+      />
 
       {menu && <ContextMenu x={menu.x} y={menu.y} sections={menu.sections} onPick={pickMenu} onClose={() => setMenu(undefined)} />}
-      {pop && mode === "edit" && <PopupHost env={popupEnv} spec={pop.spec} anchor={pop.anchor} onClose={() => setPop(undefined)} />}
+      {picked && (
+        // 고른 것 — 본문에 테두리 (편집 탭 폼이 고치는 자리)
+        <style>{`.ts-l3-body [${picked.head ? "data-cond-head" : "data-node"}="${CSS.escape(picked.id)}"]{outline:2px solid var(--ts-ink-2);outline-offset:2px;border-radius:2px}`}</style>
+      )}
+      {formGuard.pending && <PendingCard onChoose={(choice) => formGuard.resolve(choice, submitEditForm)} />}
       {removeCard}
 
       {discard ? (
