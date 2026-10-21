@@ -51,7 +51,10 @@ describe("DYN_TABLE_SAMPLES — 견본 다섯", () => {
     ]);
   });
 
-  it("⑤ 갱신형 켬 — 감액 3구간, 기준일이 「최초계약일」", () => {
+  it("⑤ 갱신형 담보 — 기준일 최초계약일 (이름이 (갱신) 지급금액 표로 읽히지 않게)", () => {
+    const s = dynTableSample("renewal");
+    expect(s.label).toBe("갱신형 담보 — 기준일 최초계약일");
+    expect(s.description).toContain("(갱신) 표가 아니라");
     const out = view("renewal");
     expect(out.header.map((c) => c.region)).toEqual(["corner", "first", "middle", "last"]);
     expect(cellText(out.header[1])).toBe("최초계약일부터 1년경과시점 전일 이전");
