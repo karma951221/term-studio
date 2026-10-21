@@ -24,7 +24,7 @@ describe("머리 — 결과 자리 · 원본 종류 · 이동 아이콘 · 닫�
     const panel = screen.getByRole("complementary", { name: "출처" });
     expect((panel).textContent).toMatch(/특별약관 › 제\d+조\(보험금의 지급사유\)/);
     expect(within(panel).getByText("담보약관")).toBeTruthy();
-    expect(within(panel).getByRole("link", { name: /^원본 조 열기/ }).getAttribute("href")).toBe("/documents/s-doc-death?node=s-art-pay");
+    expect(within(panel).getByRole("link", { name: /^원본 조 열기/ }).getAttribute("href")).toBe("/coverages/cov-death"); // 픽스처는 레코드 id 지도가 없다 — 담보 상세로
     expect(within(panel).getByRole("link", { name: /^상품 구성 열기/ }).getAttribute("href")).toBe("/products/prod-alpha/coverages/pc-basic");
     expect(within(panel).queryByRole("link", { name: /미리보기로/ })).toBeNull();
     await userEvent.click(within(panel).getByRole("button", { name: "출처 패널 닫기" }));

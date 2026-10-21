@@ -83,10 +83,12 @@ describe("이동 주소 — 고치러 가기 표(§3.4) 그대로", () => {
     productId: "p1",
     explanation: { target: { document: "special", productCoverageId: "pc1", articleId: "a" }, status: "shown", sources: [{ kind: "coverage", documentId: "doc1", articleId: "a", productCoverageId: "pc1", coverageId: "cov1", decisions: [] }] },
     readOwners: { "sub-1": "pc1" },
+    sources: [{ documentRecordId: "rec1" }],
   } as unknown as SourceView;
 
   it("문면 조 · 함수조항 · 구분자 · 열거값 · 상품 구성", () => {
-    expect(links.source(view, 0)).toBe("/documents/doc1?node=a");
+    expect(links.source(view, 0)).toBe("/documents/rec1?node=a");
+    expect(links.source({ ...view, sources: [{}] } as unknown as SourceView, 0)).toBe("/coverages/cov1");
     expect(links.clause("C0001")).toBe("/functions/C0001");
     expect(links.discriminator("D0001")).toBe("/catalog/D0001");
     expect(links.enumValue("E1", "V01")).toBe("/enums/E1?value=V01");

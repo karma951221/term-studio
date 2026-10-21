@@ -125,10 +125,13 @@ export function argText(arg: ArgRecord, view: Pick<SourceView, "discriminators" 
 
 export const links = {
   /** 원본 조 — 문면 편집기의 그 조, 상품 조 사본이면 상품 보통약관 탭의 그 조. */
-  source(view: Pick<SourceView, "productId" | "explanation">, index: number): string {
+  source(view: Pick<SourceView, "productId" | "explanation" | "sources">, index: number): string | undefined {
     const s = view.explanation.sources[index]!;
     if (s.kind === "copy") return `/products/${view.productId}?tab=general&art=${encodeURIComponent(s.articleId)}`;
-    return `/documents/${s.documentId}?node=${encodeURIComponent(s.articleId)}`;
+    const record = view.sources[index]?.documentRecordId;
+    // 문서를 모르면 담보 상세(거기서 「담보약관 열기」) — 고치러 가기 표(§3.4)와 같다
+    if (!record) return s.coverageId ? `/coverages/${s.coverageId}` : undefined;
+    return `/documents/${record}?node=${encodeURIComponent(s.articleId)}`;
   },
   clause: (code: Code) => `/functions/${code}`,
   discriminator: (code: Code) => `/catalog/${code}`,

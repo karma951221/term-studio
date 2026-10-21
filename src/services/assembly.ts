@@ -152,14 +152,17 @@ export function createAssemblyService(db: Db, services: AssemblyServices): Assem
     const specialDocuments = new Map<Id, DocumentNode>();
     // 담보약관의 대응 보통약관 — 절 형태 블록의 wrongGeneral 검사 (기능/조립산출 §3.12)
     const coverageGenerals = new Map<Id, Id>();
+    // 트리 id → 레코드 id — 출처 패널의 「원본 조 열기」 주소 (조립은 읽지 않는다)
+    const documentIds = new Map<Id, Id>();
     for (const d of docs) {
+      documentIds.set(d.tree.id, d.id);
       if (d.kind === "general") generalDocuments.set(d.id, d.tree);
       else if (d.ownerId) {
         specialDocuments.set(d.ownerId, d.tree);
         if (d.generalDocumentId) coverageGenerals.set(d.ownerId, d.generalDocumentId);
       }
     }
-    return { catalog: defs, enums, attributeKinds, clauses, appendices, boxes, dynTables, generalDocuments, specialDocuments, coverageGenerals, coverageCategories: coverageMeta.categories, coverageCodes: coverageMeta.codes };
+    return { catalog: defs, enums, attributeKinds, clauses, appendices, boxes, dynTables, generalDocuments, specialDocuments, coverageGenerals, coverageCategories: coverageMeta.categories, coverageCodes: coverageMeta.codes, documentIds };
   }
 
   /** 유효 조합에 등장하는 선택지 합집합 — 축 순(종 → 형) · 번호 순. 값은 한 번에 읽는다. */

@@ -24,6 +24,8 @@ import type { Booklet, ErrorNode, MasterBundle, ProductInput, RenderedArticle, R
 export interface SourceViewSource {
   /** 모델링 원본 조 — 사본이면 사본 조. 찾지 못하면 없다. */
   article?: ArticleNode;
+  /** 원본 문서 레코드 id — 문면 편집기 주소(`/documents/<id>`). 모르면 없다. */
+  documentRecordId?: Id;
   /** 원본 문서 제목 — 템플릿 · 담보약관 문서. */
   documentTitle: string;
   /** 원본 종류 표기 — 템플릿 · 사본 · 담보약관. */
@@ -173,10 +175,12 @@ export function buildSourceView(master: MasterBundle, product: ProductInput, exp
 
   const sources = explanation.sources.map((s: ArticleSource): SourceViewSource => {
     if (s.kind !== "coverage") {
-      const doc = master.generalDocuments.get(s.documentId);
+      // 보통약관 지도는 레코드 id 로 매겨져 있다 — 원본의 documentId 는 트리 id 라 상품의 템플릿 id 로 찾는다
+      const doc = product.product.generalDocumentId === undefined ? undefined : master.generalDocuments.get(product.product.generalDocumentId);
       const article = s.kind === "copy" ? product.product.articleCopies?.get(s.articleId) : doc ? modelArticles(doc.children).find((a) => a.id === s.articleId) : undefined;
       const ordinal = doc ? modelArticles(doc.children).findIndex((a) => a.id === s.articleId) + 1 : 0;
-      return { ...(article ? { article } : {}), documentTitle: doc?.title ?? "", kindLabel: s.kind === "copy" ? "사본" : "템플릿", ...(ordinal > 0 ? { ordinal } : {}), tabLabel: doc?.title ?? "" };
+      const record = master.documentIds?.get(s.documentId) ?? product.product.generalDocumentId;
+      return { ...(article ? { article } : {}), ...(record ? { documentRecordId: record } : {}), documentTitle: doc?.title ?? "", kindLabel: s.kind === "copy" ? "사본" : "템플릿", ...(ordinal > 0 ? { ordinal } : {}), tabLabel: doc?.title ?? "" };
     }
     const doc = s.coverageId === undefined ? undefined : master.specialDocuments.get(s.coverageId);
     const list = doc ? modelArticles(doc.children) : [];
@@ -189,7 +193,8 @@ export function buildSourceView(master: MasterBundle, product: ProductInput, exp
       const role = s.productCoverageId !== undefined && baseIds.has(s.productCoverageId) ? "기본계약" : sectioned ? "블록" : "특약";
       fillLine = `${sectioned ? "제1절" : "보통약관"} ${place} 자리 ← ${role} 「${name}」 담보약관${index >= 0 ? ` 제${index + 1}조` : ""} (${FILL_WORD[s.fills.via]})`;
     }
-    return { ...(article ? { article } : {}), documentTitle: doc?.title ?? "", kindLabel: "담보약관", ...(index >= 0 ? { ordinal: index + 1 } : {}), tabLabel: name, ...(fillLine ? { fillLine } : {}) };
+    const record = master.documentIds?.get(s.documentId);
+    return { ...(article ? { article } : {}), ...(record ? { documentRecordId: record } : {}), documentTitle: doc?.title ?? "", kindLabel: "담보약관", ...(index >= 0 ? { ordinal: index + 1 } : {}), tabLabel: name, ...(fillLine ? { fillLine } : {}) };
   });
 
   // 이름표 — 원본 트리 · 기록이 부르는 것만

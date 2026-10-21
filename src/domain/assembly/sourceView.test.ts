@@ -118,6 +118,18 @@ describe("buildSourceView — 원본 · 대치 한 줄 · 이름표", () => {
     expect(v.linkedLabel).toMatch(/^제\d+조\(/);
   });
 
+  it("문서 레코드 id 와 트리 id 가 다를 때 — 템플릿은 상품의 템플릿 id 로 찾고, 원본 문서 화면 주소는 레코드 id(`documentIds`)", () => {
+    const g = input.generalDocuments.get("g-doc")!;
+    const x = { ...input, generalDocuments: new Map([["rec-g", g]]), documentIds: new Map([["g-doc", "rec-g"], ["s-doc-death", "rec-s"]]), product: { ...input.product, generalDocumentId: "rec-g" } };
+    const b = assemble(x, x);
+    const v = buildSourceView(x, x, explainArticle(x, x, { document: "general", articleId: "g-art-def" }), b);
+    expect(v.sources[0].article?.id).toBe("g-art-def");
+    expect(v.sources[0].documentTitle).toBe("알파Plus 보통약관");
+    expect(v.sources[0].documentRecordId).toBe("rec-g");
+    const s = buildSourceView(x, x, explainArticle(x, x, { document: "special", productCoverageId: "pc-basic", articleId: "s-art-lapse" }), b);
+    expect(s.sources[0].documentRecordId).toBe("rec-s");
+  });
+
   it("상품 이름 · id 를 싣는다 (상품 구성 바로가기)", () => {
     const v = view({ document: "general", articleId: "g-art-def" });
     expect(v.productId).toBe("prod-alpha");
