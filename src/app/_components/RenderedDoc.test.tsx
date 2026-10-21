@@ -77,3 +77,28 @@ describe("절 형태의 제2절 보장조항 (기능/조립산출 §3.8) — 블
     expect(renderToStaticMarkup(<RenderedBlocksView groups={[]} />)).toContain("블록이 없다.");
   });
 });
+
+describe("출처 패널 자리 (기능/조립산출 §4.1 · §3.7) — 고른 조 강조 · 생략 자리 · 값 조각 id", () => {
+  it("조마다 data-article, 글 조각마다 data-n(노드 id) — 누른 자리를 화면이 읽는다", () => {
+    const html = renderToStaticMarkup(<RenderedDoc doc={doc([{ label: "", text: "가" }])} />);
+    expect(html).toContain('data-article="a1"');
+    expect(html).toContain('<span data-n="t0">가</span>');
+    expect(html).toContain('data-document="general"');
+  });
+
+  it("고른 조만 is-selected — 특약은 상품담보가 같을 때만", () => {
+    expect(renderToStaticMarkup(<RenderedDoc doc={doc([{ label: "", text: "가" }])} selection={{ document: "general", articleId: "a1" }} />)).toContain("ts-doc-article is-selected");
+    const special = { ...doc([{ label: "", text: "가" }]), document: "special" as const, ownerId: "pc1" };
+    expect(renderToStaticMarkup(<RenderedDoc doc={special} selection={{ document: "special", ownerId: "pc2", articleId: "a1" }} />)).not.toContain("is-selected");
+    expect(renderToStaticMarkup(<RenderedDoc doc={special} selection={{ document: "special", ownerId: "pc1", articleId: "a1" }} />)).toContain("is-selected");
+  });
+
+  it("생략 자리 — 앞 결과 조 뒤 · 문서 맨 앞, 번호 없는 회색 한 줄", () => {
+    const html = renderToStaticMarkup(
+      <RenderedDoc doc={doc([{ label: "", text: "가" }])} omissions={[{ articleId: "x0", title: "앞", note: "보통약관 제1조와 같음" }, { articleId: "x1", title: "보험금의 청구", afterId: "a1", note: "보통약관 제12조와 같음" }]} />,
+    );
+    expect(html.indexOf('data-omitted-article="x0"')).toBeLessThan(html.indexOf('data-article="a1"'));
+    expect(html.indexOf('data-omitted-article="x1"')).toBeGreaterThan(html.indexOf('data-article="a1"'));
+    expect(html).toContain("(생략) 보험금의 청구 — 보통약관 제12조와 같음");
+  });
+});
