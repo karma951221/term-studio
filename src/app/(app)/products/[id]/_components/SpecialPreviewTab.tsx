@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import { IssueList } from "@/app/_components/IssueList";
-import { RenderedDoc } from "@/app/_components/RenderedDoc";
+import { RenderedDoc, type DocOmission } from "@/app/_components/RenderedDoc";
+import { OmittedToggle, type ScreenPanel } from "@/app/_components/sourcePanel/PanelHost";
 import { rejectionMessage } from "@/app/_lib/rejection";
 import type { SpecialPreview } from "@/domain/assembly";
 import type { EnumDef } from "@/domain/catalog";
@@ -30,10 +31,14 @@ export interface SpecialPreviewTabProps {
   boxes: readonly Box[];
   enums?: readonly EnumDef[];
   discriminators: readonly { code: string; label: string }[];
+  /** 출처 패널 (기능/조립산출 §4.2) — URL 상태와 열렸으면 내용. 오른쪽 고정 패널(네 번째 칸). */
+  panel?: ScreenPanel;
+  /** 상품담보 id → 생략 자리(회색 한 줄) — 「생략 자리 보기」 끔이면 비어 있다. */
+  omissions?: ReadonlyMap<Id, readonly DocOmission[]>;
 }
 
 /** 오른쪽 패널 한 건 — 머리 「오류 e / 조 n」 · 오류 목록 · 문면. */
-function PreviewBody({ productId, preview }: { productId: Id; preview: Result<SpecialPreview> | undefined }) {
+function PreviewBody({ productId, preview, panel, omissions }: { productId: Id; preview: Result<SpecialPreview> | undefined; panel?: ScreenPanel; omissions?: readonly DocOmission[] }) {
   if (!preview) return <p className="ts-muted">미리볼 수 없다.</p>;
   if (!preview.ok) return <p className="ts-muted">미리볼 수 없다 — {rejectionMessage(preview)}</p>;
   const errorCount = preview.value.issues.filter((i) => i.severity !== "warning").length;
@@ -45,10 +50,21 @@ function PreviewBody({ productId, preview }: { productId: Id; preview: Result<Sp
       <p className="ts-form-hint ts-dim">
         별표 번호는 이 특약만의 임시 번호 — 책자 번호는 <Link href={`/products/${productId}/preview`}>조립 미리보기</Link>
       </p>
+      {panel && (
+        <div className="ts-count" style={{ margin: "0 0 8px" }}>
+          <OmittedToggle state={panel.state} own={["pc"]} />
+        </div>
+      )}
       <IssueList issues={preview.value.issues} />
-      <RenderedDoc doc={preview.value.doc} />
+      <RenderedDoc doc={preview.value.doc} selection={selectionOf(panel)} omissions={omissions} />
     </>
   );
+}
+
+/** 출처 패널이 연 조 — 본문에서 강조한다. */
+function selectionOf(panel: ScreenPanel | undefined) {
+  const t = panel?.state.target;
+  return t?.document === "special" ? { document: "special" as const, ownerId: t.productCoverageId, articleId: t.articleId } : undefined;
 }
 
 /**
@@ -58,7 +74,7 @@ function PreviewBody({ productId, preview }: { productId: Id; preview: Result<Sp
  * (읽기 전용 — 고치는 곳은 담보약관 템플릿 화면), 오른쪽은 그 담보의 **상품담보 선택기** + 고른 한 건의 조립 결과
  * (보통약관 + 준용까지 계산). 담보 모델은 상품담보마다 같아 가운데는 그대로 두고 오른쪽만 바꾼다 — 서버 왕복 없음.
  */
-export function SpecialPreviewTab({ productId, groups, selected, template, previews, clauses, appendices, boxes, enums, discriminators }: SpecialPreviewTabProps) {
+export function SpecialPreviewTab({ productId, groups, selected, template, previews, clauses, appendices, boxes, enums, discriminators, panel, omissions }: SpecialPreviewTabProps) {
   if (groups.length === 0 || !selected) {
     return (
       <div className="ts-terms-focus">
@@ -77,7 +93,7 @@ export function SpecialPreviewTab({ productId, groups, selected, template, previ
   const panes: SpecialCoveragePane[] = group.productCoverages.map((pc) => ({
     id: pc.id,
     name: pc.name,
-    body: <PreviewBody productId={productId} preview={previews.get(pc.id)} />,
+    body: <PreviewBody productId={productId} preview={previews.get(pc.id)} {...(panel ? { panel } : {})} {...(omissions?.get(pc.id) ? { omissions: omissions.get(pc.id)! } : {})} />,
   }));
 
   return (
@@ -127,7 +143,7 @@ export function SpecialPreviewTab({ productId, groups, selected, template, previ
             <p className="ts-muted">이 담보에는 담보약관 템플릿이 없다 — 담보 화면에서 만든다.</p>
           )}
         </section>
-        <SpecialCoveragePanes productId={productId} panes={panes} initialId={selected.pc.id} />
+        <SpecialCoveragePanes productId={productId} panes={panes} initialId={selected.pc.id} {...(panel ? { panel } : {})} />
       </div>
     </div>
   );

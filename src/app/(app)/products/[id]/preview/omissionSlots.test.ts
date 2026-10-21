@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { assemble, explainArticle, type Booklet, type FirstSectionRecord } from "@/domain/assembly";
+import { assemble, assembleSpecial, explainArticle, specialAsBooklet, type Booklet, type FirstSectionRecord } from "@/domain/assembly";
 import { alphaPlusFixture } from "@/domain/assembly/fixture";
 import type { DocumentNode } from "@/domain/document";
 import { titleNodes } from "@/domain/document/title";
@@ -42,6 +42,18 @@ describe("특약 조 생략 — 생략 판정 기록", () => {
 
   it("준용 · 통째는 자리를 끼우지 않는다(준용 문구로 본문에 남는다)", () => {
     for (const o of booklet.omitted.filter((x) => x.disposition !== "omitted")) expect(slots.get(o.productCoverageId)?.some((s) => s.articleId === o.articleId) ?? false).toBe(false);
+  });
+});
+
+describe("특약 한 건 미리보기(특별약관 탭 · 상품담보 미리보기)도 책자와 같은 자리 — specialAsBooklet", () => {
+  it("상품담보마다 assembleSpecial 을 책자 모양으로 바꿔 끼운 자리가 책자의 그 상품담보 자리와 같다", () => {
+    const whole = omissionSlots(booklet, input.specialDocuments, coverageOf);
+    expect(whole.size).toBeGreaterThan(0);
+    for (const pc of whole.keys()) {
+      const r = assembleSpecial(input, input, pc);
+      if (!r.ok) throw new Error("조립");
+      expect(omissionSlots(specialAsBooklet(r.value), input.specialDocuments, coverageOf).get(pc)).toEqual(whole.get(pc));
+    }
   });
 });
 

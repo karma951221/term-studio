@@ -8,7 +8,10 @@ import { Confirm } from "@/app/_components/Confirm";
 import { ErrorBanner } from "@/app/_components/ErrorBanner";
 import { ENTITY_LABEL } from "@/app/_lib/labels";
 import { previewOutcome, rejectionMessage } from "@/app/_lib/rejection";
-import { bookletForm } from "@/domain/assembly";
+import type { DocOmission } from "@/app/_components/RenderedDoc";
+import type { SourcePanelContent } from "@/app/_components/sourcePanel/SourcePanel";
+import { parsePanelQuery } from "@/app/_components/sourcePanel/query";
+import { bookletForm, specialAsBooklet, type ExplainTarget } from "@/domain/assembly";
 import { articleRefLabel, collectRefs, type NodeNumber } from "@/domain/document";
 import type { Id } from "@/domain/types";
 import { CATEGORY_TITLE_FIELD, COVERAGE_CATEGORY_ENUM } from "@/domain/coverage";
@@ -26,6 +29,7 @@ import { ProductTabs } from "./_components/ProductTabs";
 import { SpecialPreviewTab } from "./_components/SpecialPreviewTab";
 import { confirmProductGeneralDocumentAction, deleteProductAction, removePlanAction, removePlanOptionAction } from "../actions";
 import { linkColumns } from "../verdictView";
+import { omissionSlots } from "./preview/omissionSlots";
 import { blockRefChoices, copyLockNotice, legacyProductTabRedirect, productDetailPath, productTabOf, resolveSpecialSelection, specialCoverageGroups } from "../lib";
 
 export const dynamic = "force-dynamic";
@@ -46,14 +50,20 @@ export default async function ProductDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; sub?: string; error?: string; confirm?: string; option?: string; field?: string; art?: string; pc?: string; cov?: string; mq?: string; mpage?: string; bq?: string; bpage?: string }>;
+  searchParams: Promise<{ tab?: string; sub?: string; error?: string; confirm?: string; option?: string; field?: string; art?: string; pc?: string; cov?: string; mq?: string; mpage?: string; bq?: string; bpage?: string; article?: string; node?: string; omitted?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
   const legacy = legacyProductTabRedirect(id, sp);
   if (legacy) redirect(legacy);
   const tab = productTabOf(sp.tab);
+  // 출처 패널 (기능/조립산출 §4.2) — 보통약관 탭 `?article=` · 특별약관 탭 `?article=&pc=`(pc 는 고른 상품담보와 같다). 실시간이라 지금 입력으로 설명한다
+  const panel = parsePanelQuery(sp);
   const services = getServices();
+  const explainLive = async (target: ExplainTarget): Promise<SourcePanelContent> => {
+    const r = await services.assembly.explainLive(id, target);
+    return r.ok ? { state: "ok", view: r.value } : { state: "error", message: r.rejection.reason === "notFound" ? "찾을 수 없습니다 — 상품" : "출처를 계산하지 못했습니다" };
+  };
   const product = await services.product.getProduct(id);
   if (!product) {
     return (
@@ -210,6 +220,21 @@ export default async function ProductDetailPage({
       ])
     : [undefined, []];
 
+  // 특별약관 탭의 출처 패널 · 생략 자리 — 고른 담보의 상품담보일 때만 (선택기가 서버 없이 바꿔 붙이므로 패널도 그 상품담보에서만 선다)
+  const specialTarget = tab === "special" && panel.target?.document === "special" && specialSelected?.group.productCoverages.some((pc) => pc.id === (panel.target as Extract<ExplainTarget, { document: "special" }>).productCoverageId) ? panel.target : undefined;
+  const specialPanel = specialTarget ? await explainLive(specialTarget) : undefined;
+  const specialOmissions = new Map<Id, DocOmission[]>();
+  if (tab === "special" && panel.showOmitted && specialTemplate && specialSelected) {
+    const coverageId = specialSelected.group.coverageId;
+    for (const [pcId, r] of specialPreviewList) {
+      if (!r.ok) continue;
+      const slots = omissionSlots(specialAsBooklet(r.value), new Map([[coverageId, specialTemplate.tree]]), new Map([[pcId, coverageId]])).get(pcId);
+      if (slots) specialOmissions.set(pcId, slots);
+    }
+  }
+  // 보통약관 탭의 출처 패널 — 미리보기 패널 안에서 한 겹 덮는다
+  const generalPanel = tab === "general" && gid && panel.target?.document === "general" ? await explainLive(panel.target) : undefined;
+
   let confirmNode: ReactNode = null;
   const c = sp.confirm;
   if (c === "product") {
@@ -343,6 +368,7 @@ export default async function ProductDetailPage({
           booklet={booklet}
           bookletNote={bookletNote}
           articleId={sp.art}
+          panel={{ ...(generalPanel ? { content: generalPanel } : {}), state: generalPanel ? panel : { showOmitted: panel.showOmitted } }}
           confirm={c}
           confirmNode={confirmNode}
         />
@@ -360,6 +386,8 @@ export default async function ProductDetailPage({
           boxes={boxes}
           enums={enumsList}
           discriminators={discriminators.map((d) => ({ code: d.code, label: d.label }))}
+          panel={{ ...(specialPanel ? { content: specialPanel } : {}), state: specialTarget ? panel : { showOmitted: panel.showOmitted } }}
+          omissions={specialOmissions}
         />
       )}
     </ProductEditProvider>

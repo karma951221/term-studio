@@ -6170,12 +6170,39 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
   gap: 16px;
   align-items: start;
 }
-.ts-preview-layout .ts-doc-article[data-article],
-.ts-preview-layout .ts-doc-omitted {
+.ts-src-clicks .ts-doc-article[data-article],
+.ts-src-clicks .ts-doc-omitted {
   cursor: pointer;
 }
-.ts-preview-layout .ts-doc-article[data-article]:hover {
+.ts-src-clicks .ts-doc-article[data-article]:hover {
   background: var(--ts-surface-2);
+}
+/* 한 겹 덮기 (§4.2) — 보통약관 탭 미리보기 패널 · 문면 편집기 미리보기 탭: 패널이 그 자리를 채운다(테두리 · 고정은 바깥 패널 것) */
+.ts-src-overlay > .ts-src-panel {
+  position: static;
+  max-height: none;
+  overflow: visible;
+  padding: 4px 0 0;
+  border: 0;
+}
+/* 특별약관 탭 (§4.2) — 오른쪽 고정 패널이 네 번째 칸으로 선다, 나머지 세 칸이 좁아진다 */
+.ts-terms-panels:has(> .ts-src-panel) {
+  grid-template-columns: minmax(150px, 0.8fr) 1.5fr 1.5fr minmax(320px, 400px);
+}
+.ts-terms-panels > .ts-src-panel {
+  position: static;
+  height: calc(100vh - 230px);
+  min-height: 420px;
+  max-height: none;
+}
+@media (max-width: 1100px) {
+  .ts-terms-panels:has(> .ts-src-panel) {
+    grid-template-columns: 1fr;
+  }
+  .ts-terms-panels > .ts-src-panel {
+    height: auto;
+    min-height: 0;
+  }
 }
 .ts-doc-article.is-selected,
 .ts-doc-omitted.is-selected {

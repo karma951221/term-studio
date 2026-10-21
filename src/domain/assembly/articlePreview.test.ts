@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DocumentNode } from "../document/nodes";
-import { previewArticle } from "./articlePreview";
+import { previewArticle, previewSourceView } from "./articlePreview";
 import { assemble } from "./booklet";
 import { alphaBaseDocument, alphaDeathDocument, alphaGeneralDocument, alphaPlusFixture } from "./fixture";
 import type { AssemblyInput, RenderedArticle, RenderedDoc, RenderedInline } from "./types";
@@ -119,5 +119,38 @@ describe("previewArticle — 저작 화면 미리보기: 고른 상품 문맥으
     const input = fx();
     const none: AssemblyInput = { ...input, product: { ...input.product, generalDocumentId: undefined } };
     expect(run(none, { document: "general", tree: alphaGeneralDocument() }, "g-art-def").kind).toBe("unavailable");
+  });
+});
+
+describe("previewSourceView — 저작 화면 미리보기 탭의 출처 패널: 편집 중인 글로 (기능/문면 §3.9 · 조립산출 §4.2)", () => {
+  const explain = (input: AssemblyInput, target: Parameters<typeof previewSourceView>[2], articleId: string) =>
+    previewSourceView(input, { product: input.product, coverages: input.coverages }, target, articleId);
+
+  it("담보약관 — 편집본 트리를 그 담보 자리에 끼워 설명한다: 원본 조 · 결과 값 조각이 편집본", () => {
+    const tree = alphaDeathDocument();
+    const pay = tree.children[0];
+    if (pay.kind !== "article" || pay.children[0].kind !== "paragraph") throw new Error("픽스처 모양");
+    const first = pay.children[0].children[0];
+    if (first.kind !== "text") throw new Error("픽스처 모양");
+    first.text = "편집 중인 회사는 피보험자가 ";
+    const r = explain(fx(), { document: "special", productCoverageId: "pc-addon", tree }, "s-art-pay");
+    expect(r.kind).toBe("ok");
+    if (r.kind !== "ok") return;
+    expect(r.view.explanation.target).toEqual({ document: "special", productCoverageId: "pc-addon", articleId: "s-art-pay" });
+    expect(r.view.sources[0].article).toBe(pay);
+    expect(Object.values(r.view.values)).toContain("편집 중인 회사는 피보험자가 ");
+  });
+
+  it("보통약관 — 편집본 템플릿 트리를 그 상품의 보통약관 자리에 끼운다", () => {
+    const tree = alphaGeneralDocument();
+    const r = explain(fx(), { document: "general", tree }, "g-art-def");
+    expect(r.kind === "ok" && r.view.sources[0].article).toBe(tree.children.find((c) => c.kind === "article" && c.id === "g-art-def"));
+  });
+
+  it("없는 상품담보 · 보통약관을 쓰지 않는 상품은 설명할 수 없다", () => {
+    expect(explain(fx(), { document: "special", productCoverageId: "pc-nope", tree: alphaDeathDocument() }, "s-art-pay").kind).toBe("unavailable");
+    const input = fx();
+    const none: AssemblyInput = { ...input, product: { ...input.product, generalDocumentId: undefined } };
+    expect(explain(none, { document: "general", tree: alphaGeneralDocument() }, "g-art-def").kind).toBe("unavailable");
   });
 });

@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { assemble } from "./booklet";
 import { explainArticle, type ExplainTarget } from "./explain";
 import { alphaPlusFixture } from "./fixture";
-import { buildSourceView, locateRendered, renderedValues } from "./sourceView";
+import { buildSourceView, liveSourceView, locateRendered, renderedValues } from "./sourceView";
 import type { RenderedArticle } from "./types";
 
 const input = alphaPlusFixture();
@@ -133,5 +133,17 @@ describe("buildSourceView — 원본 · 대치 한 줄 · 이름표", () => {
   it("상품 이름 · id 를 싣는다 (상품 구성 바로가기)", () => {
     const v = view({ document: "general", articleId: "g-art-def" });
     expect(v.productId).toBe("prod-alpha");
+  });
+});
+
+describe("liveSourceView — 실시간 화면의 출처 재료 (기능/조립산출 §4.2)", () => {
+  it("설명 모드 한 번 — 값 조각까지 buildSourceView(explainArticle, assemble) 와 같다", () => {
+    for (const t of [
+      { document: "special", productCoverageId: "pc-basic", articleId: "s-art-pay" },
+      { document: "general", articleId: "g-art-pay" },
+      { document: "general", articleId: "g-art-def" },
+    ] as ExplainTarget[]) {
+      expect(liveSourceView(input, input, t)).toEqual(view(t));
+    }
   });
 });

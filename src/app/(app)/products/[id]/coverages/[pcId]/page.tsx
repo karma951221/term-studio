@@ -4,19 +4,33 @@ import type { ReactNode } from "react";
 import { AssemblyCheckLine } from "@/app/_components/AssemblyCheckLine";
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { IssueList } from "@/app/_components/IssueList";
-import { RenderedDoc } from "@/app/_components/RenderedDoc";
+import { RenderedDoc, type DocSelection } from "@/app/_components/RenderedDoc";
+import { OmittedToggle, PreviewPanelHost } from "@/app/_components/sourcePanel/PanelHost";
+import type { SourcePanelContent } from "@/app/_components/sourcePanel/SourcePanel";
+import { panelQuery, parsePanelQuery, pendingPanel } from "@/app/_components/sourcePanel/query";
 import { ValueForm } from "@/app/_components/ValueForm";
 import { ENTITY_LABEL } from "@/app/_lib/labels";
+import { specialAsBooklet } from "@/domain/assembly";
+import type { DocumentNode } from "@/domain/document";
 import { buildForm, type SnapshotContext } from "@/forms";
 import { currentActor, getServices } from "@/lib/services";
 
 import { writeSnapshotValuesAction } from "../../../actions";
 import { productDetailPath, type ProductTab } from "../../../lib";
+import { omissionSlots } from "../../preview/omissionSlots";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProductCoverageDetailPage({ params }: { params: Promise<{ id: string; pcId: string }> }) {
+/**
+ * 상품담보 값 화면 + 상품담보 미리보기(실시간 — 저장하지 않음).
+ *
+ * 출처 패널 (기능/조립산출 §4.2 · ADR-0092): 미리보기의 조를 누르면 미리보기 오른쪽 고정 패널 — URL `?article=<조 id>&pc=<상품담보 id>[&node=]`
+ * (책자 미리보기와 같은 쿼리). 본문과 같은 지금 입력으로 설명하므로 오래된 결과 차단이 없다(`assembly.explainLive`).
+ * 생략된 조는 원래 자리에 회색 한 줄(「생략 자리 보기」 `&omitted=off` 로 끔), 「평가 대기」 목록의 「미리보기에서 보기」는 그 조 패널 + 분기 강조.
+ */
+export default async function ProductCoverageDetailPage({ params, searchParams }: { params: Promise<{ id: string; pcId: string }>; searchParams?: Promise<{ article?: string; pc?: string; node?: string; omitted?: string }> }) {
   const { id, pcId } = await params;
+  const panel = parsePanelQuery((await searchParams) ?? {});
   const services = getServices();
   await currentActor();
 
@@ -38,6 +52,19 @@ export default async function ProductCoverageDetailPage({ params }: { params: Pr
     services.product.coverageCompleteness(pcId),
     services.product.getSnapshotMasterValues(pcId),
   ]);
+  // 출처 패널 — 지금 입력으로 설명 (본문도 지금 계산이라 오래된 결과가 없다)
+  let content: SourcePanelContent | undefined;
+  if (panel.target) {
+    const r = await services.assembly.explainLive(id, panel.target);
+    content = r.ok ? { state: "ok", view: r.value } : { state: "error", message: r.rejection.reason === "notFound" ? "찾을 수 없습니다 — 상품" : "출처를 계산하지 못했습니다" };
+  }
+  const selection: DocSelection | undefined = panel.target?.document === "special" ? { document: "special", ownerId: panel.target.productCoverageId, articleId: panel.target.articleId } : undefined;
+  // 생략 자리 — 특약 조 생략 · 제1절 생략/분리 블록 조를 담보약관 모델 순서로 끼운다 (책자 미리보기와 같은 재료)
+  let omissions: ReturnType<typeof omissionSlots> | undefined;
+  if (panel.showOmitted && preview.ok) {
+    const doc = await services.document.findByCoverage(pc.coverageId);
+    omissions = doc ? omissionSlots(specialAsBooklet(preview.value), new Map<string, DocumentNode>([[pc.coverageId, doc.tree]]), new Map([[pcId, pc.coverageId]])) : undefined;
+  }
   /** 돌아갈 탭 — 기본계약이든 특약이든 상품담보 탭이다 (기능/상품 §3.8 · 2026-09-28). */
   const backTab: ProductTab = "coverages";
   const enumLookup = (code: string) => enumsList.find((e) => e.code === code);
@@ -129,11 +156,23 @@ export default async function ProductCoverageDetailPage({ params }: { params: Pr
         <p className="ts-muted">지금 계산한 결과 (저장하지 않음)</p>
         {preview.ok ? (
           <>
-            {/* 평가 대기 목록의 「미리보기에서 보기」 — 이 화면은 출처 패널 전(3단계)이라 아래 미리보기의 그 조로 */}
-            <AssemblyCheckLine issues={preview.value.issues} pending={preview.value.pending} viewHref={(p) => (p.at.articleId ? `#node-${p.at.articleId}` : undefined)} />
+            {/* 평가 대기 목록의 「미리보기에서 보기」 — 그 조의 출처 패널 + 그 분기 강조, 미리보기의 그 조로 내려간다 */}
+            <AssemblyCheckLine
+              issues={preview.value.issues}
+              pending={preview.value.pending}
+              viewHref={(p) => {
+                const q = pendingPanel(p);
+                return q?.target ? `${panelQuery({ ...q, showOmitted: panel.showOmitted })}#node-${q.target.articleId}` : undefined;
+              }}
+            />
             {!preview.value.complete && <p className="ts-error-banner">완성본 아님 — 아래 오류를 확인하세요.</p>}
             <IssueList issues={preview.value.issues} />
-            <RenderedDoc doc={preview.value.doc} />
+            <div className="ts-count" style={{ margin: "0 0 8px" }}>
+              <OmittedToggle state={panel} />
+            </div>
+            <PreviewPanelHost content={content} state={panel}>
+              <RenderedDoc doc={preview.value.doc} selection={selection} omissions={omissions?.get(pcId)} />
+            </PreviewPanelHost>
           </>
         ) : (
           <p className="ts-error-banner">{preview.rejection.reason}</p>

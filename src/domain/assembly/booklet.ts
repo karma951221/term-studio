@@ -825,7 +825,19 @@ export function assembleSpecial(master: MasterBundle, product: ProductInput, pro
   }
   const rendered = block ? { ...renderBlock(block, general, appendices, sectioned!.groupIssues.get(productCoverageId)), omitted: [] } : { ...renderSpecial(c, special!, general, appendices, specialPositionOf(form)), omitted: special!.omitted };
   issues.push(...rendered.issues);
-  return ok({ doc: rendered.doc, general: renderedGeneral, appendices, issues, complete: completeOf(issues), omitted: rendered.omitted, trace, pending: pendingOf(issues, s) });
+  return ok({
+    doc: rendered.doc,
+    general: renderedGeneral,
+    appendices,
+    issues,
+    complete: completeOf(issues),
+    omitted: rendered.omitted,
+    trace,
+    pending: pendingOf(issues, s),
+    form: form.form,
+    ...(block ? { block: true as const } : {}),
+    ...(sectioned ? { firstSection: sectioned.firstSection } : {}),
+  });
 }
 
 /** 보통약관 미리보기 — 그 상품의 보통약관 한 벌만 조립한다 (문면 저작 화면 미리보기, 기능/문면 §3.9). 템플릿을 고르지 않았으면 undefined. 절 형태면 제1절. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parsePanelQuery, panelQuery, pendingPanel } from "./query";
+import { mergePanelQuery, parsePanelQuery, panelQuery, pendingPanel } from "./query";
 
 /**
  * 출처 패널의 URL (기능/조립산출 §4.1) — `?article=<조 id>` (특약 · 블록 조면 `&pc=<상품담보 id>`) · 값 조각 · 막힌 분기 강조 `&node=<노드 id>` ·
@@ -61,5 +61,34 @@ describe("pendingPanel — 「평가 대기」 줄의 「미리보기에서 보�
   });
   it("조를 모르면(조 자리 조건 등) 없다", () => {
     expect(pendingPanel({ nodeId: "c", at: { document: "general" }, message: "" })).toBeUndefined();
+  });
+});
+
+/**
+ * 다른 쿼리를 쓰는 화면에 패널 쿼리 합치기 (기능/조립산출 §4.2) — 상품 탭(`tab` · `art` · `cov` · `pc`)은 제 쿼리를 지키고 패널 키만 바꾼다.
+ * 특별약관 탭의 `pc` 는 고른 상품담보이자 패널 대상의 상품담보 — 그 화면은 `pc` 를 제 것(`own`)으로 두어 패널을 닫아도 남긴다.
+ */
+describe("mergePanelQuery", () => {
+  it("화면의 다른 쿼리는 그대로, 패널 키만 바꾼다", () => {
+    expect(mergePanelQuery("?tab=general&art=a0", { target: { document: "general", articleId: "a1" }, node: "n1" })).toBe("?tab=general&art=a0&article=a1&node=n1");
+  });
+
+  it("닫기 — 패널 키(article · pc · node)를 뺀다, 생략 자리 끔은 상태대로", () => {
+    expect(mergePanelQuery("?tab=general&article=a1&node=n1&omitted=off", { showOmitted: false })).toBe("?tab=general&omitted=off");
+    expect(mergePanelQuery("?article=s1&pc=pc1&omitted=off", {})).toBe("");
+  });
+
+  it("같은 키를 화면도 쓰면(own) 닫아도 남긴다 — 특약 대상이면 그 값으로 맞춘다", () => {
+    const own = ["pc"];
+    expect(mergePanelQuery("?tab=special&pc=pc1&article=s1", {}, { own })).toBe("?tab=special&pc=pc1");
+    expect(mergePanelQuery("?tab=special&cov=c1", { target: { document: "special", productCoverageId: "pc2", articleId: "s1" } }, { own })).toBe("?tab=special&cov=c1&pc=pc2&article=s1");
+  });
+
+  it("set — 화면 쿼리를 함께 바꾼다(보통약관 탭은 연 조를 `art` 로도 — 새로고침하면 같은 관)", () => {
+    expect(mergePanelQuery("?tab=general&art=a0", { target: { document: "general", articleId: "a1" } }, { set: { art: "a1" } })).toBe("?tab=general&art=a1&article=a1");
+  });
+
+  it("앞의 `?` 없는 검색 문자열도 받는다 · 오류 배너 쿼리는 버린다", () => {
+    expect(mergePanelQuery("tab=general&error=x", { target: { document: "general", articleId: "a1" } })).toBe("?tab=general&article=a1");
   });
 });
