@@ -20,7 +20,7 @@ import { runAssembly } from "./booklet";
 import { assemblyCopyLocks } from "./context";
 import type { ExplainHooks } from "./resolve";
 import { planForm, type BlockTreatment, type VerdictKind } from "./section";
-import type { AssemblyInput, DecisionRecord, FirstSectionRecord, MasterBundle, OmissionRecord, ProductInput, RenderedArticle, RenderedDoc } from "./types";
+import type { AssemblyInput, Booklet, DecisionRecord, FirstSectionRecord, MasterBundle, OmissionRecord, ProductInput, RenderedArticle, RenderedDoc } from "./types";
 
 /** 설명 대상 — 보통약관 조(템플릿 조 id) · 상품담보의 담보약관 조(특약 조 · 블록 조 · 대치 형태 기본계약 조). */
 export type ExplainTarget = { document: "general"; articleId: Id } | { document: "special"; productCoverageId: Id; articleId: Id };
@@ -90,6 +90,20 @@ const ownerKey = (c: Coordinate): string => (c.document === "general" ? "general
 
 /** 조 하나의 출처를 설명 모드로 계산한다 — 결정적 · 순수. 같은 재료면 같은 결과. */
 export function explainArticle(master: MasterBundle, product: ProductInput, target: ExplainTarget): ArticleExplanation {
+  return explainRun(master, product, target).explanation;
+}
+
+/**
+ * 설명 + 그 설명 모드 조립의 책자 — 실시간 화면(상품 탭 · 상품담보 · 문면 편집기)은 이 책자로 결과 값 조각을 꺼낸다(`liveSourceView`).
+ * 설명 모드 책자는 일반 조립(`assemble`)과 같다(기록 고리는 결과를 바꾸지 않는다) — 조립을 두 번 돌지 않는다.
+ */
+export function explainRun(master: MasterBundle, product: ProductInput, target: ExplainTarget): { explanation: ArticleExplanation; booklet: Booklet } {
+  let ran: Booklet | undefined;
+  const explanation = explainWith(master, product, target, (b) => (ran = b));
+  return { explanation, booklet: ran! };
+}
+
+function explainWith(master: MasterBundle, product: ProductInput, target: ExplainTarget, onBooklet: (b: Booklet) => void): ArticleExplanation {
   const input: AssemblyInput = { ...master, ...product };
   const form = planForm(input);
   const T = target.articleId;
@@ -116,6 +130,7 @@ export function explainArticle(master: MasterBundle, product: ProductInput, targ
     enclosing: (c, record) => enclosing.set(ownerKey(c), [...(enclosing.get(ownerKey(c)) ?? []), record]),
   };
   const { booklet, replaced } = runAssembly(master, product, { explain: hooks });
+  onBooklet(booklet);
 
   const enclosingOf = (key: string) => {
     const list = enclosing.get(key);

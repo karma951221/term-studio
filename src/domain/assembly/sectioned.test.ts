@@ -14,6 +14,7 @@ import { titleNodes } from "../document/title";
 import { entered, type Id } from "../types";
 import { assemble, assembleGeneral, assembleSpecial, bookletForm } from "./booklet";
 import { previewArticle } from "./articlePreview";
+import { locateRendered, specialAsBooklet } from "./sourceView";
 import { alphaGeneralDocument, alphaPlusFixture, deathCoverage } from "./fixture";
 import type { AssemblyInput, Booklet, RenderedDoc, RenderedInline } from "./types";
 
@@ -346,3 +347,37 @@ describe("미리보기 진입점 — 보통약관 · 상품담보 미리보기�
     expect(r.ok && r.value.doc.title).toBe("일반상해사망 추가2 특별약관");
   });
 });
+
+describe("특약 미리보기를 책자 모양으로 — 생략 자리 · 출처 패널 결과 자리 (기능/조립산출 §4.2)", () => {
+  it("SpecialPreview 는 형태 · 블록 여부 · 제1절 판정 기록을 싣는다", () => {
+    const single = alphaPlusFixture();
+    const s = assembleSpecial(single, single, "pc-addon");
+    expect(s.ok && [s.value.form, s.value.block, s.value.firstSection]).toEqual(["single", undefined, undefined]);
+    const input = standalone();
+    const b = assembleSpecial(input, input, "pc-basic");
+    expect(b.ok && [b.value.form, b.value.block]).toEqual(["sectioned", true]);
+    expect(b.ok && b.value.firstSection).toEqual(assembleInput(input).firstSection);
+  });
+
+  it("specialAsBooklet — 특약은 specials, 블록은 blocks 에 두어 결과 자리가 책자와 같다", () => {
+    const single = alphaPlusFixture();
+    const s = assembleSpecial(single, single, "pc-addon");
+    if (!s.ok) throw new Error("조립");
+    const sb = specialAsBooklet(s.value);
+    expect(sb.specials[0].docs[0]).toBe(s.value.doc);
+    expect(sb.blocks).toEqual([]);
+    expect(sb.omitted).toBe(s.value.omitted);
+    const input = standalone();
+    const b = assembleSpecial(input, input, "pc-basic");
+    if (!b.ok) throw new Error("조립");
+    const bb = specialAsBooklet(b.value);
+    expect(bb.form).toBe("sectioned");
+    expect(bb.blocks?.[0].docs[0]).toBe(b.value.doc);
+    expect(bb.specials).toEqual([]);
+    expect(locateRendered(bb, { document: "special", productCoverageId: "pc-basic", articleId: articleIdsOf(b.value.doc)[0] }).place).toMatch(/^제2절/);
+  });
+});
+
+function articleIdsOf(doc: RenderedDoc): string[] {
+  return doc.children.flatMap((c) => (c.kind === "article" ? [c.id] : c.kind === "section" ? c.children.flatMap((a) => (a.kind === "article" ? [a.id] : [])) : []));
+}
