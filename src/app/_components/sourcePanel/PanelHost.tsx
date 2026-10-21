@@ -8,7 +8,7 @@
  * - URL 상태(`usePanelNav`): 화면 쿼리(`tab` · `art` · `cov` · `pc` …)는 지키고 패널 키만 바꾼다(`mergePanelQuery`). 다른 조를 누르면 내용만 바뀐다(스크롤 유지).
  * - 오른쪽 고정 패널(`PreviewPanelHost` — 책자 미리보기 · 상품담보 미리보기) · 한 겹 덮기(`SourceOverlay` — 보통약관 탭 미리보기 패널 · 문면 편집기 미리보기 탭).
  */
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { MouseEvent, ReactNode } from "react";
 
 import { SourcePanel, type SourcePanelContent } from "@/app/_components/sourcePanel/SourcePanel";
@@ -17,6 +17,12 @@ import { Toggle } from "@/app/_components/Toggle";
 import type { ExplainTarget } from "@/domain/assembly";
 
 export type PanelHit = { target: ExplainTarget; node?: string };
+
+/** 화면이 서버에서 받는 패널 — URL 상태 + (열렸으면) 내용. */
+export interface ScreenPanel {
+  content?: SourcePanelContent;
+  state: PanelQueryState & { showOmitted: boolean };
+}
 
 /** 누른 자리 → 패널 대상 · 강조 노드. 본문(문서 표지 `data-document` 가 있는 `.ts-doc`) 밖 · 조 밖이면 없다. */
 export function clickTarget(el: HTMLElement): PanelHit | undefined {
@@ -41,9 +47,8 @@ export interface PanelNavOptions {
 /** 패널 상태를 URL 로 — 지금 주소의 쿼리(목차 · 선택기가 `replaceState` 로 바꾼 것까지)에 합친다. */
 export function usePanelNav(opts: PanelNavOptions = {}): (next: PanelQueryState) => void {
   const router = useRouter();
-  const pathname = usePathname();
   return (next) => {
-    const search = globalThis.window?.location.search ?? "";
+    const { pathname, search } = globalThis.window.location;
     router.push(`${pathname}${mergePanelQuery(search, next, { ...(opts.own ? { own: opts.own } : {}), ...(opts.set ? { set: opts.set(next) } : {}) })}`, { scroll: false });
   };
 }
