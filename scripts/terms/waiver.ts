@@ -27,6 +27,7 @@ import type { Code, Id } from "../../src/domain/types";
 import type { ClauseRecord } from "./clauses";
 import { allArticles, reId } from "./clauses";
 import { withClauseCodes } from "../../src/domain/clause/pcode";
+import { AGE15_PARAM, AGE15_WAIVER_PARAM, splitAge15 } from "./exemption";
 import { basisWord, RENEWAL_PARAM } from "./renewal";
 
 /** 역할 함수조항이 읽는 보통약관 한 벌 — 트리와 원문 조 번호. */
@@ -279,6 +280,21 @@ function clauseBlock(b: BlockNode, inside: ReadonlySet<Id>, remap: Remap): Block
   return p;
 }
 
+/** 항의 15세 단서(「계약일을 기준으로 … 15세 이상인 경우에는 」 · 「하며, 15세 미만인 경우에는 계약일로 」)를 인자 「보험나이_15세_이상」 조건으로 — 단서가 없으면 멈춘다. */
+function withAge15(b: Block): Block {
+  if (b.kind !== "paragraph") return b;
+  let found = false;
+  const children = b.children.flatMap((c) => {
+    if (c.kind !== "text") return [c];
+    const split = splitAge15(c, c.id, `arg.${AGE15_WAIVER_PARAM} = true`);
+    if (!split) return [c];
+    found = true;
+    return split as Inline[];
+  });
+  if (!found) throw new Error(`납입면제 재모델링: 부가항 ${b.id} 에서 15세 단서를 찾지 못함`);
+  return { ...b, children };
+}
+
 /** 원문 조 블록 `ids` 순서대로 (항 id · 박스 참조 id). */
 function takeBlocks(a: ArticleNode, ids: readonly Id[]): BlockNode[] {
   return ids.map((id) => {
@@ -385,14 +401,15 @@ export function applyAlphaWaiver(alpha: WaiverSource, meritz: WaiverSource): Wai
   const definitionClauses = DEFINITIONS.map((d) => definitionClause(d, LINE.alpha, definitionBodies[d.key]));
 
   // ── ③ 면제 부가항(종들) — 암보장개시일 항 + 【그림】 박스, 면책 사유가 있을 때만
-  const addendumBlocks = takeBlocks(a27, paragraphRun(a27, 2)).map((b) => clauseBlock(b, noInside, remap));
+  // 정의 문장의 15세 단서는 인자 「보험나이_15세_이상」(기본 연결 = 15세 이상 적용 납입면제 있음)이 감싼다 (기능/상품 §3.9)
+  const addendumBlocks = takeBlocks(a27, paragraphRun(a27, 2)).map((b) => withAge15(clauseBlock(b, noInside, remap)));
   const addendumClause = record(
     "waiver-addendum",
     "면제 부가항(알파Plus)",
     "block",
-    "납입면제 조 ② — 적용 종들의 사유에 면책(암보장개시일이 있는) 사유가 있으면 「제1항 제1호의 암보장개시일이라 함은 …」 항과 【그림】 박스. 「제1항 제1호」는 암·면책 호 함수조항 참조",
+    "납입면제 조 ② — 적용 종들의 사유에 면책(암보장개시일이 있는) 사유가 있으면 「제1항 제1호의 암보장개시일이라 함은 …」 항과 【그림】 박스. 「제1항 제1호」는 암·면책 호 함수조항 참조. 정의 문장의 15세 단서는 인자 「보험나이_15세_이상」(기본 연결 = 15세 이상 적용 납입면제 있음 — 적용 종의 「15세 이상 적용」)이 예일 때만",
     [{ id: "c", kind: "condBlock", branches: [{ id: "c-if", when: "var.면책있음", children: addendumBlocks }] }],
-    [PLANS_PARAM],
+    [PLANS_PARAM, AGE15_PARAM],
     [REASONS_LOCAL, WAITING_LOCAL],
   );
 

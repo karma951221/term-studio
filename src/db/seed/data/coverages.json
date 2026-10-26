@@ -286,7 +286,20 @@
     "benefitName": "5대고액치료비암진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": []
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ]
   },
   {
     "key": "a7-tumor",
@@ -881,7 +894,20 @@
     "benefitName": "암수술비(유사암제외)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -891,7 +917,20 @@
     "benefitName": "항암방사선약물치료비보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -991,7 +1030,20 @@
     "benefitName": "16대특정암진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1001,7 +1053,20 @@
     "benefitName": "암직접치료입원일당(Ⅱ)(요양병원제외, 1일이상)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1091,7 +1156,20 @@
     "benefitName": "암요양병원입원일당(Ⅱ)(1일이상 90일한도)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1121,7 +1199,20 @@
     "benefitName": "당뇨병진단비Ⅱ보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 12
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": false
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1131,7 +1222,20 @@
     "benefitName": "대상포진진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": false
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1141,7 +1245,20 @@
     "benefitName": "대상포진눈병진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": false
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1151,7 +1268,20 @@
     "benefitName": "통풍진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": false
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1171,7 +1301,20 @@
     "benefitName": "갑상선암(초기제외)진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1221,7 +1364,20 @@
     "benefitName": "요로결석진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 12
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": false
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1251,7 +1407,20 @@
     "benefitName": "계속받는 항암방사선약물치료비(급여)(연간1회한)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1261,7 +1430,20 @@
     "benefitName": "암직접치료통원일당(상급종합병원)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1281,7 +1463,20 @@
     "benefitName": "암특정재활치료비(급여, 1일1회한, 연간20회한)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1291,7 +1486,20 @@
     "benefitName": "암특정통증완화치료비(급여, 연간1회한)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1341,7 +1549,20 @@
     "benefitName": "암수술비(유사암제외)(25%체증형)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1641,7 +1862,20 @@
     "benefitName": "암 주요치료비(연간1회한, 10년간)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1651,7 +1885,20 @@
     "benefitName": "2대질환 주요치료비(연간1회한, 10년간)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1661,7 +1908,20 @@
     "benefitName": "상급종합병원,국립암센터 암 주요치료비(연간1회한, 10년간)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1671,7 +1931,20 @@
     "benefitName": "상급종합병원,국립암센터 암 주요치료비(연간1회한, 10년간)(체증형)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1681,7 +1954,20 @@
     "benefitName": "상급종합병원 2대질환 주요치료비(연간1회한, 10년간)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1691,7 +1977,20 @@
     "benefitName": "상급종합병원 2대질환 주요치료비(연간1회한, 10년간)(체증형)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1711,7 +2010,20 @@
     "benefitName": "암 주요치료비(연간1회한, 10년간)(체증형)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1721,7 +2033,20 @@
     "benefitName": "통합암 주요치료비(연간1회한, 10년간)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1731,7 +2056,20 @@
     "benefitName": "통합암 주요치료비(체증형)(연간1회한, 10년간)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1741,7 +2079,20 @@
     "benefitName": "상급종합병원,국립암센터 통합암 주요치료비(연간1회한, 10년간)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1751,7 +2102,20 @@
     "benefitName": "상급종합병원,국립암센터 통합암 주요치료비(체증형)(연간1회한, 10년간)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1761,7 +2125,20 @@
     "benefitName": "비급여 암 주요치료비(전액본인부담 포함, 연간1회한, 10년간)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1771,7 +2148,20 @@
     "benefitName": "비급여 항암약물치료비(전액본인부담 포함, 연간1회한, 10년간)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1801,7 +2191,20 @@
     "benefitName": "항암중입자방사선치료비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1811,7 +2214,20 @@
     "benefitName": "암 통합생활지원비(월간한도)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1831,7 +2247,20 @@
     "benefitName": "암 통합치료비(기본형)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1841,7 +2270,20 @@
     "benefitName": "암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1851,7 +2293,20 @@
     "benefitName": "암 통합치료비(실속형)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1861,7 +2316,20 @@
     "benefitName": "암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1871,7 +2339,20 @@
     "benefitName": "「특정소액암(전이포함)」,「특정소화기암(전이포함)」,「14대특정암(전이포함)」,「10대특정암(전이포함)」,「4대고액암(전이포함)」에 해당하는",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1881,7 +2362,20 @@
     "benefitName": "특정호르몬약물허가치료비보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1891,7 +2385,20 @@
     "benefitName": "계속받는 특정항암호르몬약물허가치료비(연간1회한)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1901,7 +2408,20 @@
     "benefitName": "암 통합치료비Ⅱ(비급여(전액본인부담 포함))보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1911,7 +2431,20 @@
     "benefitName": "암 통합치료비Ⅱ(비급여(전액본인부담 포함), 암중점치료기관(상급종합병원 포함))보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1921,7 +2454,20 @@
     "benefitName": "암 통합치료비(주요치료)(비급여(전액본인부담 포함))보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1931,7 +2477,20 @@
     "benefitName": "암 통합치료비(주요치료)(비급여(전액본인부담 포함), 암중점치료기관(상급종합병원 포함))보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1941,7 +2500,20 @@
     "benefitName": "26종 항암방사선및약물치료비(전이포함)(유사암제외)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1961,7 +2533,20 @@
     "benefitName": "암 통합치료 생활비(연간 통합치료 2회이상)보장",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -2171,7 +2756,20 @@
     "benefitName": "경증이상 치매간병비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 12
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": false
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -2191,7 +2789,20 @@
     "benefitName": "중등도이상 치매간병비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 12
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": false
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
