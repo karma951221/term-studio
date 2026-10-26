@@ -264,6 +264,7 @@ describe("StructForm — 폼 하나가 카드 하나 · 코드 ⓘ · 필드 강
     expect(tagsWith(first, 'data-path="').map((t) => t.match(/data-path="([^"]+)"/)?.[1])).toEqual([
       "waiver.applies",
       "waiver.reasons",
+      "waiver.age15",
     ]);
   });
 

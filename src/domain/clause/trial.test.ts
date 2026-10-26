@@ -76,7 +76,7 @@ describe("trialDefaults — 처음 시험 값", () => {
   it("참거짓 아니오 · 열거값 첫 값 · 목록 비움 · 문자 빈 글 · 숫자 0 · 세목 선택지 목록은 가상 원소 하나(참거짓 예 · 목록 비움) · 옵션은 첫 선택지", () => {
     const d = trialDefaults(clause, enums);
     expect(d.values).toEqual({ 사유: "V01", 갱신: false, 금액: 0 });
-    expect(d.plans).toEqual({ 종들: { applies: true, reasons: [] } });
+    expect(d.plans).toEqual({ 종들: { applies: true, reasons: [], age15: true } });
     expect(d.options).toEqual({ O01: "V01" });
   });
 });

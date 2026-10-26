@@ -75,6 +75,7 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
     expect(valueSlotsOf("plan")).toEqual([
       "waiver.applies",
       "waiver.reasons",
+      "waiver.age15",
       "no_surrender.type",
       "conversion.converts",
       "business_type.applies",
@@ -107,14 +108,14 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
 describe("폼입력 S1 — 기본값 프리필: 저장 전에는 미입력", () => {
   it("prefill 은 기본값이 있는 자리만 폼 초기값으로 돌려준다 — 저장소로 가지 않는다", () => {
     // 세목 폼은 코드 기본값을 갖는다 (기능/상품 §3.2) — 납입면제사유처럼 기본값 없는 자리는 제안이 없다.
-    expect(prefill("plan")).toEqual({ "waiver.applies": false, "no_surrender.type": "V01", "conversion.converts": false, "business_type.applies": false });
+    expect(prefill("plan")).toEqual({ "waiver.applies": false, "waiver.age15": false, "no_surrender.type": "V01", "conversion.converts": false, "business_type.applies": false });
     expect(prefill("coverage")).toEqual({});
   });
 
   it("저장소가 비어 있으면 그 레벨 자리가 전부 미입력이다", () => {
     const empty = () => undefined;
     expect(missingSlots("coverage", empty)).toEqual([]); // 담보 레벨은 자리가 없다
-    expect(missingSlots("plan", empty)).toHaveLength(5);
+    expect(missingSlots("plan", empty)).toHaveLength(6);
   });
 });
 
@@ -126,6 +127,7 @@ describe("폼입력 S2 — 미입력 상태로 중간 저장", () => {
     };
     expect(missingSlots("plan", (p) => store[p])).toEqual([
       "waiver.reasons",
+      "waiver.age15",
       "no_surrender.type",
       "conversion.converts",
       "business_type.applies",
@@ -136,6 +138,7 @@ describe("폼입력 S2 — 미입력 상태로 중간 저장", () => {
     const store: Record<string, ValueSlot> = {
       "waiver.applies": entered(true),
       "waiver.reasons": entered(["V01"]),
+      "waiver.age15": entered(false),
       "no_surrender.type": entered("V01"),
       "conversion.converts": entered(false),
       "business_type.applies": entered(false),

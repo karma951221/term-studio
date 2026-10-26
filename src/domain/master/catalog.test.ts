@@ -153,3 +153,14 @@ describe("세목 선택지는 기본값으로 태어난다 — plan 폼 필드�
     expect(def("waiver", "reasons")).toBeUndefined();
   });
 });
+
+describe("납입면제 「15세 이상 적용」 — 종 하나에 하나 · 기본 아니오 (기능/상품 §3.9)", () => {
+  const waiver = findForm("waiver")!;
+  it("waiver 폼의 age15 — 참거짓, 기본값 아니오", () => {
+    expect(waiver.fields.find((f) => f.key === "age15")).toMatchObject({ label: "15세 이상 적용", type: { kind: "boolean" }, defaultValue: false });
+  });
+  it("미입력이어도 폼 규칙 오류가 없다 — 템플릿이 아직 읽지 않는다", () => {
+    const slots: Record<string, ValueSlot> = { applies: entered(true), reasons: entered(["V01"]), age15: NOT_ENTERED };
+    expect(formRuleIssues(waiver, (key) => slots[key])).toEqual([]);
+  });
+});

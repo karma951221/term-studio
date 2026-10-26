@@ -132,6 +132,9 @@ export const MASTER: readonly MasterForm[] = [
     fields: [
       { key: "applies", label: "적용여부", type: { kind: "boolean" }, defaultValue: false },
       { key: "reasons", label: "납입면제사유", type: { kind: "list<enum>", enumCode: "E0001" } },
+      // 실물의 15세 단서는 사유마다가 아니라 암보장개시일 정의 문장에 붙는다 — 종 하나에 하나 (기능/상품 §3.9).
+      // 미입력은 오류가 아니다 — 템플릿이 아직 읽지 않는다
+      { key: "age15", label: "15세 이상 적용", type: { kind: "boolean" }, defaultValue: false },
     ],
     rules: [
       {

@@ -56,7 +56,7 @@ describe("폼입력 S3 · 담보값입력 S3 — 상품담보 완결성 (스냅�
 
   it("세목 선택지의 미입력은 상품 화면(document product)으로 보낸다 — 선택지 값은 상품 화면에서 입력한다", () => {
     const missing = missingSlotsOf({ kind: "plan", id: "opt-1" }, "1종", "plan", () => undefined);
-    expect(missing.map((m) => m.path)).toEqual(["waiver.applies", "waiver.reasons", "no_surrender.type", "conversion.converts", "business_type.applies"]);
+    expect(missing.map((m) => m.path)).toEqual(["waiver.applies", "waiver.reasons", "waiver.age15", "no_surrender.type", "conversion.converts", "business_type.applies"]);
     expect(missingToIssues(missing)[0].at).toEqual({ document: "product", ownerId: "opt-1", ownerName: "1종", refPath: "waiver.applies" });
   });
 });

@@ -436,10 +436,10 @@ export function filterMountRows(rows: readonly MountRow[], query: string): Mount
 
 /**
  * 세목 표 칸을 지금 그리나 — 같은 행의 다른 값에 따라 비운다(화면 규칙만, 마스터 필드 조건이 아니다 · 2026-10-03 QA).
- * 납입면제사유는 적용여부 = 예일 때만 뜻이 있다 — 「아니오」 · 미입력 행에서 사유 칸이 열려 있으면 고를 것처럼 보였다.
+ * 납입면제사유 · 15세 이상 적용은 적용여부 = 예일 때만 뜻이 있다 — 「아니오」 · 미입력 행에서 사유 칸이 열려 있으면 고를 것처럼 보였다.
  */
 export function planCellShown(path: string, valueOf: (path: string) => unknown): boolean {
-  if (path === "waiver.reasons") return valueOf("waiver.applies") === true;
+  if (path === "waiver.reasons" || path === "waiver.age15") return valueOf("waiver.applies") === true;
   return true;
 }
 
@@ -456,7 +456,7 @@ export function newPlanFormState(model: FormModel): FormState {
  * 있는 행은 「편집 → 저장」만으로 값이 바뀌지 않는다.
  */
 export function savedPlanFormState(model: FormModel): FormState {
-  return initFormState({ ...model, fields: model.fields.map(({ prefill: _prefill, ...view }) => view) });
+  return initFormState({ ...model, fields: model.fields.map((view) => ({ ...view, prefill: undefined })) });
 }
 
 // ───────────────────────────── 연결 조 사본 잠금 · 블록 지정 참조 (ADR-0082 결정 10 · 12) ─────────────────────────────
