@@ -94,7 +94,7 @@ describe("buildForm — 마스터 메타만으로 폼 모델이 만들어진다 
   it("buildForm — 그 레벨 폼마다 카드 하나, 필드는 폼 선언 순", () => {
     const model = buildForm("plan", () => undefined, new Map());
     expect(model.cards.map((c) => c.key)).toEqual(["waiver", "no_surrender", "conversion", "business_type"]);
-    expect(model.cards[0].fields.map((f) => f.path)).toEqual(["waiver.applies", "waiver.reasons"]);
+    expect(model.cards[0].fields.map((f) => f.path)).toEqual(["waiver.applies", "waiver.reasons", "waiver.age15"]);
     expect(model.fields.map((f) => f.path)).toEqual(model.cards.flatMap((c) => c.fields.map((f) => f.path)));
     expect(model.fields[0].form).toEqual({ key: "waiver", label: "납입면제" });
   });

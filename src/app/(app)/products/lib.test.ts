@@ -5,7 +5,8 @@ import type { ArticleNode, CondBlockNode, DocumentNode, NodeNumber, SectionNode 
 import type { AttributeKind, ProductCoverage } from "@/domain/product";
 import type { Issue } from "@/domain/types";
 import type { MasterForm } from "@/domain/master";
-import { buildForm, formReducer, initFormState } from "@/forms";
+import { buildForm, formReducer, initFormState, toSubmission } from "@/forms";
+import { findForm } from "@/domain/master";
 
 import {
   blockRefChoices,
@@ -36,6 +37,8 @@ import {
   specialCoverageGroups,
   specialCoveragePath,
   planCellShown,
+  newPlanFormState,
+  savedPlanFormState,
   specialPreviewPath,
   str,
 } from "./lib";
@@ -482,6 +485,11 @@ describe("planCellShown — 세목 표의 칸을 그 행 값에 따라 비운다
     expect(planCellShown("waiver.reasons", values({ "waiver.applies": false }))).toBe(false);
     expect(planCellShown("waiver.reasons", values({}))).toBe(false);
   });
+  it("15세 이상 적용도 같은 행 적용여부 = 예일 때만 (기능/상품 §4.4)", () => {
+    expect(planCellShown("waiver.age15", values({ "waiver.applies": true }))).toBe(true);
+    expect(planCellShown("waiver.age15", values({ "waiver.applies": false }))).toBe(false);
+    expect(planCellShown("waiver.age15", values({}))).toBe(false);
+  });
   it("다른 칸은 늘 보인다", () => {
     expect(planCellShown("waiver.applies", values({}))).toBe(true);
     expect(planCellShown("no_surrender.type", values({}))).toBe(true);
@@ -516,5 +524,22 @@ describe("블록 지정 참조 고르기 (ADR-0082 결정 12) — 조립의 제2
       { productCoverageId: "pc2", label: "질병사망", articles: [] },
     ]);
     expect(blockRefChoices({})).toEqual([]);
+  });
+});
+
+describe("세목 행 초안 — 새 행만 기본값으로 프리필, 저장된 행은 그대로 (기능/상품 §3.2)", () => {
+  const model = (code: string, values: [string, unknown][] = []) =>
+    buildForm("plan", (code) => (code === "E0002" ? ({ code, label: "해약환급금유형", values: [{ code: "V01", label: "해약환급금지급형", order: 0 }] } as never) : undefined), new Map(values.map(([k, v]) => [k, { entered: true as const, value: v as never }])), undefined, [findForm(code)!]);
+  const submitted = (state: ReturnType<typeof initFormState>) => Object.fromEntries(toSubmission(state).values.map((v) => [v.path, v.value]));
+  it("새 행 — 그 세목유형의 기본값이 초안에 들어가 저장하면 값이 된다", () => {
+    expect(submitted(newPlanFormState(model("waiver")))).toEqual({ "waiver.applies": false, "waiver.age15": false });
+    expect(submitted(newPlanFormState(model("no_surrender")))).toEqual({ "no_surrender.type": "V01" });
+    expect(submitted(newPlanFormState(model("conversion")))).toEqual({ "conversion.converts": false });
+  });
+  it("저장된 행 — 빈 자리에 기본값을 채우지 않는다(저장해도 바뀌는 것이 없다)", () => {
+    expect(submitted(savedPlanFormState(model("no_surrender")))).toEqual({});
+    const state = savedPlanFormState(model("waiver", [["waiver.applies", true], ["waiver.reasons", ["V01"]]]));
+    expect(submitted(state)).toEqual({});
+    expect(state.fields["waiver.applies"].value).toBe(true);
   });
 });

@@ -3,7 +3,7 @@ import type { Booklet, FirstSectionRecord, OmissionPairKind, OmissionRecord, Ren
 import { indexTree, type ArticleNode, type CondBlockNode, type DocumentNode, type Node, type NodeNumber } from "@/domain/document";
 import { findAttributeValue, normalizeSelections, planCombinationKey, verdictText, type AttributeKind, type AttributeSelection, type ProductCoverage } from "@/domain/product";
 import type { Code, Id, Issue } from "@/domain/types";
-import type { FormState } from "@/forms";
+import { initFormState, type FormModel, type FormState } from "@/forms";
 import { isDirty } from "@/app/_lib/edit";
 import { includesQuery } from "@/app/_lib/list";
 import type { BlockRefChoice } from "@/app/_lib/blockRef";
@@ -436,11 +436,27 @@ export function filterMountRows(rows: readonly MountRow[], query: string): Mount
 
 /**
  * 세목 표 칸을 지금 그리나 — 같은 행의 다른 값에 따라 비운다(화면 규칙만, 마스터 필드 조건이 아니다 · 2026-10-03 QA).
- * 납입면제사유는 적용여부 = 예일 때만 뜻이 있다 — 「아니오」 · 미입력 행에서 사유 칸이 열려 있으면 고를 것처럼 보였다.
+ * 납입면제사유 · 15세 이상 적용은 적용여부 = 예일 때만 뜻이 있다 — 「아니오」 · 미입력 행에서 사유 칸이 열려 있으면 고를 것처럼 보였다.
  */
 export function planCellShown(path: string, valueOf: (path: string) => unknown): boolean {
-  if (path === "waiver.reasons") return valueOf("waiver.applies") === true;
+  if (path === "waiver.reasons" || path === "waiver.age15") return valueOf("waiver.applies") === true;
   return true;
+}
+
+/**
+ * 새 세목 행의 초안 — 그 세목유형 폼의 기본값으로 프리필된다(기능/상품 §3.2 「선택지는 기본값으로 태어난다」).
+ * 저장해야 값이 된다. 세목유형을 바꾸면 새 유형으로 다시 만든다.
+ */
+export function newPlanFormState(model: FormModel): FormState {
+  return initFormState(model);
+}
+
+/**
+ * 저장된 세목 행의 초안 — 빈 자리에 기본값을 채우지 않는다. 기본값은 새 선택지에만 실리고,
+ * 있는 행은 「편집 → 저장」만으로 값이 바뀌지 않는다.
+ */
+export function savedPlanFormState(model: FormModel): FormState {
+  return initFormState({ ...model, fields: model.fields.map((view) => ({ ...view, prefill: undefined })) });
 }
 
 // ───────────────────────────── 연결 조 사본 잠금 · 블록 지정 참조 (ADR-0082 결정 10 · 12) ─────────────────────────────

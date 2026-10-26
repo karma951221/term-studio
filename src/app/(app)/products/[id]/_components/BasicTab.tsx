@@ -20,7 +20,7 @@ import type { EditOutcome } from "@/app/_lib/edit";
 import type { ProductBasicInput } from "@/services/product";
 
 import { saveProductBasicAction } from "../../actions";
-import { basicDraftDirty, planCellShown } from "../../lib";
+import { basicDraftDirty, newPlanFormState, planCellShown, savedPlanFormState } from "../../lib";
 import { ProductEditButtons, useProductEdit } from "./ProductEdit";
 import { SaveConfirmDialog } from "./SaveConfirmDialog";
 
@@ -52,7 +52,7 @@ export function BasicTab(props: BasicTabProps) {
   const savedModelOf = (optionId: string) => planOptionForms.find((f) => f.option.id === optionId)?.model;
   const modelFor = (option: OptionDraft): FormModel => savedModelOf(option.id) ?? planTypeForms.find((f) => f.code === option.planTypeCode)?.model ?? planTypeForms[0].model;
   const initialOptions = (): OptionDraft[] => planOptions.map((o) => ({ ...o, isNew: false }));
-  const initialForms = (): Record<string, FormState> => Object.fromEntries(planOptions.map((o) => [o.id, initFormState(modelFor({ ...o, isNew: false }))]));
+  const initialForms = (): Record<string, FormState> => Object.fromEntries(planOptions.map((o) => [o.id, savedPlanFormState(modelFor({ ...o, isNew: false }))]));
   const initialCombinations = (): string[][] => plans.map((p) => p.options.map((o) => o.id));
 
   const [name, setName] = useState(productName);
@@ -87,7 +87,7 @@ export function BasicTab(props: BasicTabProps) {
   const submit = async (confirmed: boolean): Promise<"done" | "stay"> => {
     setAttempted(true);
     const product = toSubmission(productState);
-    const optionSubmissions = options.map((o) => toSubmission(forms[o.id] ?? initFormState(modelFor(o))));
+    const optionSubmissions = options.map((o) => toSubmission(forms[o.id] ?? (o.isNew ? newPlanFormState : savedPlanFormState)(modelFor(o))));
     const issues = [...product.issues, ...optionSubmissions.flatMap((s) => s.issues)];
     if (!name.trim() || options.some((o) => !o.name.trim() || !Number.isInteger(o.number) || o.number < 1)) {
       setError("비어 있는 항목이 있습니다. 상품명과 보험종목의 번호·이름을 채워 주세요.");
@@ -149,14 +149,16 @@ export function BasicTab(props: BasicTabProps) {
     const model = planTypeForms.find((f) => f.code === planTypeCode)?.model;
     if (!model) return;
     updateOption(id, { planTypeCode });
-    setForms((current) => ({ ...current, [id]: initFormState(model) }));
+    // 새 행만 세목유형을 바꿀 수 있다 — 새 유형의 기본값으로 다시 프리필 (기능/상품 §3.2)
+    setForms((current) => ({ ...current, [id]: newPlanFormState(model) }));
   };
   const addOption = () => {
     const axis: PlanAxis = "type";
     const id = crypto.randomUUID();
     const planTypeCode = planTypeForms[0].code;
     setOptions((current) => [...current, { id, isNew: true, axis, number: Math.max(0, ...current.filter((o) => o.axis === axis).map((o) => o.number)) + 1, name: "", planTypeCode }]);
-    setForms((current) => ({ ...current, [id]: initFormState(planTypeForms[0].model) }));
+    // 새 선택지는 기본값으로 태어난다 — 저장해야 값이 된다 (기능/상품 §3.2)
+    setForms((current) => ({ ...current, [id]: newPlanFormState(planTypeForms[0].model) }));
     setSubTab("definitions");
   };
   const removeSelected = () => {

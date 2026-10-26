@@ -7,6 +7,7 @@ import { seedAlphaPlus } from "@/db/seed/alphaPlus";
 import { createTestDb, type TestDb } from "@/db/test-utils";
 import { buildForm, initFormState, toSubmission } from "@/forms";
 import { createServices, type Services } from "@/services/container";
+import { savedPlanFormState } from "@/app/(app)/products/lib";
 
 const admin: Actor = { userId: "00000000-0000-4000-8000-000000000001", role: "admin" };
 
@@ -46,7 +47,8 @@ describe("상품 기본정보 저장 왕복 — 명시적 빈 목록 보존 (PGl
       options.map(async (o) => {
         const form = findForm(o.planTypeCode);
         const model = buildForm("plan", enumLookup, await services.product.getPlanOptionValues(o.id), undefined, form ? [form] : []);
-        return toSubmission(initFormState(model));
+        // 저장된 행은 빈 자리에 기본값을 채우지 않는다 (기능/상품 §3.2) — type-1 의 빈 waiver.age15 가 저장으로 생기면 안 된다
+        return toSubmission(savedPlanFormState(model));
       }),
     );
     const product = toSubmission(initFormState(productForm));

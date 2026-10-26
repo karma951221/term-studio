@@ -13,6 +13,7 @@ import seedBoxes from "./data/boxes.json";
 import seedClauses from "./data/clauses.json";
 import seedDocuments from "./data/documents.json";
 import enumsSeed from "./data/enums.json";
+import productsSeed from "./data/products.json";
 
 import { ALPHA_PLUS_PRODUCT_NAME, seedAlphaPlus } from "./alphaPlus";
 import { MERITZ_PRODUCT_NAME } from "./load";
@@ -102,7 +103,7 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     const plans = await services.product.listPlans(r.productId);
     expect(plans.map((plan) => planCombinationLabel(plan.options))).toEqual(["(제1종, 제1형)", "(제1종, 제2형)", "(제2종, 제1형)", "(제2종, 제2형)"]);
     const option = (axis: string, number: number) => options.find((o) => o.axis === axis && o.number === number)!;
-    expect(Object.fromEntries(await services.product.getPlanOptionValues(option("type", 2).id))).toEqual({ "waiver.applies": { entered: true, value: true }, "waiver.reasons": { entered: true, value: ["V01", "V03", "V04", "V05", "V06", "V07", "V08", "V09", "V10", "V11"] } });
+    expect(Object.fromEntries(await services.product.getPlanOptionValues(option("type", 2).id))).toEqual({ "waiver.applies": { entered: true, value: true }, "waiver.reasons": { entered: true, value: ["V01", "V03", "V04", "V05", "V06", "V07", "V08", "V09", "V10", "V11"] }, "waiver.age15": { entered: true, value: true } });
     expect(Object.fromEntries(await services.product.getPlanOptionValues(option("form", 1).id))).toEqual({ "no_surrender.type": { entered: true, value: "V01" } });
     expect(Object.fromEntries(await services.product.getPlanOptionValues(option("form", 2).id))).toEqual({ "no_surrender.type": { entered: true, value: "V03" } });
 
@@ -381,5 +382,22 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     await expect(seedAlphaPlus(services, admin)).resolves.toEqual({ created: false, productId: product.id });
     expect(await services.product.listBaseContractIds(product.id)).toEqual(before);
     expect(await services.catalog.list()).toEqual(defs);
+  });
+});
+
+/**
+ * 「15세 이상 적용」 시드 값 — 보통약관 암보장개시일 정의에 「보험나이가 15세 이상인 경우」 단서가 있는 상품만 예 (기능/상품 §3.9).
+ * 알파Plus 2604 · 2607 은 있고, 메리츠 통합간편건강보험(통합간편심사형)은 없다(docs/_자료 원문 대조, 2026-10-27).
+ */
+describe("시드 납입면제종의 15세 이상 적용", () => {
+  const age15Of = (product: string) =>
+    (productsSeed as unknown as Array<{ name: string; planOptions: Array<{ number: number; planTypeCode: string; values: Array<{ path: string; value: unknown }> }> }>)
+      .find((p) => p.name === product)!
+      .planOptions.filter((o) => o.planTypeCode === "waiver" && o.values.some((v) => v.path === "waiver.applies" && v.value === true))
+      .map((o) => [o.number, o.values.find((v) => v.path === "waiver.age15")?.value]);
+  it("적용 종마다 — 알파Plus 예 · 메리츠 통합간편 아니오", () => {
+    expect(age15Of("알파Plus보장보험")).toEqual([[2, true]]);
+    expect(age15Of("알파Plus보장보험2607")).toEqual([[2, true]]);
+    expect(age15Of("메리츠 통합간편건강보험(연만기형)")).toEqual([[2, false], [3, false]]);
   });
 });

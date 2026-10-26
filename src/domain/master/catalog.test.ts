@@ -140,3 +140,27 @@ describe("조건부 필드 — isFieldShown · isFieldSingle (2026-10-01)", () =
     expect(isFieldSingle(field("notice_type"), reader({ review_scope: entered("V01") }))).toBe(false);
   });
 });
+
+describe("세목 선택지는 기본값으로 태어난다 — plan 폼 필드의 코드 defaultValue (기능/상품 §3.2)", () => {
+  const def = (form: string, field: string) => findForm(form)!.fields.find((f) => f.key === field)!.defaultValue;
+  it("납입면제 적용여부 = 아니오 · 무저해지 유형 = 해약환급금지급형(E0002 V01) · 계약전환 = 아니오 · 영위업종 = 아니오", () => {
+    expect(def("waiver", "applies")).toBe(false);
+    expect(def("no_surrender", "type")).toBe("V01");
+    expect(def("conversion", "converts")).toBe(false);
+    expect(def("business_type", "applies")).toBe(false);
+  });
+  it("납입면제사유(list<enum>)는 기본값이 없다", () => {
+    expect(def("waiver", "reasons")).toBeUndefined();
+  });
+});
+
+describe("납입면제 「15세 이상 적용」 — 종 하나에 하나 · 기본 아니오 (기능/상품 §3.9)", () => {
+  const waiver = findForm("waiver")!;
+  it("waiver 폼의 age15 — 참거짓, 기본값 아니오", () => {
+    expect(waiver.fields.find((f) => f.key === "age15")).toMatchObject({ label: "15세 이상 적용", type: { kind: "boolean" }, defaultValue: false });
+  });
+  it("미입력이어도 폼 규칙 오류가 없다 — 템플릿이 아직 읽지 않는다", () => {
+    const slots: Record<string, ValueSlot> = { applies: entered(true), reasons: entered(["V01"]), age15: NOT_ENTERED };
+    expect(formRuleIssues(waiver, (key) => slots[key])).toEqual([]);
+  });
+});

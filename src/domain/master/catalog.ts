@@ -10,7 +10,8 @@
  *   고지유형 E0005 하나를 고르고, 그에 딸린 칸만 연다 (2026-10-01): 간편심사 → 간편심사구분 E0006(단일 · 통합) + 간편심사유형 E0003
  *   (단일이면 하나 · 통합이면 둘 이상), 건강고지 → 건강고지유형 E0004 (하나 이상). 조건 값은 열거형 값 코드다 — 코드는 불변이다.
  * - 납입면제 · 무저해지 · 계약전환 · 영위업종적용은 **세목(plan)** — 값을 갖는 것이 세목 선택지라
- *   상품 레벨로 올리면 종 · 형 축이 성립하지 않는다.
+ *   상품 레벨로 올리면 종 · 형 축이 성립하지 않는다. 필드마다 코드 `defaultValue` 를 두어 새 선택지는 그 값으로 프리필된다
+ *   (기능/상품 §3.2 「선택지는 기본값으로 태어난다」 — 저장해야 값이 된다).
  * - **담보(coverage)** 레벨 폼은 없다 — 보험금명(`coverage_basic.claim_name`)은 2026-10-21 뺐다: 담보약관 템플릿은 담보 하나가 한 벌
  *   소유라 조문의 보험금 이름은 그 담보약관에 글자로 쓴다 (ADR-0091 · 마이그레이션 0034). 갱신유형은 담보속성(A0001)이라 마스터에 없다.
  * - 보험금지급{지급률}은 **급부(benefit)** — 선택 필드이고 안 적으면 100% 다 (기능/담보 §3.4 · 동적표가 100 으로 읽는다).
@@ -38,6 +39,8 @@ export const GROUP_TITLES_PATH = "booklet.group_titles";
 export function showsGroupTitles(slot: ValueSlot | undefined): boolean {
   return slot?.entered === true && slot.value === true;
 }
+/** 해약환급금유형 E0002 값 코드 — 무저해지 유형의 기본값은 표준형(해약환급금지급형, 기능/상품 §3.2). */
+export const NO_SURRENDER_TYPE = { standard: "V01" } as const;
 /** 간편심사구분 E0006 값 코드. */
 export const REVIEW_SCOPE = { single: "V01", combined: "V02" } as const;
 
@@ -127,8 +130,11 @@ export const MASTER: readonly MasterForm[] = [
     level: "plan",
     description: "납입면제 사유에 해당하면 이후 보험료를 받지 않는다",
     fields: [
-      { key: "applies", label: "적용여부", type: { kind: "boolean" } },
+      { key: "applies", label: "적용여부", type: { kind: "boolean" }, defaultValue: false },
       { key: "reasons", label: "납입면제사유", type: { kind: "list<enum>", enumCode: "E0001" } },
+      // 실물의 15세 단서는 사유마다가 아니라 암보장개시일 정의 문장에 붙는다 — 종 하나에 하나 (기능/상품 §3.9).
+      // 미입력은 오류가 아니다 — 템플릿이 아직 읽지 않는다
+      { key: "age15", label: "15세 이상 적용", type: { kind: "boolean" }, defaultValue: false },
     ],
     rules: [
       {
@@ -148,19 +154,19 @@ export const MASTER: readonly MasterForm[] = [
     key: "no_surrender",
     label: "무저해지",
     level: "plan",
-    fields: [{ key: "type", label: "유형", type: { kind: "enum", enumCode: "E0002" } }],
+    fields: [{ key: "type", label: "유형", type: { kind: "enum", enumCode: "E0002" }, defaultValue: NO_SURRENDER_TYPE.standard }],
   },
   {
     key: "conversion",
     label: "계약전환",
     level: "plan",
-    fields: [{ key: "converts", label: "전환여부", type: { kind: "boolean" } }],
+    fields: [{ key: "converts", label: "전환여부", type: { kind: "boolean" }, defaultValue: false }],
   },
   {
     key: "business_type",
     label: "영위업종적용",
     level: "plan",
-    fields: [{ key: "applies", label: "적용여부", type: { kind: "boolean" } }],
+    fields: [{ key: "applies", label: "적용여부", type: { kind: "boolean" }, defaultValue: false }],
   },
   {
     key: "pay",
