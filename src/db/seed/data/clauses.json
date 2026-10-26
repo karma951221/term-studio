@@ -2783,7 +2783,7 @@
     "code": "C0044",
     "label": "면제 부가항(알파Plus)",
     "mode": "block",
-    "description": "납입면제 조 ② — 적용 종들의 사유에 면책(암보장개시일이 있는) 사유가 있으면 「제1항 제1호의 암보장개시일이라 함은 …」 항과 【그림】 박스. 「제1항 제1호」는 암·면책 호 함수조항 참조",
+    "description": "납입면제 조 ② — 적용 종들의 사유에 면책(암보장개시일이 있는) 사유가 있으면 「제1항 제1호의 암보장개시일이라 함은 …」 항과 【그림】 박스. 「제1항 제1호」는 암·면책 호 함수조항 참조. 정의 문장의 15세 단서는 인자 「보험나이_15세_이상」(기본 연결 = 15세 이상 적용 납입면제 있음 — 적용 종의 「15세 이상 적용」)이 예일 때만",
     "body": [
       {
         "id": "c-waiver-addendum-n1",
@@ -2811,13 +2811,57 @@
                   {
                     "id": "c-waiver-addendum-n5",
                     "kind": "text",
-                    "text": "의 암보장개시일이라 함은 계약일을 기준으로 피보험자의 보험나이가 15세 이상인 경우에는 계약일부터 그날을 포함하여 90일이 지난날의 다음날로 하며,15세 미만인 경우에는 계약일로 합니다.(이하「암보장개시일」이라 합니다)"
+                    "text": "의 암보장개시일이라 함은 "
+                  },
+                  {
+                    "id": "c-waiver-addendum-n6",
+                    "kind": "inlineCond",
+                    "branches": [
+                      {
+                        "id": "c-waiver-addendum-n7",
+                        "when": "arg.보험나이_15세_이상 = true",
+                        "children": [
+                          {
+                            "id": "c-waiver-addendum-n8",
+                            "kind": "text",
+                            "text": "계약일을 기준으로 피보험자의 보험나이가 15세 이상인 경우에는 "
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c-waiver-addendum-n9",
+                    "kind": "text",
+                    "text": "계약일부터 그날을 포함하여 90일이 지난날의 다음날로 "
+                  },
+                  {
+                    "id": "c-waiver-addendum-n10",
+                    "kind": "inlineCond",
+                    "branches": [
+                      {
+                        "id": "c-waiver-addendum-n11",
+                        "when": "arg.보험나이_15세_이상 = true",
+                        "children": [
+                          {
+                            "id": "c-waiver-addendum-n12",
+                            "kind": "text",
+                            "text": "하며,15세 미만인 경우에는 계약일로 "
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c-waiver-addendum-n13",
+                    "kind": "text",
+                    "text": "합니다.(이하「암보장개시일」이라 합니다)"
                   }
                 ],
                 "code": "P0100"
               },
               {
-                "id": "c-waiver-addendum-n6",
+                "id": "c-waiver-addendum-n14",
                 "kind": "boxRef",
                 "boxCode": "BX000037"
               }
@@ -2833,6 +2877,16 @@
         "type": {
           "kind": "planOptions",
           "form": "waiver"
+        }
+      },
+      {
+        "name": "보험나이_15세_이상",
+        "type": {
+          "kind": "boolean"
+        },
+        "default": {
+          "kind": "discriminator",
+          "code": "D0009"
         }
       }
     ],

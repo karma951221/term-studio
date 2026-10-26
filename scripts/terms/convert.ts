@@ -35,6 +35,7 @@ import { applyClauseUse, articleRefParamsOf, guardApplicationOutput, INNER_TARGE
 import { articlesDeep, canonicalArticle, claimOf, collapseRenewal, coverageNameOf, localPaths, mergeRenewal, textNodesOf, wordClusters } from "./auto";
 import { APPENDED_CLAUSE_KEYS, APPENDICES, CLAUSES, PRODUCTS, RENEWAL, SEED_DIR, type ClauseUse, type ProductTerms, type SlotOverlay, type SpecialSpec } from "./config";
 import { parseTerms, type ParsedArticle, type ParsedDoc } from "./parse";
+import { applyExemption, type ExemptionTrait } from "./exemption";
 import { applyArticleConds, applyBoxConds, applyInlineClauses, applyInlineConds, articlesOf } from "./overlay";
 import { basisDateClause } from "./renewal";
 import { inlinesFromText, leftoverReferences, type ArticleEntry, type ArticleIndex, type ParagraphGroup, type RefEnv } from "./refs";
@@ -491,6 +492,17 @@ function main(): void {
   // 준용규정 머리 — 주어는 작성위치 조건, 「보통약관」은 문서 전체 참조(위치 호칭이 출력 위치마다 찍는다)
   positionApplicationHead(clauses);
 
+  // 보장개시일 정의 항 — 「면책 있음」 조 안 조건 · 15세 단서 문장 안 조건(기능/상품 §3.9). P코드 · 조 참조 대상을 매기기 전에 감싼다.
+  // 감싼 담보약관의 담보는 원문 기간 · 단서대로 면책 특성을 싣는다(writeAutoSeeds)
+  const boxTitleOf = new Map(boxes.map((b) => [b.record.code, b.record.title]));
+  const exemptions = new Map<string, ExemptionTrait>();
+  for (const p of products) {
+    for (const spec of p.product.specials) {
+      const trait = applyExemption(p.specials.get(spec.code)!.tree, (code) => boxTitleOf.get(code));
+      if (trait) exemptions.set(spec.ownerCoverage, trait);
+    }
+  }
+
   // ── 조 자리 조건 · 검증
   const generals: { code: string; tree: DocumentNode }[] = [];
   const documents: { code: string; ownerCoverage: string; general: string; tree: DocumentNode }[] = [];
@@ -542,7 +554,7 @@ function main(): void {
   // 함수조항은 구분자를 직접 읽지 않고 인자만 읽는다 (최종 결정 2) — 직접 읽기를 「인자 + 기본 연결 = 그 구분자」로 기계 변환한다.
   // 구분자 카탈로그는 손으로 적는 시드(discriminators.json)다. 사용처는 기본 연결을 쓰므로 조립 결과가 그대로다
   out("clauses.json", finalClauses);
-  writeAutoSeeds(products, out);
+  writeAutoSeeds(products, exemptions, out);
 
   const stats = (tree: DocumentNode) => {
     const ix = indexTree(tree);
@@ -771,7 +783,7 @@ function claimNames(products: readonly BuiltProduct[]): Map<string, string> {
  * 기본 그룹(담보분류)과 맞지 않는 파일은 그 상품의 사용자 그룹이고, 상품의 그룹 목록(`groups`)은 원문 파일 순서다 (ADR-0090).
  * 갱신형 짝은 담보 하나 · 탑재 둘(갱신유형 비갱신형 · 갱신형), 갱신형만 있는 특약은 탑재 하나(갱신형).
  */
-function writeAutoSeeds(products: readonly BuiltProduct[], out: (file: string, data: unknown) => void): void {
+function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyMap<string, ExemptionTrait>, out: (file: string, data: unknown) => void): void {
   // 자동 탑재분은 `auto: true` 로 표시한다 — 다시 쓸 때 지난번 자동 탑재분을 모두 지우고 지금 설정으로 새로 쓴다(손으로 쓴 것은 그대로)
   type Coverage = { key: string; code: string; name: string; benefitName: string; category?: string; coverageValues: { path: string; value: unknown }[]; benefitValues: unknown[]; auto?: true };
   type Group = { category: string } | { name: string; coverages: string[] };
@@ -814,6 +826,12 @@ function writeAutoSeeds(products: readonly BuiltProduct[], out: (file: string, d
       if (groups.some((g) => "name" in g)) product.groups = groups;
       else delete product.groups;
     }
+  }
+  // 면책 특성 — 보장개시일 정의 항을 감싼 담보약관의 담보(손으로 쓴 담보 포함)만, 원문 기간 · 15세 단서대로. 다른 담보는 면책 값을 두지 않는다
+  for (const c of next) {
+    const trait = exemptions.get(c.key);
+    const rest = (c.benefitValues as { path: string }[]).filter((v) => !v.path.startsWith("exemption."));
+    c.benefitValues = trait ? [...rest, { path: "exemption.months", value: trait.months }, { path: "exemption.age15_only", value: trait.age15 }, { path: "exemption.new_only", value: true }] : rest;
   }
   out("coverages.json", next);
   out("products.json", seeded);

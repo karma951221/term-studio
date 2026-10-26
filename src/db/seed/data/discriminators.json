@@ -58,5 +58,55 @@
     "resultType": {
       "kind": "boolean"
     }
+  },
+  {
+    "code": "D0008",
+    "label": "15세 이상 적용 종",
+    "description": "납입면제종(세목 waiver 선택지)이 적용 종이고 「15세 이상 적용」이 예인가 — 「15세 이상 적용 납입면제 있음」(D0009)이 모은다. 적용 아닌 종은 거짓(15세 이상 적용을 읽지 않는다)",
+    "level": "plan",
+    "expression": "waiver.applies and waiver.age15",
+    "resultType": {
+      "kind": "boolean"
+    }
+  },
+  {
+    "code": "D0009",
+    "label": "15세 이상 적용 납입면제 있음",
+    "description": "상품에 「15세 이상 적용」 = 예인 적용 납입면제종이 있는가 — 알파Plus 보통약관 납입면제 조 ② 「제1항 제1호의 암보장개시일이라 함은 …」의 15세 단서(면제 부가항 함수조항의 인자 「15세 이상 적용」 기본 연결)가 읽는다 (기능/상품 §3.9)",
+    "level": "product",
+    "expression": "any(D0008)",
+    "resultType": {
+      "kind": "boolean"
+    }
+  },
+  {
+    "code": "D0010",
+    "label": "면책 있음",
+    "description": "급부에 면책 특성(exemption)이 붙었는가 — 담보약관의 보장개시일 정의 항(「이 특별약관에서 ○○보장개시일이라 함은 …」과 【예시】 박스)을 조 안 IF 로 감싼다. 특성 없음 = 무면책 = 정의 항 없음 (기능/담보 §3.4 · 기능/상품 §3.9)",
+    "level": "coverage",
+    "expression": "exist(exemption.months)",
+    "resultType": {
+      "kind": "boolean"
+    }
+  },
+  {
+    "code": "D0011",
+    "label": "15세 이상만 면책",
+    "description": "급부의 면책 특성이 「15세 이상만 적용」인가 — 면책 특성이 없는 급부는 거짓. 「15세 이상만 면책 있음」(D0012)이 모은다",
+    "level": "benefit",
+    "expression": "exist(exemption.months) and exemption.age15_only",
+    "resultType": {
+      "kind": "boolean"
+    }
+  },
+  {
+    "code": "D0012",
+    "label": "15세 이상만 면책 있음",
+    "description": "담보의 급부 중 면책 특성이 「15세 이상만 적용」인 것이 있는가 — 담보약관 보장개시일 정의 항의 15세 단서(「계약일을 기준으로 피보험자의 보험나이가 15세 이상인 경우에는 …, 15세 미만인 경우에는 계약일로」)를 문장 안 IF 로 감싼다 (기능/상품 §3.9)",
+    "level": "coverage",
+    "expression": "any(D0011)",
+    "resultType": {
+      "kind": "boolean"
+    }
   }
 ]

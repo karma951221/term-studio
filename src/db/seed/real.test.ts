@@ -349,6 +349,85 @@ describe.each([ALPHA, ALPHA2607])("★ 실물 재현 변형 — %s 납입면제 
   });
 });
 
+/**
+ * 대표 변형 — 암보장개시일 · 15세 단서 (기능/상품 §3.9 · 기능/담보 §3.4). 시드는 원문대로 면책 특성 · 「15세 이상 적용」을 싣고(그래서 원문 재현),
+ * 값을 바꾸면 템플릿이 따라온다:
+ * - 담보약관 — 상품담보 급부의 면책 특성을 떼면 보장개시일 정의 항 · 【예시】 박스가 없고, `age15_only` = 아니오면 정의 항에 15세 단서가 없다.
+ * - 보통약관 납입면제 조 — 적용 종의 「15세 이상 적용」 = 아니오면 ② 암보장개시일 정의에 15세 단서가 없다.
+ */
+describe("★ 실물 재현 변형 — 알파Plus보장보험2607 면책 특성 · 15세 이상 적용을 바꾸면 보장개시일 문구가 따라온다", () => {
+  let db: TestDb;
+  let booklet: Booklet;
+
+  beforeAll(async () => {
+    db = await seededDb();
+    const services = createServices(db.db);
+    const admin = await services.auth.ensureSeedAdmin();
+    const actor: Actor = { userId: admin.id, role: admin.role };
+    const product = (await services.product.listProducts()).find((p) => p.name === ALPHA2607)!;
+    const pcs = await services.product.listProductCoverages(product.id);
+    const benefitOf = async (name: string) => {
+      const pc = pcs.find((x) => x.name === name);
+      if (!pc) throw new Error(`상품담보 ${name} 이 없다`);
+      const snapshot = await services.product.getSnapshot(pc.id);
+      if (!snapshot.ok) throw new Error(JSON.stringify(snapshot.rejection));
+      return { pc, benefit: snapshot.value.subCoverages[0].benefits[0] };
+    };
+    const ok = (r: { ok: boolean; rejection?: unknown }) => {
+      if (!r.ok) throw new Error(JSON.stringify(r.rejection));
+    };
+    // 16대특정암 — 면책 특성을 뗀다(무면책)
+    const cancer16 = await benefitOf("16대특정암진단비보장");
+    const off = ["exemption.months", "exemption.age15_only", "exemption.new_only"].map((path) => ({ path, value: undefined }));
+    ok(await services.product.saveSnapshot(actor, cancer16.pc.id, [{ owner: { kind: "productBenefit", id: cancer16.benefit.id }, entries: off }], { confirm: true }));
+    // 5대고액치료비암 — 면책은 두고 15세 이상만 적용을 끈다
+    const cancer5 = await benefitOf("5대고액치료비암진단비보장");
+    ok(await services.product.setSnapshotValues(actor, cancer5.pc.id, { kind: "productBenefit", id: cancer5.benefit.id }, [{ path: "exemption.age15_only", value: false }]));
+    // 납입면제 2종 — 15세 이상 적용을 끈다
+    const type2 = (await services.product.listPlanOptions(product.id)).find((o) => o.axis === "type" && o.number === 2)!;
+    ok(await services.product.setPlanOptionValues(actor, type2.id, [{ path: "waiver.age15", value: false }]));
+    const r = await services.assembly.preview(product.id);
+    if (!r.ok) throw new Error(JSON.stringify(r.rejection));
+    booklet = r.value;
+  }, 300_000);
+
+  afterAll(async () => {
+    await db.close();
+  });
+
+  const special = (title: string) => renderedToLines(booklet.specials.flatMap((g) => g.docs).find((d) => d.title === title)!);
+
+  it("오류 0", () => {
+    expect(booklet.issues).toEqual([]);
+  });
+
+  it("16대특정암진단비보장 — 면책 특성이 없으면 보장개시일 정의 항 · 【16대특정암보장개시일[예시]】 박스가 없다", () => {
+    const lines = special("16대특정암진단비보장 특별약관");
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.some((l) => l.includes("16대특정암보장개시일이라 함은"))).toBe(false);
+    expect(lines.some((l) => l.includes("16대특정암보장개시일[예시]"))).toBe(false);
+  });
+
+  it("5대고액치료비암진단비보장 — 15세 이상만 적용 = 아니오면 정의 항에 15세 단서가 없다", () => {
+    const lines = special("5대고액치료비암진단비보장 특별약관");
+    expect(lines.filter((l) => l.includes("5대고액치료비암보장개시일이라 함은"))).toEqual([
+      "@ 이 특별약관에서 5대고액치료비암보장개시일이라 함은 계약일부터 그날을 포함하여 90일이 지난날의 다음날로 합니다.",
+    ]);
+  });
+
+  it("다른 암 특약은 그대로 — 15세 단서가 있다", () => {
+    const lines = special("갑상선암(초기제외)진단비보장 특별약관");
+    expect(lines.find((l) => l.includes("보장개시일이라 함은"))).toContain("15세 이상인 경우에는");
+  });
+
+  it("보통약관 납입면제 조 — 적용 종의 15세 이상 적용 = 아니오면 ② 암보장개시일 정의에 15세 단서가 없다", () => {
+    const lines = renderedToLines(booklet.general!);
+    const definition = lines.filter((l) => l.includes("의 암보장개시일이라 함은"));
+    expect(definition).toHaveLength(1);
+    expect(definition[0]).toMatch(/^@ 제1항 제1호의 암보장개시일이라 함은 계약일부터 그날을 포함하여 90일이 지난날의 다음날로 합니다\.\(이하「암보장개시일」이라 합니다\)$/);
+  });
+});
+
 const MERITZ = "메리츠 통합간편건강보험(연만기형)";
 /** 2607 질병 대표 5 — 특약 제목 · 「특별약관의 소멸」 조 번호(5대고액치료비암만 정의 · 무효가 앞에 있어 제5조). */
 const DISEASE_2607: [string, number][] = [
