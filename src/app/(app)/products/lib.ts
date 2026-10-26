@@ -3,7 +3,7 @@ import type { Booklet, FirstSectionRecord, OmissionPairKind, OmissionRecord, Ren
 import { indexTree, type ArticleNode, type CondBlockNode, type DocumentNode, type Node, type NodeNumber } from "@/domain/document";
 import { findAttributeValue, normalizeSelections, planCombinationKey, verdictText, type AttributeKind, type AttributeSelection, type ProductCoverage } from "@/domain/product";
 import type { Code, Id, Issue } from "@/domain/types";
-import type { FormState } from "@/forms";
+import { initFormState, type FormModel, type FormState } from "@/forms";
 import { isDirty } from "@/app/_lib/edit";
 import { includesQuery } from "@/app/_lib/list";
 import type { BlockRefChoice } from "@/app/_lib/blockRef";
@@ -441,6 +441,22 @@ export function filterMountRows(rows: readonly MountRow[], query: string): Mount
 export function planCellShown(path: string, valueOf: (path: string) => unknown): boolean {
   if (path === "waiver.reasons") return valueOf("waiver.applies") === true;
   return true;
+}
+
+/**
+ * 새 세목 행의 초안 — 그 세목유형 폼의 기본값으로 프리필된다(기능/상품 §3.2 「선택지는 기본값으로 태어난다」).
+ * 저장해야 값이 된다. 세목유형을 바꾸면 새 유형으로 다시 만든다.
+ */
+export function newPlanFormState(model: FormModel): FormState {
+  return initFormState(model);
+}
+
+/**
+ * 저장된 세목 행의 초안 — 빈 자리에 기본값을 채우지 않는다. 기본값은 새 선택지에만 실리고,
+ * 있는 행은 「편집 → 저장」만으로 값이 바뀌지 않는다.
+ */
+export function savedPlanFormState(model: FormModel): FormState {
+  return initFormState({ ...model, fields: model.fields.map(({ prefill: _prefill, ...view }) => view) });
 }
 
 // ───────────────────────────── 연결 조 사본 잠금 · 블록 지정 참조 (ADR-0082 결정 10 · 12) ─────────────────────────────

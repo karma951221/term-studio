@@ -140,3 +140,16 @@ describe("조건부 필드 — isFieldShown · isFieldSingle (2026-10-01)", () =
     expect(isFieldSingle(field("notice_type"), reader({ review_scope: entered("V01") }))).toBe(false);
   });
 });
+
+describe("세목 선택지는 기본값으로 태어난다 — plan 폼 필드의 코드 defaultValue (기능/상품 §3.2)", () => {
+  const def = (form: string, field: string) => findForm(form)!.fields.find((f) => f.key === field)!.defaultValue;
+  it("납입면제 적용여부 = 아니오 · 무저해지 유형 = 해약환급금지급형(E0002 V01) · 계약전환 = 아니오 · 영위업종 = 아니오", () => {
+    expect(def("waiver", "applies")).toBe(false);
+    expect(def("no_surrender", "type")).toBe("V01");
+    expect(def("conversion", "converts")).toBe(false);
+    expect(def("business_type", "applies")).toBe(false);
+  });
+  it("납입면제사유(list<enum>)는 기본값이 없다", () => {
+    expect(def("waiver", "reasons")).toBeUndefined();
+  });
+});

@@ -106,8 +106,8 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
 
 describe("폼입력 S1 — 기본값 프리필: 저장 전에는 미입력", () => {
   it("prefill 은 기본값이 있는 자리만 폼 초기값으로 돌려준다 — 저장소로 가지 않는다", () => {
-    // MVP 마스터에는 기본값이 아직 없다 — 자리는 있고 제안은 없다.
-    expect(prefill("plan")).toEqual({});
+    // 세목 폼은 코드 기본값을 갖는다 (기능/상품 §3.2) — 납입면제사유처럼 기본값 없는 자리는 제안이 없다.
+    expect(prefill("plan")).toEqual({ "waiver.applies": false, "no_surrender.type": "V01", "conversion.converts": false, "business_type.applies": false });
     expect(prefill("coverage")).toEqual({});
   });
 
