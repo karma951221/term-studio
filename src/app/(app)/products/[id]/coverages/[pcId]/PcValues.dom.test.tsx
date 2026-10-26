@@ -89,6 +89,7 @@ describe("PcValues — 읽기 / 편집 · 저장 하나", () => {
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
     const box = await screen.findByRole("group", { name: "면책" });
     await waitFor(() => expect(within(box).getByText("기간이 틀렸습니다")).toBeTruthy());
-    expect(screen.getByRole("button", { name: "저장" })).toBeTruthy();
+    // 오류는 전환(transition) 안에서 먼저 서고 버튼은 전환이 끝나야 「저장 중…」 → 「저장」 — 기다려서 본다(부하 아래 경합)
+    expect(await screen.findByRole("button", { name: "저장" })).toBeTruthy();
   });
 });
