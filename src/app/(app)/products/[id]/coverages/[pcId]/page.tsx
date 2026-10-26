@@ -1,6 +1,4 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
-
 import { AssemblyCheckLine } from "@/app/_components/AssemblyCheckLine";
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { IssueList } from "@/app/_components/IssueList";
@@ -8,21 +6,28 @@ import { RenderedDoc, type DocSelection } from "@/app/_components/RenderedDoc";
 import { OmittedToggle, PreviewPanelHost } from "@/app/_components/sourcePanel/PanelHost";
 import type { SourcePanelContent } from "@/app/_components/sourcePanel/SourcePanel";
 import { panelQuery, parsePanelQuery, pendingPanel } from "@/app/_components/sourcePanel/query";
-import { ValueForm } from "@/app/_components/ValueForm";
 import { ENTITY_LABEL } from "@/app/_lib/labels";
 import { specialAsBooklet } from "@/domain/assembly";
 import type { DocumentNode } from "@/domain/document";
 import { buildForm, type SnapshotContext } from "@/forms";
 import { currentActor, getServices } from "@/lib/services";
 
-import { writeSnapshotValuesAction } from "../../../actions";
+import type { SnapshotOwner } from "@/services/product";
+
 import { productDetailPath, type ProductTab } from "../../../lib";
+import { ProductEditProvider } from "../../_components/ProductEdit";
 import { omissionSlots } from "../../preview/omissionSlots";
+
+import type { SnapshotOwnerModel } from "./lib";
+import { PcValues, type PcTree } from "./PcValues";
 
 export const dynamic = "force-dynamic";
 
 /**
  * 상품담보 값 화면 + 상품담보 미리보기(실시간 — 저장하지 않음).
+ *
+ * 값 (기능/상품 §4.8, M12 재작성): 읽기로 시작 · `편집` → `[취소] [저장]` — 저장 하나가 모든 노드의 값 · 특성을 한 트랜잭션으로(`PcValues`).
+ * 서버는 노드마다 저장값 + 지금 마스터 값으로 폼 모델을 지어 넘긴다 — 가져오기 아이콘 · 「마스터에는 면책 있음」이 그것을 본다.
  *
  * 출처 패널 (기능/조립산출 §4.2 · ADR-0092): 미리보기의 조를 누르면 미리보기 오른쪽 고정 패널 — URL `?article=<조 id>&pc=<상품담보 id>[&node=]`
  * (책자 미리보기와 같은 쿼리). 본문과 같은 지금 입력으로 설명하므로 오래된 결과 차단이 없다(`assembly.explainLive`).
@@ -68,84 +73,56 @@ export default async function ProductCoverageDetailPage({ params, searchParams }
   /** 돌아갈 탭 — 기본계약이든 특약이든 상품담보 탭이다 (기능/상품 §3.8 · 2026-09-28). */
   const backTab: ProductTab = "coverages";
   const enumLookup = (code: string) => enumsList.find((e) => e.code === code);
-  /** owner 하나의 스냅샷 문맥 — 마스터 값을 못 얻으면(빈 맵) undefined 로 빠져 direct 로 보인다. */
-  const snapshotContextOf = (ownerId: string, masterLabel: string): SnapshotContext | undefined => {
-    const own = masterValues.get(ownerId);
-    return own && own.size > 0 ? { masterLabel, masterValues: own } : undefined;
+  /** 노드 하나의 값 폼 모델 — 저장값 + 지금 마스터 값(가져오기 · 「마스터에는 면책 있음」의 재료, 기능/상품 §3.4). */
+  const ownerModel = (level: "coverage" | "subCoverage" | "benefit", kind: SnapshotOwner["kind"], ownerId: string, masterLabel: string): SnapshotOwnerModel => {
+    const master = masterValues.get(ownerId);
+    const snapshot: SnapshotContext | undefined = master ? { masterLabel, masterValues: master } : undefined;
+    return { owner: { kind, id: ownerId }, model: buildForm(level, enumLookup, values.get(ownerId) ?? new Map(), snapshot) };
   };
+  const owners: SnapshotOwnerModel[] = [
+    ownerModel("coverage", "productCoverage", pc.id, `${pc.coverageName} (마스터)`),
+    ...pc.subCoverages.flatMap((s) => [
+      ownerModel("subCoverage", "productSubCoverage", s.id, `${s.name} (마스터)`),
+      ...s.benefits.map((b) => ownerModel("benefit", "productBenefit", b.id, `${b.name} (마스터)`)),
+    ]),
+  ];
+  const tree: PcTree = {
+    id: pc.id,
+    name: pc.name,
+    subCoverages: pc.subCoverages.map((s) => ({ id: s.id, key: s.key, name: s.name, benefits: s.benefits.map((b) => ({ id: b.id, key: b.key, name: b.name })) })),
+  };
+  // 저장값 · 마스터 값 · 구조가 바뀌면(저장 뒤 refresh) 초안을 새 진실로 다시 세운다
+  const signature = JSON.stringify([tree, owners.map((o) => o.model.fields.map((f) => [f.path, f.state, f.value ?? null, f.masterValue ?? null]))]);
 
   /** 값 자리 하나로 가는 앵커 — 미입력 목록의 「고치러 가기」. */
   const slotAnchor = (ownerId: string) => `#own-${ownerId}-values`;
 
-  /** 노드 하나의 값 폼 — 앵커 자리 포함. 필드가 없는 레벨(지금 세부보장)은 폼 자리 없이 이름만. */
-  const valueForm = (level: "coverage" | "subCoverage" | "benefit", ownerId: string, kind: "productCoverage" | "productSubCoverage" | "productBenefit", masterLabel: string, cardHead?: ReactNode) => {
-    const model = buildForm(level, enumLookup, values.get(ownerId) ?? new Map(), snapshotContextOf(ownerId, masterLabel));
-    if (model.fields.length === 0) return cardHead ? <div className="ts-cov-card-head">{cardHead}</div> : null;
-    return (
-      <div id={`own-${ownerId}-values`}>
-        <ValueForm model={model} flat cardHead={cardHead} action={writeSnapshotValuesAction.bind(null, pcId, { kind, id: ownerId })} />
-      </div>
-    );
-  };
-
   return (
-    <div>
-      <div className="ts-page-head">
-        <Breadcrumb items={[{ label: ENTITY_LABEL.product, href: "/products" }, { label: product?.name ?? id, href: productDetailPath(id, backTab) }, { label: pc.name }]} />
-      </div>
-      <p className="ts-muted">
-        담보 마스터: <Link href={`/coverages/${pc.coverageId}`}>{pc.coverageName}</Link>
-      </p>
-
-      {completeness.missing.length > 0 && (
-        <section className="ts-section">
-          <h2 className="ts-section-title">미입력</h2>
-          <ul>
-            {completeness.missing.map((m, i) => (
-              <li key={i}>
-                {m.ownerName} › {m.path} · <Link href={slotAnchor(m.owner.id)}>고치러 가기</Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* 담보 ⊃ 세부보장(그리드) ⊃ 급부 — 담보 상세와 같은 중첩 카드 (기능/담보 §3.6). 값 폼은 카드마다 제 저장 버튼이다. */}
-      <section className="ts-cov-card" data-level="coverage" aria-label={`담보 ${pc.name}`}>
-        <div className="ts-cov-card-head">
-          <span className="ts-cov-card-level">담보</span>
-          <span className="ts-cov-card-name">{pc.name}</span>
-        </div>
-        <div className="ts-cov-card-body">
-          {valueForm("coverage", pc.id, "productCoverage", `${pc.coverageName} (마스터)`)}
-          <div className="ts-cov-grid">
-            {pc.subCoverages.map((s) => (
-              <section key={s.id} className="ts-cov-card" data-level="subCoverage" aria-label={`세부보장 ${s.name}`}>
-                <div className="ts-cov-card-head">
-                  <span className="ts-cov-card-level">세부보장 {s.key}</span>
-                  <span className="ts-cov-card-name">{s.name}</span>
-                </div>
-                <div className="ts-cov-card-body">
-                  {valueForm("subCoverage", s.id, "productSubCoverage", `${s.name} (마스터)`)}
-                  <div className="ts-cov-benefits">
-                    {s.benefits.map((b) => (
-                      <section key={b.id} className="ts-cov-card" data-level="benefit" aria-label={`급부 ${b.name}`}>
-                        {/* 급부 카드는 값 폼이 머리 줄째 그린다 — 지급률이 이름 줄 오른쪽 「지급률 ⊕」(담보 상세와 같다, 2026-10-21) */}
-                        {valueForm("benefit", b.id, "productBenefit", `${b.name} (마스터)`, (
-                          <>
-                            <span className="ts-cov-card-level">급부 {b.key}</span>
-                            <span className="ts-cov-card-name">{b.name}</span>
-                          </>
-                        ))}
-                      </section>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            ))}
-          </div>
-        </div>
-      </section>
+    <ProductEditProvider canEdit>
+      <PcValues
+        key={signature}
+        productId={id}
+        productName={product?.name ?? id}
+        productHref={productDetailPath(id, backTab)}
+        coverageId={pc.coverageId}
+        coverageName={pc.coverageName}
+        tree={tree}
+        owners={owners}
+        missing={
+          completeness.missing.length > 0 && (
+            <section className="ts-section">
+              <h2 className="ts-section-title">미입력</h2>
+              <ul>
+                {completeness.missing.map((m, i) => (
+                  <li key={i}>
+                    {m.ownerName} › {m.path} · <Link href={slotAnchor(m.owner.id)}>고치러 가기</Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+      />
 
       <section className="ts-section">
         <h2 className="ts-section-title">
@@ -178,7 +155,6 @@ export default async function ProductCoverageDetailPage({ params, searchParams }
           <p className="ts-error-banner">{preview.rejection.reason}</p>
         )}
       </section>
-
-    </div>
+    </ProductEditProvider>
   );
 }

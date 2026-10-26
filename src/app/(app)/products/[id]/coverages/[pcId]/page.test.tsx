@@ -1,5 +1,5 @@
 /**
- * 상품담보 값 화면 — 담보 상세와 같은 중첩 카드 그리드 (기능/상품 §4.7, d24df11).
+ * 상품담보 값 화면 — 담보 상세와 같은 중첩 카드 그리드 (기능/상품 §4.8) · 읽기로 시작(M12 재작성).
  *
  * - 담보 ⊃ 세부보장(그리드) ⊃ 급부, 담보 상세와 같은 카드 클래스(`ts-cov-card` · `ts-cov-grid` · `ts-cov-benefits`).
  * - 필드가 없는 레벨(세부보장 — 기본 마스터에 subCoverage 레벨 필드가 없다)은
@@ -88,5 +88,14 @@ describe("상품담보 값 화면 — 중첩 카드 그리드 · 자리 없는 �
     expect(html).toContain("1종 상해수술비(연간3회한)");
     expect(html).toContain("2종 상해수술비(연간3회한)");
     expect((html.match(/>수술급부</g) ?? []).length).toBe(2);
+  });
+
+  it("읽기로 시작한다 — `편집` 하나, 노드마다 저장 · 폼 「비우기」 · 「마스터 값으로 되돌리기」는 없다 (§4.8)", async () => {
+    const html = await render();
+    expect(html).toMatch(/<button[^>]*>편집<\/button>/);
+    expect(html).not.toMatch(/<button[^>]*>저장<\/button>/);
+    expect(html).not.toMatch(/<button[^>]*>비우기<\/button>/);
+    expect(html).not.toContain("마스터 값으로 되돌리기");
+    expect(html).not.toContain("현재 마스터 값 가져오기");
   });
 });
