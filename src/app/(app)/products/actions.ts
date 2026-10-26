@@ -288,8 +288,10 @@ export type SnapshotSaveOutcome = { ok: true } | { ok: "confirm"; impact: Impact
 const snapshotSchema = z.array(
   z.object({
     owner: z.object({ kind: z.enum(["productCoverage", "productSubCoverage", "productBenefit"]), id: z.string().uuid() }),
-    // 값의 정밀 검사(타입 · 구간 규칙)는 서비스가 한다 — 여기서는 모양만
-    entries: z.array(z.object({ path: z.string().min(1), value: z.unknown() }).transform((e) => ({ path: e.path, value: e.value as Value | undefined }))),
+    // 값의 정밀 검사(타입 · 구간 규칙)는 서비스가 한다 — 여기서는 모양만.
+    // 지우기(`value: undefined`)는 서버 액션 왕복에서 키째 빠져 온다(React reply 의 「$undefined」 → reviver 가 키를 지움) —
+    // value 는 선택 키여야 한다. zod 4 의 z.unknown() 은 키가 없으면 거부한다.
+    entries: z.array(z.object({ path: z.string().min(1), value: z.unknown().optional() }).transform((e) => ({ path: e.path, value: e.value as Value | undefined }))),
   }),
 );
 
