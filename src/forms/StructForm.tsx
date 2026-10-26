@@ -6,8 +6,9 @@
  *
  * 화면 규칙 —
  * - **2열 그리드**: 라벨은 좌측 120px 고정 열, 값은 우측 (디자인원칙 §2 L2). 라벨을 값 위에 두지 않는다.
- * - **출처 문법 (§1.2)**: 직접값은 실선 테두리, 파생은 ƒ + 옅은 바탕 + 식, const 는 자물쇠 + 마스터 라벨,
- *   손댄 스냅샷은 입력칸 오른쪽 끝에 되돌리기 버튼 (마스터 값은 tooltip 으로만). 색은 쓰지 않는다.
+ * - **출처 문법 (§1.2)**: 직접값은 실선 테두리. 색은 쓰지 않는다.
+ * - **스냅샷 값 명령 (`valueCommands`, 기능/상품 §3.4)**: 편집 모드에서 칸 옆 「값 비우기」(✕)와, 마스터와 다른 칸에만 「현재 마스터 값 가져오기」
+ *   (확인 없이 초안으로 — 마스터 값은 tooltip 으로만). 「마스터 값으로 되돌리기」는 없다.
  * - **프리필은 보이는 제안 (ADR-0004 · 리뷰 #3)**: 기본값이 처음부터 칸에 들어가 있고 「미입력」 +
  *   「제안값 · 저장해야 확정」 배지가 함께 선다. 저장해야 명시 값이 된다. 폼마다 「비우기」 하나.
  *   읽기 모드(`readOnly`)에는 「미입력」 배지를 달지 않는다 — 빈 칸은 빈 칸으로 보인다 (2026-09-27).
@@ -29,24 +30,27 @@
 import { useEffect, useId, useReducer, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { InfoTip } from "@/app/_components/InfoTip";
-import { IconButton, IconClose, IconInfo, IconMinusCircle, IconPlus, IconPlusCircle, IconRevert } from "@/app/_components/icons";
+import { IconButton, IconClose, IconImport, IconInfo, IconMinusCircle, IconPlus, IconPlusCircle } from "@/app/_components/icons";
 import { EXEMPTION_MONTHS } from "@/domain/coverage";
 import { formatPeriod } from "@/domain/master";
 import type { Issue } from "@/domain/types";
 
 import type { InputProps } from "./inputTypes";
 import {
+  differsFromMaster,
   formatValue,
   formReducer,
   initFormState,
   isFieldAbsent,
   isFieldHidden,
+  masterHasForm,
   missingEnumCodesOf,
   toggleEnumCode,
   toSubmission,
   type Draft,
   type FieldState,
   type FieldView,
+  type FormAction,
   type FormCard,
   type FormModel,
   type FormState,
@@ -94,6 +98,17 @@ export interface StructFormProps {
   flat?: boolean;
   /** 본문 행 대신 머리 줄에 작게 둘 선택 필드 경로 — `frame` 이 머리 줄 자리를 준다 (급부 카드의 지급률, 2026-10-21). */
   headPaths?: readonly string[];
+  /**
+   * 스냅샷 값 명령 (상품담보 값 화면, 기능/상품 §3.4 · §4.8) — 편집 모드에서 칸마다 「값 비우기」, 마스터와 다른 칸엔 「현재 마스터 값 가져오기」,
+   * 마스터에 있는데 여기 없는 특성엔 「마스터에는 {특성} 있음 · 가져오기」. 마스터 값은 스냅샷 문맥(`buildForm` 의 snapshot)이 싣는다.
+   */
+  valueCommands?: boolean;
+  /**
+   * 바깥이 편집 상태를 쥐는 모드 — 주면 내부 상태 대신 이것을 그리고 조작은 `dispatch` 로 올린다(상품담보 값 화면이 노드 전부의 초안을 한곳에 둔다).
+   * 저장값 지문 reset 도 바깥 몫이다.
+   */
+  state?: FormState;
+  dispatch?: (action: FormAction) => void;
   /** 폼을 노드 카드 틀에 끼운다 — `head` = 머리 줄 필드, `body` = 폼 본문. 없으면 폼만 그린다(머리 줄 필드도 그리지 않는다). */
   frame?: (parts: { head: ReactNode; body: ReactNode }) => ReactNode;
 }
@@ -351,7 +366,8 @@ interface FieldRowProps {
   field: FieldState;
   externalIssues: Issue[];
   onEdit: (draft: Draft) => void;
-  onRevert: () => void;
+  /** 스냅샷 값 명령 — 있으면 편집 모드에서 「값 비우기」 · (마스터와 다르면) 「현재 마스터 값 가져오기」. */
+  commands?: { onClear: () => void; onImport: () => void };
   /** 선택 필드의 ⊖ — 칸을 감추고 값을 지운다 (편집 모드만). */
   onRemove?: () => void;
   /** 라벨 옆 코드 ⓘ 링크. */
@@ -362,9 +378,24 @@ interface FieldRowProps {
   highlighted?: boolean;
 }
 
-function FieldRow({ idBase, field, externalIssues, onEdit, onRevert, onRemove, showCode, readOnly, highlighted }: FieldRowProps) {
+/** 「현재 마스터 값 가져오기 · 마스터 90 · 이 값 80」 (기능/상품 §3.4) — 마스터 값은 helper text 로 깔지 않고 tooltip 으로만. */
+export function importTip(field: FieldState): string {
+  const mine = field.entered ? (field.value !== undefined ? displayOf(field.view, field.value) : textDraft(field)) : "미입력";
+  return `현재 마스터 값 가져오기 · 마스터 ${displayOf(field.view, field.view.masterValue)} · 이 값 ${mine}`;
+}
+
+/** 칸 옆 스냅샷 값 명령 — 가져오기(마스터와 다를 때만) · 값 비우기(값이 있을 때만). 비우기는 미입력, 가져오기는 명시 값이라 한 버튼에 두지 않는다. */
+function ValueCommands({ field, onClear, onImport }: { field: FieldState; onClear: () => void; onImport: () => void }) {
+  return (
+    <>
+      {differsFromMaster(field) && <IconButton className="ts-import" label={importTip(field)} icon={<IconImport />} onClick={onImport} />}
+      {field.entered && <IconButton className="ts-clear" label={`${field.view.label} 값 비우기`} icon={<IconClose />} onClick={onClear} />}
+    </>
+  );
+}
+
+function FieldRow({ idBase, field, externalIssues, onEdit, commands, onRemove, showCode, readOnly, highlighted }: FieldRowProps) {
   const { view } = field;
-  const [askRevert, setAskRevert] = useState(false);
   const rowRef = useRef<HTMLDivElement>(null);
   // 강조 행은 화면 가운데로 — 마스터 필드 상세의 값 노드에서 건너온 사람이 그 자리를 바로 본다
   useEffect(() => {
@@ -373,25 +404,8 @@ function FieldRow({ idBase, field, externalIssues, onEdit, onRevert, onRemove, s
   const id = `${idBase}-${view.path.replace(".", "-")}`;
   const Input = INPUT_BY_KIND[view.type.kind];
   const notEntered = view.state !== "entered";
-  const masterText = displayOf(view, view.masterValue);
-  const revertTip = `마스터 값으로 되돌리기 · 마스터: ${view.masterLabel ?? ""} = ${masterText}`;
   // 면책 기간(개월) 입력 — 숫자 옆에 「n년 n개월」 해석을 곁들인다 (ADR-0065 §1).
   const monthsHint = view.path === EXEMPTION_MONTHS && typeof field.value === "number" ? formatPeriod(field.value) : undefined;
-
-  const control =
-    view.source === "snapshot" ? (
-      <span className="ts-field-snapshot">
-        <Input id={id} field={field} onEdit={onEdit} className="ts-field-direct" />
-        <IconButton
-          className="ts-revert"
-          label={revertTip}
-          icon={<IconRevert />}
-          onClick={() => setAskRevert(true)}
-        />
-      </span>
-    ) : (
-      <Input id={id} field={field} onEdit={onEdit} className="ts-field-direct" />
-    );
 
   const rowClass = `ts-form-row${field.entered ? "" : " is-not-entered"}${highlighted ? " ts-field-highlight" : ""}`;
 
@@ -419,7 +433,8 @@ function FieldRow({ idBase, field, externalIssues, onEdit, onRevert, onRemove, s
       </span>
       {/* 읽기 모드는 입력만 잠근다 — 라벨 옆 ⓘ 의 tooltip · 링크는 살아 있어야 한다 */}
       <div className="ts-form-control" inert={readOnly}>
-        {control}
+        <Input id={id} field={field} onEdit={onEdit} className="ts-field-direct" />
+        {commands && !readOnly && <ValueCommands field={field} onClear={commands.onClear} onImport={commands.onImport} />}
         {monthsHint && <span className="ts-muted">{monthsHint}</span>}
         {notEntered && !readOnly && <span className="ts-badge missing">미입력</span>}
         {field.proposed && <span className="ts-badge proposed">제안값 · 저장해야 확정</span>}
@@ -434,35 +449,6 @@ function FieldRow({ idBase, field, externalIssues, onEdit, onRevert, onRemove, s
           </span>
         ))}
       </div>
-      {askRevert && (
-        // 되돌리기는 사람이 쓴 값을 지운다 → 확인을 거친다 (§1.2 · §1.5). 버튼은 텍스트다 (§1.6 예외 ②)
-        <div className="ts-form-full">
-          <section className="ts-confirm">
-            <p className="ts-confirm-title">{view.label} 을(를) 마스터 값으로 되돌린다</p>
-            <ul className="ts-confirm-loss">
-              <li>지금 칸에 있는 「{textDraft(field) === "" ? "빈 값" : displayOf(view, field.value)}」 이(가) 사라진다</li>
-              <li>
-                마스터 {view.masterLabel} 의 값 「{masterText}」 이(가) 들어온다 — 저장해야 확정된다
-              </li>
-            </ul>
-            <div className="ts-confirm-actions">
-              <button
-                type="button"
-                className="danger"
-                onClick={() => {
-                  onRevert();
-                  setAskRevert(false);
-                }}
-              >
-                마스터 값으로 되돌리기
-              </button>
-              <button type="button" onClick={() => setAskRevert(false)}>
-                취소
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
     </div>
   );
 }
@@ -474,7 +460,9 @@ function FieldRow({ idBase, field, externalIssues, onEdit, onRevert, onRemove, s
  * 자리가 없으면 「{라벨} ⊕」 버튼, 있으면 「{라벨} [__]{단위}」 + ⊖. 읽기 모드는 값이 있을 때만 「{라벨} {값}」.
  * 비어 있어도 「미입력」이 없다 — 안 적으면 기본(지급률 100%)이다.
  */
-function HeadField({ idBase, field, absent, readOnly, issues, onAdd, onRemove, onEdit }: {
+function HeadField({ idBase, field, absent, readOnly, issues, onAdd, onRemove, onEdit, onImport }: {
+  /** 스냅샷 값 명령 — 마스터와 다르면 「현재 마스터 값 가져오기」 (자리 없음 = 미입력도 다르다). */
+  onImport?: () => void;
   idBase: string;
   field: FieldState;
   absent: boolean;
@@ -493,11 +481,15 @@ function HeadField({ idBase, field, absent, readOnly, issues, onAdd, onRemove, o
       </span>
     );
   }
+  const importButton = onImport && differsFromMaster(field) ? <IconButton className="ts-import" label={importTip(field)} icon={<IconImport />} onClick={onImport} /> : null;
   if (absent) {
     return (
-      <button type="button" className="ts-form-optional-btn ts-head-add" title={`${view.label} 추가`} data-path={view.path} onClick={onAdd}>
-        {view.label} <IconPlusCircle />
-      </button>
+      <>
+        <button type="button" className="ts-form-optional-btn ts-head-add" title={`${view.label} 추가`} data-path={view.path} onClick={onAdd}>
+          {view.label} <IconPlusCircle />
+        </button>
+        {importButton}
+      </>
     );
   }
   const id = `${idBase}-${view.path.replace(".", "-")}`;
@@ -509,6 +501,7 @@ function HeadField({ idBase, field, absent, readOnly, issues, onAdd, onRemove, o
       </label>
       <Input id={id} field={field} onEdit={onEdit} className="ts-field-direct" />
       <IconButton className="ts-form-field-remove" danger icon={<IconMinusCircle />} label={`${view.label} 빼기 — 값을 지운다(100%)`} onClick={onRemove} />
+      {importButton}
       {field.error !== undefined && (
         <span className="ts-form-error" role="alert">
           {field.error}
@@ -524,7 +517,7 @@ function HeadField({ idBase, field, absent, readOnly, issues, onAdd, onRemove, o
 }
 
 /** 「특성 ⊕」 — 아직 안 붙은 특성(닫힌 여는 폼)을 고르는 메뉴. 다 붙었으면 ⊕ 가 잠긴다 (2026-10-21). */
-function TraitAdd({ closed, onOpen }: { closed: readonly FormCard[]; onOpen: (form: string) => void }) {
+function TraitAdd({ closed, onOpen, onImport }: { closed: readonly FormCard[]; onOpen: (form: string) => void; /** 스냅샷 값 명령 — 마스터에 있는 특성을 마스터 값으로. */ onImport?: (form: string) => void }) {
   const [open, setOpen] = useState(false);
   const none = closed.length === 0;
   return (
@@ -542,6 +535,13 @@ function TraitAdd({ closed, onOpen }: { closed: readonly FormCard[]; onOpen: (fo
         />
       </span>
       <div className="ts-form-control">
+        {onImport &&
+          closed.filter(masterHasForm).map((card) => (
+            // 마스터엔 있는데 이 상품담보에서 뗀 특성 — 마스터 값으로 다시 붙인다 (기능/상품 §4.8)
+            <button key={card.key} type="button" className="ts-linklike ts-trait-import" onClick={() => onImport(card.key)}>
+              마스터에는 {card.label} 있음 · 가져오기
+            </button>
+          ))}
         {open && !none && (
           <span className="ts-trait-menu" role="menu" aria-label="붙일 특성">
             {closed.map((card) => (
@@ -587,8 +587,13 @@ export function StructForm({
   flat,
   headPaths = [],
   frame,
+  valueCommands,
+  state: controlled,
+  dispatch: controlledDispatch,
 }: StructFormProps) {
-  const [state, dispatch] = useReducer(formReducer, initialState, (restored) => restored ?? initFormState(model));
+  const [inner, innerDispatch] = useReducer(formReducer, initialState, (restored) => restored ?? initFormState(model));
+  const state = controlled ?? inner;
+  const dispatch = controlledDispatch ?? innerDispatch;
   const [submitIssues, setSubmitIssues] = useState<Issue[]>([]);
   // 복원한 초안은 그것을 만든 모델의 지문으로 시작한다 — 지금 모델과 다르면 아래에서 바로 새 저장값으로 다시 세운다.
   const [signature, setSignature] = useState(() => savedSignature(initialState?.model ?? model));
@@ -599,7 +604,7 @@ export function StructForm({
   const nextSignature = savedSignature(model);
   if (signature !== nextSignature) {
     setSignature(nextSignature);
-    dispatch({ type: "reset", model });
+    innerDispatch({ type: "reset", model });
   }
   const live = state;
 
@@ -654,7 +659,11 @@ export function StructForm({
               field={live.fields[view.path]}
               externalIssues={issuesAt(view.path)}
               onEdit={(draft) => dispatch({ type: "edit", path: view.path, draft })}
-              onRevert={() => dispatch({ type: "revertToMaster", path: view.path })}
+              commands={
+                valueCommands
+                  ? { onClear: () => dispatch({ type: "clear", path: view.path }), onImport: () => dispatch({ type: "importMaster", path: view.path }) }
+                  : undefined
+              }
               onRemove={view.optional && !readOnly ? () => dispatch({ type: "removeField", path: view.path }) : undefined}
               showCode={showCodes}
               readOnly={readOnly}
@@ -734,7 +743,7 @@ export function StructForm({
       <h2 className="ts-form-title">{model.label}</h2>
       {model.cards.length === 0 && <p className="ts-form-empty">입력할 값 자리가 없습니다.</p>}
       {visibleCards.filter(({ card }) => !card.optional).map(renderCard)}
-      {!readOnly && hasTraits && <TraitAdd closed={closedCards} onOpen={(form) => dispatch({ type: "openForm", form })} />}
+      {!readOnly && hasTraits && <TraitAdd closed={closedCards} onOpen={(form) => dispatch({ type: "openForm", form })} onImport={valueCommands ? (form) => dispatch({ type: "importMasterForm", form }) : undefined} />}
       {visibleCards.filter(({ card }) => card.optional).map(renderCard)}
       {unplaced.length > 0 && (
         <ul className="ts-form-issues" role="alert">
@@ -776,6 +785,7 @@ export function StructForm({
         onAdd={() => dispatch({ type: "addField", path: view.path })}
         onRemove={() => dispatch({ type: "removeField", path: view.path })}
         onEdit={(draft) => dispatch({ type: "edit", path: view.path, draft })}
+        onImport={valueCommands ? () => dispatch({ type: "importMaster", path: view.path }) : undefined}
       />
     ));
   return <>{frame({ head: head.length > 0 ? head : null, body })}</>;

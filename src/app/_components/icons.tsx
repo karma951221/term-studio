@@ -101,6 +101,17 @@ export function IconRevert(props: IconProps) {
   );
 }
 
+/** 가져오기 — 위에서 들어오는 화살표 + 받침. 「현재 마스터 값 가져오기」(기능/상품 §3.4). */
+export function IconImport(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M8 2.5v7" />
+      <path d="M5 6.8 8 9.8l3-3" />
+      <path d="M3 11.5v2h10v-2" />
+    </Svg>
+  );
+}
+
 export function IconPlus(props: IconProps) {
   return (
     <Svg {...props}>

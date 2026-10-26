@@ -16,6 +16,8 @@ import {
   isFieldHidden,
   isViewShown,
   isViewSingle,
+  differsFromMaster,
+  masterHasForm,
   toSubmission,
   zodSchemaFor,
   zodValueSchema,
@@ -163,8 +165,9 @@ describe("buildForm — 마스터 메타만으로 폼 모델이 만들어진다 
     expect(지급률.source).toBe("snapshot");
     expect(지급률.masterValue).toBe(100);
     expect(지급률.masterLabel).toBe("수술비(1~7종)[상해]");
-    // 마스터와 같은 값은 그냥 직접값 — 되돌릴 것이 없다
+    // 마스터와 같은 값은 그냥 직접값 — 그래도 마스터 값은 싣는다(편집 중 바꾸면 가져오기 아이콘이 서야 한다)
     expect(form.fields.find((f) => f.path === "pay.note")!.source).toBe("direct");
+    expect(form.fields.find((f) => f.path === "pay.note")!.masterValue).toBe("마스터 메모");
     // 마스터가 값을 갖지 않는 자리도 직접값
     expect(form.fields.find((f) => f.path === "pay.exempt")!.source).toBe("direct");
   });
@@ -369,18 +372,18 @@ describe("formReducer — clear · applyPrefill", () => {
     expect(s.fields["pay.applied"].draft).toEqual([]);
   });
 
-  it("revertToMaster: 마스터 값을 draft 로 끌어온다 — 저장해야 확정된다 (§1.2)", () => {
+  it("importMaster: 지금 마스터 값을 draft 로 가져온다 — 확인 없이 초안으로, 저장해야 확정된다 (기능/상품 §3.4)", () => {
     const model = benefitForm(
       new Map<string, ValueSlot>([["pay.rate", entered(80)]]),
       { masterLabel: "수술비[상해]", masterValues: new Map<string, ValueSlot>([["pay.rate", entered(100)]]) },
     );
-    const s = formReducer(initFormState(model), { type: "revertToMaster", path: "pay.rate" });
+    const s = formReducer(initFormState(model), { type: "importMaster", path: "pay.rate" });
     expect(s.fields["pay.rate"]).toMatchObject({ draft: "100", value: 100, dirty: true });
   });
 
-  it("revertToMaster: 마스터 값이 없는 자리에는 아무 일도 없다", () => {
+  it("importMaster: 마스터 값이 없는 자리에는 아무 일도 없다", () => {
     const s = stateOf();
-    expect(formReducer(s, { type: "revertToMaster", path: "pay.rate" })).toBe(s);
+    expect(formReducer(s, { type: "importMaster", path: "pay.rate" })).toBe(s);
   });
 
   it("reset: 서버가 새 모델을 내려보내면 편집 상태를 새 진실로 다시 세운다", () => {
@@ -824,5 +827,70 @@ describe("선택 필드 (optional) — 면책여부 · 지급률, 필요할 때�
     s = formReducer(s, { type: "reset", model: buildForm("benefit", enums, new Map(), undefined, master) });
     expect(s.added).toEqual({});
     expect(isFieldAbsent(s, "pay.rate")).toBe(true);
+  });
+});
+
+// ───────────────────────────── 스냅샷 명령 — 비우기 · 가져오기 · 특성 (기능/상품 §3.4 · §4.8) ─────────────────────────────
+
+describe("스냅샷 값 명령 — 값 비우기 · 현재 마스터 값 가져오기 · 특성 붙이기/떼기", () => {
+  const snapshotModel = (mine: [string, ValueSlot][], theirs: [string, ValueSlot][]) =>
+    buildForm("benefit", () => undefined, new Map(mine), { masterLabel: "급부 (마스터)", masterValues: new Map(theirs) });
+
+  it("differsFromMaster — 초안이 마스터 값과 다를 때만 (입력 중 같아지면 꺼진다 · 비우면 켜진다)", () => {
+    let s = initFormState(snapshotModel([["pay.rate", entered(80)]], [["pay.rate", entered(90)]]));
+    expect(differsFromMaster(s.fields["pay.rate"])).toBe(true);
+    s = formReducer(s, { type: "edit", path: "pay.rate", draft: "90" });
+    expect(differsFromMaster(s.fields["pay.rate"])).toBe(false);
+    s = formReducer(s, { type: "clear", path: "pay.rate" });
+    expect(differsFromMaster(s.fields["pay.rate"])).toBe(true);
+  });
+
+  it("differsFromMaster — 마스터 값이 미입력인 칸은 언제나 아니다 (가져오면 비우기와 같다)", () => {
+    const s = initFormState(snapshotModel([["pay.rate", entered(80)]], []));
+    expect(differsFromMaster(s.fields["pay.rate"])).toBe(false);
+  });
+
+  it("importMaster — 자리 없는 선택 필드(지급률)도 더하면서 마스터 값을 채운다", () => {
+    let s = initFormState(snapshotModel([], [["pay.rate", entered(90)]]));
+    expect(isFieldAbsent(s, "pay.rate")).toBe(true);
+    s = formReducer(s, { type: "importMaster", path: "pay.rate" });
+    expect(isFieldAbsent(s, "pay.rate")).toBe(false);
+    expect(toSubmission(s).values).toContainEqual({ path: "pay.rate", value: 90 });
+  });
+
+  it("clear — 값 비우기는 미입력이 되고 저장된 값은 지우기로 제출된다", () => {
+    const s = formReducer(initFormState(snapshotModel([["exemption.months", entered(3)]], [])), { type: "clear", path: "exemption.months" });
+    expect(s.fields["exemption.months"].entered).toBe(false);
+    expect(toSubmission(s).values).toContainEqual({ path: "exemption.months", value: undefined });
+  });
+
+  it("masterHasForm — 마스터에 그 특성(여는 폼) 값이 하나라도 있으면", () => {
+    const model = snapshotModel([], [["exemption.months", entered(3)]]);
+    const card = (key: string) => model.cards.find((c) => c.key === key)!;
+    expect(masterHasForm(card("exemption"))).toBe(true);
+    expect(masterHasForm(card("reduction"))).toBe(false);
+  });
+
+  it("importMasterForm — 특성을 마스터 값으로 붙인다 (마스터에 없는 칸은 빈 칸)", () => {
+    let s = initFormState(snapshotModel([], [["exemption.months", entered(3)], ["exemption.new_only", entered(false)]]));
+    expect(s.open.exemption).toBe(false);
+    s = formReducer(s, { type: "importMasterForm", form: "exemption" });
+    expect(s.open.exemption).toBe(true);
+    expect(s.fields["exemption.months"]).toMatchObject({ value: 3, dirty: true, proposed: false });
+    expect(s.fields["exemption.new_only"].value).toBe(false);
+    expect(s.fields["exemption.age15_only"].entered).toBe(false);
+    expect(toSubmission(s).values).toEqual([
+      { path: "exemption.months", value: 3 },
+      { path: "exemption.new_only", value: false },
+    ]);
+  });
+
+  it("openForm — 「특성 ⊕」는 빈 값(코드 기본값이 있으면 그 값)으로 붙인다", () => {
+    const s = formReducer(initFormState(snapshotModel([], [["exemption.months", entered(3)]])), { type: "openForm", form: "exemption" });
+    expect(s.fields["exemption.months"].entered).toBe(false);
+    expect(toSubmission(s).values).toEqual([
+      { path: "exemption.age15_only", value: false },
+      { path: "exemption.new_only", value: true },
+    ]);
   });
 });
