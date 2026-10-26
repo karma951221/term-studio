@@ -3007,19 +3007,9 @@ td.col-ident {
 }
 
 /* 스냅샷 · 변경됨 — 입력 필드 오른쪽 끝에 되돌리기 아이콘 버튼 (§1.2) */
-.ts-field-snapshot {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.ts-field-snapshot > input:where(:not([data-slot])),
-.ts-field-snapshot > select:where(:not([data-slot])) {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.ts-revert {
+/* 상품담보 값 — 칸 옆 「현재 마스터 값 가져오기」 · 「값 비우기」 아이콘 (기능/상품 §3.4 · §4.8) */
+.ts-import,
+.ts-clear {
   flex: 0 0 auto;
 }
 
@@ -4981,6 +4971,11 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 
 .ts-trait-box .ts-form-group-title .ts-iconbtn.ts-form-card-remove {
   margin: 0 4px 0 -4px;
+}
+
+/* 「마스터에는 면책 있음 · 가져오기」 — 「특성 ⊕」 옆 (기능/상품 §4.8) */
+.ts-trait-import {
+  margin-right: 8px;
 }
 
 .ts-trait-menu {

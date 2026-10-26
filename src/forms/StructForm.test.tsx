@@ -207,7 +207,7 @@ describe("StructForm — 값의 출처 문법 (디자인원칙 §1.2, 리뷰 #47
     expect(tagsWith(html, 'name="pay.notice"')[0]).toContain("ts-field-direct");
   });
 
-  it("손댄 스냅샷은 입력칸 + 되돌리기 버튼, 마스터 값은 tooltip 으로만 준다", () => {
+  it("마스터와 다른 칸 — 읽기 모드에는 아무 조작도 없다, 「마스터 값으로 되돌리기」는 없다 (기능/상품 §3.4)", () => {
     const model = buildForm(
       "benefit",
       enums,
@@ -215,10 +215,9 @@ describe("StructForm — 값의 출처 문법 (디자인원칙 §1.2, 리뷰 #47
       { masterLabel: "수술비(1~7종)[상해]", masterValues: new Map<string, ValueSlot>([["pay.rate", entered(100)]]) },
       master,
     );
-    const html = renderToStaticMarkup(<StructForm model={model} onSubmit={() => {}} />);
-    expect(html).toContain("ts-field-snapshot");
-    expect(html).toContain("ts-revert");
-    expect(html).toContain("마스터 값으로 되돌리기 · 마스터: 수술비(1~7종)[상해] = 100");
+    const html = renderToStaticMarkup(<StructForm model={model} embedded readOnly valueCommands />);
+    expect(html).not.toContain("마스터 값으로 되돌리기");
+    expect(html).not.toContain("현재 마스터 값 가져오기");
   });
 
   it("글리프를 문자로 쓰지 않는다 — 되돌리기는 SVG (§1.6)", () => {

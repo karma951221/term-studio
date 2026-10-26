@@ -49,7 +49,11 @@ interface SiblingControls {
   onRemove: () => void;
 }
 
-function Card({ editing, level, nodeKey, treeKey, name, onName, issue, sibling, isTarget, scrollToCard, children, body, headExtra }: {
+/**
+ * 노드 카드 하나 — 담보 상세와 상품담보 값 화면(기능/상품 §4.8)이 함께 쓴다. 상품담보 값 화면은 늘 `editing={false}` 로 부른다 —
+ * 이름 · 순서 · ⊖ 같은 구조 조작이 없다(구조는 마스터, 기능/상품 §3.3).
+ */
+export function Card({ editing, level, nodeKey, treeKey, name, onName, issue, sibling, isTarget, scrollToCard, children, body, headExtra }: {
   editing: boolean;
   level: Level;
   nodeKey: string;

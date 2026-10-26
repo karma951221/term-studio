@@ -85,7 +85,7 @@ import {
   type JudgmentSnapshot,
   type VerdictResult,
 } from "@/domain/product";
-import { CONTRACT_KIND_PATH, findForm, findMasterField, formRuleIssues, formsOfLevel, isStandaloneContract, type MasterForm } from "@/domain/master";
+import { CONTRACT_KIND_PATH, describeTraitDetachment, findForm, findMasterField, formRuleIssues, formsOfLevel, isStandaloneContract, traitDetachments, type MasterForm } from "@/domain/master";
 import type { Actor, AttachLevel, Code, Coordinate, Id, Impact, Issue, Result, Value, ValueSlot } from "@/domain/types";
 import { entered, mergeImpacts, ok, reject } from "@/domain/types";
 
@@ -154,6 +154,12 @@ export interface SyncResult {
 export interface SlotWrite {
   path: SlotPath;
   value: Value | undefined;
+}
+
+/** 상품담보 값 화면 저장의 노드 하나 — 그 스냅샷 실체(상품담보 · 세부보장 · 급부)에 쓸 값 (기능/상품 §4.8). */
+export interface SnapshotWrites {
+  owner: SnapshotOwner;
+  entries: SlotWrite[];
 }
 
 /**
@@ -329,6 +335,13 @@ export interface ProductService {
   setSnapshotValue(actor: Actor, id: Id, owner: SnapshotOwner, path: SlotPath, value: Value | undefined): Promise<Result<void>>;
   /** `setProductValues` 와 같은 규칙 — 한 제출, 전부 검사 후 쓰기. */
   setSnapshotValues(actor: Actor, id: Id, owner: SnapshotOwner, entries: readonly SlotWrite[]): Promise<Result<void>>;
+  /**
+   * 상품담보 값 화면 저장 한 번 (기능/상품 §3.4 · §4.8) — 모든 노드의 값 초안을 **전부 검사한 뒤** 한 트랜잭션으로.
+   * 하나라도 틀리면 아무것도 안 쓰고 `invalid` — 이슈 좌표는 그 노드(`ownerId` = 스냅샷 실체 id) · 그 칸(`refPath`).
+   * 특성(감액 · 면책 — 여는 폼)이 값을 하나도 안 남기게 되면 「특성 해제」 — 1차는 `needsConfirmation`(사라질 값 줄),
+   * `{ confirm: true }` 면 쓴다. 역할 관문은 없다 — 잃는 것은 이 상품담보의 값뿐이고 같은 화면에서 다시 붙일 수 있다.
+   */
+  saveSnapshot(actor: Actor, id: Id, writes: readonly SnapshotWrites[], opts?: Confirmable): Promise<Result<void>>;
   renameProductCoverage(actor: Actor, id: Id, name: string): Promise<Result<ProductCoverage>>;
   regenerateName(actor: Actor, id: Id): Promise<Result<ProductCoverage>>;
   setAttributes(actor: Actor, id: Id, selections: AttributeSelection[], opts?: { regenerateName?: boolean }): Promise<Result<ProductCoverage>>;
@@ -616,6 +629,40 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
         const owners = await snapshotOwners(tx, id);
         if (!owners.some((o) => o.owner.kind === owner.kind && o.owner.id === owner.id)) return notFound(`상품담보 ${id} 의 스냅샷 실체 ${owner.kind}/${owner.id}`);
         return writeAllChecked(tx, actor, owner, entries);
+      }),
+    );
+  }
+
+  function saveSnapshot(actor: Actor, id: Id, writes: readonly SnapshotWrites[], opts: Confirmable = {}): Promise<Result<void>> {
+    return db.transaction((tx) =>
+      withCoverage(tx, id, async () => {
+        const owners = await snapshotOwners(tx, id);
+        const nodeOf = (w: SnapshotWrites) => owners.find((o) => o.owner.kind === w.owner.kind && o.owner.id === w.owner.id);
+        for (const w of writes) if (!nodeOf(w)) return notFound(`상품담보 ${id} 의 스냅샷 실체 ${w.owner.kind}/${w.owner.id}`);
+        // 전부 검사 — 이슈는 그 노드 · 그 칸으로
+        const issues: Issue[] = [];
+        for (const w of writes) {
+          for (const e of w.entries) {
+            for (const found of await checkSlot(tx, w.owner, e.path, e.value)) issues.push({ ...found, at: { ...found.at, document: "special", ownerId: w.owner.id } });
+          }
+        }
+        if (issues.length > 0) return invalid(issues);
+        // 특성 해제 — 확인 뒤에만 (기능/상품 §4.8)
+        if (!opts.confirm) {
+          const lines: string[] = [];
+          let lost = 0;
+          for (const w of writes) {
+            const level = LEVEL_OF[w.owner.kind];
+            const name = nodeOf(w)!.node?.name ?? "";
+            for (const d of traitDetachments(level, await readSlots(tx, w.owner), w.entries)) {
+              lines.push(describeTraitDetachment(name, d));
+              lost += d.lost.length;
+            }
+          }
+          if (lines.length > 0) return reject({ reason: "needsConfirmation", impact: { valueRowsLost: lost, brokenRefs: [], cascade: lines } });
+        }
+        for (const w of writes) for (const e of w.entries) await writeSlot(tx, w.owner, e.path, e.value, actor.userId);
+        return ok(undefined);
       }),
     );
   }
@@ -1502,6 +1549,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
     },
     setSnapshotValue: (actor, id, owner, path, value) => setSnapshotValues(actor, id, owner, [{ path, value }]),
     setSnapshotValues,
+    saveSnapshot,
     renameProductCoverage: (actor, id, name) =>
       db.transaction((tx) =>
         withCoverage(tx, id, async (pc) => {

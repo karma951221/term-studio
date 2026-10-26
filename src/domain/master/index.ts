@@ -14,3 +14,4 @@ export * from "./rules";
 export * from "./table";
 export * from "./types";
 export * from "./visibility";
+export * from "./traits";

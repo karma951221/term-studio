@@ -63,9 +63,9 @@ export interface FieldView {
   source: FieldSource;
   /** 이 필드가 속한 폼 — 카드 머리이자 읽기 뷰의 「폼 › 필드」 접두 (기능/마스터 §3.1). */
   form: FormRef;
-  /** snapshot 만 — 마스터가 갖고 있는 값. */
+  /** 스냅샷 문맥에서 마스터가 이 자리에 값을 가졌으면 그 값 — 「현재 마스터 값 가져오기」의 재료 (기능/상품 §3.4). */
   masterValue?: Value;
-  /** snapshot 만 — 마스터의 이름 「표시명 (코드)」 (ADR-0005 · §9.4). */
+  /** `masterValue` 가 있을 때 — 마스터의 이름 「표시명 (코드)」 (ADR-0005 · §9.4). */
   masterLabel?: string;
   /** 기본 숨김 — 값이 기본값 그대로면 칸을 감춘다 (`isFieldHidden`, 기능/담보 §3.4). */
   hiddenByDefault?: true;
@@ -166,12 +166,13 @@ function fieldView(
   if (field.infoTip && field.description !== undefined) view.description = field.description;
   if (field.visibleWhen) view.visibleWhen = { path: masterPath(form.key, field.visibleWhen.field), equals: field.visibleWhen.equals };
   if (field.singleWhen) view.singleWhen = { path: masterPath(form.key, field.singleWhen.field), equals: field.singleWhen.equals };
-  // 탑재 스냅샷을 손댄 자리만 「스냅샷 · 변경됨」 — 마스터와 같으면 평범한 직접값이다 (§1.2)
+  // 스냅샷 문맥 — 마스터 값이 있는 자리는 그 값을 싣는다(편집 중 「현재 마스터 값 가져오기」의 재료, 기능/상품 §3.4).
+  // 저장값이 마스터와 다른 자리만 「스냅샷 · 변경됨」 — 같으면 평범한 직접값이다 (§1.2)
   const master = snapshot?.masterValues.get(path);
-  if (snapshot && master?.entered && !valueEquals(master.value, view.value)) {
-    view.source = "snapshot";
+  if (snapshot && master?.entered) {
     view.masterValue = master.value;
     view.masterLabel = snapshot.masterLabel;
+    if (!valueEquals(master.value, view.value)) view.source = "snapshot";
   }
   return view;
 }
@@ -299,8 +300,10 @@ export type FormAction =
   | { type: "clear"; path: SlotPath }
   /** 폼 전체 비우기 — 프리필 제안까지 걷어낸다 (버튼 「비우기」). */
   | { type: "clearAll" }
-  /** 스냅샷을 마스터 값으로 되돌리기. 확인을 거친 뒤에만 (§1.2). */
-  | { type: "revertToMaster"; path: SlotPath }
+  /** 현재 마스터 값 가져오기 — 확인 없이 초안으로 (기능/상품 §3.4). 자리 없는 선택 필드면 더하면서 채운다. */
+  | { type: "importMaster"; path: SlotPath }
+  /** 마스터에 있는 특성(여는 폼)을 마스터 값으로 붙인다 — 「마스터에는 면책 있음 · 가져오기」 (기능/상품 §4.8). */
+  | { type: "importMasterForm"; form: Code }
   /** 서버가 새 모델을 내려보냈다 (저장 직후) — 편집 상태를 새 진실로 다시 세운다. */
   | { type: "reset"; model: FormModel }
   /** 여는 폼 카드를 연다 — 그 카드 필드를 저장값 → 프리필 → 빈 규칙으로 다시 세운다. */
@@ -469,6 +472,14 @@ export function formReducer(state: FormState, action: FormAction): FormState {
     }
     return { ...state, open, fields };
   }
+  if (action.type === "importMasterForm") {
+    const fields = { ...state.fields };
+    for (const view of state.model.fields) {
+      if (view.form.key !== action.form) continue;
+      fields[view.path] = fieldStateOf(view, view.masterValue === undefined ? emptyDraft(view.type) : draftOf(view.type, view.masterValue), true);
+    }
+    return trimSingles({ ...state, open: { ...state.open, [action.form]: true }, fields });
+  }
   if (action.type === "clearAll") {
     const fields: Record<SlotPath, FieldState> = {};
     for (const view of state.model.fields) {
@@ -488,12 +499,28 @@ export function formReducer(state: FormState, action: FormAction): FormState {
     case "clear":
       next = fieldStateOf(field.view, emptyDraft(field.view.type), true);
       break;
-    case "revertToMaster":
+    case "importMaster":
       if (field.view.masterValue === undefined) return state;
       next = fieldStateOf(field.view, draftOf(field.view.type, field.view.masterValue), true);
+      // 자리 없는 선택 필드(지급률)는 가져오면서 자리를 만든다
+      if (field.view.optional) return trimSingles({ ...state, added: { ...state.added, [action.path]: true }, fields: { ...state.fields, [action.path]: next } });
       break;
   }
   return trimSingles({ ...state, fields: { ...state.fields, [action.path]: next } });
+}
+
+/**
+ * 초안이 지금 마스터 값과 다른가 — 「현재 마스터 값 가져오기」 아이콘이 서는 자리 (기능/상품 §3.4 · §4.8).
+ * 마스터 값이 미입력이면 아니다 — 가져오면 비우기와 같아 아이콘이 할 일이 없다. 해석이 안 되는 초안은 다르다.
+ */
+export function differsFromMaster(field: FieldState): boolean {
+  if (field.view.masterValue === undefined) return false;
+  return !(field.entered && field.error === undefined && valueEquals(field.value, field.view.masterValue));
+}
+
+/** 마스터에 그 특성(여는 폼)이 있나 — 그 폼 자리에 마스터 값이 하나라도 있으면 (기능/상품 §4.8 「마스터에는 면책 있음」). */
+export function masterHasForm(card: FormCard): boolean {
+  return card.optional === true && card.fields.some((f) => f.masterValue !== undefined);
 }
 
 /** 하나만 고르게 된 list<enum> 칸에 여럿이 들어 있으면 첫 것만 남긴다 — 통합 → 단일로 바꿀 때. */

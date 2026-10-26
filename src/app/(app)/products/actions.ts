@@ -5,18 +5,23 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import type { ActionOutcome } from "@/app/_components/ValueForm";
 import { panelQuery, type PanelQueryState } from "@/app/_components/sourcePanel/query";
 import { str } from "@/app/_lib/formData";
 import { describeRejection, errorRedirectPath } from "@/app/_lib/rejection";
 import type { ExplainOutcome, ExplainTarget } from "@/services/assembly";
-import type { GeneralSettingsInput, ProductBasicInput, ProductCoveragesInput, SnapshotOwner } from "@/services/product";
+import type { GeneralSettingsInput, ProductBasicInput, ProductCoveragesInput, SnapshotWrites } from "@/services/product";
 import type { ArticleNode } from "@/domain/document";
-import type { Id, Impact, Issue, Result } from "@/domain/types";
+import type { Id, Impact, Issue, Result, Value } from "@/domain/types";
 import type { Submission } from "@/forms";
 import { currentActor, getServices } from "@/lib/services";
 
 import { productDetailPath, type ProductTab } from "./lib";
+
+/** 값 폼 하나 저장의 결과 — 실패하면 issues 를 싣는다. */
+export interface ActionOutcome {
+  ok: boolean;
+  issues?: Issue[];
+}
 
 const basicValue = z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]);
 const basicSlots = z.array(z.object({ path: z.string(), value: basicValue.optional() }).transform((entry) => ({ path: entry.path, value: entry.value })));
@@ -278,8 +283,33 @@ export async function saveProductCoveragesAction(productId: Id, input: ProductCo
   return { ok: true };
 }
 
-export async function writeSnapshotValuesAction(pcId: Id, owner: SnapshotOwner, submission: Submission): Promise<ActionOutcome> {
+export type SnapshotSaveOutcome = { ok: true } | { ok: "confirm"; impact: Impact } | { ok: false; message: string; issues: Issue[] };
+
+const snapshotSchema = z.array(
+  z.object({
+    owner: z.object({ kind: z.enum(["productCoverage", "productSubCoverage", "productBenefit"]), id: z.string().uuid() }),
+    // 값의 정밀 검사(타입 · 구간 규칙)는 서비스가 한다 — 여기서는 모양만.
+    // 지우기(`value: undefined`)는 서버 액션 왕복에서 키째 빠져 온다(React reply 의 「$undefined」 → reviver 가 키를 지움) —
+    // value 는 선택 키여야 한다. zod 4 의 z.unknown() 은 키가 없으면 거부한다.
+    entries: z.array(z.object({ path: z.string().min(1), value: z.unknown().optional() }).transform((e) => ({ path: e.path, value: e.value as Value | undefined }))),
+  }),
+);
+
+/**
+ * 상품담보 값 화면 저장 한 번 (기능/상품 §4.8) — 모든 노드의 초안을 한 서비스 호출 · 한 트랜잭션으로(`saveSnapshot`).
+ * 특성 해제가 있으면 1차는 `confirm`(영향) — 화면이 저장 확인 모달을 띄우고 `confirm = true` 로 다시 부른다. 역할 관문은 없다.
+ */
+export async function saveSnapshotAction(productId: Id, pcId: Id, writes: SnapshotWrites[], confirm = false): Promise<SnapshotSaveOutcome> {
   const actor = await currentActor();
-  const services = getServices();
-  return outcome(await services.product.setSnapshotValues(actor, pcId, owner, submission.values));
+  const parsed = snapshotSchema.safeParse(writes);
+  if (!parsed.success) return { ok: false, message: "저장할 내용을 읽을 수 없습니다. 새로고침한 뒤 다시 편집해 주세요.", issues: [] };
+  const r = await getServices().product.saveSnapshot(actor, pcId, parsed.data, { confirm });
+  if (!r.ok) {
+    if (r.rejection.reason === "needsConfirmation") return { ok: "confirm", impact: r.rejection.impact };
+    const issues = r.rejection.reason === "invalid" ? r.rejection.issues : [];
+    return { ok: false, message: issues.length > 0 ? "저장하지 못한 값이 있습니다. 표시된 칸을 고쳐 주세요." : msg(r.rejection), issues };
+  }
+  revalidatePath(`/products/${productId}/coverages/${pcId}`);
+  revalidatePath(detailPath(productId));
+  return { ok: true };
 }
