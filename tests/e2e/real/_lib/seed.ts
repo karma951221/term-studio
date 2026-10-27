@@ -39,6 +39,8 @@ export interface CoverageSpec {
   benefitName: string;
   subCoverages?: { name: string; benefitName: string }[];
   coverageValues: { path: string; value: string }[];
+  /** 첫 세부보장 첫 급부의 값 — 급부 특성(면책 `exemption.*` — D0010 「면책 있음」이 읽는다, 기능/담보 §3.4). */
+  benefitValues?: { path: string; value: string | number | boolean }[];
   /** 담보분류 — 열거형 「담보분류」(E0009) 값 코드, 필수 (ADR-0090). */
   category: string;
   /** 변환기가 쓴 자동 탑재 담보(알파Plus2607 주계약 특약 전체) — 화면으로 치지 않는다. */
