@@ -113,6 +113,8 @@ test.describe.serial("★ 실물 재현 — 상품모델링을 화면으로 수�
           await option.getByLabel("세목유형").selectOption("waiver");
           await option.getByRole("radio", { name: reasons ? "예" : "아니오", exact: true }).check();
           for (const reason of reasons ?? []) { await option.getByRole("button", { name: / 값 추가$/ }).click(); await option.getByRole("combobox", { name: / 값 추가$/ }).selectOption({ label: reason }); }
+          // 원문 제28조 ② 암보장개시일 정의에 15세 단서가 있다 — 적용 종의 「15세 이상 적용」 = 예(기능/상품 §3.9, 시드와 같은 값)
+          if (reasons) await option.locator('[data-path="waiver.age15"]').last().getByRole("radio", { name: "예", exact: true }).check();
         }
         // 형 축 — 1형 해약환급금 지급형 · 2형 미지급형. 제27조의1 ④ 「1형(해약환급금 지급형)의 경우 …」는 상품에 해약환급금 지급형이 있을 때만(D0004),
         // 2형 단서 · 2형 박스 · 「1형(해약환급금 지급형)에 한하여 적용합니다」는 미지급형인 형이 있을 때만(D0007) 선다(최종 결정 24 상품 범위 조건) — 원문은 형 둘
