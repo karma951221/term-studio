@@ -14,7 +14,7 @@
 import { can, destructive, type DestructiveAction } from "@/domain/auth";
 import { countedSlotsOf, slotType, validateValue, type Discriminator, type SlotPath } from "@/domain/catalog";
 import { COVERAGE_CATEGORY_ENUM, categoryGroupTitle, validateSlotValue } from "@/domain/coverage";
-import { articleRefLabel, blockingIssues, foldTitle, indexTree, numberTree, type ArticleNode, type DocumentNode } from "@/domain/document";
+import { articleRefLabel, blockingIssues, foldTitle, indexTree, isArticleOmitMode, numberTree, type ArticleNode, type ArticleOmitMode, type DocumentNode } from "@/domain/document";
 import {
   addAttributeValue,
   applyArticleCopies,
@@ -163,8 +163,8 @@ export interface SnapshotWrites {
 }
 
 /**
- * 보통약관 탭 한 번 저장의 **최종 상태** (기능/상품 §3.8) — 숨긴 조 전부 · 오버라이드할 자리 전부.
- * 목록에 없는 숨김 · 오버라이드는 지운다. `options` 는 부분 선택이어도 되고 마스터와 같은 키는 남기지 않는다.
+ * 보통약관 탭 한 번 저장의 **최종 상태** (기능/상품 §3.8) — 숨긴 조 전부 · 오버라이드할 자리 전부 · 조 사본 · 조 생략 기준 전부.
+ * 목록에 없는 숨김 · 오버라이드 · 생략 기준은 지운다. `options` 는 부분 선택이어도 되고 마스터와 같은 키는 남기지 않는다.
  */
 export interface GeneralSettingsInput {
   /** 편집을 시작할 때의 템플릿 — 그 사이 바뀌었으면 초안의 노드가 다른 템플릿 것이라 conflict. */
@@ -173,6 +173,11 @@ export interface GeneralSettingsInput {
   overrides: { nodeId: Id; clauseCode: Code; options: ClauseOptionSelection }[];
   /** 조 사본 전부 (ADR-0079) — 목록에 없는 사본은 지운다(「템플릿대로 되돌리기」). 템플릿과 같은 내용의 사본은 남기지 않는다. 없으면 빈 목록. */
   copies?: ArticleCopy[];
+  /**
+   * 조 생략 기준 (ADR-0093 · 기능/상품 §3.6) — 템플릿과 다르게 둘 조 전부(최종 상태). 목록에 없는 조는 템플릿대로(행을 지운다) ·
+   * 템플릿과 같은 값은 행을 남기지 않는다. 없으면 빈 목록.
+   */
+  omitModes?: { articleId: Id; mode: ArticleOmitMode }[];
   /** 편집을 시작할 때 본 템플릿 판 — 저장하면 「기준 판」이 된다. 없으면 지금 판. */
   templateVersion?: number;
 }
@@ -239,10 +244,10 @@ export interface ProductService {
   /**
    * 보통약관 템플릿 선택·교체·해제(undefined).
    *
-   * 조 노출·옵션 오버라이드·조 사본(ADR-0079)은 **템플릿 기준** 설정이라 템플릿이 실제로 바뀌면 함께 초기화된다
+   * 조 노출·생략 기준(ADR-0093)·옵션 오버라이드·조 사본(ADR-0079)은 **템플릿 기준** 설정이라 템플릿이 실제로 바뀌면 함께 초기화된다
    * (기능/상품 §3.6). 잃는 것이 있으면 1차 호출은
    * `needsConfirmation(Impact)` 으로 거부하고, `{ confirm: true }` 재호출이 **한 트랜잭션**에서
-   * 셋을 비우고 교체한다(기준 판도 새 템플릿 판으로) — 한쪽만 조용히 버리거나(숨김) 교체 자체를 막지(오버라이드) 않는다
+   * 넷을 비우고 교체한다(기준 판도 새 템플릿 판으로) — 한쪽만 조용히 버리거나(숨김) 교체 자체를 막지(오버라이드) 않는다
    * (코덱스 리뷰 2026-09-15 Important-6). 같은 템플릿을 다시 고르면 아무것도 잃지 않는다.
    *
    * 역할 관문은 두지 않는다 — `destructive()` 카탈로그에 넣지 않고 **확인 2단만** 쓴다. 편집자도 한다
@@ -251,13 +256,15 @@ export interface ProductService {
   setGeneralDocument(actor: Actor, id: Id, generalDocumentId: Id | undefined, opts?: ConfirmableDryRun): Promise<Result<Product>>;
   /** 이 상품이 숨긴 보통약관 조 id — 숨긴 순 (기능/상품 §3.6). */
   listHiddenArticles(productId: Id): Promise<Id[]>;
+  /** 이 상품이 템플릿과 다르게 둔 조 생략 기준 — 조 id 순 (ADR-0093 · 기능/상품 §3.6). 없는 조는 템플릿대로. */
+  listArticleOmitModes(productId: Id): Promise<{ articleId: Id; mode: ArticleOmitMode }[]>;
   /**
    * 보통약관 조 하나의 노출 토글 (기능/상품 §3.6). 멱등 — 이미 그 상태면 그대로 `ok`.
    * 템플릿이 없으면 invalid · 템플릿에 없는 조 id 면 notFound. 끄면 끈 조만 가리키게 되는 참조가 생길 때 invalid (ADR-0081).
    */
   setArticleHidden(actor: Actor, productId: Id, articleId: Id, hidden: boolean): Promise<Result<void>>;
   /**
-   * 보통약관 탭 편집 화면 한 번 저장 — 조 노출 · 옵션 오버라이드 · 조 사본의 최종 상태를 전부 검사한 뒤 한 트랜잭션으로 맞춘다
+   * 보통약관 탭 편집 화면 한 번 저장 — 조 노출 · 옵션 오버라이드 · 조 사본 · 조 생략 기준의 최종 상태를 전부 검사한 뒤 한 트랜잭션으로 맞춘다
    * (기능/상품 §3.8 · §3.10). 하나라도 틀리면 아무것도 안 쓰고 `invalid` — 이슈 좌표는 그 조(`articleId`) · 그 자리(`nodePath`).
    * 조 사본 · 노출 끔은 템플릿에 얹은 최종 트리 전체를 보고, 템플릿 단독일 때 없던 참조 깨짐(같은 템플릿 안 · 끈 조 · 탑재한 담보약관 ·
    * 함수조항 본문)과 문면 저장 검증의 새 오류 · 사본이 든 조의 오류를 이 저장의 것으로 친다(ADR-0079 · ADR-0081 결정 2).
@@ -1186,14 +1193,20 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
         withProduct(tx, id, async (p) => {
           if (generalDocumentId && !(await gate.exists(generalDocumentId))) return notFound(`보통약관 템플릿 ${generalDocumentId}`);
           const changes = p.generalDocumentId !== generalDocumentId;
-          // 조 노출 · 오버라이드 · 조 사본은 템플릿의 노드에 매달린 설정이다 — 교체(해제 포함)면 **셋 다** 초기화된다.
+          // 조 노출 · 생략 기준 · 오버라이드 · 조 사본은 템플릿의 노드에 매달린 설정이다 — 교체(해제 포함)면 **넷 다** 초기화된다.
           // 잃는 것이 있으면 파괴적 액션이다 — 관리자만(2026-10-17, ADR-0019 · 기능/상품 §3.6), 세어 확인부터 받는다.
           // 편집자는 확인 카드 전에(confirm · dryRun 이어도) 그 수를 담은 문장으로 거부한다 — 탑재 해제와 같은 방식.
           if (changes) {
-            const [hidden, overrides, copies] = await Promise.all([repo.listHiddenArticles(tx, id), repo.listOverrides(tx, { kind: "product", id }), repo.listArticleCopies(tx, id)]);
-            if (hidden.length + overrides.length + copies.length > 0) {
+            const [hidden, omitModes, overrides, copies] = await Promise.all([
+              repo.listHiddenArticles(tx, id),
+              repo.listArticleOmitModes(tx, id),
+              repo.listOverrides(tx, { kind: "product", id }),
+              repo.listArticleCopies(tx, id),
+            ]);
+            if (hidden.length + omitModes.length + overrides.length + copies.length > 0) {
               const cascade = [
                 ...(hidden.length > 0 ? [`숨긴 조 ${hidden.length}`] : []),
+                ...(omitModes.length > 0 ? [`생략 기준 ${omitModes.length}`] : []),
                 ...(overrides.length > 0 ? [`옵션 오버라이드 ${overrides.length}`] : []),
                 ...(copies.length > 0 ? [`조 사본 ${copies.length}`] : []),
               ];
@@ -1212,6 +1225,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
           if (changes) {
             // 같은 트랜잭션에서 비우고 바꾼다 — 한쪽만 비워진 상태로 끝나지 않는다.
             await repo.clearHiddenArticles(tx, id);
+            await repo.clearArticleOmitModes(tx, id);
             await repo.deleteOverridesOf(tx, { kind: "product", id });
             await repo.clearArticleCopies(tx, id);
           }
@@ -1221,6 +1235,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
         }),
       ),
     listHiddenArticles: (productId) => repo.listHiddenArticles(db, productId),
+    listArticleOmitModes: (productId) => repo.listArticleOmitModes(db, productId),
     /**
      * 조회(상품 · 템플릿의 조 id)와 쓰기를 **한 트랜잭션**에서 한다 — 사이에 템플릿이 바뀌면
      * 새 템플릿을 쓰는 상품에 옛 조의 숨김 행이 남는다 (코덱스 리뷰 2026-09-15 Minor-1).
@@ -1355,6 +1370,26 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
             const diff = Object.fromEntries(Object.entries(merged).filter(([code, value]) => ref.options[code] !== value));
             if (Object.keys(diff).length > 0) writes.push({ nodeId: o.nodeId, clauseCode: o.clauseCode, diff });
           }
+          // ④ 조 생략 기준 (ADR-0093) — 템플릿의 조만 · 조당 한 번 · 아는 값, 저장은 템플릿 값과 다른 것만
+          const omitModes = new Map<Id, ArticleOmitMode>();
+          const omitSeen = new Set<Id>();
+          for (const o of input.omitModes ?? []) {
+            const where = at({ articleId: o.articleId });
+            if (omitSeen.has(o.articleId)) {
+              issues.push(issue("typeMismatch", "같은 조의 생략 기준이 두 번 왔습니다", where));
+              continue;
+            }
+            omitSeen.add(o.articleId);
+            if (!articleIds.has(o.articleId)) {
+              issues.push(issue("brokenRef", "템플릿에 없는 조입니다 — 새로고침해 주세요", where));
+              continue;
+            }
+            if (!isArticleOmitMode(o.mode)) {
+              issues.push(issue("typeMismatch", `생략 기준은 「같을 때만」 · 「포함하면 생략」 중 하나여야 합니다: ${String(o.mode)}`, where));
+              continue;
+            }
+            if (o.mode !== (templateArticles.get(o.articleId)?.omitMode ?? "exact")) omitModes.set(o.articleId, o.mode);
+          }
           if (issues.length > 0) return invalid(issues);
 
           // 검사가 끝난 뒤에만 쓴다 — 숨김은 바뀐 것만(숨긴 순서 유지), 오버라이드는 빠진 자리를 지우고 남은 자리를 덮는다
@@ -1373,6 +1408,10 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
             const was = savedCopies.get(c.articleId);
             if (!was || was.templateHash !== c.templateHash || !sameArticle(was.article, c.article)) await repo.upsertArticleCopy(tx, productId, c, actor.userId);
           }
+          // 조 생략 기준 — 빠진 행은 지우고, 값이 다른 행만 쓴다
+          const savedOmitModes = new Map((await repo.listArticleOmitModes(tx, productId)).map((o) => [o.articleId, o.mode] as const));
+          for (const id of savedOmitModes.keys()) if (!omitModes.has(id)) await repo.deleteArticleOmitMode(tx, productId, id);
+          for (const [id, mode] of omitModes) if (savedOmitModes.get(id) !== mode) await repo.upsertArticleOmitMode(tx, productId, id, mode, actor.userId);
           // 기준 판 — 편집을 시작할 때 본 판(그 사이 템플릿이 또 바뀌었으면 경고가 남는다)
           await repo.setGeneralBaseVersion(tx, productId, input.templateVersion ?? template?.version ?? null);
           return ok(undefined);

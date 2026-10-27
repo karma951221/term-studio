@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestDb, type TestDb } from "@/db/test-utils";
 import { products } from "@/db/schema";
 import { ASSEMBLY_STAMP_SOURCES, assemblyInputStamp, loadPreview, savePreview } from "./preview";
+import { deleteArticleOmitMode, upsertArticleOmitMode } from "./product";
 
 describe("preview repo (PGlite) — 입력 스탬프 · 산출본 upsert", () => {
   let t: TestDb;
@@ -28,6 +29,18 @@ describe("preview repo (PGlite) — 입력 스탬프 · 산출본 upsert", () =>
     // 빈 DB — 상품 행 하나만 count 1
     expect(pieces.find((p) => p.startsWith("products="))).toMatch(/:1$/);
     expect(pieces.find((p) => p.startsWith("clauses="))).toMatch(/^clauses=-:0$/);
+  });
+
+  it("생략 기준 행을 쓰면 입력 스탬프가 바뀐다", async () => {
+    const piece = (stamp: string) => stamp.split("|").find((p) => p.startsWith("product_article_omit_modes="));
+    const before = await assemblyInputStamp(t.db, productId);
+    expect(piece(before)).toBe("product_article_omit_modes=-:0");
+    await upsertArticleOmitMode(t.db, productId, "a-1", "contained", "00000000-0000-4000-8000-000000000002");
+    const written = await assemblyInputStamp(t.db, productId);
+    expect(written).not.toBe(before);
+    expect(piece(written)).toMatch(/:1$/);
+    await deleteArticleOmitMode(t.db, productId, "a-1");
+    expect(piece(await assemblyInputStamp(t.db, productId))).toBe("product_article_omit_modes=-:0");
   });
 
   it("savePreview 는 상품당 1행 upsert · loadPreview 는 없으면 undefined", async () => {
