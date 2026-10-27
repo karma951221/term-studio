@@ -35,6 +35,8 @@ export interface ExemptionTrait {
 }
 
 const DEFINITION = /보장개시일」?이라 함은/;
+/** 정의 항이 정한 이름의 접두 — 「이 특별약관에서 암보장개시일이라」 → 암 · 「이 특별약관에서「암 통합치료보장개시일」이라」 → 암 통합치료. */
+const TERM = /(?:에서|의) ?「?([^「」\s][^「」]*?)보장개시일」?이라 함은/;
 const PERIOD = /그날을 포함하여 (90일|1년)이 지난/;
 /** 단서 앞 — 「계약일을 기준으로 피보험자의 보험나이가 15세 이상인 경우에는 」. */
 const AGE15_HEAD = /(?:최초계약일|계약일)을 기준으로 피보험자의 보험나이가 15세 이상인 경우에는 /;
@@ -77,6 +79,7 @@ const plain = (p: ParagraphNode) => p.children.map((c) => (c.kind === "text" ? c
  */
 export function applyExemption(tree: DocumentNode, boxTitle: (code: string) => string | undefined): ExemptionTrait | undefined {
   let trait: ExemptionTrait | undefined;
+  const terms = new Set<string>();
   const visit = (list: unknown[]): void => {
     for (let i = 0; i < list.length; i++) {
       const node = list[i] as BlockNode;
@@ -94,8 +97,10 @@ export function applyExemption(tree: DocumentNode, boxTitle: (code: string) => s
           });
           if (trait && (trait.months !== found.months || trait.age15 !== found.age15)) throw new Error(`${tree.title}: 보장개시일 정의 항의 기간 · 15세 단서가 서로 다르다`);
           trait = found;
+          const term = TERM.exec(plain(node));
+          if (term) terms.add(term[1]);
           const next = list[i + 1] as BlockNode | undefined;
-          const box = next?.kind === "boxRef" && (boxTitle((next as BoxRefNode).boxCode) ?? "").includes("보장개시일") ? [next] : [];
+          const box = isExampleBox(next, boxTitle) ? [next!] : [];
           const wrapped = { id: `${node.id}-ex`, kind: "condBlock", branches: [{ id: `${node.id}-ex-t`, when: `${EXEMPTION_PRESENT} = true`, children: [node, ...box] }] };
           list.splice(i, 1 + box.length, wrapped);
           continue;
@@ -112,5 +117,83 @@ export function applyExemption(tree: DocumentNode, boxTitle: (code: string) => s
     for (const b of n.branches ?? []) if (Array.isArray(b.children)) visit(b.children);
   };
   visit(tree.children as unknown[]);
+  if (trait) wrapPhrases(tree, terms);
   return trait;
+}
+
+/** 정의 항 바로 뒤 【○○보장개시일[예시]】 — 박스 참조(제목) 또는 1년 면책 담보의 표(첫 칸 글). */
+function isExampleBox(node: BlockNode | undefined, boxTitle: (code: string) => string | undefined): boolean {
+  if (node?.kind === "boxRef") return (boxTitle((node as BoxRefNode).boxCode) ?? "").includes("보장개시일");
+  if (node?.kind === "table") return /^【[^】]*보장개시일\[예시\]】/.test(node.rows[0]?.cells[0]?.map((c) => (c.kind === "text" ? c.text : "")).join("") ?? "");
+  return false;
+}
+
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * 정의 항 밖의 「○○보장개시일 이후(에)」 어구 — 「면책 있음」 문장 안 조건으로 감싼다(무면책이면 정의 없는 이름이 남지 않게).
+ * 빠진 모양은 무면책 원문(메리츠 유사암진단비 · 2대질병 · 알파Plus 무면책 특약)의 문형을 따른다:
+ * - 사망 의제 「보험기간 중 ○○보장개시일 이후에 사망하고」 → 「보험기간 중 보장개시일 이후에 사망하고」 — 이름 접두만 감싼다.
+ * - 「… 중 ○○보장개시일 이후에「…」」 → 「… 중에「…」」 · 「… 중 ○○보장개시일 이후「…」」 → 「… 중「…」」 — 「 ○○보장개시일 이후」만 감싸고 「에」는 남긴다.
+ * - 그 밖(「피보험자가 ○○보장개시일 이후(에) …」) → 「피보험자가 …」 — 「에」까지 감싼다.
+ * 이름은 이 문서의 감싼 정의 항이 정한 것만(재진단암 · 첫번째암 · 따옴표 안 인용은 두지 않는다). 이미 「면책 있음」 조건 안 · 다른 문장 안 조건 안은 건너뛴다(중첩 금지).
+ */
+function wrapPhrases(tree: DocumentNode, terms: ReadonlySet<string>): void {
+  if (terms.size === 0) return;
+  const phrase = new RegExp(`(?<= )(${[...terms].map(escape).join("|")})보장개시일 이후(에)?`, "g");
+  const guard = `${EXEMPTION_PRESENT} = true`;
+  const split = (node: TextLike): (TextLike | CondLike)[] | undefined => {
+    const out: (TextLike | CondLike)[] = [];
+    let at = 0;
+    let n = 0;
+    const text = (t: string) => {
+      if (t) out.push({ id: `${node.id}-ep${n++}`, kind: "text", text: t });
+    };
+    const cond = (t: string) => {
+      const id = `${node.id}-ep${n++}`;
+      out.push({ id, kind: "inlineCond", branches: [{ id: `${id}-t`, when: guard, children: [{ id: `${id}-t-x1`, kind: "text", text: t }] }] });
+    };
+    for (const m of node.text.matchAll(phrase)) {
+      const start = m.index!;
+      const end = start + m[0].length;
+      const after = node.text.slice(end);
+      if (m[2] && /^ 사망/.test(after)) {
+        // 사망 의제 — 이름 접두만
+        text(node.text.slice(at, start));
+        cond(m[1]);
+        text(`보장개시일 이후${m[2]}`);
+      } else {
+        // 앞 띄어쓰기부터 감싼다. 「중」 뒤의 「에」는 남겨 「중에」가 된다
+        const keepParticle = Boolean(m[2]) && /중 $/.test(node.text.slice(0, start));
+        text(node.text.slice(at, start - 1));
+        cond(` ${m[1]}보장개시일 이후${keepParticle ? "" : (m[2] ?? "")}`);
+        if (keepParticle) text(m[2]!);
+      }
+      at = end;
+    }
+    if (n === 0) return undefined;
+    text(node.text.slice(at));
+    return out;
+  };
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (let i = 0; i < node.length; i++) {
+        const c = node[i] as { kind?: string };
+        if (c?.kind === "text") {
+          const parts = split(c as TextLike);
+          if (parts) {
+            node.splice(i, 1, ...parts);
+            i += parts.length - 1;
+          }
+        } else walk(c);
+      }
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    const n = node as { kind?: string; branches?: { when?: string }[] };
+    if (n.kind === "inlineCond") return;
+    if (n.kind === "condBlock" && (n.branches ?? []).some((b) => b.when === guard)) return;
+    for (const v of Object.values(node)) if (typeof v === "object") walk(v);
+  };
+  walk(tree.children);
 }

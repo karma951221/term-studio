@@ -110,6 +110,85 @@ describe("applyExemption — 보장개시일 정의 항을 면책 조건으로",
   });
 });
 
+/** 「면책 있음」만 켜고 끈 글 — 정의 항 밖 보장개시일 어구의 문장 안 조건을 본다(15세 단서 조건은 켠 채로). */
+function textExempt(nodes: readonly Json[], exempt: boolean): string {
+  return nodes
+    .map((n) => {
+      if (n.kind === "text") return String(n.text);
+      if (n.kind === "inlineCond") {
+        const on = n.branches![0].when === `${EXEMPTION_PRESENT} = true` ? exempt : true;
+        return on ? textExempt(n.branches![0].children!, exempt) : "";
+      }
+      return `[${String(n.kind)}]`;
+    })
+    .join("");
+}
+
+function phraseDoc(def: string, lines: string[], extra: Json[] = []): DocumentNode {
+  return {
+    id: "d",
+    kind: "document",
+    title: "암진단비보장 특별약관",
+    children: [
+      {
+        id: "a1",
+        kind: "article",
+        title: [{ id: "a1.t", kind: "text", text: "보험금의 지급사유" }],
+        children: [
+          ...lines.map((text, i) => ({ id: `a1-q${i}`, kind: "paragraph", children: [{ id: `a1-q${i}-x1`, kind: "text", text }] })),
+          { id: "a1-p2", kind: "paragraph", children: [{ id: "a1-p2-x1", kind: "text", text: def }] },
+          ...extra,
+        ],
+      },
+    ],
+  } as unknown as DocumentNode;
+}
+
+describe("applyExemption — 정의 항 밖 「○○보장개시일 이후(에)」 어구도 「면책 있음」 문장 안 조건으로 (무면책 원문 문형)", () => {
+  const paragraphs = (tree: DocumentNode) => ((tree.children[0] as unknown as Json).children ?? []).filter((c) => c.kind === "paragraph");
+
+  it.each([
+    // 지급사유 — 무면책 원문(유사암진단비 · 2대질병): 「보험기간 중에「…」으로」 · 「보험기간 중「…」으로」
+    ["회사는 피보험자가 이 특별약관의 보험기간 중 암보장개시일 이후에「암(유사암제외)」으로 진단확정되었을 때에는", "회사는 피보험자가 이 특별약관의 보험기간 중에「암(유사암제외)」으로 진단확정되었을 때에는"],
+    ["피보험자가 보험료 납입기간 중 암보장개시일 이후「암(유사암제외)」으로 진단확정되거나", "피보험자가 보험료 납입기간 중「암(유사암제외)」으로 진단확정되거나"],
+    // 사망 의제 — 무면책 원문: 「보험기간 중 보장개시일 이후에 사망하고」(접두만 빠진다)
+    ["피보험자가 보험기간 중 암보장개시일 이후에 사망하고 그 후에「암(유사암제외)」으로 사망한 사실이 확인된 경우에는", "피보험자가 보험기간 중 보장개시일 이후에 사망하고 그 후에「암(유사암제외)」으로 사망한 사실이 확인된 경우에는"],
+    // 「중」 뒤가 아니면 「에」까지 빠진다 — 무면책 원문 「피보험자가「뇌졸중」으로 진단확정되었을 경우」
+    ["피보험자가 암보장개시일 이후에 1.(보험금의 지급사유)에서 정한 「암」으로", "피보험자가 1.(보험금의 지급사유)에서 정한 「암」으로"],
+    ["피보험자가 암보장개시일 이후「암(유사암제외)」으로 진단확정되었을 경우", "피보험자가「암(유사암제외)」으로 진단확정되었을 경우"],
+  ])("%s", (line, without) => {
+    const tree = phraseDoc(DEF_15, [line]);
+    applyExemption(tree, boxTitle);
+    const inline = paragraphs(tree)[0].children!;
+    expect(textExempt(inline, true)).toBe(line);
+    expect(textExempt(inline, false)).toBe(without);
+  });
+
+  it("두 낱말 이름(「암 통합치료」 · 「경증이상 치매」)도 정의 항이 정한 이름 그대로 — 정의 항 밖 다른 이름(재진단암 · 따옴표 안 「암보장개시일 이후 5년」)은 두지 않는다", () => {
+    const def = "이 특별약관에서「암 통합치료보장개시일」이라 함은 계약일부터 그날을 포함하여 90일이 지난날의 다음날로 합니다.";
+    const lines = [
+      "피보험자가 이 특별약관의 보험기간 중 암 통합치료보장개시일 이후 「통합치료항목별 대상질병」으로 진단확정되고",
+      "피보험자가 이 특별약관의 보험기간 중 재진단암보장개시일 이후「재진단암」으로",
+      "제1항의「암보장개시일 이후 5년이 지나는 동안」이라 함은",
+    ];
+    const tree = phraseDoc(def, lines);
+    applyExemption(tree, boxTitle);
+    const ps = paragraphs(tree);
+    expect(textExempt(ps[0].children!, false)).toBe("피보험자가 이 특별약관의 보험기간 중 「통합치료항목별 대상질병」으로 진단확정되고");
+    expect(ps[1].children!.map((c) => c.kind)).toEqual(["text"]);
+    expect(ps[2].children!.map((c) => c.kind)).toEqual(["text"]);
+  });
+
+  it("1년 면책 담보의 【○○보장개시일[예시]】 표(정의 항 바로 뒤)도 정의 항과 함께 감싼다", () => {
+    const table = { id: "a1-t1", kind: "table", columns: [{}], rows: [{ header: true, cells: [[{ id: "a1-t1-c-x1", kind: "text", text: "【당뇨병보장개시일[예시]】계약일 당뇨병보장개시일1년" }]] }] };
+    const tree = phraseDoc("이 특별약관에서 당뇨병보장개시일이라 함은 계약일부터 그날을 포함하여 1년이 지난날의 다음날로 합니다.", [], [table as unknown as Json]);
+    applyExemption(tree, boxTitle);
+    const article = tree.children[0] as unknown as Json;
+    expect(article.children!.map((c) => c.kind)).toEqual(["condBlock"]);
+    expect(article.children![0].branches![0].children!.map((c) => c.id)).toEqual(["a1-p2", "a1-t1"]);
+  });
+});
+
 // ───────────────────────────── 변환 결과(시드 JSON) ─────────────────────────────
 
 const DATA = path.join(process.cwd(), "src/db/seed/data");
@@ -148,6 +227,20 @@ describe("시드 — 담보 면책 특성은 원문 보장개시일 정의 항�
     ["a7-d58", 3, false], // 대상포진 — 90일 · 15세 단서 없음
   ])("%s — 기간 %i개월 · 15세 이상만 %s", (key, months, age15) => {
     expect(exemptionOf(key)).toEqual({ "exemption.months": months, "exemption.age15_only": age15, "exemption.new_only": true });
+  });
+
+  it("정의 항 밖의 「○○보장개시일 이후」 어구는 모두 「면책 있음」 문장 안 조건 안에 있다 — 무면책으로 바꾸면 정의 없는 이름이 남지 않는다", () => {
+    const loose: string[] = [];
+    const walk = (n: unknown, guardedHere: boolean): void => {
+      if (Array.isArray(n)) return n.forEach((x) => walk(x, guardedHere));
+      if (!n || typeof n !== "object") return;
+      const x = n as Json;
+      const here = guardedHere || ((x.kind === "condBlock" || x.kind === "inlineCond") && (x.branches ?? []).some((b) => b.when === `${EXEMPTION_PRESENT} = true`));
+      if (x.kind === "text" && !here && /[^\s「」]보장개시일 이후/.test(String(x.text)) && !/첫번째암보장개시일|재진단암보장개시일|「[^」]*보장개시일 이후/.test(String(x.text))) loose.push(String(x.id));
+      Object.values(x).forEach((v) => walk(v, here));
+    };
+    for (const d of documents) if (guarded(d)) walk(d.tree, false);
+    expect(loose).toEqual([]);
   });
 
   it("상해 담보(정의 항 없음)는 면책 특성이 없다", () => {
