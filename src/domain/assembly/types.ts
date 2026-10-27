@@ -506,6 +506,9 @@ export interface OmissionPair {
   generalKind?: OmissionPairKind;
 }
 
+/** 생략 기준 「포함하면 생략」을 정한 곳 — 템플릿 조 옵션 · 상품 조 단위 변경 (ADR-0093). */
+export type OmitRuleSource = "template" | "product";
+
 /**
  * 생략 판정 기록 — 조연결된 조를 보통약관 조와 항 단위 위치 대조해 생략 · 준용 · 통째로 갈랐다 (기능/조립산출 §3.5 · D-P6-8).
  * 미리보기의 판정 근거 패널이 `pairs` · `excludedClauseNodeIds` · `reason` 을 그린다.
@@ -525,6 +528,10 @@ export interface OmissionRecord {
   reason?: string;
   /** 기본계약 2+ 의 제1절에서 위임된 템플릿 조에 연결한 조 — 판정 없이 통째(`full`, 대조 없음 · ADR-0082 결정 4). */
   delegated?: true;
+  /** 유효 생략 기준이 「포함하면 생략」인 조 — 판정 결과와 무관하게 싣는다(「왜 통째인가」 근거 · ADR-0093). 「같을 때만」이면 없음. */
+  omitRule?: { mode: "contained"; source: OmitRuleSource };
+  /** 생략 사유 「포함」 — 담보 항이 보통약관 조 안에 다 있고 보통약관에 항이 더 있어 지웠다 (`omitted` 와 함께만 · ADR-0093). */
+  basis?: "contained";
 }
 
 /** 문면 없는 담보의 탑재분 — 문서를 내지 않았다 (오류 아님 · D-P6-9). */
