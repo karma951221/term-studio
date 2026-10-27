@@ -95,9 +95,9 @@ export class Editor {
 
   /**
    * 확인 — 팝업이면 그 버튼을 누르고 닫힐 때까지. 편집 탭이면 고정 줄의 「넣기」(넣기 폼 — 폼이 넣은 것의 폼으로 바뀔 때까지) ·
-   * 「적용」(고치기 폼 — 고친 것이 없어 꺼져 있으면 누르지 않는다).
+   * 「적용」(고치기 폼 — 고친 것이 없어 꺼져 있으면 누르지 않는다). `changed` 면 고친 것이 있다 — 켜질 때까지 기다려 누른다.
    */
-  async confirm(dialog: Locator, label: string): Promise<void> {
+  async confirm(dialog: Locator, label: string, changed = false): Promise<void> {
     if (!(await this.inPanel(dialog))) {
       await dialog.getByRole("button", { name: label, exact: true }).click();
       await expect(dialog).toHaveCount(0);
@@ -110,6 +110,8 @@ export class Editor {
       await expect(dialog).toHaveCount(0);
       return;
     }
+    // 고친 것이 있다고 아는 폼(고르기 칸 — 값이 한 박자 늦게 폼에 들어간다)은 「적용」이 켜질 때까지 기다린다. 먼저 보면 꺼진 채라 누르지 않고 지나간다
+    if (changed) await expect(button).toBeEnabled();
     if (await button.isEnabled()) await button.click();
     await expect(button).toBeDisabled();
   }
@@ -519,7 +521,7 @@ export class DocumentAuthoring {
     await this.page.getByRole("menuitem", { name: "대응 보통약관…", exact: true }).click();
     const d = this.editor.dialog("대응 보통약관");
     await pickCombo(d.locator("#pop-general"), { label: generalTitle });
-    await this.editor.confirm(d, "확인");
+    await this.editor.confirm(d, "확인", true);
   }
 
   /** 1단계 — 조마다 뼈대. 조 자리 조건은 모든 조를 세운 뒤 감싼다(감싼 조 아래에 조를 넣으면 가지 안으로 들어간다). */
@@ -546,7 +548,7 @@ export class DocumentAuthoring {
         await this.editor.runTool("보통약관 조 연결");
         const d = this.editor.dialog("조연결");
         await pickCombo(d.locator("#pop-link"), { value: linked });
-        await this.editor.confirm(d, "확인");
+        await this.editor.confirm(d, "확인", true);
       }
     }
     for (const [i, { wrap }] of articles.entries()) {
