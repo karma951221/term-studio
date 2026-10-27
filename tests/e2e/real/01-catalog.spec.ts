@@ -9,7 +9,7 @@ import { BASE_DISCRIMINATOR_CODES, BASE_ENUM_CODES, SEED } from "./_lib/seed";
  * 이 파일부터 05 까지가 한 흐름이다(앞 파일이 만든 것을 뒤 파일이 쓴다). 근거: docs/QA/시나리오/실물재현_E2E_시나리오.md §4 ④
  */
 
-const RESULT_TYPE_LABEL: Record<string, string> = { string: "문자열" };
+const RESULT_TYPE_LABEL: Record<string, string> = { string: "문자열", boolean: "참거짓" };
 
 test.describe.serial("실물 재현(화면) ① 카탈로그", () => {
   const enums = SEED.enums.filter((e) => !BASE_ENUM_CODES.has(e.code));
@@ -68,7 +68,8 @@ test.describe.serial("실물 재현(화면) ① 카탈로그", () => {
       await ev.action(`실물화면#1.4 ${spec.code}`, `구분자 「${spec.label}」 = ${spec.expression}`, async () => {
         await open(page, "/catalog/new");
         await page.getByLabel("구분자명").fill(spec.label);
-        await page.getByRole("radiogroup", { name: "레벨" }).getByRole("radio", { name: "담보", exact: true }).check();
+        // 레벨은 시드 정의대로 — D0011 「15세 이상만 면책」은 급부 레벨이다(담보 레벨 집계 any 가 그것을 모은다)
+        await page.getByRole("radiogroup", { name: "레벨" }).locator(`input[type="radio"][value="${spec.level}"]`).check();
         await page.getByLabel("식", { exact: true }).fill(spec.expression);
         const type = (spec as unknown as { resultType?: { kind: string } }).resultType?.kind;
         if (type) await page.getByLabel("결과 타입").selectOption({ label: RESULT_TYPE_LABEL[type] });
