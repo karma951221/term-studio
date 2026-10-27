@@ -10,6 +10,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { Booklet } from "@/domain/assembly";
+import { renderedToLines } from "@/domain/assembly/compare";
 import type { BlockNode, DocumentNode } from "@/domain/document/nodes";
 import { tableShape } from "@/domain/dyntable/shape";
 import type { Actor } from "@/domain/types";
@@ -128,6 +129,32 @@ describe("합성 표본 — 절 형태 세 상품 (PGlite)", () => {
     expect(blocks(b)).toEqual(["1. 일반상해80%이상후유장해 특별약관"]);
     expect(delegated(b)).toEqual(["보험금의 지급사유", "보험금 지급에 관한 세부규정"]);
     expect(verdicts(b)).toEqual(["보험금의 지급사유 delegate 1/1", "보험금 지급에 관한 세부규정 delegate 1/1"]);
+  });
+
+  it("ⓒ 독립특약 제1절 부활 조의 암보장개시일 문구 — 납입면제 사유 값의 면책여부로: 「암(유사암제외)」 있음 · 「암(유사암제외)·무면책」 없음 (기능/상품 §3.9 · 함수조항 C0047)", async () => {
+    const revival = (b: Booklet) => {
+      const lines = renderedToLines(b.general!);
+      const at = lines.findIndex((l) => l.startsWith("## ") && l.endsWith("(보험료의 납입을 연체하여 해지된 계약의 부활(효력회복))"));
+      expect(at).toBeGreaterThanOrEqual(0);
+      const end = lines.findIndex((l, i) => i > at && /^##? /.test(l));
+      return lines.slice(at, end < 0 ? undefined : end);
+    };
+    expect(revival(booklets.get("표본 — 독립특약 블록 1개")!)).toContain("@ 부활(효력회복)시 부활(효력회복)일을 계약일로 하여 암보장개시일을 적용합니다.");
+
+    const product = (await services.product.listProducts()).find((p) => p.name === "표본 — 독립특약 블록 1개")!;
+    const type2 = (await services.product.listPlanOptions(product.id)).find((o) => o.axis === "type" && o.number === 2)!;
+    // samples.json 2종 사유 그대로, 암만 무면책 값으로
+    const reasons = ["V02", "V03", "V04", "V05", "V06", "V07", "V08", "V09", "V10", "V11"];
+    const saved = await services.product.setPlanOptionValues(admin, type2.id, [{ path: "waiver.reasons", value: reasons }]);
+    if (!saved.ok) throw new Error(JSON.stringify(saved.rejection));
+    const r = await services.assembly.preview(product.id);
+    if (!r.ok) throw new Error(JSON.stringify(r.rejection));
+    expect(r.value.issues.filter((i) => i.severity !== "warning")).toEqual([]);
+    expect(revival(r.value).some((l) => l.includes("암보장개시일"))).toBe(false);
+    expect(renderedToLines(r.value.general!).some((l) => l.includes("암보장개시일이라 함은"))).toBe(false);
+    // 되돌린다 — 뒤 테스트가 표본 그대로를 본다
+    const back = await services.product.setPlanOptionValues(admin, type2.id, [{ path: "waiver.reasons", value: reasons.map((v) => (v === "V02" ? "V01" : v)) }]);
+    if (!back.ok) throw new Error(JSON.stringify(back.rejection));
   });
 
   it("판정 변화 영향 — ⓑ 블록 하나를 탑재 해제하면 확인 모달에 「위임 2/2 → 위임 1/1」(저장 전후를 세이브포인트에서 조립해 견준다 · ADR-0082 결정 11)", async () => {
