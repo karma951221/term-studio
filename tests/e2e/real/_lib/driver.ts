@@ -6,7 +6,7 @@
  * 편집본을 직접 만지거나 서버 액션을 부르지 않는다.
  *
  * 두 단계로 친다 (조 참조가 뒤 조 · 항을 가리킬 수 있어서 — 고르기 트리는 이미 있는 대상만 보인다):
- * 1. 뼈대 — 조 · 제목 · 항 · 호 · 목 · 표 · 박스 · 함수조항 블록 · 조연결 · 조 자리 조건 (문장은 비워 둔다)
+ * 1. 뼈대 — 조 · 제목 · 항 · 호 · 목 · 표 · 박스 · 함수조항 블록 · 조연결 · 조 안 조건(앞 블록 커서 + 「조건식」) · 조 자리 조건 (문장은 비워 둔다)
  *    박스는 툴바 「박스」에서 정적 마스터 박스를 고른다(기능/박스 §4.4 — 박스 참조).
  * 2. 문장 — 조마다 문장 칸(항 · 호 · 목 · 표 셀)을 차례로 채운다: 글 · 슬롯 · 조 참조 · 별표 참조 · 함수조항(문장) · 문장 안 조건
  *
@@ -409,26 +409,35 @@ export class Editor {
 
 // ───────────────────────────── 문면 (담보약관 템플릿) ─────────────────────────────
 
-/** 조 안 블록의 전위 목록 — 화면의 `[data-block]` 순서와 같다. */
+/** 조 안 블록의 전위 목록 — 조건 블록(가지 하나)은 자기 줄 다음에 가지 자식이 온다. 화면의 `[data-block]` 순서와 같다(조건 블록은 `data-block` 이 없다). */
 interface BlockEntry {
   node: Node;
-  /** 같은 목록의 앞 형제 (없으면 첫 자식). */
-  prev?: Node;
-  /** 부모 — 조 · 항 · 호. */
+  /** 같은 목록(조 · 항 · 호의 자식, 조건 가지) — 앞 형제를 찾는다. */
+  list: readonly Node[];
+  index: number;
+  /** 부모 — 조 · 항 · 호 · 조건 블록(가지 자식이면). */
   parent: Node;
+  /** 이 블록을 품은 조 안 조건 블록 (없으면 조건 밖). */
+  cond?: Node;
 }
 
 function blocksOf(article: Node): BlockEntry[] {
   const out: BlockEntry[] = [];
-  const visit = (parent: Node, list: readonly Node[]) => {
+  const visit = (parent: Node, list: readonly Node[], cond: Node | undefined) => {
     list.forEach((node, i) => {
-      out.push({ node, parent, ...(i > 0 ? { prev: list[i - 1] } : {}) });
+      out.push({ node, list, index: i, parent, ...(cond ? { cond } : {}) });
       const n = node as { items?: Node[]; subitems?: Node[] };
-      if (node.kind === "paragraph") visit(node, n.items ?? []);
-      if (node.kind === "item") visit(node, n.subitems ?? []);
+      if (node.kind === "paragraph") visit(node, n.items ?? [], cond);
+      if (node.kind === "item") visit(node, n.subitems ?? [], cond);
+      if (node.kind === "condBlock") {
+        // 조 안 조건 블록 — 면책 보장개시일 정의 항 + 【예시】 박스 (M12). IF 가지 하나만 친다
+        if (cond) throw new Error("조 안 조건 블록 안의 조건 블록은 이 E2E 가 치지 않는다");
+        if (node.switchOn !== undefined || node.branches.length !== 1 || node.branches[0].when === undefined) throw new Error(`조 안 조건 블록 ${node.id} — IF 가지 하나(ELSE · ELIF · 스위치 없음)만 친다`);
+        visit(node, node.branches[0].children as Node[], node);
+      }
     });
   };
-  visit(article, (article as { children: Node[] }).children);
+  visit(article, (article as { children: Node[] }).children, undefined);
   return out;
 }
 
@@ -556,16 +565,63 @@ export class DocumentAuthoring {
     await this.editor.noBanner();
   }
 
+  /**
+   * 조 하나의 블록 — 조건 밖 블록을 먼저 다 세우고, 조 안 조건 블록은 그 뒤에 넣는다.
+   * 조건 블록은 사람처럼: 앞 블록에 커서만 두고 툴바 「조건식」 — 그 블록 바로 뒤에 빈 조건 블록(빈 IF 줄 + 빈 항)이 서고 편집 탭에 조건식 폼이 열린다(기능/문면 §4.3).
+   * IF 를 고르고 적용한 뒤, 가지의 나머지 블록은 그 빈 항 「아래에 …」로 넣는다(가지 안으로 들어간다).
+   * 조건 블록을 앞 블록 뒤에 넣으므로 앞 형제가 조건 블록 · 박스 · 함수조항이면(커서를 둘 글 칸이 없다) 치지 않는다.
+   */
   private async buildBlocks(article: Node): Promise<void> {
     const entries = blocksOf(article);
-    for (const [k, entry] of entries.entries()) {
+    const built = new Set<Node>();
+    /** 지금 화면의 `[data-block]` 자리 — 이미 세운 블록 중 앞선 것의 수(조건 블록은 `data-block` 이 없어 빼고). */
+    const domIndex = (node: Node): number => {
+      let n = 0;
+      for (const e of entries) {
+        if (e.node === node) return n;
+        if (built.has(e.node) && e.node.kind !== "condBlock") n++;
+      }
+      throw new Error(`블록 ${node.id} 가 조 안에 없다`);
+    };
+    const expectCount = () => expect(this.article.locator("[data-block]:not([data-clause-ref] [data-block])")).toHaveCount([...built].filter((n) => n.kind !== "condBlock").length);
+    const anchorOf = (entry: BlockEntry): number => {
+      // 자리 — 앞 형제(조건 블록은 아직 없으니 건너뛴다)가 있으면 그 블록(「아래에 … 추가」), 없으면 부모(조 제목 → 「항 추가」 · 항 → 「호 추가」 · 호 → 「목 추가」)
+      const prev = entry.list.slice(0, entry.index).findLast((n) => built.has(n) && n.kind !== "condBlock");
+      if (prev) return domIndex(prev);
+      if (entry.parent.kind === "article") return -1;
+      return domIndex(entry.parent);
+    };
+    const place = async (entry: BlockEntry) => {
       const tool = BLOCK_TOOL[entry.node.kind];
       if (!tool) throw new Error(`조 안의 ${entry.node.kind} 는 이 E2E 가 치지 않는다`);
-      // 자리 — 앞 형제가 있으면 그 블록(「아래에 … 추가」), 없으면 부모(조 제목 → 「항 추가」 · 항 → 「호 추가」 · 호 → 「목 추가」)
-      const anchor = entry.prev ? entries.findIndex((e) => e.node === entry.prev) : entry.parent.kind === "article" ? -1 : entries.findIndex((e) => e.node === entry.parent);
-      await this.select(anchor);
+      await this.select(anchorOf(entry));
       await this.addBlock(entry.node, tool);
-      await expect(this.article.locator("[data-block]:not([data-clause-ref] [data-block])")).toHaveCount(k + 1);
+      built.add(entry.node);
+      await expectCount();
+    };
+    // 1. 조건 밖 블록
+    for (const entry of entries) if (!entry.cond && entry.node.kind !== "condBlock") await place(entry);
+    // 2. 조 안 조건 블록 — 문서 순서대로
+    for (const entry of entries) {
+      if (entry.node.kind !== "condBlock") continue;
+      const cond = entry.node;
+      const prev = entry.index > 0 ? entry.list[entry.index - 1] : undefined;
+      if (prev && !["paragraph", "item", "subitem", "table"].includes(prev.kind)) throw new Error(`조 안 조건 블록 ${cond.id} 앞이 ${prev.kind} — 커서를 둘 글 칸이 없어 이 E2E 가 치지 않는다`);
+      if (!prev && entry.parent.kind !== "article") throw new Error(`조 안 조건 블록 ${cond.id} 이 ${entry.parent.kind} 의 첫 자식 — 이 E2E 가 치지 않는다`);
+      const first = cond.branches[0].children[0] as Node | undefined;
+      if (first?.kind !== "paragraph") throw new Error(`조 안 조건 블록 ${cond.id} 의 첫 블록이 항이 아니다 — 「조건식」이 세우는 빈 블록과 다르다`);
+      // 커서만(고른 글 없이) — 앞 블록 바로 뒤(앞이 없으면 조 맨 앞)에 빈 조건 블록
+      await this.select(prev ? domIndex(prev) : -1);
+      await this.editor.runTool("조건식");
+      const head = await this.editor.condHead(this.body);
+      await expect(head).toBeVisible();
+      await this.editor.fillHead(head, "IF", cond.branches[0].when!);
+      await this.editor.confirm(head, "적용");
+      built.add(cond);
+      built.add(first);
+      await expectCount();
+      await expect(this.article.locator(".ts-doc-cond [data-cond-head]")).toHaveCount([...built].filter((n) => n.kind === "condBlock").length);
+      for (const child of entries) if (child.cond === cond && child.node !== first) await place(child);
     }
   }
 
