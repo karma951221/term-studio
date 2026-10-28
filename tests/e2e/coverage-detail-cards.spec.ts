@@ -46,7 +46,8 @@ test(
       for (const name of SUB_NAMES) await expect(page.locator(".ts-cov-card-name", { hasText: name }).first()).toBeVisible();
       await expect(page.locator("section.ts-cov-card[data-level='subCoverage']")).toHaveCount(7);
       await expect(page.locator("section.ts-cov-card[data-level='benefit']")).toHaveCount(7);
-      await expect(page.locator("main").getByRole("button", { name: /펼치기|접기/ })).toHaveCount(0);
+      // 카드의 접힘만 센다 — 목록 패널의 「패널 접기」(ADR-0094)는 카드가 아니다
+      await expect(page.locator(".ts-ld-body").getByRole("button", { name: /펼치기|접기/ })).toHaveCount(0);
     });
 
     await ev.action("담보카드#4", "담보약관 템플릿 띠 · 「미결정」 배지가 없다", async () => {

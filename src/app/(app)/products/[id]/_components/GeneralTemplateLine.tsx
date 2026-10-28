@@ -9,7 +9,7 @@
  *   템플릿이 실제로 바뀌어 돌아오면 편집을 묻지 않고 끝낸다(`end` — 초안의 노드는 옛 템플릿 것이다).
  *   잃을 것이 있으면 관리자만이다(2026-10-17) — 편집자가 누르면 확인 카드 대신 고르기 줄 아래에 서버 문장이 선다(`TemplatePicker`).
  * - 템플릿이 없으면(미지정) 편집할 것이 없다 — 이 줄이 곧 고르기(잃을 것이 없으면 바로 지정)다.
- * - 오른쪽 끝은 집계 한 줄 + 이 탭의 편집 조작(`ProductEditButtons`) — 헤더가 아니라 탭 안이다 (2026-10-03 사용자 QA).
+ * - 오른쪽 끝은 집계 한 줄. 편집 조작은 제목 줄 오른쪽 끝(`ProductHeadActions`, 2026-10-28 ADR-0094).
  * - 이 상품의 보통약관 설정을 마지막으로 저장한 뒤 템플릿이 고쳐졌으면(템플릿 판 > 기준 판) 줄 아래에 경고 한 줄 — 다음 저장에서 사라진다
  *   (ADR-0079). 새 조는 템플릿을 따라 저절로 들어오므로 알리기만 한다.
  */
@@ -20,7 +20,7 @@ import type { Id } from "@/domain/types";
 
 import { pickProductGeneralDocumentAction, setProductGeneralDocumentAction } from "../../actions";
 import { useGeneralEdit } from "./GeneralEdit";
-import { ProductEditButtons, useProductEdit } from "./ProductEdit";
+import { useProductEdit } from "./ProductEdit";
 
 export function GeneralTemplateLine({
   productId,
@@ -95,7 +95,6 @@ export function GeneralTemplateLine({
         <span className="ts-terms-template-end">
           {tools}
           {summary && <span className="ts-count ts-terms-template-count">{summary}</span>}
-          <ProductEditButtons />
         </span>
       </div>
       {picking && (

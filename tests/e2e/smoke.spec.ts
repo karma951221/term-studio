@@ -42,7 +42,7 @@ test(
     await product.click();
 
     // 상세는 한 줄 탭 넷 — 기본정보 · 상품담보 · 보통약관 · 특별약관 (기능/상품 §3.8, 2026-10-03) — 탭을 옮겨도 헤더의 [더보기 ▾](미리보기 · 상품 삭제)는 그대로 선다.
-    const tabs = page.getByRole("navigation", { name: "상품 하위 탭" });
+    const tabs = page.getByRole("navigation", { name: "상품 영역" });
     for (const name of ["기본정보", "상품담보", "보통약관", "특별약관"]) await expect(tabs.getByRole("link", { name, exact: true })).toBeVisible();
     await tabs.getByRole("link", { name: "상품담보", exact: true }).click();
     await expect(page).toHaveURL(/\?tab=coverages$/);
@@ -133,8 +133,9 @@ test(
     await expect(page).toHaveURL(/\/master\/waiver\.applies$/);
     await expect(page.locator(".ts-crumb-current")).toHaveText("적용여부");
     await expect(page.locator('a.ts-crumb[href="/master/waiver"]')).toBeVisible();
-    // 경로 첫 마디는 메뉴 이름 「폼」 — 폼 조회(/master)로 돌아간다 (기능/마스터 §4).
-    await expect(page.locator('a.ts-crumb[href="/master"]')).toHaveText("폼");
+    // L1 이름 「폼」은 경로가 아니라 목록 패널 머리 — 누르면 전체 목록(/master) (ADR-0094 · 디자인원칙 §1.7).
+    await expect(page.locator('a.ts-crumb[href="/master"]')).toHaveCount(0);
+    await expect(page.locator(".ts-ld-panel-title")).toHaveText("폼");
 
     // 시드 상품의 세목 선택지 둘이 값 노드로 잡힌다 — 「입력 화면 →」가 선택지 좌표(?option=)를 싣는다.
     // (실물 재현 E2E 가 같은 DB 에 상품을 하나 더 만드므로 시드 상품 행만 센다.)

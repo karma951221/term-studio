@@ -295,9 +295,11 @@ export default async function ProductDetailPage({
   }
 
   return (
-    <ProductEditProvider canEdit={tab === "basic" || tab === "coverages" || (tab === "general" && !!product.generalDocumentId)}>
+    <ProductEditProvider area={tab} canEdit={tab === "basic" || tab === "coverages" || (tab === "general" && !!product.generalDocumentId)}>
+      {/* 제목 줄 — 상품명 · 바로 오른쪽 영역 세그먼트 · 오른쪽 끝 더보기 + 편집 조작 (ADR-0094 · 기능/상품 §4.3) */}
       <div className="ts-page-head ts-product-head">
         <ProductPath name={product.name} />
+        <ProductTabs productId={id} current={tab} />
         <ProductHeadActions
           menu={[
             { label: "미리보기", href: `/products/${id}/preview` },
@@ -308,7 +310,6 @@ export default async function ProductDetailPage({
       <ErrorBanner message={sp.error} />
       {c === "product" && confirmNode}
 
-      <ProductTabs productId={id} current={tab} />
 
       {tab === "basic" && (
         <BasicTab

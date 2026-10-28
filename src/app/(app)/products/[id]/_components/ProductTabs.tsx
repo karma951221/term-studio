@@ -9,7 +9,8 @@ import { PRODUCT_TABS, PRODUCT_TAB_LABEL, productDetailPath, type ProductTab } f
 import { useProductEdit } from "./ProductEdit";
 
 /**
- * 상세의 탭 — 한 줄 넷: 기본정보 · 상품담보 · 보통약관 · 특별약관 (기능/상품 §3.8 · §4.3, 2026-10-03).
+ * 상세의 영역 탭 — 넷: 기본정보 · 상품담보 · 보통약관 · 특별약관 (기능/상품 §3.8 · §4.3).
+ * 제목 줄의 상품명 바로 오른쪽 세그먼트(버튼 묶음, 현재 = 채운 칸)다 — 위의 항목 탭(밑줄)과 모양을 가른다 (2026-10-28, ADR-0094).
  *
  * 현재 탭은 경로가 아니라 `?tab=` 에서 오므로 `NavLink`(pathname 판정) 대신 계산한 `aria-current` 를 단다.
  * 탭 전환은 곧 새 서버 렌더라 기본정보의 편집 초안이 사라진다 — 그래서 편집 중 고친 것이 있으면
@@ -20,7 +21,7 @@ export function ProductTabs({ productId, current }: { productId: Id; current: Pr
   const { leave, end } = useProductEdit();
   const router = useRouter();
   return (
-    <nav className="ts-subtabs" aria-label="상품 하위 탭">
+    <nav className="ts-segment" aria-label="상품 영역">
       {PRODUCT_TABS.map((tab) => {
         const href = productDetailPath(productId, tab);
         return (

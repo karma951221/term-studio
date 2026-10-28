@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { DiscardDialog } from "@/app/_components/EditShell";
 import { InfoTip } from "@/app/_components/InfoTip";
+import { useItemEdit, useRestoredDraft } from "@/app/_components/ListDetailLayout";
 import { IconClose, IconTrash } from "@/app/_components/icons";
 import { MoreMenu } from "@/app/_components/MoreMenu";
 import { HeadActions, HeadButton, HeadIconButton } from "@/app/_components/HeadActions";
@@ -218,6 +219,18 @@ function generalTargets(generals: ClauseEditorData["generals"], code: string | u
   return out;
 }
 
+/** 항목 탭을 옮길 때 맡기는 편집본 (ADR-0094) — 돌아오면 이것으로 편집을 잇는다. */
+interface KeptClauseDraft {
+  draft: { state: DraftState; ops: number };
+  label: string;
+  options: ClauseEditOption[];
+  params: ParamDef[];
+  paramOrigins: ReturnType<typeof originsOf>;
+  presets: ClauseEditPreset[];
+  locals: LocalDef[];
+  localOrigins: ReturnType<typeof originsOf>;
+}
+
 export function ClauseAuthoring(props: ClauseAuthoringProps) {
   const { code, data } = props;
   const isNew = code === undefined;
@@ -229,9 +242,10 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
   // ── 원본 (읽기 모드가 보이는 것) ──
   const originalTree = useMemo(() => clauseBodyToTree(props.mode, props.body, props.label), [props.mode, props.body, props.label]);
 
-  // ── 편집본 — 생성 화면은 처음부터 편집 중 ──
-  const [editing, setEditing] = useState(isNew);
-  const [draft, setDraftState] = useState<{ state: DraftState; ops: number }>(() => ({
+  // ── 편집본 — 생성 화면은 처음부터 편집 중. 다른 항목 탭에 갔다 돌아왔으면 맡겨 둔 편집본으로 잇는다 (ADR-0094) ──
+  const restored = useRestoredDraft<KeptClauseDraft>("clause");
+  const [editing, setEditing] = useState(isNew || restored !== undefined);
+  const [draft, setDraftState] = useState<{ state: DraftState; ops: number }>(() => restored?.draft ?? ({
     state: { tree: isNew ? clauseBodyToTree(props.mode, startBody(props.mode, props.startId), props.label) : originalTree, generalDocumentId: GENERALS },
     ops: 0,
   }));
@@ -240,32 +254,32 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     draftRef.current = next;
     setDraftState(next);
   };
-  const [label, setLabel] = useState(props.label);
-  const [options, setOptionsState] = useState<ClauseEditOption[]>(props.options);
+  const [label, setLabel] = useState(restored?.label ?? props.label);
+  const [options, setOptionsState] = useState<ClauseEditOption[]>(restored?.options ?? props.options);
   const optionsRef = useRef(options);
   const setOptions = (next: ClauseEditOption[]) => {
     optionsRef.current = next;
     setOptionsState(next);
   };
-  const [params, setParamsState] = useState<ParamDef[]>(props.params);
+  const [params, setParamsState] = useState<ParamDef[]>(restored?.params ?? props.params);
   const paramsRef = useRef(params);
   // 인자 · 내부 변수 줄마다 저장된 옛 이름 — 저장 때 「옛 → 새」 표가 된다 (이름 바꾸기 자동 수정, 기능/함수조항 §3.7)
-  const paramOrigins = useRef(originsOf(props.params));
+  const paramOrigins = useRef(restored?.paramOrigins ?? originsOf(props.params));
   const setParams = (next: ParamDef[]) => {
     paramOrigins.current = trackOrigins(paramsRef.current, next, paramOrigins.current, props.params.map((p) => p.name));
     paramsRef.current = next;
     setParamsState(next);
   };
   const savedPresets = useMemo(() => props.presets ?? [], [props.presets]);
-  const [presets, setPresetsState] = useState<ClauseEditPreset[]>(savedPresets);
+  const [presets, setPresetsState] = useState<ClauseEditPreset[]>(restored?.presets ?? savedPresets);
   const presetsRef = useRef(presets);
   const setPresets = (next: ClauseEditPreset[]) => {
     presetsRef.current = next;
     setPresetsState(next);
   };
-  const [locals, setLocalsState] = useState<LocalDef[]>(props.locals);
+  const [locals, setLocalsState] = useState<LocalDef[]>(restored?.locals ?? props.locals);
   const localsRef = useRef(locals);
-  const localOrigins = useRef(originsOf(props.locals));
+  const localOrigins = useRef(restored?.localOrigins ?? originsOf(props.locals));
   const setLocals = (next: LocalDef[]) => {
     localOrigins.current = trackOrigins(localsRef.current, next, localOrigins.current, props.locals.map((l) => l.name));
     localsRef.current = next;
@@ -338,6 +352,13 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
         JSON.stringify(params) !== JSON.stringify(props.params) ||
         JSON.stringify(locals) !== JSON.stringify(props.locals) ||
         JSON.stringify(presets) !== JSON.stringify(savedPresets));
+  // 편집은 한 항목 탭만 (ADR-0094)
+  const itemEdit = useItemEdit({
+    part: "clause",
+    editing: editing && !isNew,
+    dirty,
+    snapshot: (): KeptClauseDraft => ({ draft: draftRef.current, label, options: optionsRef.current, params: paramsRef.current, paramOrigins: paramOrigins.current, presets: presetsRef.current, locals: localsRef.current, localOrigins: localOrigins.current }),
+  });
 
   // ── 편집 환경 — 문면 저작과 같은 명령 검사. 함수조항 참조 자리는 옵션 운반체만 통과한다(진짜 참조는 중첩 금지) ──
   const appendixCodes = useMemo(() => new Set(data.appendices.map((a) => a.code)), [data.appendices]);
@@ -679,6 +700,7 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
 
   // ── 편집 시작 · 끝 · 저장 · 삭제 ──
   const startEdit = () => {
+    if (!itemEdit.allowEdit()) return;
     setPlace(undefined);
     setDraft({ state: { tree: originalTree, generalDocumentId: GENERALS }, ops: 0 });
     setLabel(props.label);
@@ -791,6 +813,8 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!anchor || anchor.target === "_blank") return;
+      // 항목 탭 · 목록 패널 — 떠나는 것이 아니다, 편집본이 남는다 (ADR-0094)
+      if (anchor.closest("[data-ld-keep]")) return;
       const url = new URL(anchor.href, window.location.href);
       if (url.origin === window.location.origin && url.pathname === window.location.pathname && url.search === window.location.search) return;
       event.preventDefault();
@@ -1059,6 +1083,7 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
           onDiscard={() => {
             const { go } = discard;
             setDiscard(undefined);
+            itemEdit.release();
             endEdit();
             go();
           }}

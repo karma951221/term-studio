@@ -34,15 +34,17 @@ test(
     const body = page.locator(".ts-l3-body");
     const toolbar = page.getByRole("toolbar", { name: "약관 편집 도구" });
     const tool = (name: string) => toolbar.getByRole("button", { name, exact: true });
-    const editTabButton = page.getByRole("tab", { name: /^편집/ });
-    const previewTab = page.getByRole("tab", { name: "미리보기", exact: true });
+    // 우측 패널의 탭 — 위쪽 항목 탭 줄(ADR-0094)도 role=tab 이고 문서 이름이 「편집…」으로 시작해 패널 탭 줄로 좁힌다
+    const sideTabs = page.getByRole("tablist", { name: "우측 패널" });
+    const editTabButton = sideTabs.getByRole("tab", { name: /^편집/ });
+    const previewTab = sideTabs.getByRole("tab", { name: "미리보기", exact: true });
 
     await ev.action("편집탭#2", "읽기 모드엔 편집 탭이 없다 — 편집을 누르면 맨 앞에 서고 그 탭으로, 빈 상태 안내 한 줄", async () => {
       await expect(previewTab).toHaveAttribute("aria-selected", "true");
       await expect(editTabButton).toHaveCount(0);
       await page.getByRole("button", { name: "편집", exact: true }).click();
       await expect(editTabButton).toHaveAttribute("aria-selected", "true");
-      await expect(page.getByRole("tab").first()).toHaveText("편집");
+      await expect(sideTabs.getByRole("tab").first()).toHaveText("편집");
       await expect(editTab(page)).toHaveText("본문에서 함수조항 · 조 참조 · 조건식 · 동적표를 고르면 여기서 고칩니다.");
     });
 

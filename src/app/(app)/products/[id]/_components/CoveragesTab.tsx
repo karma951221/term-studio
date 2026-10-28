@@ -3,7 +3,7 @@
 /**
  * 상품담보 탭 — 무엇을 얹는가 (기능/상품 §3.8 · §4.5): 기본계약 표 · 특별약관 표. 기본계약 표에 얹은 것이 곧 기본계약이다.
  *
- * **읽기 / 편집 · 저장 하나** (2026-10-04 사용자 결정) — 읽기로 열고, 탭 첫 줄 오른쪽 `편집`(기본정보 · 보통약관 탭과 같은 `ProductEditButtons`)을
+ * **읽기 / 편집 · 저장 하나** (2026-10-04 사용자 결정) — 읽기로 열고, 제목 줄 오른쪽 끝 `편집`(기본정보 · 보통약관 영역과 같은 `ProductHeadActions`, ADR-0094)을
  * 누르면 표 안에서 상품담보명 · 세목 부착/해제 · 🗑 탑재 해제 · 표 아래 「+ 담보 추가」를 초안(`coveragesDraft`)에 쌓는다. `저장` 한 번이
  * `saveProductCoveragesAction` → 서비스 `saveCoverages` 한 트랜잭션. 잃는 것(탑재 해제 · 세목 부착 해제)이 있으면 저장 확인 모달(`SaveConfirmDialog`)을
  * 거친다 — 관리자만, 편집자의 저장은 그 행에서 거부된다. 판정 · 잠금이 바뀌는 저장(탑재 · 해제 · 기본계약 지정)도 같은 모달에 판정 변화 묶음을 보인다 —
@@ -23,7 +23,7 @@ import { saveProductCoveragesAction } from "../../actions";
 import { CoverageMountSection, MOUNT_QUERY_KEYS, type CoverageRef, type GroupCellLabel } from "./CoverageMountSection";
 import { coveragesDraftDirty, coveragesDraftReducer, groupOfCoverage, initCoveragesDraft, issuesByRow, toCoveragesInput, type CoveragesDraft, type GroupContext } from "./coveragesDraft";
 import { groupTitle, SpecialGroupsSection, type CategoryInfo } from "./SpecialGroupsSection";
-import { ProductEditButtons, useProductEdit } from "./ProductEdit";
+import { useProductEdit } from "./ProductEdit";
 import { SaveConfirmDialog } from "./SaveConfirmDialog";
 
 export interface CoveragesTabProps {
@@ -120,7 +120,7 @@ export function CoveragesTab(props: CoveragesTabProps) {
   };
   // 매 렌더 등록 — 손잡이가 최신 초안을 닫아 두도록 (BasicTab · GeneralEdit 과 같은 방식)
   useEffect(() => {
-    register({ begin, cancel: clear, save, dirty: () => coveragesDraftDirty(saved, draft, ctx) });
+    register({ begin, cancel: clear, save, dirty: () => coveragesDraftDirty(saved, draft, ctx), snapshot: () => draft, restore: (kept) => dispatch({ type: "reset", draft: kept as CoveragesDraft }) });
     return () => register(null);
   });
 
@@ -134,10 +134,6 @@ export function CoveragesTab(props: CoveragesTabProps) {
   const coverageName = (id: Id) => coverageById.get(id)?.name ?? draft.rows.find((r) => r.coverageId === id)?.coverageName ?? id;
   return (
     <div className="ts-coverages-tab">
-      {/* 탭 첫 줄 — 편집 · 저장은 이 탭에 걸린다는 것이 보이도록 탭 안 오른쪽 끝 (2026-10-03 사용자 QA) */}
-      <div className="ts-tab-head">
-        <ProductEditButtons />
-      </div>
       {editing && message && (
         <p role="alert" className="ts-error-banner">
           {message}

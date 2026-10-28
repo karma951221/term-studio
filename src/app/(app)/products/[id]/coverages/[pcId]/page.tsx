@@ -98,7 +98,7 @@ export default async function ProductCoverageDetailPage({ params, searchParams }
   const slotAnchor = (ownerId: string) => `#own-${ownerId}-values`;
 
   return (
-    <ProductEditProvider canEdit>
+    <ProductEditProvider canEdit area={`pc:${pcId}`}>
       <PcValues
         key={signature}
         productId={id}

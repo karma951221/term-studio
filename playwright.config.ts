@@ -46,7 +46,8 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      // 목록 → 상세 틀(ADR-0094)이 왼쪽 목록 패널 열을 더해 기본 1280 은 약관 편집기 세 칸(1100 + 내비 + 띠)이 안 들어간다 — 흔한 노트북 폭으로
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
   ],
   // `E2E_EXTERNAL=1` + `E2E_BASE_URL` — 이미 떠 있는 서버에 붙는다(개발 중 한 단계씩 돌려 보기). DB 는 그 서버의 것이다.

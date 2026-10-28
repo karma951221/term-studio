@@ -6712,3 +6712,310 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
   padding-left: 16px;
   font-size: 13px;
 }
+
+/* ── 목록 → 상세 한 화면 (ADR-0094 · 디자인원칙 §2 「목록 → 상세」, ListDetailLayout) ──────────────
+ * 왼쪽 목록 패널(펼침 272 · 접힘 띠 48) + 오른쪽 상세(항목 탭 줄 + 본문). 페이지는 창이 스크롤하고 패널 · 탭 줄은 붙어 있다(sticky).
+ * L3 저작 화면은 탭 줄을 뺀 높이를 받는다. 900 미만에서 펼친 패널은 상세 위에 겹쳐 뜬다.
+ */
+.ts-main:has(> .ts-ld) {
+  max-width: none;
+  padding: 0;
+}
+
+.ts-ld {
+  --ts-ld-tabs-h: 40px;
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+  position: relative;
+}
+
+.ts-ld-panel,
+.ts-ld-strip {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  border-right: 1px solid var(--ts-rule);
+  background: var(--ts-surface);
+}
+
+.ts-ld-panel {
+  flex: 0 0 272px;
+  width: 272px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ts-ld-strip {
+  flex: 0 0 48px;
+  width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.ts-ld-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--ts-ld-tabs-h);
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--ts-rule);
+}
+
+.ts-ld-panel-title {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ts-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.ts-ld-panel-title:hover {
+  color: var(--ts-mark);
+}
+
+.ts-ld-search {
+  margin: 8px 12px;
+  width: auto;
+}
+
+.ts-ld-rows {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border-top: 1px solid var(--ts-rule);
+}
+
+.ts-ld-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 12px 6px 10px;
+  border-bottom: 1px solid var(--ts-rule);
+  border-left: 2px solid transparent;
+  color: var(--ts-ink);
+  text-decoration: none;
+}
+
+.ts-ld-row:hover {
+  background: var(--ts-surface-2);
+}
+
+.ts-ld-row[aria-current="page"] {
+  background: var(--ts-mark-bg);
+  border-left-color: var(--ts-mark);
+}
+
+.ts-ld-row-code {
+  font-size: 11px;
+  color: var(--ts-ink-3);
+}
+
+.ts-ld-row-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.ts-ld-row[aria-current="page"] .ts-ld-row-name {
+  font-weight: 700;
+}
+
+.ts-ld-empty {
+  margin: 0;
+  padding: 12px;
+  color: var(--ts-ink-3);
+  font-size: 13px;
+}
+
+.ts-ld-count {
+  margin: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--ts-rule);
+  color: var(--ts-ink-2);
+  font-size: 12px;
+}
+
+.ts-ld-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 항목 탭 줄 — 현재 탭은 밑줄(주칠). 영역 탭(상품)은 세그먼트라 모양이 갈린다 */
+.ts-ld-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: var(--ts-ld-tabs-h);
+  padding: 0 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 1px solid var(--ts-rule);
+  background: var(--ts-paper);
+  scrollbar-width: thin;
+}
+
+.ts-ld-tab {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+  padding: 0 0 0 10px;
+  border-bottom: 2px solid transparent;
+}
+
+.ts-ld-tab[data-current] {
+  border-bottom-color: var(--ts-mark);
+}
+
+.ts-ld-tab-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  color: var(--ts-ink-2);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.ts-ld-tab-link:hover {
+  color: var(--ts-ink);
+}
+
+.ts-ld-tab[data-current] .ts-ld-tab-link {
+  color: var(--ts-ink);
+  font-weight: 700;
+}
+
+.ts-ld-tab-label {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ts-ld-tab-editing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ts-mark);
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.ts-ld-dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ts-mark);
+}
+
+.ts-ld-tab-close {
+  color: var(--ts-ink-3);
+}
+
+.ts-ld-body {
+  max-width: 1160px;
+  padding: 16px 24px 32px;
+}
+
+.ts-ld-body:has(> .ts-l3) {
+  max-width: none;
+  padding: 0;
+  container: l3 / inline-size;
+}
+
+.ts-ld-body > .ts-l3 {
+  height: calc(100vh - var(--ts-ld-tabs-h));
+}
+
+/* 좁은 폭 — 세로 띠 열(48)도 상세 폭을 먹으므로 띠를 탭 줄 위 가로 한 줄로 눕힌다. 펼친 패널은 화면에 고정된 서랍 */
+@media (max-width: 899px) {
+  .ts-ld {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ts-ld-strip {
+    position: static;
+    flex: 0 0 auto;
+    width: auto;
+    height: auto;
+    flex-direction: row;
+    padding: 4px 8px;
+    border-right: 0;
+    border-bottom: 1px solid var(--ts-rule);
+  }
+
+  .ts-ld-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 20;
+    width: min(272px, 85vw);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+  }
+}
+
+/* 영역 탭 — 세그먼트(버튼 묶음). 제목 줄의 항목 이름 바로 오른쪽, 현재 영역은 채운 칸 (ADR-0094 · 기능/상품 §4.3).
+ * 위 항목 탭(밑줄)과 모양을 갈라 두 탭이 섞여 읽히지 않게. 상품 기본정보 「세목」 옆 두 탭(.ts-basic-tabs, 2026-10-28 세목 카드)과
+ * 같은 모양이다 — 높이 32 · 모서리 6 · 안쪽 칸 4, 현재 칸은 옅은 바탕 + 안쪽 테두리. 한쪽을 바꾸면 다른 쪽도 같이 */
+.ts-segment {
+  display: inline-flex;
+  gap: 2px;
+  height: 32px;
+  box-sizing: border-box;
+  /* 좁은 폭에서 칸들이 상세 폭을 넘으면 화면이 아니라 세그먼트 안에서만 가로로 민다 */
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px;
+  border: 1px solid var(--ts-rule-strong);
+  border-radius: 6px;
+  background: var(--ts-surface);
+}
+
+.ts-segment > a:where(:not([data-slot])) {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 100%;
+  padding: 0 12px;
+  border-radius: 4px;
+  color: var(--ts-ink-3);
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ts-segment > a:where(:not([data-slot])):hover {
+  background: var(--ts-surface-2);
+  color: var(--ts-ink);
+}
+
+.ts-segment > a:where(:not([data-slot]))[aria-current="page"] {
+  background: var(--ts-surface-2);
+  color: var(--ts-ink);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--ts-rule-strong);
+}

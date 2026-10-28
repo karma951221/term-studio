@@ -24,7 +24,7 @@ test.describe.serial("실물 재현(화면) ⑥ 사람처럼 — 알파Plus2607 
       await page.waitForLoadState("networkidle");
       await page.getByRole("link", { name: product.name, exact: true }).click();
       await arrive(page, /\/products\/[0-9a-f-]+/);
-      await page.getByRole("navigation", { name: "상품 하위 탭" }).getByRole("link", { name: "상품담보", exact: true }).click();
+      await page.getByRole("navigation", { name: "상품 영역" }).getByRole("link", { name: "상품담보", exact: true }).click();
       await arrive(page, /tab=coverages/);
     });
     await ev.action("실물사람#4.2", `편집 → 특별약관 표 아래 「+ 담보 추가」 → 「${NAME}」 → 추가 → 저장`, async () => {

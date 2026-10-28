@@ -91,10 +91,10 @@ describe("기본정보 — 상품정보 카드(상품 · 상품특성 · 간편�
     expect(html.match(/ts-infotip/g)?.length ?? 0).toBe(1);
   });
 
-  it("편집은 헤더가 아니라 이 탭 첫 줄 오른쪽에 — 상품정보보다 위 (2026-10-03 사용자 QA)", () => {
+  it("본문에는 편집 조작이 없다 — 제목 줄 오른쪽 끝의 것 (2026-10-28, ADR-0094)", () => {
     const html = render();
-    expect(html).toMatch(/<div class="ts-tab-head"><span class="ts-head-actions"><button[^>]*>편집<\/button>/);
-    expect(html.indexOf("ts-tab-head")).toBeLessThan(html.indexOf("<h3>상품정보</h3>"));
+    expect(html).not.toContain("ts-tab-head");
+    expect(html).not.toContain(">편집</button>");
   });
 
   it("세목(보험종목 정의 · 종·형 조합)이 같은 탭 아래에 선다 — 저장은 하나", () => {
@@ -211,20 +211,20 @@ describe("보통약관 탭 — 템플릿 한 줄 + 세 패널, 다른 것은 없
     for (const absent of ["기본계약", "특별약관", "담보 검색", "템플릿 저장"]) expect(html).not.toContain(absent);
   });
 
-  it("읽기 — 입력이 없다(체크박스 · 선택 · 콤보박스 없음), 탭 첫 줄 오른쪽에 [편집]", () => {
+  it("읽기 — 입력이 없다(체크박스 · 선택 · 콤보박스 없음), 템플릿 줄에 편집 조작이 없다(제목 줄의 것)", () => {
     const html = render(false);
     expect(html).not.toContain('type="checkbox"');
     expect(html).not.toContain("<select");
     expect(html).not.toContain('role="combobox"');
     expect(html).not.toContain("템플릿 바꾸기");
     expect(html).toContain('aria-label="노출 · 제1조(목적)"');
-    expect(html).toMatch(/ts-terms-template-end[\s\S]*<button[^>]*>편집<\/button>/);
+    expect(html).not.toContain(">편집</button>");
     expect(html).not.toContain("저장하면 미리보기에 반영됩니다");
   });
 
-  it("편집 — ✕ [저장] · 목차 체크박스 · 상자 안 옵션 고르기 · 안내 한 줄 · 「템플릿 바꾸기…」", () => {
+  it("편집 — 목차 체크박스 · 상자 안 옵션 고르기 · 안내 한 줄 · 「템플릿 바꾸기…」(✕ [저장]은 제목 줄)", () => {
     const html = render(true);
-    expect(html).toMatch(/ts-terms-template-end[\s\S]*aria-label="편집 취소"[\s\S]*>저장</);
+    expect(html).not.toContain('aria-label="편집 취소"');
     expect(html).not.toContain(">편집<");
     expect(html).toMatch(/<input type="checkbox" aria-label="노출 · 제1조\(목적\)"[^>]*checked=""/);
     expect(html).toContain("<select");
