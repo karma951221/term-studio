@@ -3,7 +3,7 @@
  * (디자인원칙 §9 · 리뷰 #64). 도메인 타입이 늘면 여기도 늘린다 (satisfies 로 누락을 잡는다).
  */
 import { ATTACH_LEVELS, type AttachLevel, type FieldTypeKind } from "@/domain/types";
-import type { OmissionRecord } from "@/domain/assembly/types";
+import type { OmissionRecord, OmitRuleSource } from "@/domain/assembly/types";
 import type { ClauseMode } from "@/domain/clause/types";
 import type { CoverageNodeLevel } from "@/domain/coverage/types";
 import type { EdgeVia } from "@/domain/refs";
@@ -165,6 +165,17 @@ export const OMISSION_LABEL = {
   applied: "준용",
   full: "통째",
 } as const satisfies Record<OmissionRecord["disposition"], string>;
+
+/** 생략 기준 「포함하면 생략」을 정한 곳 (ADR-0093) — 템플릿 조 옵션 · 상품 조 단위 변경. */
+export const OMIT_RULE_SOURCE_LABEL = {
+  template: "템플릿",
+  product: "이 상품",
+} as const satisfies Record<OmitRuleSource, string>;
+
+/** 포함 생략의 사유 한 줄 (ADR-0093 결정 6) — 출처 패널 · 조립 미리보기 판정 줄이 같은 말을 쓴다. */
+export function containedReason(source: OmitRuleSource): string {
+  return `보통약관 조에 포함 — 생략 기준 「포함하면 생략」(${OMIT_RULE_SOURCE_LABEL[source]})`;
+}
 
 /** 문서(약관 템플릿) 종류 → 실체 이름. `/documents` 목록·상세·생성 화면이 같은 말을 쓴다. */
 export const DOC_TEMPLATE_LABEL = {

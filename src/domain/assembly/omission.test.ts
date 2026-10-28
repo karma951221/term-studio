@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { RArticle, RItem, RParagraph, RStatic, SInline, SubstitutedDoc } from "./types";
 import { parseRefKey } from "../document/pcode";
-import { judgeOmission } from "./omission";
+import type { ArticleNode, DocumentNode } from "../document/nodes";
+import { titleNodes } from "../document/title";
+import { effectiveOmitRules, judgeOmission } from "./omission";
 
 /** 항 — 참조 열쇠(`key`)는 id 그대로 둔다(조립이 매긴 P코드 자리). 가리키는 쪽은 `조id#항id`. */
 const paragraph = (id: string, text: string, excludeFromComparison = false): RParagraph<SInline> => ({
@@ -466,5 +468,39 @@ describe("ADR-0093 포함 생략 — 생략 기준 「포함하면 생략」 (�
     expect(out.doc.children).toEqual([special]);
     expect(out.records[0]).toEqual(record({ disposition: "full", pairs: [], excludedClauseNodeIds: [], delegated: true, omitRule: { mode: "contained", source: "template" } }));
     expect(out.issues).toEqual([]);
+  });
+});
+
+describe("생략 기준 해소 — 상품 > 템플릿 원본 (ADR-0093 결정 3)", () => {
+  const art = (id: string, omitMode?: "contained"): ArticleNode => ({ id, kind: "article", title: titleNodes(id, id), children: [], ...(omitMode ? { omitMode } : {}) });
+  const template: DocumentNode = {
+    id: "g-doc",
+    kind: "document",
+    title: "보통약관",
+    children: [
+      art("g-a", "contained"),
+      art("g-b"),
+      { id: "g-sec", kind: "section", title: "제1관", children: [art("g-c", "contained"), { id: "g-cond", kind: "condBlock", branches: [{ id: "g-cond-if", when: "D0001 = true", children: [art("g-d", "contained")] }] }] },
+      art("g-e", "contained"),
+    ],
+  };
+
+  it("effectiveOmitRules — 상품 > 템플릿: 상품 exact 가 템플릿 contained 를 끄고 · 상품 contained 는 source product · 템플릿에 없는 조 id 는 무시 · 관 · 조건 가지 안 조도 본다", () => {
+    const product = new Map([
+      ["g-e", "exact" as const],
+      ["g-b", "contained" as const],
+      ["g-a", "contained" as const],
+      ["g-missing", "contained" as const],
+    ]);
+    expect(effectiveOmitRules(template, product)).toEqual(
+      new Map([
+        ["g-a", "product"],
+        ["g-b", "product"],
+        ["g-c", "template"],
+        ["g-d", "template"],
+      ]),
+    );
+    expect(effectiveOmitRules(template)).toEqual(new Map([["g-a", "template"], ["g-c", "template"], ["g-d", "template"], ["g-e", "template"]]));
+    expect(effectiveOmitRules(undefined, product)).toEqual(new Map());
   });
 });

@@ -36,7 +36,7 @@ import { ensureApplicationArticle } from "./application";
 import { blockHeads } from "./blockHeads";
 import { authoredEmptyArticleIds, dropEmptyArticles } from "./emptyArticle";
 import { baseKey, replaceGeneralWithBase } from "./base";
-import { judgeOmission } from "./omission";
+import { effectiveOmitRules, judgeOmission } from "./omission";
 import type { RefPosition } from "./position";
 import { type BlockLabel, collectAppendices, locateIssues, numberDocument, renderDocument } from "./render";
 import { resolveDocument, type ExplainHooks } from "./resolve";
@@ -400,7 +400,16 @@ function buildSpecial(input: AssemblyInput, contexts: AssemblyContexts, s: Share
   });
   const withApplication = ensureApplicationArticle(prepared.doc, position);
   // 기본계약 2+ 면 실제로 찍힌 제1절과 견주고, 위임된 조에 연결한 조는 판정 없이 통째 (ADR-0082 결정 4)
-  const judged = judgeOmission(withApplication, general?.numbered.doc, { productCoverageId: c.snapshot.id, productCoverageName: c.snapshot.name }, general?.hidden, general?.delegated);
+  // 생략 기준은 템플릿 원본 → 상품 표 (ADR-0093 결정 3) — 사본의 속성은 읽지 않는다(준용하기와 같은 결)
+  const template = input.product.generalDocumentId === undefined ? undefined : input.generalDocuments.get(input.product.generalDocumentId);
+  const judged = judgeOmission(
+    withApplication,
+    general?.numbered.doc,
+    { productCoverageId: c.snapshot.id, productCoverageName: c.snapshot.name },
+    general?.hidden,
+    general?.delegated,
+    effectiveOmitRules(template, input.product.articleOmitModes),
+  );
   return { numbered: numberDocument(dropEmptyArticles(judged.doc, authoredEmptyArticleIds(doc)).doc), issues: [...prepared.issues, ...judged.issues], omitted: judged.records };
 }
 

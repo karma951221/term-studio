@@ -34,7 +34,7 @@ import type { Appendix } from "../document/appendix";
 import type { Box } from "../document/box";
 import type { DynTable } from "../dyntable/types";
 import type { ParticlePresetKey } from "../document/particles";
-import type { ArticleNode, DocumentNode, TableColumn } from "../document/nodes";
+import type { ArticleNode, ArticleOmitMode, DocumentNode, TableColumn } from "../document/nodes";
 import type { AttributeKind, ClauseOptionOverride, PlanAxis, ProductCoverageSnapshot, ProductPlan } from "../product/types";
 import type { MasterTree } from "../master";
 import type { ProductGroupSetting } from "../product/groups";
@@ -91,6 +91,11 @@ export interface AssemblyProduct {
    * 템플릿에 없는 조의 사본은 쓰이지 않는다.
    */
   articleCopies?: ReadonlyMap<Id, ArticleNode>;
+  /**
+   * 이 상품이 정한 조 생략 기준 — 템플릿 조 id → 기준 (ADR-0093 결정 3). 템플릿과 다른 값만 싣는다. 없으면 템플릿 원본 그대로.
+   * 실효 기준은 이 표 → 템플릿 **원본** 조(`omitMode`)에서만 읽는다 — 조 사본의 `omitMode` 는 읽지 않는다.
+   */
+  articleOmitModes?: ReadonlyMap<Id, ArticleOmitMode>;
   /**
    * 이 상품의 특약 그룹 설정 — 그룹 목록(순서) + 사용자 그룹 소속 (ADR-0090 결정 4 · 5). 없으면 기본 그룹(담보분류)만 열거값 순서.
    * 사용자 그룹에 넣지 않은 담보는 담보분류의 기본 그룹이다.

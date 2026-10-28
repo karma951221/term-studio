@@ -4,7 +4,7 @@ import { ErrorBanner } from "@/app/_components/ErrorBanner";
 import { IssueList } from "@/app/_components/IssueList";
 import { RenderedBlocksView, RenderedDoc, RenderedGroupView } from "@/app/_components/RenderedDoc";
 import { bookletForm, FIRST_SECTION_NAME } from "@/domain/assembly";
-import { ENTITY_LABEL, OMISSION_LABEL } from "@/app/_lib/labels";
+import { containedReason, ENTITY_LABEL, OMISSION_LABEL } from "@/app/_lib/labels";
 import { formatDateTime } from "@/app/_lib/list";
 import { currentActor, getServices } from "@/lib/services";
 import type { SourcePanelContent } from "@/app/_components/sourcePanel/SourcePanel";
@@ -13,7 +13,7 @@ import type { DocOmission, DocSelection } from "@/app/_components/RenderedDoc";
 import type { DocumentNode } from "@/domain/document";
 
 import { runPreviewAction } from "../../actions";
-import { articleCount, excludedClauseLabel, omissionCounts, omissionPairLabel } from "../../lib";
+import { articleCount, excludedClauseLabel, omissionCounts, omissionPairLabel, omissionPairVerdict } from "../../lib";
 import { omissionSlots } from "./omissionSlots";
 import { OmittedToggle, PreviewPanelHost } from "@/app/_components/sourcePanel/PanelHost";
 
@@ -172,6 +172,7 @@ export default async function ProductPreviewPage({ params, searchParams }: { par
                     <span className={o.reason ? "ts-badge warning" : "ts-badge"}>{OMISSION_LABEL[o.disposition]}</span>
                     {o.reason && <span className="ts-muted"> · {o.reason}</span>}
                     {o.delegated && <span className="ts-muted"> · 제1절에서 위임된 조 — 판정하지 않음</span>}
+                    {o.disposition === "omitted" && o.basis === "contained" && o.omitRule && <span className="ts-muted"> · {containedReason(o.omitRule.source)}</span>}
                   </summary>
                   <div style={{ margin: "6px 0 4px 16px" }}>
                     {o.pairs.length === 0 ? (
@@ -190,7 +191,9 @@ export default async function ProductPreviewPage({ params, searchParams }: { par
                             <tr key={j}>
                               <td>{pair.special === null ? <span className="ts-muted">— (담보 항 없음)</span> : omissionPairLabel(pair.special, pair.specialKind)}</td>
                               <td>{pair.general === null ? <span className="ts-muted">— (보통약관에 없는 항)</span> : omissionPairLabel(pair.general, pair.generalKind)}</td>
-                              <td>{pair.matched ? "일치" : <span className="ts-badge warning">불일치</span>}</td>
+                              <td>
+                                <PairVerdict verdict={omissionPairVerdict(pair, o)} />
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -249,4 +252,10 @@ export default async function ProductPreviewPage({ params, searchParams }: { par
       </PreviewPanelHost>
     </div>
   );
+}
+
+/** 항 대조 판정 칸 — 불일치는 경고 배지, 포함 생략의 「보통약관에만」은 중립 배지 (ADR-0093). */
+function PairVerdict({ verdict }: { verdict: ReturnType<typeof omissionPairVerdict> }) {
+  if (verdict === "일치") return <>일치</>;
+  return <span className={verdict === "불일치" ? "ts-badge warning" : "ts-badge"}>{verdict}</span>;
 }

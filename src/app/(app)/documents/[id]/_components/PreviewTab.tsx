@@ -54,7 +54,11 @@ function Result({ preview, docKind, owner }: { preview: ArticlePreview; docKind:
     return (
       <div className="ts-empty" data-preview="dropped">
         <p className="ts-empty-what">이 상품에서는 이 조가 생략된다.</p>
-        <p className="ts-empty-example">{preview.reason === "omitted" ? `대응 보통약관 ${preview.linkedArticleTitle} 과 같아 생략 판정됐다(조연결).` : DROPPED_WHY[preview.reason]}</p>
+        <p className="ts-empty-example">{preview.reason === "omitted"
+            ? preview.contained
+              ? `대응 보통약관 ${preview.linkedArticleTitle} 에 포함돼 생략 판정됐다(조연결 · 생략 기준 「포함하면 생략」).`
+              : `대응 보통약관 ${preview.linkedArticleTitle} 과 같아 생략 판정됐다(조연결).`
+            : DROPPED_WHY[preview.reason]}</p>
       </div>
     );
   }

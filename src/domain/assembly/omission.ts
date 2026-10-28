@@ -16,6 +16,7 @@
  * 띄어쓰기 하나도 다르면 다르다 — 정규화·유사도 없음.
  */
 
+import { indexTree, type ArticleOmitMode, type DocumentNode } from "../document/nodes";
 import { refKey } from "../document/pcode";
 import { SCOPE_WORDS } from "../expression/output";
 import type { Id, Issue } from "../types";
@@ -407,6 +408,24 @@ function judgeArticle(a: RArticle<SInline>, target: RArticle<SInline>, kinds: Re
   const kept = special.filter((_p, i) => !ordered.matchedSpecial.has(i));
   if (refersInsideArticle(nodes(kept), a.id)) return undecided(UNDECIDED_REASON.paragraphRef, ordered.pairs);
   return { disposition: "applied", pairs: ordered.pairs, keep: kept.map((p) => p.index) };
+}
+
+/**
+ * 실효 생략 기준 (ADR-0093 결정 3) — 템플릿 조 전부(관 · 조건 가지 안까지)에 대해 상품 값 > 템플릿 원본 `omitMode`.
+ * 상품 `contained` → product, 상품 `exact` → 「같을 때만」(없음), 상품 값이 없으면 템플릿 `contained` → template.
+ * 템플릿 **원본**만 읽는다 — 상품 조 사본에 복사돼 남은 `omitMode` 는 보지 않는다(준용하기와 같은 결). 템플릿에 없는 상품 id 는 무시.
+ */
+export function effectiveOmitRules(template: DocumentNode | undefined, product?: ReadonlyMap<Id, ArticleOmitMode>): Map<Id, OmitRuleSource> {
+  const out = new Map<Id, OmitRuleSource>();
+  if (!template) return out;
+  for (const [id, { node }] of indexTree(template).nodes) {
+    if (node.kind !== "article") continue;
+    const chosen = product?.get(id);
+    if (chosen !== undefined) {
+      if (chosen === "contained") out.set(id, "product");
+    } else if (node.omitMode === "contained") out.set(id, "template");
+  }
+  return out;
 }
 
 /**
