@@ -2,7 +2,7 @@ import { expect, test } from "./_lib/fixtures";
 
 /**
  * 상품 기본정보 — 와이어프레임 §20.2 (읽기 · 편집 · 종·형 조합) + 상품정보(평균공시이율 · 상품특성, 2026-09-28).
- * 탭 첫 줄의 편집 ↔ 취소/저장(헤더에는 더보기만), 상품정보 칸 · 보험종목 표의 추가 · 선택 삭제 · 인라인 값, 조합 체크, 저장 하나.
+ * 탭 첫 줄의 편집 ↔ 취소/저장(헤더에는 더보기만), 상품정보 칸 · 보험종목 카드의 추가 · 선택 삭제 · 카드 안 값, 조합 체크, 저장 하나.
  */
 test(
   "기본정보: 읽기 → 편집 → 단일 저장, 종목·조합과 취소",
@@ -55,7 +55,7 @@ test(
       await expect(name).toHaveValue(originalName);
       await expect(name).toHaveAttribute("readonly", "");
 
-      // ── 편집: 이름 · 보험종목 두 행(인라인 값) · 선택 삭제 · 조합 체크 → 저장 하나
+      // ── 편집: 이름 · 보험종목 카드 둘(카드 안 값) · 선택 삭제 · 조합 체크 → 저장 하나
       await page.getByRole("button", { name: "편집", exact: true }).click();
       await name.fill(`${originalName} 수정`);
       // 상품정보 — 평균공시이율 · 상품특성(갱신형여부 · 고지유형 + 딸린 칸)도 같은 저장 하나에 실린다 (기능/상품 §3.1, 2026-10-01)
@@ -70,7 +70,7 @@ test(
       await noticeType.getByRole("combobox", { name: / 값 추가$/ }).selectOption({ label: "6년 건강고지형" });
       await expect(page.getByRole("button", { name: "선택 삭제" })).toHaveCount(0);
       await page.getByRole("button", { name: "보험종목 추가" }).click();
-      const rows = page.locator("#definitions-panel tbody tr");
+      const rows = page.locator("#definitions-panel [data-plan-option]");
       await expect(rows).toHaveCount(1);
       await rows.nth(0).getByRole("textbox", { name: "보험종목명" }).fill("보험료납입면제미적용형");
       await rows.nth(0).getByRole("combobox", { name: "세목유형" }).selectOption("waiver");
@@ -79,7 +79,7 @@ test(
       await rows.nth(1).getByRole("textbox", { name: "보험종목명" }).fill("보험료납입면제적용형");
       await rows.nth(1).getByRole("combobox", { name: "세목유형" }).selectOption("waiver");
       await rows.nth(1).getByRole("radio", { name: "예", exact: true }).check();
-      // 세 번째 행은 선택 삭제로 지운다 — 행별 삭제 버튼은 없다
+      // 세 번째 카드는 선택 삭제로 지운다 — 카드마다 삭제 버튼은 없다
       await page.getByRole("button", { name: "보험종목 추가" }).click();
       await expect(rows).toHaveCount(3);
       await expect(rows.nth(2).getByRole("button")).toHaveCount(0);
@@ -102,14 +102,14 @@ test(
       { await rows.nth(1).getByRole("button", { name: / 값 추가$/ }).click(); await rows.nth(1).getByRole("combobox", { name: / 값 추가$/ }).selectOption({ label: "뇌졸중" }); }
       await page.getByRole("button", { name: "저장", exact: true }).click();
 
-      // ── 저장 후 읽기: 표에 종·형 · 이름 · 값이 함께 보인다
+      // ── 저장 후 읽기: 카드에 종·형 · 이름 · 값이 함께 보인다
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
       await expect(name).toHaveValue(`${originalName} 수정`);
       await expect(name).toHaveAttribute("readonly", "");
       const definitions = page.locator("#definitions-panel");
-      await expect(definitions.getByRole("cell", { name: "제1종", exact: true })).toBeVisible();
-      await expect(definitions.getByRole("cell", { name: "보험료납입면제미적용형", exact: true })).toBeVisible();
-      await expect(definitions.getByRole("cell", { name: "아니오", exact: true })).toBeVisible();
+      await expect(definitions.getByText("제1종", { exact: true })).toBeVisible();
+      await expect(definitions.getByText("보험료납입면제미적용형", { exact: true })).toBeVisible();
+      await expect(definitions.locator("[data-plan-option]").nth(0).getByText("아니오", { exact: true })).toBeVisible();
       await expect(info.locator('tr[data-path="disclosure.avg_rate"] td')).toHaveText("2.5%"); // 단위 % (기능/상품 §3.1)
       await expect(info.locator('tr[data-path="feature.renewable"] td')).toHaveText("예");
       await expect(info.locator('tr[data-path="feature.notice_kind"] td')).toHaveText("건강고지");
@@ -121,10 +121,10 @@ test(
       await expect(page.getByRole("heading", { level: 1 })).toContainText(`${originalName} 수정`);
       await page.screenshot({ path: "/tmp/terms-basic-read.png", fullPage: true });
       await page.getByRole("tab", { name: "종·형 조합" }).click();
-      await expect(page.locator("#combinations-panel tbody tr")).toHaveCount(2);
+      await expect(page.locator("#combinations-panel [data-plan-combination]")).toHaveCount(2);
       await expect(page.getByRole("checkbox")).toHaveCount(0);
 
-      // ── 모바일: 가로 스크롤은 표 상자 안에서만
+      // ── 모바일: 카드는 한 열로 — 화면 가로 스크롤 없음
       await page.setViewportSize({ width: 390, height: 844 });
       await page.getByRole("tab", { name: "보험종목 정의" }).click();
       await page.screenshot({ path: "/tmp/terms-basic-mobile.png", fullPage: true });

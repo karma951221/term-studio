@@ -32,7 +32,7 @@ async function product(page: Page, name: string, docTitle: string, plan: { appli
   const url = page.url().split("?")[0];
   await page.getByRole("button", { name: "편집", exact: true }).click();
   await page.getByRole("button", { name: "보험종목 추가" }).click();
-  const row = page.locator("#definitions-panel tbody tr").first();
+  const row = page.locator("#definitions-panel [data-plan-option]").first();
   await row.getByRole("textbox", { name: "보험종목명" }).fill("면제형");
   await row.getByRole("combobox", { name: "세목유형" }).selectOption("waiver");
   await row.getByRole("radio", { name: plan.applies ? "예" : "아니오", exact: true }).check();

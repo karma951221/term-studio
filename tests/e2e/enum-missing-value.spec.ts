@@ -77,7 +77,7 @@ test(
       productUrl = page.url().split("?")[0];
       await page.getByRole("button", { name: "편집", exact: true }).click();
       await page.getByRole("button", { name: "보험종목 추가" }).click();
-      const row = page.locator("#definitions-panel tbody tr").nth(0);
+      const row = page.locator("#definitions-panel [data-plan-option]").nth(0);
       await row.getByRole("textbox", { name: "보험종목명" }).fill("납입면제형");
       await row.getByRole("combobox", { name: "세목유형" }).selectOption("waiver");
       await row.getByRole("radio", { name: "예", exact: true }).check();
@@ -90,14 +90,14 @@ test(
 
       // 읽기: 남은 값은 이름으로, 지운 값은 코드와 함께 오류 칩으로 — 조용히 사라지지 않는다
       await page.goto(productUrl);
-      const readRow = page.locator("#definitions-panel tbody tr").nth(0);
+      const readRow = page.locator("#definitions-panel [data-plan-option]").nth(0);
       await expect(readRow).toContainText("뇌졸중");
       const chip = readRow.locator(".ts-chip.is-error");
       await expect(chip).toHaveText(/^없는 값 V\d+$/);
 
       // 편집: 칩에 빼기 버튼 — 다른 체크를 만져도 칩은 남고, 빼기로만 지운다. 빼고 저장하면 칩이 없다
       await page.getByRole("button", { name: "편집", exact: true }).click();
-      const editRow = page.locator("#definitions-panel tbody tr").nth(0);
+      const editRow = page.locator("#definitions-panel [data-plan-option]").nth(0);
       { await editRow.getByRole("button", { name: / 값 추가$/ }).click(); await editRow.getByRole("combobox", { name: / 값 추가$/ }).selectOption({ label: "급성심근경색증" }); }
       await expect(editRow.locator(".ts-chip.is-error")).toHaveCount(1);
       await editRow.getByRole("button", { name: /^없는 값 V\d+ 빼기$/ }).click();
@@ -105,7 +105,7 @@ test(
       await page.getByRole("button", { name: "저장", exact: true }).click();
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
       await page.reload();
-      await expect(page.locator("#definitions-panel tbody tr").nth(0)).toContainText("뇌졸중, 급성심근경색증");
+      await expect(page.locator("#definitions-panel [data-plan-option]").nth(0)).toContainText("뇌졸중, 급성심근경색증");
       await expect(page.locator(".ts-chip.is-error")).toHaveCount(0);
     } finally {
       if (productUrl) {

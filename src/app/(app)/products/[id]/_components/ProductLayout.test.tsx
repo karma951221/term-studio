@@ -234,7 +234,7 @@ describe("보통약관 탭 — 템플릿 한 줄 + 세 패널, 다른 것은 없
   });
 });
 
-describe("보험종목 정의 — 고정 열 넷 + 그 행 세목유형의 값만 (2026-10-03 QA)", () => {
+describe("보험종목 정의 — 보험종목 하나가 카드 한 장, 몸은 그 세목유형의 값만 (2026-10-28 세목 카드)", () => {
   const opt = (id: string, axis: "type" | "form", number: number, name: string, planTypeCode: string) => ({ id, productId: "p1", axis, number, name, planTypeCode });
   const waiverOpt = opt("o1", "type", 1, "납입면제형", "waiver");
   const nsOpt = opt("o2", "form", 1, "해약환급금지급형", "no_surrender");
@@ -260,21 +260,21 @@ describe("보험종목 정의 — 고정 열 넷 + 그 행 세목유형의 값�
       </ProductEditProvider>,
     );
 
-  it("머리는 종·형 · 보험종목명 · 세목유형 · 값 — 세목유형별 필드 열(납입면제 적용여부 · 무저해지 유형)은 머리에 없다", () => {
+  it("카드 머리는 「제N종 · 이름 · 세목유형」 — 표 머리(열)는 없다", () => {
     const html = render();
-    const panel = html.slice(html.indexOf('id="definitions-panel"'));
-    const heads = [...panel.slice(0, panel.indexOf("</thead>")).matchAll(/<th[^>]*>([^<]*)<\/th>/g)].map((m) => m[1]);
-    expect(heads).toEqual(["종·형", "보험종목명", "세목유형", "값"]);
+    const panel = html.slice(html.indexOf('id="definitions-panel"'), html.indexOf('id="combinations-panel"'));
+    expect(panel).not.toContain("<table");
+    expect(panel).toMatch(/<span class="ts-plan-card-key">제1종<\/span><span class="ts-plan-card-name">납입면제형<\/span><span class="ts-plan-card-type">납입면제<\/span>/);
+    expect(panel).toMatch(/<span class="ts-plan-card-key">제1형<\/span><span class="ts-plan-card-name">해약환급금지급형<\/span><span class="ts-plan-card-type">무저해지<\/span>/);
   });
 
-  it("행마다 제 세목유형의 필드만(이름 + 값) — 납입면제 행엔 적용여부, 무저해지 행엔 유형", () => {
+  it("카드마다 제 세목유형의 필드만(라벨 · 값 줄) — 납입면제 카드엔 적용여부, 무저해지 카드엔 유형", () => {
     const html = render();
-    const row = (id: string) => html.slice(html.indexOf(`id="plan-option-${id}"`), html.indexOf("</tr>", html.indexOf(`id="plan-option-${id}"`)));
-    expect(row("o1")).toContain("적용여부");
-    expect(row("o1")).not.toContain('data-path="no_surrender.type"');
-    expect(row("o1")).toContain("납입면제</td>");
-    expect(row("o2")).toContain('data-path="no_surrender.type"');
-    expect(row("o2")).toContain(">유형</span>");
-    expect(row("o2")).not.toContain("적용여부");
+    const card = (id: string) => html.slice(html.indexOf(`id="plan-option-${id}"`), html.indexOf("</section>", html.indexOf(`id="plan-option-${id}"`)));
+    expect(card("o1")).toContain("적용여부");
+    expect(card("o1")).not.toContain('data-path="no_surrender.type"');
+    expect(card("o2")).toContain('data-path="no_surrender.type"');
+    expect(card("o2")).toContain(">유형</span>");
+    expect(card("o2")).not.toContain("적용여부");
   });
 });

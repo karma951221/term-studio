@@ -94,7 +94,7 @@ for (const seeded of SEED.products) {
         for (const v of product.values) await setPlanValue(info, v.path, v.value);
         for (const [i, option] of product.planOptions.entries()) {
           await page.getByRole("button", { name: "보험종목 추가" }).click();
-          const row = page.locator("#definitions-panel tbody tr").nth(i);
+          const row = page.locator("#definitions-panel [data-plan-option]").nth(i);
           await row.getByLabel("종·형 구분").selectOption(option.axis);
           await row.getByLabel("번호", { exact: true }).fill(String(option.number));
           await row.getByLabel("보험종목명", { exact: true }).fill(option.name);
@@ -115,7 +115,7 @@ for (const seeded of SEED.products) {
         }
         await page.getByRole("button", { name: "저장", exact: true }).click();
         await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
-        await expect(page.locator("#combinations-panel tbody tr")).toHaveCount(product.plans.length);
+        await expect(page.locator("#combinations-panel [data-plan-combination]")).toHaveCount(product.plans.length);
         // 상품정보가 저장본으로 읽힌다 — 수는 그대로, enum 은 값 이름
         // 단위가 있는 칸은 뒤에 붙는다(평균공시이율 「2.5%」 — bf2e27f)
         for (const v of product.values.filter((x) => typeof x.value === "number")) await expect(page.locator(`tr[data-path="${v.path}"] td`)).toHaveText(new RegExp(`^${String(v.value).replace(".", "\\.")}%?$`));

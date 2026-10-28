@@ -182,7 +182,7 @@ test(
       await page.waitForURL(/\/products\/[0-9a-f-]{36}(?:\?tab=basic)?$/);
       const url = page.url().split("?")[0];
       await page.getByRole("button", { name: "편집", exact: true }).click();
-      const rows = page.locator("#definitions-panel tbody tr");
+      const rows = page.locator("#definitions-panel [data-plan-option]");
       for (const [i, name, reasons] of [
         [0, "뇌졸중면제형", ["뇌졸중"]],
         [1, "뇌졸중심근경색면제형", ["뇌졸중", "급성심근경색증"]],
