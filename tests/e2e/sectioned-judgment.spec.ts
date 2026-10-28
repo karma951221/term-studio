@@ -113,7 +113,7 @@ test(
     await dialog.getByRole("button", { name: "취소", exact: true }).click();
     await expect(dialog).toHaveCount(0);
     // 고친 것(탑재 해제 표시)을 버리고 읽기로
-    await page.getByRole("button", { name: "취소", exact: true }).click();
+    await page.getByRole("button", { name: "편집 취소", exact: true }).click();
     await page.getByRole("button", { name: "저장하지 않고 나가기", exact: true }).click();
     await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();
   },

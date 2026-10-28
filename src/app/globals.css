@@ -1016,10 +1016,11 @@ button:where(:not([data-slot])).danger:focus-visible {
   margin-bottom: 10px;
 }
 
-.ts-edit-actions {
+/* 제목 줄 · 탭 첫 줄 오른쪽 조작 줄 (HeadActions, 디자인원칙 §1.9) — 버튼은 모두 높이 32 · 모서리 6 · 테두리 */
+.ts-head-actions {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   margin-left: auto;
 }
 
@@ -4595,13 +4596,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   color: var(--ts-ink-2);
 }
 
-.ts-l3-bar .ts-l3-bar-actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 /* 바는 한 줄이다 — 조각은 줄바꿈하지 않고, 넘치면 경로만 말줄임으로 준다 */
 .ts-l3-bar > * {
   flex-shrink: 0;
@@ -5632,12 +5626,8 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 }
 
 /* ── 상품 상세 — 경로 · 편집/더보기 · 기본정보 표 (와이어프레임 §19A · §20.2) ─────────────
- * 버튼 규격은 이 범위 안에서만 통일한다: 높이 32 · 모서리 4 · 글자 13 · 같은 테두리와 좌우 여백.
- * 주 행동(저장)은 강조색만 다르다. 전역 button 규칙은 건드리지 않는다. */
+ * 헤더 · 탭 첫 줄의 조작은 HeadActions(§1.9). 탭 안 조작 버튼은 이 범위 안에서 높이 32 · 글자 13 · 같은 테두리와 좌우 여백. */
 .ts-product-head { align-items: center; }
-.ts-product-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
-.ts-product-actions > button:where(:not([data-slot])),
-.ts-product-actions > a:where(:not([data-slot])),
 .ts-terms-template > button:where(:not([data-slot])),
 .ts-terms-template-end > button:where(:not([data-slot])),
 .ts-tool-menu-item,
@@ -5660,8 +5650,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   text-decoration: none;
   white-space: nowrap;
 }
-.ts-product-actions > button:where(:not([data-slot])).primary { border-color: var(--ts-mark); color: var(--ts-mark); font-weight: 700; }
-.ts-product-actions > button:where(:not([data-slot])).primary:hover { background: var(--ts-mark-bg); }
 
 /* 문서 툴바 자체 메뉴(더보기 ⋯ · 글자색) — 항목은 같은 높이·정렬 (§20.2 버튼 원칙). 공용 MoreMenu 는 shadcn DropdownMenu 라 여기 없다 (ADR-0085). */
 .ts-tool-menu {
@@ -5741,7 +5729,7 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 @media (max-width: 680px) {
   .ts-basic-name { grid-template-columns: 1fr; gap: 6px; }
   .ts-basic-name > span:first-child { line-height: 1.4; }
-  .ts-product-actions { margin-left: 0; }
+  .ts-product-head > .ts-head-actions { margin-left: 0; }
 }
 
 /* 표 입력 (기능/담보 §3.4) — table 필드 편집: 머리글 · 셀 · 붙여넣기 힌트. */
@@ -5885,7 +5873,7 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
 .ts-terms-template-name { color: var(--ts-ink-2); }
 .ts-terms-template .ts-combo { width: 280px; }
 .ts-terms-template-end { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; }
-.ts-terms-template-end .ts-product-actions { margin-left: 0; }
+.ts-terms-template-end .ts-head-actions { margin-left: 0; }
 .ts-terms-template-count { font-size: 12px; }
 .ts-terms-template-pick { margin-top: -4px; padding: 8px 12px; border: 1px solid var(--ts-rule); border-radius: 4px; background: var(--ts-surface-2); }
 .ts-terms-focus .ts-terms-panel { height: calc(100vh - 230px); min-height: 420px; max-height: none; }

@@ -41,12 +41,12 @@ function mount(mine: [string, unknown][] = [["exemption.months", 3], ["exemption
 }
 
 describe("PcValues — 읽기 / 편집 · 저장 하나", () => {
-  it("`편집` → 같은 자리 [취소] [저장], 고친 것 없이 취소하면 묻지 않고 읽기로", () => {
+  it("`편집` → 같은 자리 ✕ [저장], 고친 것 없이 취소하면 묻지 않고 읽기로", () => {
     mount();
     expect(screen.queryByRole("button", { name: "특성 추가" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "편집" }));
     expect(screen.getByRole("button", { name: "특성 추가" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    fireEvent.click(screen.getByRole("button", { name: "편집 취소" }));
     expect(screen.queryByText("고친 내용을 버립니까?")).toBeNull();
     expect(screen.getByRole("button", { name: "편집" })).toBeTruthy();
   });
@@ -55,7 +55,7 @@ describe("PcValues — 읽기 / 편집 · 저장 하나", () => {
     mount();
     fireEvent.click(screen.getByRole("button", { name: "편집" }));
     fireEvent.change(screen.getByRole("spinbutton", { name: "기간" }), { target: { value: "6" } });
-    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    fireEvent.click(screen.getByRole("button", { name: "편집 취소" }));
     expect(screen.getByText("저장하지 않은 변경 사항이 있습니다")).toBeTruthy();
   });
 

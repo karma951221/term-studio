@@ -10,7 +10,7 @@
  */
 import { useRef, type ReactNode } from "react";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { Ellipsis } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -48,7 +48,8 @@ function Label({ item }: { item: MoreMenuItem }) {
 }
 
 /**
- * `trigger` 를 주면 「더보기 ▾」 대신 그것을 버튼 속에 그린다(`+` 아이콘 등) — `label` 은 그때 버튼의 이름(tooltip)이 된다.
+ * 버튼은 32×32 테두리 아이콘(⋯)이다 — 제목 줄 조작 줄의 보조 동작(디자인원칙 §1.9). `label` 이 이름(tooltip · aria-label)이다.
+ * `trigger` 를 주면 ⋯ 대신 그것을 그린다(목록 제목 옆 `+` 등).
  * `align="start"` 면 메뉴가 버튼 왼쪽 끝에 맞춰 오른쪽으로 펼쳐진다(제목 옆 `+`).
  */
 export function MoreMenu({
@@ -75,17 +76,13 @@ export function MoreMenu({
         <DropdownMenuTrigger asChild>
           <Button
             ref={triggerRef}
-            variant={trigger ? "ghost" : "default"}
-            size={trigger ? "icon" : "default"}
+            variant="default"
+            size="icon"
             className={cn("ts-more-button", buttonClassName)}
-            {...(trigger ? { title: label, "aria-label": label } : {})}
+            title={label}
+            aria-label={label}
           >
-            {trigger ?? (
-              <>
-                {label}
-                <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden="true" />
-              </>
-            )}
+            {trigger ?? <Ellipsis className="size-4" aria-hidden="true" />}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align={align} aria-label={label} className="min-w-44">

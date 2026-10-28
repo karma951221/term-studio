@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useTransition } from "react";
 
 import { coordinateHref } from "@/app/_components/coordinateHref";
+import { HeadButton } from "@/app/_components/HeadActions";
 import { SeverityGlyph } from "@/app/_components/IssueList";
 import { formatCoordinate } from "@/domain/coordinate";
 import type { EnumDef } from "@/domain/catalog/types";
@@ -36,14 +37,13 @@ export function InspectButton({ input, onResult, disabled }: { input: InspectInp
     }
   };
   return (
-    <button
-      type="button"
+    <HeadButton
       disabled={disabled || pending || input.expression.length === 0}
       title="저장하지 않고 식 · 결과 타입 · 사용처를 검사한다"
       onClick={() => startTransition(run)}
     >
       {pending ? "검사 중…" : "검사"}
-    </button>
+    </HeadButton>
   );
 }
 
