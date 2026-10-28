@@ -132,6 +132,17 @@ export function useItemEdit({ part, editing, dirty, snapshot }: { part: string; 
   return { allowEdit, release };
 }
 
+/** 좁은 폭(900 미만) — 목록 패널은 늘 띠로 시작하고, 펼치면 상세 위에 서랍처럼 겹쳐 떴다가 항목을 고르면 닫힌다. */
+const NARROW_QUERY = "(max-width: 899px)";
+function subscribeNarrow(listener: () => void): () => void {
+  const mq = window.matchMedia(NARROW_QUERY);
+  mq.addEventListener("change", listener);
+  return () => mq.removeEventListener("change", listener);
+}
+function useNarrow(): boolean {
+  return useSyncExternalStore(subscribeNarrow, () => window.matchMedia(NARROW_QUERY).matches, () => false);
+}
+
 function rememberedHref(pathname: string, search: URLSearchParams): string {
   const q = new URLSearchParams(search);
   for (const k of TRANSIENT_QUERY) q.delete(k);
@@ -167,6 +178,13 @@ export function ListDetailLayout({
   const tabs = useSyncExternalStore(subscribe, () => getTabs(menu.id), () => NO_TABS);
   const collapsed = useSyncExternalStore(subscribe, () => getCollapsed(menu.id, menu.defaultCollapsed), () => menu.defaultCollapsed ?? false);
   const editing = useSyncExternalStore(subscribe, () => getEditing(menu.id), () => undefined);
+
+  // 좁은 폭의 서랍 — 기억하지 않는다. 다른 화면으로 가면(항목을 고르면) 닫힌다
+  const narrow = useNarrow();
+  const [drawer, setDrawer] = useState<{ open: boolean; at: string }>({ open: false, at: pathname });
+  if (drawer.at !== pathname) setDrawer({ open: false, at: pathname });
+  const shownCollapsed = narrow ? !drawer.open : collapsed;
+  const setPanelOpen = (open: boolean) => (narrow ? setDrawer({ open, at: pathname }) : setCollapsed(menu.id, !open));
 
   const byKey = useMemo(() => new Map(menu.items.map((i) => [i.key, i] as const)), [menu.items]);
   const href = rememberedHref(pathname, search);
@@ -231,14 +249,14 @@ export function ListDetailLayout({
     <InListDetailContext.Provider value>
       <ItemTabContext.Provider value={ctx}>
         {/* data-ld-keep — 이 안의 링크는 화면을 떠나는 것이 아니다(초안이 남는다). 링크를 가로채 「버립니까?」를 묻는 편집기(문면)가 건너뛴다 */}
-        <div className="ts-ld" data-collapsed={collapsed || undefined}>
-          {collapsed ? (
+        <div className="ts-ld" data-collapsed={shownCollapsed || undefined}>
+          {shownCollapsed ? (
             <div className="ts-ld-strip" data-ld-keep>
               <IconButton framed label="목록 펼치기 — 상세를 닫고 전체 목록으로" icon={<Maximize2 className="size-4" />} onClick={() => router.push(menu.listHref)} />
-              <IconButton framed label="패널 펼치기" aria-expanded={false} icon={<ChevronRight className="size-4" />} onClick={() => setCollapsed(menu.id, false)} />
+              <IconButton framed label="패널 펼치기" aria-expanded={false} icon={<ChevronRight className="size-4" />} onClick={() => setPanelOpen(true)} />
             </div>
           ) : (
-            <ListPanel menu={menu} currentKey={itemKey} editingKey={editing?.key} tabHref={tabHref} onCollapse={() => setCollapsed(menu.id, true)} onExpandList={() => router.push(menu.listHref)} />
+            <ListPanel menu={menu} currentKey={itemKey} editingKey={editing?.key} tabHref={tabHref} onCollapse={() => setPanelOpen(false)} onExpandList={() => router.push(menu.listHref)} />
           )}
           <section className="ts-ld-detail">
             <div className="ts-ld-tabs" data-ld-keep role="tablist" aria-label={`${menu.title} 열린 항목`}>
