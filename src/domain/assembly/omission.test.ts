@@ -348,6 +348,24 @@ describe("ADR-0093 포함 생략 — 생략 기준 「포함하면 생략」 (�
     expect("basis" in out.records[0]).toBe(false);
   });
 
+  it("기준 없음(같을 때만)이면 포함 관계에 반복 · 순서 변경이 겹쳐도 경고 없는 통째 — 포함 미합의 판정은 「포함하면」인 조만", () => {
+    const dup = judge(
+      article("s-a", "특약 조", [paragraph("s-1", "A")], "g-a"),
+      article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), paragraph("g-3", "A")]),
+    );
+    expect(dup.records[0].disposition).toBe("full");
+    expect(dup.records[0].reason).toBeUndefined();
+    expect(dup.issues).toEqual([]);
+
+    const reordered = judge(
+      article("s-a", "특약 조", [paragraph("s-1", "C"), paragraph("s-2", "A")], "g-a"),
+      article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), paragraph("g-3", "C")]),
+    );
+    expect(reordered.records[0].disposition).toBe("full");
+    expect(reordered.records[0].reason).toBeUndefined();
+    expect(reordered.issues).toEqual([]);
+  });
+
   it("「포함하면」(템플릿)이면 생략 — 담보 조가 출력에서 빠지고 basis contained · omitRule {contained, template} · pairs 는 보통약관 항 순, 남는 보통약관 항은 special null", () => {
     const general = article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), paragraph("g-3", "C")]);
     const special = article("s-a", "특약 조", [paragraph("s-1", "A"), paragraph("s-2", "C")], "g-a");
@@ -413,6 +431,34 @@ describe("ADR-0093 포함 생략 — 생략 기준 「포함하면 생략」 (�
     expect(out.doc.children).toEqual([special]);
     expect(out.records[0].disposition).toBe("full");
     expect(out.issues.map((i) => i.message)).toEqual(["같은 항이 반복돼 자동 판정하지 않았습니다"]);
+  });
+
+  it("포함 미합의(반복 · 표)의 대조 표는 위치 대조가 아니라 포함 대조 — 보통약관 항 순, 담보 항은 짝지은 자리에", () => {
+    const dup = judge(
+      article("s-a", "특약 조", [paragraph("s-1", "A"), paragraph("s-2", "C")], "g-a"),
+      article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), paragraph("g-3", "C"), paragraph("g-4", "A")]),
+      template,
+    );
+    expect(dup.records[0]).toMatchObject({ disposition: "full", reason: "같은 항이 반복돼 자동 판정하지 않았습니다" });
+    expect(dup.records[0].pairs).toEqual([
+      { special: 1, general: 1, matched: true },
+      { special: null, general: 2, matched: false },
+      { special: 2, general: 3, matched: true },
+      { special: null, general: 4, matched: false },
+    ]);
+
+    const table: RStatic<SInline> = { kind: "table", id: "t", columns: [{}], rows: [{ cells: [[{ kind: "text", id: "t-c", text: "셀" }]] }] };
+    const tableOut = judge(
+      article("s-a", "특약 조", [paragraph("s-1", "A"), { ...table, id: "s-t" }], "g-a"),
+      article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), { ...table, id: "g-t" }]),
+      template,
+    );
+    expect(tableOut.records[0]).toMatchObject({ disposition: "full", reason: "참조 · 표를 품은 항은 자동 판정하지 않았습니다" });
+    expect(tableOut.records[0].pairs).toEqual([
+      { special: 1, general: 1, matched: true },
+      { special: null, general: 2, matched: false },
+      { special: 1, specialKind: "table", general: 1, generalKind: "table", matched: true },
+    ]);
   });
 
   it("포함인데 지워질 담보 항에 조 참조 · 표가 있으면 통째 + 「참조 · 표를 품은 항은 …」 — 참조를 빼고 봐야 포함인 경우(자기 참조 id 다름)도 같은 사유", () => {

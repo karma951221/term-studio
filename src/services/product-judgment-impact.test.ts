@@ -142,6 +142,23 @@ describe("상품담보 탭 저장의 판정 변화 영향 (PGlite)", () => {
     expect(impact.judgment?.revived).toEqual([{ articleId: "a21", label: "제2조(세부규정)" }]);
     expect(impact.judgment?.brokenRefs).toEqual([{ articleId: "a22", label: "제3조(계약의 소멸)", message: expect.stringContaining("이 상품의 블록이 아닙니다") }]);
   });
+  it("상품담보 탭 저장이 특약 조 판정을 바꾸면(제1절 판정은 그대로) 영향에 「특약 조 판정이 바뀌는 조」 묶음(specials) — 확인 모달 · 1차는 되돌린다", async () => {
+    const p = unwrap(await svc.createProduct(editor, { name: "판정 변화 — 특약 조", generalDocumentId: GENERAL }));
+    const pc = unwrap(await svc.mount(editor, p.id, BASE, [], "base"));
+    const rec = (disposition: Omission["disposition"]): Omission => ({ productCoverageId: "pc9", productCoverageName: "골절진단", articleId: "b9", articleTitle: "제2조(보험금 지급에 관한 세부규정)", disposition });
+    records = [undefined, undefined];
+    omissions = [[rec("applied")], [rec("full")]];
+    const rename = { added: [], updated: [{ id: pc.id, name: "새 이름", plans: [] }], removed: [] };
+    const impact = confirmation(await svc.saveCoverages(editor, p.id, rename));
+    expect(impact.valueRowsLost).toBe(0);
+    expect(impact.judgment?.verdicts).toEqual([]);
+    expect(impact.judgment?.specials).toEqual([{ productCoverageId: "pc9", articleId: "b9", label: "골절진단 › 제2조(보험금 지급에 관한 세부규정)", before: "준용", after: "통째" }]);
+    expect((await svc.getProductCoverage(pc.id))?.name).not.toBe("새 이름");
+    omissions = [];
+    unwrap(await svc.saveCoverages(editor, p.id, rename, { confirm: true }));
+    expect((await svc.getProductCoverage(pc.id))?.name).toBe("새 이름");
+  });
+
   it("보통약관 탭 — 생략 기준을 바꿔 특약 조 판정이 바뀌면 확인(편집자도) · 확인하면 저장 · 판정이 그대로면 묻지 않고 저장 · 생략 기준을 안 바꾼 저장은 probe 하지 않는다", async () => {
     const p = unwrap(await svc.createProduct(editor, { name: "판정 변화 — 생략 기준", generalDocumentId: GENERAL }));
     const settings = (omitModes: { articleId: string; mode: "exact" | "contained" }[], hiddenArticles: string[] = [], confirm = false) =>

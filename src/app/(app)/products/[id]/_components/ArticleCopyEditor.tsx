@@ -437,6 +437,7 @@ export function ArticleCopyEditor({ data, articleId, label }: { data: CopyEditor
     documentId: data.templateId,
     docKind: "general",
     mode: "edit",
+    copyEditor: true,
     numbers,
     appendixName,
     clauseLabel,

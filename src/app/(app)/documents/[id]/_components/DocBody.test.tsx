@@ -439,6 +439,15 @@ describe("조의 생략 기준 — 조 바로 위 평문 (보통약관 템플릿
     );
     expect(html(withOmit(true), true)).toMatch(/<button type="button" class="ts-doc-cond-head ts-doc-cond-btn" title="생략 기준 고치기">생략 기준 — 포함하면 생략<\/button>/);
   });
+
+  it("상품 조 사본 편집기(copyEditor)에서는 생략 기준 평문을 그리지 않는다 — 실효 기준은 상품 표 > 템플릿이라 사본 트리의 값은 틀릴 수 있다 · 준용하기 평문은 그대로", () => {
+    const tree = withOmit(true);
+    for (const edit of [false, true]) {
+      const out = renderToStaticMarkup(<Block nodes={tree.children} ctx={{ ...ctxOf(tree, edit), copyEditor: true }} />);
+      expect(out).not.toContain("생략 기준 —");
+      expect(out).toContain("준용하기 — 공통항 모으기");
+    }
+  });
 });
 
 describe("펼친 함수조항 안 항을 가리키는 조 참조 칩 — 「제2조(소멸) 제2항」 · 툴팁에 코드 (2026-10-21 사용자 QA)", () => {

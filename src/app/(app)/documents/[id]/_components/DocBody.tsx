@@ -869,7 +869,7 @@ function Article({ node, ctx }: { node: ArticleNode; ctx: DocCtx }) {
     <section id={`art-${node.id}`} className="ts-doc-article" data-article={node.id}>
       {node.linkedArticleId !== undefined && <ArticleLink article={node} ctx={ctx} />}
       {node.joinMode !== undefined && <ArticleJoinMode article={node} ctx={ctx} />}
-      {node.omitMode === "contained" && <ArticleOmitMode article={node} ctx={ctx} />}
+      {node.omitMode === "contained" && !ctx.copyEditor && <ArticleOmitMode article={node} ctx={ctx} />}
       <h3 className={`ts-doc-article-title${flash(ctx, node.id)}`} data-article-title={node.id} data-node={node.id}>
         {label}(<InlineSlot at={{ parentId: node.id, slot: "title" }} nodes={node.title} ctx={ctx} placeholder="조 제목" />)
         <BlockActs id={node.id} what={label} ctx={ctx} />

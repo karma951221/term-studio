@@ -371,7 +371,9 @@ function judgeArticle(a: RArticle<SInline>, target: RArticle<SInline>, kinds: Re
   const ordered = orderedPairs(special, general, "body");
   const contain = contained ? containedPairs(special, general, "body") : undefined;
   const nodes = (list: readonly ComparedParagraph[]) => list.map((p) => p.node);
-  const undecided = (reason: string, pairs: OmissionPair[] = positional.pairs): Verdict => ({ disposition: "full", pairs, reason });
+  // 미합의의 대조 표 — 위치로 안 맞고 포함으로 맞는 조(기준 「포함하면」)는 포함 대조 표를 싣는다(ADR-0093 — 위치 대조는 엉뚱한 항끼리 짝짓는다).
+  const undecidedPairs = !positional.all && contain?.all ? contain.pairs : positional.pairs;
+  const undecided = (reason: string, pairs: OmissionPair[] = undecidedPairs): Verdict => ({ disposition: "full", pairs, reason });
 
   // 포함 — 순서 유지 포함 또는 옛 순서 무관 포함(순서 변경 사유의 문). 기준이 「포함하면」인 조만.
   const containHit = contain !== undefined && (contain.all || (special.length < general.length && containsAllUnordered(general, special)));
