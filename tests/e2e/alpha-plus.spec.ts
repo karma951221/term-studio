@@ -36,7 +36,7 @@ async function submit(page: Page, button: Locator): Promise<void> {
 
 /** 상세는 한 줄 탭 넷 — 기본정보 · 상품담보 · 보통약관 · 특별약관(기능/상품 §3.8, 2026-10-03) — 섹션을 만지기 전에 그 탭을 먼저 연다. */
 async function openTab(page: Page, name: "기본정보" | "상품담보" | "보통약관" | "특별약관"): Promise<void> {
-  await page.getByRole("navigation", { name: "상품 하위 탭" }).getByRole("link", { name, exact: true }).click();
+  await page.getByRole("navigation", { name: "상품 영역" }).getByRole("link", { name, exact: true }).click();
   await page.waitForLoadState("networkidle");
 }
 

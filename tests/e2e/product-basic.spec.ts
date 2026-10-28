@@ -30,7 +30,8 @@ test(
       const name = page.getByRole("textbox", { name: "상품명", exact: true });
       await expect(name).toHaveAttribute("readonly", "");
       await expect(page.getByRole("heading", { level: 1 })).toContainText(originalName);
-      await expect(page.getByRole("heading", { level: 1 }).getByRole("link", { name: "상품" })).toHaveAttribute("href", "/products");
+      // L1 이름 「상품」은 목록 패널 머리(누르면 전체 목록) — 제목 줄은 상품명만 (ADR-0094 · 디자인원칙 §1.7)
+      await expect(page.locator(".ts-ld-panel-title")).toHaveText("상품");
       await expect(page.getByRole("link", { name: "상품 목록" })).toHaveCount(0);
       await expect(page.getByText(/완결성 — 값 자리/)).toHaveCount(0);
       await expect(page.getByRole("button", { name: "보험종목 추가" })).toHaveCount(0);
