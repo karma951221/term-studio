@@ -11,7 +11,7 @@ import { articleHash, type ArticleCopy } from "@/domain/product";
 import type { CopyEditorData } from "./ArticleCopyEditor";
 import { GeneralEditProvider } from "./GeneralEdit";
 import { GeneralPanels, type GeneralPane } from "./GeneralPanels";
-import { GeneralTemplateLine } from "./GeneralTemplateLine";
+import { GeneralTemplateLine, TemplatePicker } from "./GeneralTemplateLine";
 import type { TocSection } from "./GeneralToc";
 import { ProductEditProvider } from "./ProductEdit";
 import { titleNodes } from "@/domain/document/title";
@@ -165,5 +165,14 @@ describe("템플릿이 바뀐 뒤 — 템플릿 줄 아래 경고 한 줄", () =
   it("기준 판보다 템플릿 판이 크면 선다 · 아니면 없다", () => {
     expect(line(true)).toContain("보통약관 템플릿이 바뀌었습니다 — 새로 추가된 조 등을 확인하세요");
     expect(line(false)).not.toContain("템플릿이 바뀌었습니다");
+  });
+});
+
+describe("템플릿 바꾸기 고르기 줄 — 초기화되는 설정 안내 (기능/상품 §4.6 · ADR-0093 결정 6)", () => {
+  const picker = (unsaved: number) =>
+    renderToStaticMarkup(<TemplatePicker productId="p1" current="g" choice="g" onChoice={() => undefined} options={[{ value: "g", label: "보통약관" }]} unsaved={unsaved} onClose={() => undefined} />);
+  it("조 노출 · 조 생략 기준 · 옵션 오버라이드 · 조 사본 넷을 말하고, 저장하지 않은 변경이 있으면 그 수도", () => {
+    expect(picker(0)).toContain("바꾸면 조 노출 · 조 생략 기준 · 옵션 오버라이드 · 조 사본이 초기화된다.");
+    expect(picker(2)).toContain("바꾸면 조 노출 · 조 생략 기준 · 옵션 오버라이드 · 조 사본이 초기화된다 — 저장하지 않은 변경 2건도 버려진다.");
   });
 });

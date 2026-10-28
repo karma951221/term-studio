@@ -274,7 +274,7 @@ export default async function ProductDetailPage({
         <p className="ts-error-banner">{outcome.message}</p>
       ) : null;
   } else if (c?.startsWith("template:")) {
-    // 템플릿 교체 — 조 노출·오버라이드는 템플릿의 노드에 매달린 설정이라 함께 초기화된다 (기능/상품 §3 「보통약관」).
+    // 템플릿 교체 — 조 노출 · 조 생략 기준 · 옵션 오버라이드 · 조 사본은 템플릿의 노드에 매달린 설정이라 함께 초기화된다 (기능/상품 §3 「보통약관」).
     // `dryRun` 으로 묻는다: 확인 주소를 그리는 GET 이 템플릿을 바꿔서는 안 되는데 (뒤로가기 · 다른 창),
     // 「잃을 것이 있는가」를 화면이 다시 계산하면 서비스와 갈라진다 — 판정은 서비스가 한다 (코덱스 리뷰 후속).
     const newId = c.slice(9) || undefined;

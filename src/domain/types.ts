@@ -297,7 +297,7 @@ export interface Impact {
   cascade: string[];
   /** 탑재 상품담보 — 구조 정정이 미치는 상품 (ADR-0075 결정 2). 담보 구조 계획의 영향에만 실린다. */
   mounts?: MountImpact[];
-  /** 판정 변화 (ADR-0082 결정 11) — 판정이 바뀌는 조 · 회색이 되는 사본 · 다시 쓰이는 사본 · 깨지는 블록 지정 참조. 상품담보 탭 저장의 영향에만 실린다. */
+  /** 판정 변화 (ADR-0082 결정 11) — 판정이 바뀌는 조 · 회색이 되는 사본 · 다시 쓰이는 사본 · 깨지는 블록 지정 참조. 상품담보 탭 저장 · 보통약관 탭 저장(생략 기준이 바뀔 때)의 영향에 실린다. */
   judgment?: JudgmentImpact;
 }
 
@@ -307,7 +307,7 @@ export interface JudgmentImpact {
   grayed: { articleId: Id; label: string }[];
   revived: { articleId: Id; label: string }[];
   brokenRefs: { articleId: Id; label: string; message: string }[];
-  /** 특약 조 판정이 바뀌는 조 (ADR-0093 결정 6) — 보통약관 탭이 생략 기준을 바꿀 때. 줄 이름은 「상품담보명 › 조 명」. 비지 않을 때만. */
+  /** 특약 조 판정이 바뀌는 조 (ADR-0093 결정 6) — 상품담보 탭 저장 · 보통약관 탭 저장(생략 기준이 바뀔 때) 모두. 줄 이름은 「상품담보명 › 조 명」. 비지 않을 때만. */
   specials?: { productCoverageId: Id; articleId: Id; label: string; before: string; after: string }[];
 }
 
