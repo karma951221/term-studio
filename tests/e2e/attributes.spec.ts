@@ -22,7 +22,7 @@ test(
   async ({ page, ev }) => {
     await ev.action("담보속성#1", "관리자로 로그인한다", () => login(page));
 
-    await ev.action("담보속성#2", "조회 — 컬럼에 「수」가 없고, 갱신유형 · 부가유형의 값이 각각 한 행(코드 1 · 2) · 담보속성 칸(코드 · 이름 두 줄)은 유형마다 한 번 · 값 칸도 코드 · 이름 두 줄", async () => {
+    await ev.action("담보속성#2", "조회 — 컬럼에 「수」가 없고, 갱신유형 · 부가유형의 값이 각각 한 행(코드 1 · 2) · 담보속성 칸(이름 · 코드 두 줄)은 유형마다 한 번 · 값 칸도 이름 · 코드 두 줄", async () => {
       await page.goto("/attributes");
       await expect(page.locator("table.ts-table thead th")).toHaveText(["담보속성", "값", "상품담보명 표기", "최종수정"]);
       const rows = page.locator("table.ts-table tbody tr");
@@ -35,15 +35,15 @@ test(
         }).slice(0, tr.querySelector("td[rowspan], td.ts-group-cell") ? 2 : 1)),
       );
       expect(cells).toEqual([
-        ["A0001/갱신유형", "1/비갱신형"],
-        ["2/갱신형"],
-        ["A0002/부가유형", "1/기본"],
-        ["2/추가"],
+        ["갱신유형/A0001", "비갱신형/1"],
+        ["갱신형/2"],
+        ["부가유형/A0002", "기본/1"],
+        ["추가/2"],
       ]);
       await expect(page.getByText("명명")).toHaveCount(0);
     });
 
-    await ev.action("담보속성#3", "행의 담보속성명을 누르면 유형 상세 — 값 표는 값(코드 · 이름 두 줄) · 상품담보명 표기(ⓘ)뿐", async () => {
+    await ev.action("담보속성#3", "행의 담보속성명을 누르면 유형 상세 — 값 표는 값(이름 · 코드 두 줄) · 상품담보명 표기(ⓘ)뿐", async () => {
       await page.getByRole("link", { name: "갱신유형" }).first().click();
       await page.waitForURL(/\/attributes\/A0001$/);
       // 값 표 머리만 본다. 머리 칸 끝의 ⓘ 는 공백을 남기므로 정규식으로.

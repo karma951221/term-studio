@@ -2,7 +2,7 @@
  * 담보속성 화면 (기능/담보속성 §4, 2026-09-28).
  *
  * - 조회: 한 행 = 유효값 하나(갱신유형의 비갱신형 · 갱신형이 각각 한 행) · 「수」 컬럼 없음 · 검색은 유형 · 값 어느 쪽으로도.
- * - 상세 값 표: 값(코드 · 이름 두 줄, 2026-10-21) · 「상품담보명 표기」ⓘ — 순서 · 사용 수 컬럼 없음, 「명명 조각」이라는 말 없음.
+ * - 상세 값 표: 값(이름 · 코드 두 줄, 2026-10-21) · 「상품담보명 표기」ⓘ — 순서 · 사용 수 컬럼 없음, 「명명 조각」이라는 말 없음.
  * - 편집 모드: 값 행 표 문법(ValueRowsTable, 2026-10-01) — 행 앞 ⊖ 「행 삭제 · {값 이름}」 · 마지막 행 아래 ⊕ 「행 추가 · 값」.
  *   코드가 곧 순서라 끌기 손잡이는 없다. 읽기 모드에는 조작이 없다.
  *
@@ -44,7 +44,7 @@ async function listHtml(q?: string) {
 
 const headers = (html: string) => [...html.matchAll(/<th[^>]*>(.*?)<\/th>/g)].map((m) => m[1]!.replace(/<[^>]+>/g, "").trim());
 // 두 줄 칸(코드 · 이름)은 줄 사이를 「/」로 이어 읽는다 — 「A0001/갱신유형」
-const cellText = (html: string) => html.replace(/<\/(code|a|span)><(a|span)[^>]*>/g, "/").replace(/<[^>]+>/g, "");
+const cellText = (html: string) => html.replace(/<\/(code|a|span)><(code|a|span)[^>]*>/g, "/").replace(/<[^>]+>/g, "");
 const bodyRows = (html: string) => [...(html.match(/<tbody>(.*?)<\/tbody>/)?.[1] ?? "").matchAll(/<tr[^>]*>(.*?)<\/tr>/g)].map((m) => [...m[1]!.matchAll(/<td[^>]*>(.*?)<\/td>/g)].map((c) => cellText(c[1]!)));
 
 describe("담보속성 조회 — 한 행 = 유효값 하나", () => {
@@ -52,7 +52,7 @@ describe("담보속성 조회 — 한 행 = 유효값 하나", () => {
     expect(attributeValueRows(KINDS).map((r) => `${r.kind.code}/${r.value?.code ?? "-"}`)).toEqual(["A0001/1", "A0001/2", "A0002/1", "A0002/2", "A0003/-"]);
   });
 
-  it("컬럼 — 담보속성(코드 · 이름 두 줄) · 값(코드 · 이름 두 줄) · 상품담보명 표기 · 최종수정(일자 · 수정자 두 줄) (「수」 · 「값」 미리보기 없음, 2026-10-21)", async () => {
+  it("컬럼 — 담보속성(이름 · 코드 두 줄) · 값(이름 · 코드 두 줄) · 상품담보명 표기 · 최종수정(일자 · 수정자 두 줄) (「수」 · 「값」 미리보기 없음, 2026-10-21)", async () => {
     const html = await listHtml();
     expect(headers(html)).toEqual(["담보속성", "값", "상품담보명 표기", "최종수정"]);
     expect(headers(html)).not.toContain("수");
@@ -60,17 +60,17 @@ describe("담보속성 조회 — 한 행 = 유효값 하나", () => {
     // 담보속성 칸 · 최종수정 칸은 유형마다 한 번만(rowSpan) — 이어지는 값 행에는 그 칸이 없다
     const rows = bodyRows(html);
     expect(rows).toEqual([
-      ["A0001/갱신유형", "1/비갱신형", "—", "—"],
-      ["2/갱신형", "갱신형"],
-      ["A0002/부가유형", "1/기본", "—", "—"],
-      ["2/추가", "추가"],
-      ["A0003/심사유형", "값 없음", "—", "—"],
+      ["갱신유형/A0001", "비갱신형/1", "—", "—"],
+      ["갱신형/2", "갱신형"],
+      ["부가유형/A0002", "기본/1", "—", "—"],
+      ["추가/2", "추가"],
+      ["심사유형/A0003", "값 없음", "—", "—"],
     ]);
     expect(html.match(/rowSpan="2"|rowspan="2"/g)).toHaveLength(4);
     // 괘선은 묶음 사이에만 — 묶음 안의 행(다음 행이 같은 유형)에 표시
     expect(html.match(/<tr class="ts-group-inner">/g)).toHaveLength(2);
-    // 값 칸도 두 줄 칸(IdentCell) — 1줄째 코드(mono · 옅은 색), 2줄째 이름. 두 줄 칸은 줄바꿈 없이 한 줄씩
-    expect(html).toMatch(/<td class="col-flex"><span class="ts-two-line ts-ident"><code class="ts-ident-code">1<\/code><span class="ts-ident-name">비갱신형<\/span><\/span><\/td>/);
+    // 값 칸도 두 줄 칸(IdentCell) — 1줄째 이름, 2줄째 코드(mono · 옅은 색). 두 줄 칸은 줄바꿈 없이 한 줄씩
+    expect(html).toMatch(/<td class="col-flex"><span class="ts-two-line ts-ident"><span class="ts-ident-name">비갱신형<\/span><code class="ts-ident-code">1<\/code><\/span><\/td>/);
     // 행의 담보속성명은 유형 상세로 간다
     expect(html).toContain('href="/attributes/A0001"');
   });
@@ -78,10 +78,10 @@ describe("담보속성 조회 — 한 행 = 유효값 하나", () => {
   it("검색 — 유형 이름이면 그 유형의 값 행 전부, 값 이름이면 그 값 행만", async () => {
     // 값 칸 — 묶음 첫 행은 앞에 담보속성 칸이 하나 더 있다
     const valueNames = async (q: string) => bodyRows(await listHtml(q)).map((r) => (r.length === 4 ? r[1] : r[0]));
-    expect(await valueNames("갱신유형")).toEqual(["1/비갱신형", "2/갱신형"]);
-    expect(await valueNames("비갱신")).toEqual(["1/비갱신형"]);
+    expect(await valueNames("갱신유형")).toEqual(["비갱신형/1", "갱신형/2"]);
+    expect(await valueNames("비갱신")).toEqual(["비갱신형/1"]);
     // 코드로도 이름으로도 걸린다
-    expect(await valueNames("A0002")).toEqual(["1/기본", "2/추가"]);
+    expect(await valueNames("A0002")).toEqual(["기본/1", "추가/2"]);
     expect(matchesAttributeRow("A0002", { kind: KINDS[1]!, value: KINDS[1]!.values[0] })).toBe(true);
   });
 });
@@ -96,23 +96,23 @@ function detailHtml(mode: "read" | "edit") {
 }
 
 describe("담보속성 상세 — 유효값 표", () => {
-  it("읽기: 값(코드 · 이름 두 줄) · 상품담보명 표기(ⓘ) — 순서 · 사용 수 없음 · ⊕ · ⊖ 없음", () => {
+  it("읽기: 값(이름 · 코드 두 줄) · 상품담보명 표기(ⓘ) — 순서 · 사용 수 없음 · ⊕ · ⊖ 없음", () => {
     const html = detailHtml("read");
     expect(headers(html)).toEqual(["값", "상품담보명 표기"]);
     expect(html).toContain('aria-label="상품담보명에 이 값 대신 들어갈 말 — 비우면 붙지 않는다"');
     expect(html).not.toMatch(/사용 수|순서|명명/);
     expect(html).not.toMatch(/행 추가|행 삭제|순서 옮기기/);
     expect(bodyRows(html)).toEqual([
-      ["1/비갱신형", "—"],
-      ["2/갱신형", "갱신형"],
+      ["비갱신형/1", "—"],
+      ["갱신형/2", "갱신형"],
     ]);
   });
 
-  it("편집: 값 칸은 코드 줄 아래 값 이름 입력칸(한 칸 두 줄), 표기가 입력칸, 행 앞 ⊖(행 삭제), 마지막 행 아래(tfoot) ⊕ 「행 추가 · 값」 — 코드 순이라 손잡이 · ↑↓ 없음", () => {
+  it("편집: 값 칸은 값 이름 입력칸 아래 코드 줄(한 칸 두 줄), 표기가 입력칸, 행 앞 ⊖(행 삭제), 마지막 행 아래(tfoot) ⊕ 「행 추가 · 값」 — 코드 순이라 손잡이 · ↑↓ 없음", () => {
     const html = detailHtml("edit");
     expect(html).toMatch(/<tfoot><tr class="ts-vrows-add"><td class="ts-vrows-ctl"[^>]*><button[^>]*aria-label="행 추가 · 값"/);
     expect(headers(html)).toEqual(["조작", "값", "상품담보명 표기"]);
-    expect(html).toMatch(/<tr><td class="ts-vrows-ctl">.*?aria-label="행 삭제 · 비갱신형".*?<\/td><td class="col-flex[^"]*"><span class="ts-two-line ts-ident"><code class="ts-ident-code">1<\/code><span class="ts-ident-name"><input/);
+    expect(html).toMatch(/<tr><td class="ts-vrows-ctl">.*?aria-label="행 삭제 · 비갱신형".*?<\/td><td class="col-flex[^"]*"><span class="ts-two-line ts-ident"><span class="ts-ident-name"><input[^>]*><\/span><code class="ts-ident-code">1<\/code>/);
     expect(html).toContain('aria-label="값 이름 2"');
     expect(html).toContain('aria-label="상품담보명 표기 — 갱신형"');
     expect(html).not.toMatch(/위로|아래로|순서 옮기기|ts-add-row/);
