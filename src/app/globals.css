@@ -6949,16 +6949,31 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
   height: calc(100vh - var(--ts-ld-tabs-h));
 }
 
+/* 좁은 폭 — 세로 띠 열(48)도 상세 폭을 먹으므로 띠를 탭 줄 위 가로 한 줄로 눕힌다. 펼친 패널은 화면에 고정된 서랍 */
 @media (max-width: 899px) {
-  .ts-ld-panel {
-    position: absolute;
-    left: 0;
-    z-index: 20;
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+  .ts-ld {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .ts-ld:not([data-collapsed]) .ts-ld-detail {
-    margin-left: 0;
+  .ts-ld-strip {
+    position: static;
+    flex: 0 0 auto;
+    width: auto;
+    height: auto;
+    flex-direction: row;
+    padding: 4px 8px;
+    border-right: 0;
+    border-bottom: 1px solid var(--ts-rule);
+  }
+
+  .ts-ld-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 20;
+    width: min(272px, 85vw);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
   }
 }
 
@@ -6970,6 +6985,10 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
   gap: 2px;
   height: 32px;
   box-sizing: border-box;
+  /* 좁은 폭에서 칸들이 상세 폭을 넘으면 화면이 아니라 세그먼트 안에서만 가로로 민다 */
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
   padding: 2px;
   border: 1px solid var(--ts-rule-strong);
   border-radius: 6px;
@@ -6978,6 +6997,7 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
 
 .ts-segment > a:where(:not([data-slot])) {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   height: 100%;
   padding: 0 12px;
