@@ -78,12 +78,12 @@ export class Editor {
     await button.click();
   }
 
-  /** 우측 패널 「편집」 탭 — 문면 편집기에만 있다. */
+  /** 우측 패널 「편집」 탭 — 문면 편집기 · 함수조항 편집기(오른쪽 단, 2026-10-28)에 있다. 같은 id. */
   get editPanel(): Locator {
     return this.page.locator("#ts-side-panel-edit");
   }
 
-  /** 폼 하나 — 그 자리 팝업(함수조항 편집기) 또는 편집 탭의 폼 영역(문면 편집기). */
+  /** 폼 하나 — 편집 탭의 폼 영역(문면 · 함수조항 편집기) 또는 그 자리 팝업(상품 조 사본 등). */
   dialog(name: string): Locator {
     return this.page.getByRole("dialog", { name, exact: true }).or(this.editPanel.getByRole("region", { name, exact: true }));
   }
@@ -116,7 +116,7 @@ export class Editor {
     await expect(button).toBeDisabled();
   }
 
-  /** 조건식 폼 — 툴바 「조건식」 직후 편집 탭에 선다(문면 편집기). 함수조항 편집기는 본문 머리 줄 그 자리. */
+  /** 조건식 폼 — 툴바 「조건식」 직후 편집 탭에 선다(문면 · 함수조항 편집기). 편집 탭이 없는 편집기는 본문 머리 줄 그 자리. */
   async condHead(root: Locator): Promise<Locator> {
     return (await this.editPanel.count()) > 0 ? this.editPanel.getByRole("region", { name: "조건식", exact: true }) : root.locator("[data-cond-head]").first();
   }
@@ -745,8 +745,15 @@ export class ClauseAuthoringDriver {
     await this.page.getByLabel("함수조항명").fill(label);
   }
 
+  /** 오른쪽 단 「인자 · 옵션」 탭 — 본문에서 무언가 넣거나 고르면 단이 「편집」 탭으로 가므로(2026-10-28) 인자 · 옵션 · 프리셋을 고치기 전에 돌아온다. */
+  private async defineTab(): Promise<void> {
+    const tab = this.page.getByRole("tab", { name: "인자 · 옵션", exact: true });
+    if ((await tab.getAttribute("aria-selected")) !== "true") await tab.click();
+  }
+
   /** 옵션 목록 — 옵션마다 카드(옵션명), 선택지마다 문구 칸 하나(이름은 문구에서 저절로). 새 옵션은 빈 선택지 둘을 품고 온다. */
   async options(options: readonly ClauseOption[]): Promise<void> {
+    await this.defineTab();
     this.editor.optionLabels = new Map(options.map((o) => [o.code, o.label]));
     for (const option of options) {
       await this.page.getByRole("button", { name: "옵션 추가" }).click();
@@ -760,6 +767,7 @@ export class ClauseAuthoringDriver {
 
   /** 인자 — 맨 위 추가 줄에 인자마다 이름 · 타입 · 기본 연결을 적고 ⊕(최종 결정 2 · 2026-10-01 추가 줄). 본문의 슬롯 · 조건 고르기가 인자를 보려면 본문보다 먼저. */
   async params(params: NonNullable<ClauseSpec["params"]>): Promise<void> {
+    await this.defineTab();
     for (const p of params) {
       await this.page.getByLabel("새 인자 이름", { exact: true }).fill(p.name);
       // 조 참조 인자(ADR-0083)는 타입 칸 값이 `articleRef` 이고 기본 연결이 없다(칸이 잠긴다)
@@ -775,6 +783,7 @@ export class ClauseAuthoringDriver {
    * 코드는 함수조항마다 S01 부터 채번 — 시드 순서대로 더하면 시드 코드가 나온다.
    */
   async presets(presets: NonNullable<ClauseSpec["presets"]>, options: readonly ClauseOption[]): Promise<void> {
+    await this.defineTab();
     for (const p of presets) {
       await this.page.getByLabel("새 프리셋 이름", { exact: true }).fill(p.name);
       await this.page.getByRole("button", { name: "프리셋 추가" }).click();
@@ -807,9 +816,11 @@ export class ClauseAuthoringDriver {
       await root.getByRole("textbox", { name: "항", exact: true }).first().focus();
       await this.page.keyboard.press(SELECT_ALL);
       await this.editor.runTool("조건식");
-      const head = root.locator("[data-cond-head]").first();
+      // 식은 오른쪽 단 편집 탭의 조건식 폼에서 고르고 적용한다 (2026-10-28 — 문면과 같다)
+      const head = await this.editor.condHead(root);
       await expect(head).toBeVisible();
       await this.editor.fillHead(head, "IF", when);
+      await this.editor.confirm(head, "적용");
       return;
     }
     // 「이 함수조항」 조 참조의 줄 표기 — 본문 k 번째 항(P코드로 가리킨다) = 「제k항」 (고르기 트리는 조 줄 없이 항부터)

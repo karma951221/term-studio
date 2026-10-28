@@ -2,6 +2,7 @@
 import { CreateHead, FormRow } from "@/app/_components/FormRow";
 import { ErrorBanner } from "@/app/_components/ErrorBanner";
 import { BOX_BODY_LABEL, ENTITY_LABEL, FIELD_LABEL, newLabel } from "@/app/_lib/labels";
+import { Textarea } from "@/components/ui/textarea";
 
 import { createBoxAction } from "../actions";
 
@@ -15,14 +16,13 @@ export default async function NewBoxPage({ searchParams }: { searchParams: Promi
     <div>
       <CreateHead title={newLabel(ENTITY_LABEL.box)} formId={FORM_ID} path={[{ label: ENTITY_LABEL.box, href: "/boxes" }]} banner={<ErrorBanner message={error} />} />
       <form id={FORM_ID} action={createBoxAction} className="ts-create-form">
-        <FormRow label={FIELD_LABEL.title} htmlFor="box-title">
-          <input id="box-title" type="text" name="title" autoFocus placeholder="예: 보험연도 — 【】 없이 (비워도 된다)" />
+        <FormRow label={FIELD_LABEL.title} htmlFor="box-title" info="제목은 목록 · 고르기에서 박스를 부르는 이름일 뿐 약관에 찍히지 않는다 — 【】 없이 적는다. 같은 제목이 여럿이어도 된다(코드로 가른다). 코드는 시스템이 BX000001 부터 붙이고, 등록 뒤에는 바뀌지 않는다.">
+          <input id="box-title" type="text" name="title" autoFocus placeholder="예: 보험연도 — 목록에 보이는 이름 (【】 없이 · 비워도 된다)" />
         </FormRow>
-        <FormRow label={BOX_BODY_LABEL} htmlFor="box-lines">
-          <textarea id="box-lines" name="lines" rows={8} required placeholder={"한 줄이 박스의 한 줄이다\n예: 보험연도란 계약일부터 1년 단위로 …"} />
+        <FormRow label={BOX_BODY_LABEL} htmlFor="box-lines" info="찍을 【…】 머리는 본문 첫 줄에 적는다. 박스 안에는 조 참조 · 슬롯을 두지 않는다 — 고정 글이다.">
+          <Textarea id="box-lines" name="lines" rows={3} required className="ts-field-direct ts-box-lines-edit" placeholder={"한 줄이 박스의 한 줄이다 — 약관에 찍을 【…】 머리는 첫 줄에\n예: 【보험연도】\n보험연도란 계약일부터 1년 단위로 …"} />
         </FormRow>
       </form>
-      <p className="ts-form-hint">제목은 【】 없이 적는다 — 화면 · 출력에서 【제목】으로 감싸 보인다. 같은 제목이 여럿이어도 된다(코드로 가른다). 코드는 시스템이 BX000001 부터 붙이고, 등록 뒤에는 바뀌지 않는다. 박스 안에는 조 참조 · 슬롯을 두지 않는다 — 고정 글이다.</p>
     </div>
   );
 }

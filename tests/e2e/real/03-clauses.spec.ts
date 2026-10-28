@@ -19,12 +19,12 @@ const ancestors = ALL_GENERAL_ANCESTORS;
 
 test.describe.serial("실물 재현(화면) ③ 정적 마스터 박스", () => {
   for (const spec of SEED.boxes.filter((b) => !BASE_BOX_CODES.has(b.code))) {
-    test(`${spec.code} ${spec.title ? `【${spec.title}】` : "(제목 없음)"}`, NO_COORD, async ({ page, ev }) => {
+    test(`${spec.code} ${spec.title || "(제목 없음)"}`, NO_COORD, async ({ page, ev }) => {
       await ev.action("실물화면#3.1", "관리자로 로그인한다", () => login(page));
       await ev.action("실물화면#3.6", `새 박스 — 제목 「${spec.title}」 · 본문 ${spec.lines.length}줄`, async () => {
         await open(page, "/boxes/new");
-        await page.getByLabel("제목").fill(spec.title);
-        await page.getByLabel("본문").fill(spec.lines.join("\n"));
+        await page.getByLabel("제목", { exact: true }).fill(spec.title);
+        await page.getByLabel("본문", { exact: true }).fill(spec.lines.join("\n"));
       });
       await ev.action("실물화면#3.7", `생성 — ${spec.code} 로 만들어진다`, async () => {
         await page.getByRole("button", { name: "생성", exact: true }).click();

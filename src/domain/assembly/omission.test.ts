@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { RArticle, RItem, RParagraph, RStatic, SInline, SubstitutedDoc } from "./types";
 import { parseRefKey } from "../document/pcode";
-import { judgeOmission } from "./omission";
+import type { ArticleNode, DocumentNode } from "../document/nodes";
+import { titleNodes } from "../document/title";
+import { effectiveOmitRules, judgeOmission } from "./omission";
 
 /** 항 — 참조 열쇠(`key`)는 id 그대로 둔다(조립이 매긴 P코드 자리). 가리키는 쪽은 `조id#항id`. */
 const paragraph = (id: string, text: string, excludeFromComparison = false): RParagraph<SInline> => ({
@@ -327,5 +329,224 @@ describe("기능/조립산출 §3.5 미합의 사례 — 원문 유지 + warning
       { special: 2, general: 3, matched: true },
     ]);
     expect(out.records[0].excludedClauseNodeIds).toEqual(["g-clause"]);
+  });
+});
+
+describe("ADR-0093 포함 생략 — 생략 기준 「포함하면 생략」 (기능/조립산출 §3.5)", () => {
+  const template = new Map([["g-a", "template" as const]]);
+  const judge = (special: RArticle<SInline>, general: RArticle<SInline>, contained?: ReadonlyMap<string, "template" | "product">, extra: RArticle<SInline>[] = [], delegated?: ReadonlySet<string>) =>
+    judgeOmission(doc("s", [special, ...extra.filter((a) => a.id.startsWith("s"))]), doc("g", [general, ...extra.filter((a) => a.id.startsWith("g"))]), owner, undefined, delegated, contained);
+
+  it("담보 항이 보통약관 조에 같은 순서로 다 있고 보통약관에 항이 더 있어도 — 기준 없음(같을 때만)이면 통째 · 경고 없음 · omitRule · basis 없음", () => {
+    const general = article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B")]);
+    const special = article("s-a", "특약 조", [paragraph("s-1", "A")], "g-a");
+    const out = judge(special, general);
+    expect(out.records[0].disposition).toBe("full");
+    expect(out.doc.children).toEqual([special]);
+    expect(out.issues).toEqual([]);
+    expect("omitRule" in out.records[0]).toBe(false);
+    expect("basis" in out.records[0]).toBe(false);
+  });
+
+  it("기준 없음(같을 때만)이면 포함 관계에 반복 · 순서 변경이 겹쳐도 경고 없는 통째 — 포함 미합의 판정은 「포함하면」인 조만", () => {
+    const dup = judge(
+      article("s-a", "특약 조", [paragraph("s-1", "A")], "g-a"),
+      article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), paragraph("g-3", "A")]),
+    );
+    expect(dup.records[0].disposition).toBe("full");
+    expect(dup.records[0].reason).toBeUndefined();
+    expect(dup.issues).toEqual([]);
+
+    const reordered = judge(
+      article("s-a", "특약 조", [paragraph("s-1", "C"), paragraph("s-2", "A")], "g-a"),
+      article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), paragraph("g-3", "C")]),
+    );
+    expect(reordered.records[0].disposition).toBe("full");
+    expect(reordered.records[0].reason).toBeUndefined();
+    expect(reordered.issues).toEqual([]);
+  });
+
+  it("「포함하면」(템플릿)이면 생략 — 담보 조가 출력에서 빠지고 basis contained · omitRule {contained, template} · pairs 는 보통약관 항 순, 남는 보통약관 항은 special null", () => {
+    const general = article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), paragraph("g-3", "C")]);
+    const special = article("s-a", "특약 조", [paragraph("s-1", "A"), paragraph("s-2", "C")], "g-a");
+    const out = judge(special, general, template);
+    expect(out.doc.children).toEqual([]);
+    expect(out.issues).toEqual([]);
+    expect(out.records).toEqual([
+      record({
+        disposition: "omitted",
+        basis: "contained",
+        omitRule: { mode: "contained", source: "template" },
+        pairs: [
+          { special: 1, general: 1, matched: true },
+          { special: null, general: 2, matched: false },
+          { special: 2, general: 3, matched: true },
+        ],
+        excludedClauseNodeIds: [],
+      }),
+    ]);
+  });
+
+  it("출처가 상품이면 omitRule.source = product", () => {
+    const general = article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B")]);
+    const special = article("s-a", "특약 조", [paragraph("s-1", "A")], "g-a");
+    const out = judge(special, general, new Map([["g-a", "product" as const]]));
+    expect(out.records[0]).toMatchObject({ disposition: "omitted", basis: "contained", omitRule: { mode: "contained", source: "product" } });
+  });
+
+  it("「포함하면」인데 담보에만 있는 항이 있으면 통째 — 경고 없음 · omitRule 은 남는다 (ADR-0093 결정 4)", () => {
+    const general = article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), paragraph("g-3", "C")]);
+    const special = article("s-a", "특약 조", [paragraph("s-1", "A"), paragraph("s-x", "특약만")], "g-a");
+    const out = judge(special, general, template);
+    expect(out.doc.children).toEqual([special]);
+    expect(out.issues).toEqual([]);
+    expect(out.records[0]).toEqual(
+      record({
+        disposition: "full",
+        omitRule: { mode: "contained", source: "template" },
+        pairs: [
+          { special: 1, general: 1, matched: true },
+          { special: 2, general: 2, matched: false },
+          { special: null, general: 3, matched: false },
+        ],
+        excludedClauseNodeIds: [],
+      }),
+    );
+  });
+
+  it("포함인데 항 순서가 다르면 통째 + 「항 순서가 달라 자동 판정하지 않았습니다」", () => {
+    const general = article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), paragraph("g-3", "C")]);
+    const special = article("s-a", "특약 조", [paragraph("s-1", "B"), paragraph("s-2", "A")], "g-a");
+    const out = judge(special, general, template);
+    expect(out.doc.children).toEqual([special]);
+    expect(out.records[0]).toMatchObject({ disposition: "full", reason: "항 순서가 달라 자동 판정하지 않았습니다", omitRule: { mode: "contained", source: "template" } });
+    expect("basis" in out.records[0]).toBe(false);
+    expect(out.issues.map((i) => [i.kind, i.severity, i.message])).toEqual([["omissionUndecided", "warning", "항 순서가 달라 자동 판정하지 않았습니다"]]);
+  });
+
+  it("포함인데 같은 항 두 번이면 통째 + 「같은 항이 반복돼 …」", () => {
+    const general = article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), paragraph("g-3", "A")]);
+    const special = article("s-a", "특약 조", [paragraph("s-1", "A")], "g-a");
+    const out = judge(special, general, template);
+    expect(out.doc.children).toEqual([special]);
+    expect(out.records[0].disposition).toBe("full");
+    expect(out.issues.map((i) => i.message)).toEqual(["같은 항이 반복돼 자동 판정하지 않았습니다"]);
+  });
+
+  it("포함 미합의(반복 · 표)의 대조 표는 위치 대조가 아니라 포함 대조 — 보통약관 항 순, 담보 항은 짝지은 자리에", () => {
+    const dup = judge(
+      article("s-a", "특약 조", [paragraph("s-1", "A"), paragraph("s-2", "C")], "g-a"),
+      article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), paragraph("g-3", "C"), paragraph("g-4", "A")]),
+      template,
+    );
+    expect(dup.records[0]).toMatchObject({ disposition: "full", reason: "같은 항이 반복돼 자동 판정하지 않았습니다" });
+    expect(dup.records[0].pairs).toEqual([
+      { special: 1, general: 1, matched: true },
+      { special: null, general: 2, matched: false },
+      { special: 2, general: 3, matched: true },
+      { special: null, general: 4, matched: false },
+    ]);
+
+    const table: RStatic<SInline> = { kind: "table", id: "t", columns: [{}], rows: [{ cells: [[{ kind: "text", id: "t-c", text: "셀" }]] }] };
+    const tableOut = judge(
+      article("s-a", "특약 조", [paragraph("s-1", "A"), { ...table, id: "s-t" }], "g-a"),
+      article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B"), { ...table, id: "g-t" }]),
+      template,
+    );
+    expect(tableOut.records[0]).toMatchObject({ disposition: "full", reason: "참조 · 표를 품은 항은 자동 판정하지 않았습니다" });
+    expect(tableOut.records[0].pairs).toEqual([
+      { special: 1, general: 1, matched: true },
+      { special: null, general: 2, matched: false },
+      { special: 1, specialKind: "table", general: 1, generalKind: "table", matched: true },
+    ]);
+  });
+
+  it("포함인데 지워질 담보 항에 조 참조 · 표가 있으면 통째 + 「참조 · 표를 품은 항은 …」 — 참조를 빼고 봐야 포함인 경우(자기 참조 id 다름)도 같은 사유", () => {
+    const table: RStatic<SInline> = { kind: "table", id: "t", columns: [{}], rows: [{ cells: [[{ kind: "text", id: "t-c", text: "셀" }]] }] };
+    const tableOut = judge(article("s-a", "특약 조", [paragraph("s-1", "A"), { ...table, id: "s-t" }], "g-a"), article("g-a", "일반 조", [paragraph("g-1", "A"), { ...table, id: "g-t" }, paragraph("g-3", "C")]), template);
+    expect(tableOut.records[0].disposition).toBe("full");
+    expect(tableOut.issues.map((i) => i.message)).toEqual(["참조 · 표를 품은 항은 자동 판정하지 않았습니다"]);
+
+    const articleRef = judge(
+      article("s-a", "특약 조", [refParagraph("s-1", "이 약관의 ", ["s-other"])], "g-a"),
+      article("g-a", "일반 조", [refParagraph("g-1", "이 약관의 ", ["g-other"]), paragraph("g-2", "B")]),
+      template,
+      [article("s-other", "다른 조", [paragraph("s-o1", "본문")]), article("g-other", "다른 조", [paragraph("g-o1", "본문")])],
+    );
+    expect(articleRef.records[0].disposition).toBe("full");
+    expect(articleRef.records[0].reason).toBe("참조 · 표를 품은 항은 자동 판정하지 않았습니다");
+    expect(articleRef.issues.map((i) => i.message)).toEqual(["참조 · 표를 품은 항은 자동 판정하지 않았습니다"]);
+  });
+
+  it("포함인데 지워질 담보 항에 항 참조가 있으면 통째 + 「항 참조를 품은 항이라 …」", () => {
+    const general = article("g-a", "일반 조", [paragraph("g-1", "A"), refParagraph("g-2", "앞 항의 사유로 ", ["g-a#g-1"]), paragraph("g-3", "C")]);
+    const special = article("s-a", "특약 조", [paragraph("s-1", "A"), refParagraph("s-2", "앞 항의 사유로 ", ["s-a#s-1"])], "g-a");
+    const out = judge(special, general, template);
+    expect(out.doc.children).toEqual([special]);
+    expect(out.records[0].disposition).toBe("full");
+    expect(out.issues.map((i) => i.message)).toEqual(["항 참조를 품은 항이라 생략하면 참조가 끊깁니다"]);
+  });
+
+  it("비교 제외 항은 빼고 본다 — 빼고 나서 항 수가 같고 같으면 basis 없는 그냥 생략", () => {
+    const general = article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-clause/x", "제외", true), paragraph("g-3", "B")]);
+    const special = article("s-a", "특약 조", [paragraph("s-1", "A"), paragraph("s-2", "B")], "g-a");
+    const out = judge(special, general, template);
+    expect(out.records[0].disposition).toBe("omitted");
+    expect("basis" in out.records[0]).toBe(false);
+    expect(out.records[0].omitRule).toEqual({ mode: "contained", source: "template" });
+  });
+
+  it("항 수가 같고 같으면 기준과 무관하게 생략(basis 없음) · 담보에 항이 더 있으면 기준과 무관하게 준용", () => {
+    const same = judge(article("s-a", "특약 조", [paragraph("s-1", "A"), paragraph("s-2", "B")], "g-a"), article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B")]), template);
+    expect(same.records[0].disposition).toBe("omitted");
+    expect("basis" in same.records[0]).toBe(false);
+
+    const applied = judge(article("s-a", "특약 조", [paragraph("s-1", "A"), paragraph("s-x", "추가")], "g-a"), article("g-a", "일반 조", [paragraph("g-1", "A")]), template);
+    expect(applied.records[0].disposition).toBe("applied");
+    expect("basis" in applied.records[0]).toBe(false);
+    expect(applied.issues).toEqual([]);
+  });
+
+  it("위임된 조는 「포함하면」이어도 판정 없이 통째 — delegated · omitRule", () => {
+    const general = article("g-a", "일반 조", [paragraph("g-1", "A"), paragraph("g-2", "B")]);
+    const special = article("s-a", "특약 조", [paragraph("s-1", "A")], "g-a");
+    const out = judge(special, general, template, [], new Set(["g-a"]));
+    expect(out.doc.children).toEqual([special]);
+    expect(out.records[0]).toEqual(record({ disposition: "full", pairs: [], excludedClauseNodeIds: [], delegated: true, omitRule: { mode: "contained", source: "template" } }));
+    expect(out.issues).toEqual([]);
+  });
+});
+
+describe("생략 기준 해소 — 상품 > 템플릿 원본 (ADR-0093 결정 3)", () => {
+  const art = (id: string, omitMode?: "contained"): ArticleNode => ({ id, kind: "article", title: titleNodes(id, id), children: [], ...(omitMode ? { omitMode } : {}) });
+  const template: DocumentNode = {
+    id: "g-doc",
+    kind: "document",
+    title: "보통약관",
+    children: [
+      art("g-a", "contained"),
+      art("g-b"),
+      { id: "g-sec", kind: "section", title: "제1관", children: [art("g-c", "contained"), { id: "g-cond", kind: "condBlock", branches: [{ id: "g-cond-if", when: "D0001 = true", children: [art("g-d", "contained")] }] }] },
+      art("g-e", "contained"),
+    ],
+  };
+
+  it("effectiveOmitRules — 상품 > 템플릿: 상품 exact 가 템플릿 contained 를 끄고 · 상품 contained 는 source product · 템플릿에 없는 조 id 는 무시 · 관 · 조건 가지 안 조도 본다", () => {
+    const product = new Map([
+      ["g-e", "exact" as const],
+      ["g-b", "contained" as const],
+      ["g-a", "contained" as const],
+      ["g-missing", "contained" as const],
+    ]);
+    expect(effectiveOmitRules(template, product)).toEqual(
+      new Map([
+        ["g-a", "product"],
+        ["g-b", "product"],
+        ["g-c", "template"],
+        ["g-d", "template"],
+      ]),
+    );
+    expect(effectiveOmitRules(template)).toEqual(new Map([["g-a", "template"], ["g-c", "template"], ["g-d", "template"], ["g-e", "template"]]));
+    expect(effectiveOmitRules(undefined, product)).toEqual(new Map());
   });
 });

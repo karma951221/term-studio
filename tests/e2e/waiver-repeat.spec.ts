@@ -3,6 +3,7 @@ import { type Locator, type Page } from "@playwright/test";
 import { pickCombo } from "./_lib/combo";
 import { editFoot, editForm, insertFrom } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
+import { chooseRequiredFeature } from "./_lib/product";
 
 /**
  * 블록 반복 — 납입면제종마다 · 사유마다 · 현재 원소 (최종 결정 11 · ADR-0077 결정 2 · 3 · 4, 기능/문면 §3.7).
@@ -51,10 +52,9 @@ test(
       await item.fill("면제사유: ");
       await item.press("End");
       await tool("슬롯").click();
-      const dialog = page.getByRole("dialog", { name: "치환 슬롯 넣기", exact: true });
+      const dialog = editForm(page, "치환 슬롯 넣기");
       await pickCombo(dialog.locator("#pop-slot"), { value: "arg.사유" });
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await insertFrom(page, dialog);
       await page.getByRole("button", { name: "저장", exact: true }).click();
       await page.waitForURL(/\/functions\/C\d+$/);
       return decodeURIComponent(page.url().split("/").at(-1)!);
@@ -182,7 +182,8 @@ test(
       await page.waitForURL(/\/products\/[0-9a-f-]{36}(?:\?tab=basic)?$/);
       const url = page.url().split("?")[0];
       await page.getByRole("button", { name: "편집", exact: true }).click();
-      const rows = page.locator("#definitions-panel tbody tr");
+      await chooseRequiredFeature(page);
+      const rows = page.locator("#definitions-panel [data-plan-option]");
       for (const [i, name, reasons] of [
         [0, "뇌졸중면제형", ["뇌졸중"]],
         [1, "뇌졸중심근경색면제형", ["뇌졸중", "급성심근경색증"]],

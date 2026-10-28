@@ -53,10 +53,13 @@ function cyrb53(str: string): string {
  * 옛 글 제목으로 만든 사본의 지문이 제목 이행(읽을 때 [글 하나]) 뒤에도 그대로 맞고, 이행한 글의 id 에 흔들리지 않는다.
  */
 function hashView(article: ArticleNode): unknown {
-  const raw: unknown = article.title;
-  if (!Array.isArray(raw)) return article;
-  const text = textOnlyTitle(article.title);
-  return text === undefined ? article : { ...article, title: text };
+  // 생략 기준은 사본이 아니라 상품 조 생략 기준 표의 일이다 — 기준 하나 때문에 사본 · 노랑이 생기지 않게 지문에서 뺀다 (ADR-0093 버린 대안 라)
+  const { omitMode: _omit, ...rest } = article;
+  void _omit;
+  const raw: unknown = rest.title;
+  if (!Array.isArray(raw)) return rest;
+  const text = textOnlyTitle(rest.title);
+  return text === undefined ? rest : { ...rest, title: text };
 }
 
 /** 조 하나의 내용 지문 — 제목 · 본문 · 하위 노드 id 까지. */

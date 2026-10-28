@@ -10,11 +10,14 @@
  * - 끈 조는 취소선 · 흐리게(`.is-hidden-article`). 고른 조는 `aria-current` (주칠).
  * - 조 사본 (ADR-0079) — 사본이 있는 조에 빨간 점, 사본을 만든 뒤 템플릿의 그 조가 바뀌었으면 노란 점을 더한다(읽기 · 편집 모두,
  *   편집 중이면 초안을 따른다). 제목은 사본의 제목.
+ * - 조 생략 기준 (ADR-0093 결정 7 · §3.6) — 편집은 줄 끝(「변경」 앞)의 고르기(템플릿대로 · 같을 때만 · 포함하면), 잠긴 조에도 선다(특약 판정용이라
+ *   잠금 이유와 무관). 읽기는 저장본이 템플릿과 다를 때만 「포함 생략」 · 「같을 때만」 표시.
  * - 판정 배지 · 「잠김」 · 일부 연결 경고 아이콘 (§3.12) — 점 뒤에. 배지는 판정기 결과(마스터는 없음), 잠김은 정적 연결, 아이콘은 준용하기 옵션 조의 일부 연결만.
  * - 조 제목은 진짜 주소(`…&art=<조 id>`)를 가진 링크지만 누르면 **서버로 가지 않는다** — 고른 조만 바꾸고 주소는
  *   `replaceState` 로 맞춘다 (`selectArticleOnClick` · 2026-09-28 사용자 QA「목차를 누르면 새로고침된다」).
  */
-import { foldTitle } from "@/domain/document";
+import { OMIT_MODE_LABEL, OMIT_MODE_TOC_INFO } from "@/app/_lib/labels";
+import { foldTitle, type ArticleOmitMode } from "@/domain/document";
 import type { Id } from "@/domain/types";
 
 import { generalArticlePath } from "../../lib";
@@ -41,6 +44,8 @@ export interface TocSection {
     templateHash: string;
     /** 잠긴 조 (ADR-0082 결정 10) — 사본이 있으면 회색 점(쓰이지 않는 사본). */
     locked?: boolean;
+    /** 템플릿 조의 생략 기준 (ADR-0093) — 「템플릿대로(…)」의 말 · 읽기 표시의 기준. */
+    templateOmitMode: ArticleOmitMode;
     /** 판정 배지 · 「잠김」 · 일부 연결 경고 (§3.12 — `articleMarks`). 판정 대상도 잠긴 조도 아니면 없다. */
     mark?: ArticleMark;
   }[];
@@ -51,6 +56,29 @@ export function copyStateOf(copy: { templateHash: string } | undefined, template
   if (!copy) return undefined;
   if (locked) return "gray";
   return copy.templateHash === templateHash ? "copied" : "stale";
+}
+
+/** 「템플릿대로(같을 때만)」의 괄호 말 · 읽기 표시 — 생략 기준 짧은 이름. */
+const OMIT_MODE_SHORT: Record<ArticleOmitMode, string> = { exact: "같을 때만", contained: "포함하면" };
+const OMIT_MODE_MARK: Record<ArticleOmitMode, string> = { exact: "같을 때만", contained: "포함 생략" };
+
+/** 목차 줄의 생략 기준 — 편집은 고르기, 읽기는 템플릿과 다를 때만 표시. */
+function OmitModeCell({ mode, templateMode, editing, label, onChange }: { mode: ArticleOmitMode | undefined; templateMode: ArticleOmitMode; editing: boolean; label: string; onChange: (mode: ArticleOmitMode | "template") => void }) {
+  if (editing) {
+    return (
+      <select aria-label={`생략 기준 · ${label}`} title={OMIT_MODE_TOC_INFO} value={mode ?? "template"} onChange={(e) => onChange(e.target.value as ArticleOmitMode | "template")}>
+        <option value="template">템플릿대로({OMIT_MODE_SHORT[templateMode]})</option>
+        <option value="exact">{OMIT_MODE_LABEL.exact}</option>
+        <option value="contained">{OMIT_MODE_LABEL.contained}</option>
+      </select>
+    );
+  }
+  if (!mode || mode === templateMode) return null;
+  return (
+    <span className="ts-badge ts-omit-mark" title={`생략 기준 — ${OMIT_MODE_LABEL[mode]} (템플릿은 ${OMIT_MODE_LABEL[templateMode]}) · ${OMIT_MODE_TOC_INFO}`}>
+      {OMIT_MODE_MARK[mode]}
+    </span>
+  );
 }
 
 /** 빨강(사본) · 노랑(템플릿이 바뀜) 점 — 목차 · 조 편집 패널 머리가 같이 쓴다. */
@@ -112,6 +140,15 @@ export function GeneralToc({
                 </a>
                 <CopyDots state={state} label={label} />
                 <VerdictMarks mark={a.mark} label={label} />
+                {edit && (
+                  <OmitModeCell
+                    mode={edit.current.omitModes[a.id]}
+                    templateMode={a.templateOmitMode}
+                    editing={edit.editing}
+                    label={label}
+                    onChange={(mode) => edit.dispatch({ type: "setOmitMode", articleId: a.id, mode, templateMode: a.templateOmitMode })}
+                  />
+                )}
                 {edit?.changes.articles.has(a.id) && <span className="ts-badge ts-changed-mark">변경</span>}
                 {errors.map((message, i) => (
                   <span key={i} className="ts-toc-error ts-error" role="alert">

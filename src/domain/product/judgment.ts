@@ -6,6 +6,8 @@
  *   판정이 바뀌는 조(전 → 후) · 회색이 되는 사본 · 다시 쓰이는 사본 · 깨지는 블록 지정 참조를 확인 모달에 보인다(`judgmentImpact`).
  * - 대치 형태(주계약 기본계약 하나)는 판정 기록이 없다 — 기본계약이 조연결한 조(잠금)를 「대치」로 둔다. 그래서 블록 1 → 2(대치 → 절 형태)도
  *   「대치 → 특칙 1/2」처럼 같은 표로 보인다.
+ * - 특약 조 판정 (ADR-0093 결정 6) — 보통약관 탭이 조 생략 기준을 바꾸면 특약 조의 생략 · 준용 · 통째가 바뀔 수 있다.
+ *   조립의 생략 기록(`Booklet.omitted`)을 「상품담보 › 조」마다 견줘 바뀐 조를 `specials` 로 낸다 — 절 형태 여부와 무관하다.
  * 이 모듈은 조립(`domain/assembly`)을 import 하지 않는다 — 판정 기록의 필요한 칸만 구조로 받는다.
  */
 import type { Id, Issue, JudgmentImpact } from "../types";
@@ -23,6 +25,10 @@ export function verdictText(r: { result: VerdictResult; k: number; n: number }):
   return VERDICT_WORD[r.result];
 }
 
+/** 특약 조 판정 표기 — `domain/assembly` `OmissionRecord.disposition` 과 같은 값 (ADR-0093 결정 6). */
+export type OmissionDisposition = "omitted" | "applied" | "full";
+export const OMISSION_WORD: Record<OmissionDisposition, string> = { omitted: "생략", applied: "준용", full: "통째" };
+
 /** 대치 형태에서 기본계약이 조연결한 조의 표기. */
 export const REPLACED_TEXT = "대치";
 
@@ -36,6 +42,8 @@ export interface JudgmentSnapshot {
   grayCopies: ReadonlySet<Id>;
   /** 사본의 블록 지정 참조 깨짐 (`copyBlockRefIssues`). */
   blockRefIssues: readonly Issue[];
+  /** 특약 조 판정 — 「상품담보 id/조 id」 → 줄 이름(「상품담보명 › 조 명」) · 표기(생략 · 준용 · 통째). */
+  specials: ReadonlyMap<string, { label: string; word: string }>;
 }
 
 export function judgmentSnapshot({
@@ -43,6 +51,7 @@ export function judgmentSnapshot({
   locks,
   copyIds,
   blockRefIssues,
+  omitted = [],
 }: {
   /** 절 형태의 판정 기록 — 없으면 대치 형태(또는 조립 불가)로 보고 잠긴 조를 「대치」로 둔다. */
   records?: readonly { articleId: Id; result: VerdictResult; k: number; n: number }[];
@@ -51,6 +60,8 @@ export function judgmentSnapshot({
   /** 쓰이는 자리의 사본 조 id (`liveArticleCopies`). */
   copyIds: Iterable<Id>;
   blockRefIssues: readonly Issue[];
+  /** 조립의 생략 기록 (`Booklet.omitted`) — 특약 조 판정의 재료. */
+  omitted?: readonly { productCoverageId: Id; productCoverageName: string; articleId: Id; articleTitle: string; disposition: OmissionDisposition }[];
 }): JudgmentSnapshot {
   const verdicts = new Map<Id, string>();
   if (records) {
@@ -58,7 +69,8 @@ export function judgmentSnapshot({
   } else {
     for (const id of locks.keys()) verdicts.set(id, REPLACED_TEXT);
   }
-  return { verdicts, sectioned: records !== undefined, grayCopies: new Set([...copyIds].filter((id) => locks.has(id))), blockRefIssues };
+  const specials = new Map(omitted.map((o) => [`${o.productCoverageId}/${o.articleId}`, { label: `${o.productCoverageName} › ${o.articleTitle}`, word: OMISSION_WORD[o.disposition] }] as const));
+  return { verdicts, sectioned: records !== undefined, grayCopies: new Set([...copyIds].filter((id) => locks.has(id))), blockRefIssues, specials };
 }
 
 const issueKey = (i: Issue) => `${i.at.articleId ?? ""}|${(i.at.nodePath ?? []).join("/")}|${i.message}`;
@@ -77,6 +89,16 @@ export function judgmentImpact(before: JudgmentSnapshot, after: JudgmentSnapshot
   const revived = [...before.grayCopies].filter((id) => !after.grayCopies.has(id)).map((id) => ({ articleId: id, label: labelOf(id) }));
   const known = new Set(before.blockRefIssues.map(issueKey));
   const brokenRefs = after.blockRefIssues.filter((i) => !known.has(issueKey(i))).map((i) => ({ articleId: i.at.articleId ?? "", label: i.at.articleId ? labelOf(i.at.articleId) : "보통약관", message: i.message }));
-  if (!verdicts.length && !grayed.length && !revived.length && !brokenRefs.length) return undefined;
-  return { verdicts, grayed, revived, brokenRefs };
+  // 특약 조 판정 — 양쪽에 다 있는 조만 견준다(탑재 · 해제로 생기거나 사라진 조는 판정이 바뀐 것이 아니다)
+  const specials: NonNullable<JudgmentImpact["specials"]> = [];
+  for (const [key, b] of before.specials) {
+    const a = after.specials.get(key);
+    if (!a || a.word === b.word) continue;
+    const cut = key.indexOf("/"); // 상품담보 id(uuid)에는 「/」가 없다
+    const productCoverageId = key.slice(0, cut);
+    const articleId = key.slice(cut + 1);
+    specials.push({ productCoverageId, articleId, label: a.label, before: b.word, after: a.word });
+  }
+  if (!verdicts.length && !grayed.length && !revived.length && !brokenRefs.length && !specials.length) return undefined;
+  return { verdicts, grayed, revived, brokenRefs, ...(specials.length ? { specials } : {}) };
 }

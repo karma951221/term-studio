@@ -213,11 +213,12 @@ export function createServices(root: Db, opts: ContainerOptions = {}): Services 
       },
     },
     attributeRefs: attributeRefSource(db),
-    // 판정 변화 견주기 (ADR-0082 결정 11) — 조립을 지금 열린 트랜잭션(문맥 Db)에서 돌려 판정 기록을 읽는다. product → assembly 라 지연 참조
+    // 판정 변화 견주기 (ADR-0082 결정 11 · ADR-0093 결정 6) — 조립을 지금 열린 트랜잭션(문맥 Db)에서 한 번 돌려 제1절 판정 기록 · 생략 기록을 읽는다.
+    // product → assembly 라 지연 참조
     judgment: {
-      firstSection: async (productId) => {
+      booklet: async (productId) => {
         const r = await services.assembly.preview(productId);
-        return r.ok ? r.value.firstSection : undefined;
+        return r.ok ? { ...(r.value.firstSection ? { firstSection: r.value.firstSection } : {}), omitted: r.value.omitted } : undefined;
       },
     },
   });

@@ -126,7 +126,7 @@ describe("상품담보 탭 — 편집", () => {
     expect(s).toContain('aria-label="상품담보명 · 일반상해사망 추가"');
     expect(s).not.toContain("이름 저장");
     // 담보 칸은 편집 중에도 읽기 그대로 — 담보명 위 · 코드 아래(작게) 두 줄 (2026-10-21)
-    expect(s).toMatch(/<span class="ts-two-line ts-ident is-name-first"><a class="ts-ident-name"[^>]* href="\/coverages\/c-death">일반상해사망<\/a><code class="ts-ident-code">COV000002<\/code><\/span>/);
+    expect(s).toMatch(/<span class="ts-two-line ts-ident"><a class="ts-ident-name"[^>]* href="\/coverages\/c-death">일반상해사망<\/a><code class="ts-ident-code">COV000002<\/code><\/span>/);
     expect(s).toContain('aria-label="세목 부착 해제 · 일반상해사망 · (제1종)"');
     expect(s).toContain('aria-label="세목 조합 · 일반상해사망"');
     expect(s).toContain('aria-label="탑재 해제 · 일반상해사망 추가"');

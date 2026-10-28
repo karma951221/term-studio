@@ -30,22 +30,20 @@ import { ProductEditProvider } from "./ProductEdit";
 import { titleNodes } from "@/domain/document/title";
 
 const enums = [
-  { code: "E0003", label: "간편심사유형", values: [{ code: "V01", label: "3.0.5", order: 0 }, { code: "V02", label: "3.5.5", order: 1 }] },
-  { code: "E0004", label: "건강고지유형", values: [{ code: "V01", label: "6년 건강고지형", order: 0 }] },
   { code: "E0005", label: "고지유형", values: [{ code: "V01", label: "일반심사", order: 0 }, { code: "V02", label: "간편심사", order: 1 }, { code: "V03", label: "건강고지", order: 2 }] },
-  { code: "E0006", label: "간편심사구분", values: [{ code: "V01", label: "단일심사", order: 0 }, { code: "V02", label: "통합간편심사", order: 1 }] },
-  { code: "E0007", label: "계약형태", values: [{ code: "V01", label: "주계약", order: 0 }, { code: "V02", label: "독립특약", order: 1 }] },
+  { code: "E0007", label: "주계약/독립특약 구분", values: [{ code: "V01", label: "주계약", order: 0 }, { code: "V02", label: "독립특약", order: 1 }] },
 ];
 const lookup = (code: string) => enums.find((e) => e.code === code) as never;
 
-describe("기본정보 — 상품정보(상품명 · 평균공시이율 · 상품특성) + 세목", () => {
+describe("기본정보 — 상품정보 카드(상품 · 상품특성 · 간편심사) + 세목 (2026-10-29)", () => {
   const values = new Map([
     ["disclosure.avg_rate", { entered: true as const, value: 2.5 }],
     ["feature.contract_kind", { entered: true as const, value: "V01" }],
     ["feature.renewable", { entered: true as const, value: true }],
+    ["feature.fetal", { entered: true as const, value: false }],
+    ["feature.group_contract", { entered: true as const, value: true }],
     ["feature.notice_kind", { entered: true as const, value: "V02" }],
-    ["feature.review_scope", { entered: true as const, value: "V02" }],
-    ["feature.review_type", { entered: true as const, value: ["V01", "V02"] }],
+    ["feature.notice_affix", { entered: true as const, value: "(통합간편심사형)" }],
   ]);
   const render = () =>
     renderToStaticMarkup(
@@ -53,34 +51,43 @@ describe("기본정보 — 상품정보(상품명 · 평균공시이율 · 상�
         <BasicTab productId="p1" productName="메리츠" productForm={buildForm("product", lookup, values)} planOptions={[]} plans={[]} planOptionForms={[]} planTypeForms={[{ code: "waiver", label: "납입면제", model: buildForm("plan", lookup, new Map()) }]} />
       </ProductEditProvider>,
     );
+  const section = (html: string, label: string) => html.slice(html.indexOf(`aria-label="${label}"`), html.indexOf("</section>", html.indexOf(`aria-label="${label}"`)));
+  const rowLabels = (html: string) => [...html.matchAll(/data-path="([^"]+)"/g)].map((m) => m[1]);
 
-  it("상품정보 표 — 상품명 · 평균공시이율, 폼 이름 줄 「상품특성」 아래 일곱 칸 — 계약형태가 맨 앞 (고지유형 = 간편심사라 건강고지유형은 없다)", () => {
+  it("카드 셋 — 「상품」(상품명 · 평균공시이율 · 그룹 제목 표시) · 「상품특성」 · 고른 고지유형 카드(간편심사 — 담보명 접사)", () => {
     const html = render();
     expect(html).toContain("<h3>상품정보</h3>");
-    const rows = [...html.matchAll(/<th scope="row">(?:<label[^>]*>)?([^<]+)/g)].map((m) => m[1]);
-    expect(rows).toEqual(["상품명", "평균공시이율", "계약형태", "갱신형여부", "태아보장여부", "단체계약여부", "고지유형", "간편심사구분", "간편심사유형", "그룹 제목 표시"]);
-    expect(html).toContain(">상품특성</th>");
+    expect(rowLabels(section(html, "상품"))).toEqual(["disclosure.avg_rate", "booklet.group_titles"]);
+    expect(section(html, "상품")).toContain("상품명");
+    // 태아보장여부는 아니오(기본값)라 감추고, 단체계약여부는 예라 선다. 고지유형은 행이 아니라 카드다
+    expect(rowLabels(section(html, "상품특성"))).toEqual(["feature.contract_kind", "feature.renewable", "feature.group_contract"]);
+    expect(section(html, "간편심사")).toMatch(/data-path="feature.notice_affix"[\s\S]*?\(통합간편심사형\)/);
   });
 
-  it("읽기 — 저장된 값(2.5% · 예 · 통합간편심사), 없는 값은 「—」, 상품명은 읽기 전용", () => {
+  it("읽기 — 저장된 값(2.5% · 예 · 주계약), 없는 값은 「—」, 상품명은 읽기 전용", () => {
     const html = render();
-    expect(html).toMatch(/data-path="disclosure.avg_rate"[^>]*><th scope="row">평균공시이율<\/th><td class="col-flex">2.5%</);
-    // 책자 — 그룹 제목 표시(기본 끔, ADR-0090 결정 8)
-    expect(html).toMatch(/data-path="booklet.group_titles"[\s\S]*?<td class="col-flex">—</); // 미입력 = 기본 끔
+    expect(html).toMatch(/data-path="disclosure.avg_rate"[\s\S]*?2.5%/);
+    expect(html).toMatch(/data-path="booklet.group_titles"[\s\S]*?<div class="ts-form-control">—</); // 미입력 = 기본 끔
     expect(html).toMatch(/data-path="feature.renewable"[\s\S]*?>예</);
-    expect(html).toMatch(/data-path="feature.review_scope"[\s\S]*?>통합간편심사</);
-    expect(html).toMatch(/data-path="feature.review_type"[\s\S]*?>3.0.5/);
-    expect(html).toMatch(/data-path="feature.fetal"[\s\S]*?>—</);
     expect(html).toMatch(/data-path="feature.contract_kind"[\s\S]*?>주계약</);
     expect(html).toMatch(/<input[^>]*aria-label="상품명"[^>]*readOnly=""/);
   });
 
-  it("라벨 옆 ⓘ 는 「그룹 제목 표시」 하나뿐 — 평균공시이율 · 간편심사 칸의 마스터 설명은 보이지 않는다 (2026-10-17 사용자 결정)", () => {
+  it("일반심사 · 태아보장 아니오인 상품은 고지 카드 · 태아 행이 없다 — 읽기에는 「+」도 없다", () => {
+    const plain = new Map([...values, ["feature.notice_kind", { entered: true as const, value: "V01" }], ["feature.group_contract", { entered: true as const, value: false }]]);
+    const html = renderToStaticMarkup(
+      <ProductEditProvider canEdit>
+        <BasicTab productId="p1" productName="메리츠" productForm={buildForm("product", lookup, plain)} planOptions={[]} plans={[]} planOptionForms={[]} planTypeForms={[{ code: "waiver", label: "납입면제", model: buildForm("plan", lookup, new Map()) }]} />
+      </ProductEditProvider>,
+    );
+    expect(rowLabels(section(html, "상품특성"))).toEqual(["feature.contract_kind", "feature.renewable"]);
+    expect(html).not.toContain('aria-label="간편심사"');
+    expect(html).not.toContain("항목 추가");
+  });
+
+  it("라벨 옆 ⓘ 는 「그룹 제목 표시」 하나뿐 — 평균공시이율 · 담보명 접사 칸의 마스터 설명은 보이지 않는다 (2026-10-17 사용자 결정)", () => {
     const html = render();
-    const rowOf = (path: string) => html.match(new RegExp(`<tr[^>]*data-path="${path.replace(".", "\\.")}"[\\s\\S]*?</tr>`))?.[0] ?? "";
-    expect(rowOf("booklet.group_titles")).toMatch(/<th scope="row">그룹 제목 표시<span[^>]*ts-infotip[^>]*aria-label="절 형태[^"]*"/);
-    expect(rowOf("disclosure.avg_rate")).not.toBe("");
-    expect(rowOf("disclosure.avg_rate")).not.toContain("ts-infotip");
+    expect(html).toMatch(/data-path="booklet.group_titles"><span class="ts-form-label">그룹 제목 표시<span[^>]*ts-infotip[^>]*aria-label="절 형태[^"]*"/);
     expect(html.match(/ts-infotip/g)?.length ?? 0).toBe(1);
   });
 
@@ -234,7 +241,7 @@ describe("보통약관 탭 — 템플릿 한 줄 + 세 패널, 다른 것은 없
   });
 });
 
-describe("보험종목 정의 — 고정 열 넷 + 그 행 세목유형의 값만 (2026-10-03 QA)", () => {
+describe("보험종목 정의 — 보험종목 하나가 카드 한 장, 몸은 그 세목유형의 값만 (2026-10-28 세목 카드)", () => {
   const opt = (id: string, axis: "type" | "form", number: number, name: string, planTypeCode: string) => ({ id, productId: "p1", axis, number, name, planTypeCode });
   const waiverOpt = opt("o1", "type", 1, "납입면제형", "waiver");
   const nsOpt = opt("o2", "form", 1, "해약환급금지급형", "no_surrender");
@@ -260,21 +267,21 @@ describe("보험종목 정의 — 고정 열 넷 + 그 행 세목유형의 값�
       </ProductEditProvider>,
     );
 
-  it("머리는 종·형 · 보험종목명 · 세목유형 · 값 — 세목유형별 필드 열(납입면제 적용여부 · 무저해지 유형)은 머리에 없다", () => {
+  it("카드 머리는 「제N종 · 이름 · 세목유형」 — 표 머리(열)는 없다", () => {
     const html = render();
-    const panel = html.slice(html.indexOf('id="definitions-panel"'));
-    const heads = [...panel.slice(0, panel.indexOf("</thead>")).matchAll(/<th[^>]*>([^<]*)<\/th>/g)].map((m) => m[1]);
-    expect(heads).toEqual(["종·형", "보험종목명", "세목유형", "값"]);
+    const panel = html.slice(html.indexOf('id="definitions-panel"'), html.indexOf('id="combinations-panel"'));
+    expect(panel).not.toContain("<table");
+    expect(panel).toMatch(/<span class="ts-basic-card-key">제1종<\/span><span class="ts-basic-card-name">납입면제형<\/span><span class="ts-basic-card-type">납입면제<\/span>/);
+    expect(panel).toMatch(/<span class="ts-basic-card-key">제1형<\/span><span class="ts-basic-card-name">해약환급금지급형<\/span><span class="ts-basic-card-type">무저해지<\/span>/);
   });
 
-  it("행마다 제 세목유형의 필드만(이름 + 값) — 납입면제 행엔 적용여부, 무저해지 행엔 유형", () => {
+  it("카드마다 제 세목유형의 필드만(라벨 · 값 줄) — 납입면제 카드엔 적용여부, 무저해지 카드엔 유형", () => {
     const html = render();
-    const row = (id: string) => html.slice(html.indexOf(`id="plan-option-${id}"`), html.indexOf("</tr>", html.indexOf(`id="plan-option-${id}"`)));
-    expect(row("o1")).toContain("적용여부");
-    expect(row("o1")).not.toContain('data-path="no_surrender.type"');
-    expect(row("o1")).toContain("납입면제</td>");
-    expect(row("o2")).toContain('data-path="no_surrender.type"');
-    expect(row("o2")).toContain(">유형</span>");
-    expect(row("o2")).not.toContain("적용여부");
+    const card = (id: string) => html.slice(html.indexOf(`id="plan-option-${id}"`), html.indexOf("</section>", html.indexOf(`id="plan-option-${id}"`)));
+    expect(card("o1")).toContain("적용여부");
+    expect(card("o1")).not.toContain('data-path="no_surrender.type"');
+    expect(card("o2")).toContain('data-path="no_surrender.type"');
+    expect(card("o2")).toContain(">유형</span>");
+    expect(card("o2")).not.toContain("적용여부");
   });
 });

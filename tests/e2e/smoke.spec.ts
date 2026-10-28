@@ -61,7 +61,7 @@ test(
     // 저장본이 없으면 「실행」을 눌러 조립해 저장한다 (기능/조립산출 §4.1)
     await page.getByRole("button", { name: "실행", exact: true }).click();
     // 실물 보통약관(기본계약 대치된 제3조) + 특약 10벌 + 참조된 별표 14건(등장 순 자동 번호 — ADR-0063), 오류 없음 — 시드 정본은 src/db/seed/alphaPlus.test.ts
-    await expect(page.getByRole("heading", { name: /무배당 알파Plus보장보험2604 보통약관/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /보통약관\(일반\)/ })).toBeVisible();
     await expect(page.getByText(/장해지급률이 80% 이상에 해당하는 장해상태가 되었을 때에는 보험수익자에게 최초1회에 한하여/).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: /^일반상해사망보장 특별약관/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: /일반상해사망보장 추가 특별약관/ })).toBeVisible();

@@ -13,7 +13,7 @@ import { useEffect, useRef } from "react";
 import type { Impact, JudgmentImpact } from "@/domain/types";
 
 /**
- * 판정 변화 묶음 (ADR-0082 결정 11 · 기능/상품 §3.8) — 상품담보 탭 저장이 판정 · 잠금을 바꿀 때. 막지 않는다(확인하면 저장).
+ * 판정 변화 묶음 (ADR-0082 결정 11 · 기능/상품 §3.8) — 상품담보 탭 저장이 판정 · 잠금을 바꿀 때 · 보통약관 탭 저장이 특약 조 판정을 바꿀 때(ADR-0093). 막지 않는다(확인하면 저장).
  * 줄의 조 이름은 템플릿 번호 「제N조(제목)」(목차와 같은 표기).
  */
 function JudgmentLines({ judgment }: { judgment: JudgmentImpact }) {
@@ -22,6 +22,8 @@ function JudgmentLines({ judgment }: { judgment: JudgmentImpact }) {
     { title: "회색이 되는 사본", lines: judgment.grayed.map((g) => `${g.label} — 사본이 쓰이지 않습니다(지우지 않는다)`) },
     { title: "다시 쓰이는 사본", lines: judgment.revived.map((g) => `${g.label} — 사본이 다시 쓰입니다`) },
     { title: "깨지는 참조", lines: judgment.brokenRefs.map((b) => `${b.label} — ${b.message}`) },
+    // 보통약관 탭 저장이 조 생략 기준을 바꿀 때 (ADR-0093 결정 6) — 줄 이름은 「상품담보명 › 조 명」
+    { title: "특약 조 판정이 바뀌는 조", lines: (judgment.specials ?? []).map((v) => `${v.label} — ${v.before} → ${v.after}`) },
   ];
   return groups
     .filter((g) => g.lines.length > 0)

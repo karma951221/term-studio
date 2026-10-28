@@ -72,6 +72,15 @@ describe("StructForm — 마스터 필드 메타만으로 6 타입이 알맞은 
     expect(select).not.toContain('value="일반심사"');
   });
 
+  it("enum + display radio → 선택지마다 라디오 (값은 코드, 「주계약/독립특약 구분」 2026-10-29)", () => {
+    const radioMaster: MasterForm[] = [{ ...master[0], fields: [{ key: "notice", label: "고지유형", type: { kind: "enum", enumCode: "E0001" }, display: "radio" }] }];
+    const html = renderToStaticMarkup(<StructForm model={buildForm("benefit", enums, new Map(), undefined, radioMaster)} onSubmit={() => {}} />);
+    expect(html).not.toMatch(/<select[^>]*name="pay.notice"/);
+    const radios = tagsWith(html, 'name="pay.notice"').filter((t) => t.includes('type="radio"'));
+    expect(radios.map((t) => t.match(/value="([^"]+)"/)?.[1])).toEqual(["V01", "V02"]);
+    expect(html).toContain("간편심사");
+  });
+
   it("list<enum>(복수) → 값을 다 펼치지 않는다 — 고른 것이 없으면 칩 없이 「+」 버튼 하나 (2026-10-03 QA)", () => {
     const html = render();
     expect(tagsWith(html, 'type="checkbox"').filter((t) => t.includes('name="pay.applied"'))).toHaveLength(0);

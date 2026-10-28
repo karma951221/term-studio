@@ -24,17 +24,18 @@ async function login(page: Page): Promise<void> {
   await page.waitForURL((url) => !url.pathname.startsWith("/login"));
 }
 
-/** 기본정보 탭 — 편집 → 계약형태 · 그룹 제목 표시 → 저장 한 번. */
+/** 기본정보 탭 — 편집 → 주계약/독립특약 구분 · 그룹 제목 표시 → 저장 한 번. */
 async function setBasic(page: Page, url: string, opts: { standalone?: boolean; groupTitles: boolean }): Promise<void> {
   await page.goto(`${url}?tab=basic`);
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "편집", exact: true }).click();
   const info = page.getByRole("region", { name: "상품정보" });
-  if (opts.standalone) await info.locator('tr[data-path="feature.contract_kind"] select').selectOption({ label: "독립특약" });
-  await info.locator('tr[data-path="booklet.group_titles"]').getByRole("radio", { name: opts.groupTitles ? "예" : "아니오", exact: true }).check();
+  if (opts.standalone) await info.locator('[data-path="feature.contract_kind"]').getByRole("radio", { name: "독립특약", exact: true }).check();
+  await info.locator('[data-path="feature.renewable"]').getByRole("radio", { name: "아니오", exact: true }).check();
+  await info.locator('[data-path="booklet.group_titles"]').getByRole("radio", { name: opts.groupTitles ? "예" : "아니오", exact: true }).check();
   await page.getByRole("button", { name: "저장", exact: true }).click();
   await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible({ timeout: 30_000 });
-  await expect(info.locator('tr[data-path="booklet.group_titles"] td')).toHaveText(opts.groupTitles ? "예" : "아니오");
+  await expect(info.locator('[data-path="booklet.group_titles"] .ts-form-control')).toHaveText(opts.groupTitles ? "예" : "아니오");
 }
 
 /** 미리보기 — 실행(또는 다시 실행) 뒤 그룹 제목 줄 · 특약(블록) 제목 줄. */

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { assemble, assembleSpecial, explainArticle, specialAsBooklet, type Booklet, type FirstSectionRecord } from "@/domain/assembly";
 import { alphaPlusFixture } from "@/domain/assembly/fixture";
-import type { DocumentNode } from "@/domain/document";
+import type { ArticleNode, DocumentNode } from "@/domain/document";
 import { titleNodes } from "@/domain/document/title";
 
 import { omissionSlots } from "./omissionSlots";
@@ -42,6 +42,26 @@ describe("특약 조 생략 — 생략 판정 기록", () => {
 
   it("준용 · 통째는 자리를 끼우지 않는다(준용 문구로 본문에 남는다)", () => {
     for (const o of booklet.omitted.filter((x) => x.disposition !== "omitted")) expect(slots.get(o.productCoverageId)?.some((s) => s.articleId === o.articleId) ?? false).toBe(false);
+  });
+});
+
+describe("포함 생략 — 생략 기준 「포함하면 생략」 (ADR-0093 결정 6)", () => {
+  it("포함 생략 자리는 「보통약관 제N조에 포함됨」 — 같은 생략은 「와 같음」 그대로", () => {
+    const fx = alphaPlusFixture();
+    const general = structuredClone(fx.generalDocuments.get("g-doc")!);
+    (general.children.find((c) => c.id === "g-art-refund") as ArticleNode).omitMode = "contained";
+    const special = structuredClone(fx.specialDocuments.get("cov-death")!);
+    const reduce = special.children.find((c) => c.id === "s-art-reduce") as ArticleNode;
+    reduce.children = reduce.children.filter((c) => c.id === "s-par-refund-1");
+    const contained = { ...fx, generalDocuments: new Map([["g-doc", general]]), specialDocuments: new Map([...fx.specialDocuments, ["cov-death", special]]) };
+    const b = assemble(contained, contained);
+    const slots = omissionSlots(b, contained.specialDocuments, coverageOf);
+    const lines = [...slots.values()].flat();
+    const reduceLine = lines.find((l) => l.articleId === "s-art-reduce")!;
+    expect(reduceLine.note).toMatch(/^보통약관 제\d+조에 포함됨$/);
+    const others = lines.filter((l) => l.articleId !== "s-art-reduce");
+    expect(others.length).toBeGreaterThan(0);
+    for (const l of others) expect(l.note).toMatch(/^보통약관 제\d+조와 같음$/);
   });
 });
 

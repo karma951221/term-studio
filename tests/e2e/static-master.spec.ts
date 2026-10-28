@@ -7,6 +7,7 @@ import { productWithGeneral } from "./_lib/product";
  * 정적 마스터 › 박스 (기능/박스 §4, 최종 결정 9) — 박스를 만들고, 보통약관 템플릿의 항 뒤에 툴바 「박스」로 놓고, 미리보기에 박스 내용이 선다.
  * 시드 문서는 건드리지 않는다 — 새로 만든 템플릿 · 박스만 쓴다(템플릿 이름에 시각을 붙여 다시 돌려도 겹치지 않게).
  * 박스는 제목 · 본문만 받는다 — 박스 이름 칸은 없고, 같은 제목이 여럿이어도 된다(코드로 가른다, 2026-10-21).
+ * 제목은 목록 이름일 뿐 출력에 찍히지 않는다 — 찍히는 【…】 머리는 본문 첫 줄에 적는다(2026-10-28).
  */
 
 async function login(page: Page): Promise<void> {
@@ -33,27 +34,27 @@ test(
     });
 
     let code = "";
-    await ev.action("박스#3", "새 박스 — 제목(【】를 쳐도 한 겹으로) · 본문을 쓰고 만들면 상세로 가고 코드 BX 가 붙는다", async () => {
+    await ev.action("박스#3", "새 박스 — 제목(【】를 쳐도 벗겨 목록 이름으로) · 본문(첫 줄 【머리】)을 쓰고 만들면 상세로 가고 코드 BX 가 붙는다", async () => {
       await page.goto("/boxes/new");
       await expect(page.getByLabel("박스 이름")).toHaveCount(0);
-      await page.getByLabel("제목").fill("【보험연도】");
-      await page.getByLabel("본문").fill(`보험연도란 계약일부터 1년 단위로 끊은 기간을 말합니다. ${stamp}\n예: 2026년 3월 1일 계약이면 첫 보험연도는 2027년 2월 28일까지`);
+      await page.getByLabel("제목", { exact: true }).fill("【보험연도】");
+      await page.getByLabel("본문", { exact: true }).fill(`【보험연도】\n보험연도란 계약일부터 1년 단위로 끊은 기간을 말합니다. ${stamp}\n예: 2026년 3월 1일 계약이면 첫 보험연도는 2027년 2월 28일까지`);
       await page.getByRole("button", { name: "생성", exact: true }).click();
       await page.waitForURL(/\/boxes\/BX\d+$/);
       code = decodeURIComponent(page.url().split("/").at(-1)!);
       await expect(page.locator(".ts-field-static")).toHaveText(code);
-      // 경로의 현재 마디 = 【제목】 · 미리보기 머리도 한 겹
-      await expect(page.locator(".ts-crumb-current")).toHaveText("【보험연도】");
-      await expect(page.locator("aside.ts-doc-box")).toContainText("【보험연도】");
+      // 경로의 현재 마디 = 제목(목록 이름, 【】 없이) · 박스 모양의 머리는 본문 첫 줄 한 번뿐(굵게)
+      await expect(page.locator(".ts-crumb-current")).toHaveText("보험연도");
+      await expect(page.locator("aside.ts-doc-box .ts-doc-box-heading")).toHaveText("【보험연도】");
       await expect(page.locator("aside.ts-doc-box")).not.toContainText("【【");
       await expect(page.locator("aside.ts-doc-box")).toContainText("보험연도란 계약일부터 1년 단위로");
     });
 
     let twin = "";
-    await ev.action("박스#4", "같은 제목으로 또 만들어도 된다 — 다른 코드가 붙고, 목록에서 본문으로 찾으면 그 박스가 【제목】으로 선다", async () => {
+    await ev.action("박스#4", "같은 제목으로 또 만들어도 된다 — 다른 코드가 붙고, 목록에서 본문으로 찾으면 그 박스가 제목(【】 없이)으로 선다", async () => {
       await page.goto("/boxes/new");
-      await page.getByLabel("제목").fill("보험연도");
-      await page.getByLabel("본문").fill(`다른 보험연도 설명 ${stamp}`);
+      await page.getByLabel("제목", { exact: true }).fill("보험연도");
+      await page.getByLabel("본문", { exact: true }).fill(`다른 보험연도 설명 ${stamp}`);
       await page.getByRole("button", { name: "생성", exact: true }).click();
       await page.waitForURL(/\/boxes\/BX\d+$/);
       twin = decodeURIComponent(page.url().split("/").at(-1)!);
@@ -62,12 +63,12 @@ test(
       const rows = page.locator("tbody tr");
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(twin);
-      await expect(rows.first().getByRole("link", { name: "【보험연도】" })).toBeVisible();
+      await expect(rows.first().getByRole("link", { name: "보험연도", exact: true })).toBeVisible();
     });
 
     await ev.action("박스#5", "보통약관 템플릿을 새로 만든다", async () => {
       await page.goto("/documents/new");
-      await page.getByLabel("제목").fill(docTitle);
+      await page.getByLabel("제목", { exact: true }).fill(docTitle);
       await page.getByRole("button", { name: "생성" }).first().click();
       await page.waitForURL(/\/documents\/[0-9a-f-]+$/);
     });
@@ -89,8 +90,8 @@ test(
       await expect(tool("박스")).toBeEnabled();
       await tool("박스").click();
       // 같은 제목이 둘 — 줄 이름의 코드 · 본문 앞머리로 가른다
-      await expect(page.getByRole("menuitem", { name: `【보험연도】(${twin})` })).toBeVisible();
-      await page.getByRole("menuitem", { name: `【보험연도】(${code}) 보험연도란` }).click();
+      await expect(page.getByRole("menuitem", { name: `보험연도(${twin})` })).toBeVisible();
+      await page.getByRole("menuitem", { name: `보험연도(${code}) 보험연도란` }).click();
       const placed = body.locator(`aside[data-box="${code}"]`);
       await expect(placed).toBeVisible();
       await expect(placed).toContainText("보험연도란 계약일부터 1년 단위로");

@@ -11,7 +11,7 @@ const saved = initGeneralDraft(["a1"], [{ id: "o1", scope: { kind: "product", id
 
 describe("보통약관 탭 초안 (기능/상품 §3.8 · §4.6)", () => {
   it("저장된 숨김 · 오버라이드로 시작하고, 시작 그대로면 고친 것이 없다", () => {
-    expect(saved).toEqual({ hidden: ["a1"], overrides: { n1: { clauseCode: "C0001", options: { style: "B" } } }, copies: {} });
+    expect(saved).toEqual({ hidden: ["a1"], overrides: { n1: { clauseCode: "C0001", options: { style: "B" } } }, copies: {}, omitModes: {} });
     expect(generalDraftDirty(saved, saved)).toBe(false);
   });
 
@@ -105,5 +105,23 @@ describe("조 사본 초안 (ADR-0079 · 기능/상품 §3.10)", () => {
   it("저장 입력 — 사본 전부와 편집을 시작한 템플릿 판", () => {
     const one = generalDraftReducer(base, { type: "editArticle", article: edited("고침"), template });
     expect(toGeneralSettings("doc", one, 7)).toEqual({ generalDocumentId: "doc", hiddenArticles: [], overrides: [], copies: [{ articleId: "a1", article: edited("고침"), templateHash: articleHash(template) }], templateVersion: 7 });
+  });
+  it("setOmitMode — 템플릿대로 · 템플릿과 같은 값은 초안에서 빠지고 다른 값만 남는다 · 바뀐 조는 changes.articles · toGeneralSettings 가 omitModes 를 싣는다", () => {
+    const start = initGeneralDraft([], [], [], [{ articleId: "a2", mode: "exact" }]);
+    expect(start.omitModes).toEqual({ a2: "exact" });
+    const contained = generalDraftReducer(start, { type: "setOmitMode", articleId: "a1", mode: "contained", templateMode: "exact" });
+    expect(contained.omitModes).toEqual({ a2: "exact", a1: "contained" });
+    expect([...generalDraftChanges(start, contained).articles]).toEqual(["a1"]);
+    // 템플릿과 같은 값 · 「템플릿대로」는 뺀다 — 시작과 같아지면 변경이 아니다
+    const same = generalDraftReducer(contained, { type: "setOmitMode", articleId: "a1", mode: "exact", templateMode: "exact" });
+    expect(same.omitModes).toEqual({ a2: "exact" });
+    expect(generalDraftDirty(start, same)).toBe(false);
+    const toTemplate = generalDraftReducer(start, { type: "setOmitMode", articleId: "a2", mode: "template", templateMode: "contained" });
+    expect(toTemplate.omitModes).toEqual({});
+    expect([...generalDraftChanges(start, toTemplate).articles]).toEqual(["a2"]);
+    expect(toGeneralSettings("doc", contained).omitModes).toEqual([
+      { articleId: "a2", mode: "exact" },
+      { articleId: "a1", mode: "contained" },
+    ]);
   });
 });

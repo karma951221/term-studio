@@ -8,6 +8,7 @@ import type { ArticleNode, DocumentNode } from "../../src/domain/document/nodes"
 
 import { guardExcludeSentence, guardOwnWaiver, SURRENDER_PAYING, WAIVER_PRESENT } from "./waiver";
 import { foldTitle, titleNodes } from "../../src/domain/document/title";
+import { productGeneral, type ProductGeneralSetting } from "./merge";
 
 /**
  * 납입면제 재모델링의 변환 결과(시드 JSON) — 템플릿 모양 · 사유별 호 · 정의 함수조항(ADR-0086) · 역할 함수조항 본문 · 호를 가리키는 참조.
@@ -18,10 +19,13 @@ const DATA = path.join(process.cwd(), "src/db/seed/data");
 const read = <T>(file: string): T => JSON.parse(readFileSync(path.join(DATA, file), "utf8")) as T;
 type Json = Record<string, unknown> & { id?: string; kind?: string; children?: Json[] };
 
-const generals = read<{ code: string; tree: Json }[]>("generals.json");
+const [template] = read<{ code: string; tree: DocumentNode }[]>("generals.json");
+const products = read<({ code: string } & ProductGeneralSetting)[]>("products.json");
 const clauses = read<(Json & { code: string; label: string; params?: { name: string }[] })[]>("clauses.json");
-const alpha = generals.find((g) => g.code === "alpha-general")!.tree;
-const meritz = generals.find((g) => g.code === "meritz-general")!.tree;
+/** 상품이 보는 보통약관 — 템플릿 「보통약관(일반)」 + 조 사본 − 노출 끈 조 (납입면제 세 조는 상품군 변형이다). */
+const seen = (code: string) => productGeneral(template.tree, products.find((p) => p.code === code)!) as unknown as Json;
+const alpha = seen("alpha-plus");
+const meritz = seen("meritz");
 
 function find(n: unknown, pred: (x: Json) => boolean): Json | undefined {
   if (Array.isArray(n)) {
@@ -260,8 +264,8 @@ describe("통합간편 납입면제 템플릿 — 알파Plus 와 같은 모양, 
 });
 
 describe("정의 조 제목 — 일반 고정 제목 (ADR-0088 결정 7, 2026-10-17)", () => {
-  it.each(["alpha-general", "alpha2607-general", "meritz-general"])("%s: 제목 = 글 하나 「보험료 납입면제 사유의 정의 및 진단확정」 — 사유를 나열하지 않는다(문장 안 반복 없음)", (code) => {
-    const tree = generals.find((g) => g.code === code)!.tree;
+  it.each(["alpha-plus", "alpha2607", "meritz"])("%s: 제목 = 글 하나 「보험료 납입면제 사유의 정의 및 진단확정」 — 사유를 나열하지 않는다(문장 안 반복 없음)", (code) => {
+    const tree = seen(code);
     expect(all(tree, (x) => x.kind === "article" && Array.isArray(x.title) && (x.title as Json[]).some((n) => n.kind === "inlineFor"))).toEqual([]);
     const titled = all(tree, (x) => x.kind === "article" && titleOf(x) === DEFINITION_FOLDED);
     expect(titled).toHaveLength(1);

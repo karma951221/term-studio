@@ -20,7 +20,8 @@ const FIXTURES = path.join(process.cwd(), "tests/fixtures/terms");
 
 /** 원문 파일(알파Plus) → 조별 (제목, 정규화 본문). 인수기준 알려진 차이(`knownDifferences.ts`)를 얹은 기대 줄에서. */
 export function expectedArticles(file: string): ArticleText[] {
-  const lines = expectedLines("", file, sourceToLines(readFileSync(path.join(FIXTURES, file), "utf8")));
+  const read = (dir: string, name: string) => sourceToLines(readFileSync(path.join(FIXTURES, dir, name), "utf8"));
+  const lines = expectedLines("", file, read("", file), undefined, read);
   const out: ArticleText[] = [];
   for (const raw of lines) {
     const heading = /^##\s*제[^(]*\((.*)\)\s*$/.exec(raw);

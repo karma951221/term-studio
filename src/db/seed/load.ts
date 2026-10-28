@@ -49,9 +49,18 @@ async function assertAssembles(services: Services, productId: Id): Promise<void>
 
 type ClauseRaw = Record<string, unknown> & { code: Code; options: Array<Record<string, unknown>> };
 
-/** 보통약관 문면이 쓰는 함수조항 코드 — 보통약관 가져오기 전에 있어야 한다 (문면 저장 검사가 함수조항 존재를 본다). */
+/**
+ * 보통약관 쪽 문면 — 템플릿 「보통약관(일반)」과 상품 조 사본(그 판의 글을 지키는 조 — 변환기 `merge.ts`).
+ * 사본이 쓰는 함수조항 · 박스도 보통약관 몫이라 앞 코드다(바탕 DB 가 함께 넣는다).
+ */
+function generalSources(): unknown[] {
+  const copies = (products as unknown as Array<{ copies?: Array<{ replace?: ArticleNode }> }>).flatMap((p) => (p.copies ?? []).flatMap((c) => (c.replace ? [c.replace] : [])));
+  return [...(generals as unknown as Array<{ tree: DocumentNode }>).map((g) => g.tree), ...copies];
+}
+
+/** 보통약관 쪽 문면(템플릿 · 상품 조 사본)이 쓰는 함수조항 코드 — 보통약관 가져오기 전에 있어야 한다 (문면 저장 검사가 함수조항 존재를 본다). */
 export function clausesUsedByGenerals(): Set<Code> {
-  return new Set((generals as unknown as Array<{ tree: DocumentNode }>).flatMap((g) => [...JSON.stringify(g.tree).matchAll(/"clauseCode":"(C\d+)"/g)].map((m) => m[1])));
+  return new Set(generalSources().flatMap((tree) => [...JSON.stringify(tree).matchAll(/"clauseCode":"(C\d+)"/g)].map((m) => m[1])));
 }
 
 /**
@@ -96,7 +105,7 @@ function generalClauseRaws(): ClauseRaw[] {
  * 보통약관 · 그 함수조항을 만들기 전에 있어야 한다 (저장 검사가 박스 존재를 본다).
  */
 export function boxesUsedByGenerals(): Set<Code> {
-  const sources = [...(generals as unknown as Array<{ tree: DocumentNode }>).map((g) => g.tree), ...generalClauseRaws()];
+  const sources = [...generalSources(), ...generalClauseRaws()];
   return new Set(sources.flatMap((x) => [...JSON.stringify(x).matchAll(/"boxCode":"(BX\d+)"/g)].map((m) => m[1])));
 }
 
@@ -114,7 +123,7 @@ function prefixCovering(list: ReadonlyArray<{ code: Code }>, codes: ReadonlySet<
  * 열거형 · 구분자 코드는 시스템 채번이라 앞에서부터 그 코드까지 만든다(바탕 DB — 화면 E2E 는 그 뒤 코드부터 친다).
  */
 export function catalogUsedByGenerals(): { enums: number; discriminators: number } {
-  const text = JSON.stringify([...(generals as unknown as Array<{ tree: DocumentNode }>).map((g) => g.tree), ...generalClauseRaws()]);
+  const text = JSON.stringify([...generalSources(), ...generalClauseRaws()]);
   const enumCodes = new Set([...text.matchAll(/"enumCode":"(E\d{4})"/g)].map((m) => m[1]));
   const discriminatorCodes = new Set([...text.matchAll(/\b(D\d{4})\b/g)].map((m) => m[1]));
   const upTo = prefixCovering(discriminators as unknown as Array<{ code: Code }>, discriminatorCodes);
@@ -149,11 +158,12 @@ type SeedGroup = { category: Code } | { name: string; coverages: string[] };
  * 합성 표본이 쓴다: 절 형태에서 위임된 조의 항을 가리키는 조를 조 단위 참조로 고친다(ADR-0082 결정 8 · 결정 15 저작 기준 ④).
  * 블록 지정 참조(ADR-0082 결정 12)는 `with: { kind: "blockRef", mount: <탑재 code>, articleId?: <블록 조 id> }` — 그 노드를 통째로 바꾸고
  * 탑재 code 를 상품담보 id 로 바꾼다(계약 수준 조 — 내Mom 제25조 결).
+ * `replace` — 고치지 않고 조 통째(변환기가 다른 판의 글로 만든 사본 — `merge.ts`, 조 id 는 템플릿 조).
  * `beforeMounts` — 탑재 전에 저장한다: 잠기기 전에 만든 사본(뒤 탑재가 그 조를 잠가 회색 사본이 된다 — ADR-0082 결정 10)의 표본.
  */
-type SeedCopy = { article: Id; patch: { node: Id; with: Record<string, unknown> }[]; beforeMounts?: boolean };
+type SeedCopy = { article: Id; patch?: { node: Id; with: Record<string, unknown> }[]; replace?: ArticleNode; beforeMounts?: boolean };
 
-function patchedArticle(article: ArticleNode, patch: SeedCopy["patch"], mountIds: ReadonlyMap<string, Id>): ArticleNode {
+function patchedArticle(article: ArticleNode, patch: NonNullable<SeedCopy["patch"]>, mountIds: ReadonlyMap<string, Id>): ArticleNode {
   const copy = structuredClone(article);
   const visit = (n: unknown): void => {
     if (Array.isArray(n)) return n.forEach(visit);
@@ -184,7 +194,7 @@ async function seedCopies(services: Services, generalId: Id, generalCode: string
   return copies.map((c) => {
     const original = articles.get(c.article);
     if (!original) throw new Error(`[seed:alphaPlus] 조 사본의 템플릿 조를 찾을 수 없음: ${c.article}`);
-    return { articleId: c.article, article: patchedArticle(original, c.patch, mountIds), templateHash: articleHash(original) };
+    return { articleId: c.article, article: c.replace ?? patchedArticle(original, c.patch ?? [], mountIds), templateHash: articleHash(original) };
   });
 }
 
@@ -328,7 +338,7 @@ async function loadClausesAndGenerals(services: Services, actor: Actor, upTo?: n
 }
 
 /**
- * 실물 화면 E2E 의 바탕 — 별표 · 보통약관 두 벌과 **보통약관이 쓰는 박스 · 함수조항**만 넣는다 (docs/QA/시나리오/실물재현_E2E_시나리오.md §4).
+ * 실물 화면 E2E 의 바탕 — 별표 · 보통약관 템플릿과 **보통약관 쪽(템플릿 · 상품 조 사본)이 쓰는 박스 · 함수조항**만 넣는다 (docs/QA/시나리오/실물재현_E2E_시나리오.md §4).
  * 나머지(열거형 · 구분자 · 담보속성 · 담보 · 나머지 함수조항 · 담보약관 · 상품)는 E2E 가 화면으로 넣는다.
  * 보통약관은 가져오기 화면이 없어 시드로 넣고, 별표 · 보통약관이 쓰는 박스 · 함수조항은 보통약관이 참조해 그보다 먼저 있어야 해서 함께 넣는다
  * (보통약관이 쓰는 박스 · 함수조항은 BX000001 · C0001 부터의 앞 코드다 — 화면 E2E 는 그 뒤 코드부터 친다).
@@ -468,10 +478,13 @@ export async function loadAlphaPlus(services: Services, actor: Actor): Promise<S
       );
       unwrap(await services.product.saveCoverages(actor, productId, { added: [], updated: [], removed: [], groups: { list, memberships } }));
     }
+    // 조 노출 끔 · 조 사본 — 템플릿 하나를 상품마다 맞춘다(보통약관 탭 저장과 같은 서비스, 기능/상품 §3.8)
     const copies = (specification as { copies?: SeedCopy[] }).copies;
-    if (copies) {
+    const hiddenArticles = (specification as { hiddenArticles?: Id[] }).hiddenArticles ?? [];
+    if (copies || hiddenArticles.length > 0) {
       // 탑재 전 사본까지 함께 — 저장된 사본을 그대로 다시 보내면 회색 사본으로 남는다 (상품 서비스 잠금 규칙)
-      unwrap(await services.product.saveGeneralSettings(actor, productId, { generalDocumentId: generalId, hiddenArticles: [], overrides: [], copies: [...early, ...(await seedCopies(services, generalId, specification.general, copies.filter((c) => !c.beforeMounts), mountIds))] }));
+      const late = await seedCopies(services, generalId, specification.general, (copies ?? []).filter((c) => !c.beforeMounts), mountIds);
+      unwrap(await services.product.saveGeneralSettings(actor, productId, { generalDocumentId: generalId, hiddenArticles, overrides: [], copies: [...early, ...late] }));
     }
   }
 

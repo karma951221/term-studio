@@ -9,6 +9,7 @@ import { type AttributeCodeKind, type AttributeSeq, sortAttributeValues } from "
 import type { ArticleCopy } from "@/domain/product/articleCopies";
 import type { ProductGroup, ProductGroupSetting } from "@/domain/product/groups";
 import { normalizeArticle } from "@/domain/document/title";
+import type { ArticleOmitMode } from "@/domain/document/nodes";
 import type {
   AttributeKind,
   AttributeSelection,
@@ -35,6 +36,7 @@ import {
   namingTemplates,
   planOptions,
   productArticleCopies,
+  productArticleOmitModes,
   productBaseContracts,
   productCoverageAttributes,
   productCoverageNodes,
@@ -224,6 +226,33 @@ export async function removeHiddenArticle(db: Db, productId: Id, articleId: Id):
 /** 템플릿 교체 시 — 숨김은 템플릿 기준 설정이므로 통째로 비운다. */
 export async function clearHiddenArticles(db: Db, productId: Id): Promise<void> {
   await db.delete(productHiddenArticles).where(eq(productHiddenArticles.productId, productId));
+}
+
+// ───────────────────────────── 조 생략 기준 (ADR-0093 · 기능/상품 §3.6) ─────────────────────────────
+
+/** 상품이 템플릿과 다르게 둔 조 생략 기준 — 조 id 순. */
+export async function listArticleOmitModes(db: Db, productId: Id): Promise<{ articleId: Id; mode: ArticleOmitMode }[]> {
+  return db
+    .select({ articleId: productArticleOmitModes.articleId, mode: productArticleOmitModes.mode })
+    .from(productArticleOmitModes)
+    .where(eq(productArticleOmitModes.productId, productId))
+    .orderBy(asc(productArticleOmitModes.articleId));
+}
+
+export async function upsertArticleOmitMode(db: Db, productId: Id, articleId: Id, mode: ArticleOmitMode, who: Id): Promise<void> {
+  await db
+    .insert(productArticleOmitModes)
+    .values({ productId, articleId, mode, createdBy: who, updatedBy: who })
+    .onConflictDoUpdate({ target: [productArticleOmitModes.productId, productArticleOmitModes.articleId], set: { mode, updatedAt: new Date(), updatedBy: who } });
+}
+
+export async function deleteArticleOmitMode(db: Db, productId: Id, articleId: Id): Promise<void> {
+  await db.delete(productArticleOmitModes).where(and(eq(productArticleOmitModes.productId, productId), eq(productArticleOmitModes.articleId, articleId)));
+}
+
+/** 템플릿 교체 시 — 생략 기준은 템플릿 조에 매달린 설정이므로 통째로 비운다. */
+export async function clearArticleOmitModes(db: Db, productId: Id): Promise<void> {
+  await db.delete(productArticleOmitModes).where(eq(productArticleOmitModes.productId, productId));
 }
 
 // ───────────────────────────── 조 사본 (ADR-0079) ─────────────────────────────

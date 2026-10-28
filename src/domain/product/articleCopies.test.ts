@@ -36,6 +36,14 @@ describe("stableStringify · articleHash — 키 순서와 무관한 내용 지�
     expect(articleHash(a)).toMatch(/^[0-9a-f]{14}$/);
     expect(sameArticle(a, reordered)).toBe(true);
   });
+
+  it("생략 기준(omitMode)만 다른 조는 같은 조 — 지문도 같다 (ADR-0093 버린 대안 라)", () => {
+    const a = art("a1", "목적", "이 약관은 …");
+    const contained: ArticleNode = { ...a, omitMode: "contained" };
+    expect(sameArticle(a, contained)).toBe(true);
+    expect(articleHash(a)).toBe(articleHash(contained));
+    expect(articleHash(a)).not.toBe(articleHash({ ...a, joinMode: "common" }));
+  });
 });
 
 describe("applyArticleCopies — 고친 조만 사본, 나머지는 템플릿 그대로", () => {

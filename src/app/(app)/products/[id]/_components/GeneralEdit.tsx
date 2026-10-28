@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * 보통약관 탭의 편집 상태 — 읽기로 열고, 탭 첫 줄의 `편집`을 누르면 조 노출(목차 체크) · 조 사본(조 편집 패널) ·
+ * 보통약관 탭의 편집 상태 — 읽기로 열고, 탭 첫 줄의 `편집`을 누르면 조 노출(목차 체크) · 조 생략 기준(목차 줄 고르기) · 조 사본(조 편집 패널) ·
  * 함수조항 옵션(조 편집 패널의 옵션 줄)을 고칠 수 있다. 고친 것은 **초안**(`generalDraft`)에만 쌓이고 `저장` 한 번이
- * `saveProductGeneralAction` 으로 최종 상태를 보낸다 (기능/상품 §3.8 · §3.10 · §4.6, ADR-0079).
+ * `saveProductGeneralAction` 으로 최종 상태를 보낸다 (기능/상품 §3.8 · §3.10 · §4.6, ADR-0079 · ADR-0093).
+ * 생략 기준을 바꿔 특약 조 판정이 바뀌면 서버가 확인을 묻는다 — 상품담보 탭과 같은 확인 모달(`SaveConfirmDialog`) 뒤 `save(true)` (ADR-0093 결정 6).
  *
  * `ProductEditProvider` 에 제 begin · cancel · save · dirty 를 등록한다 — 기본정보 탭과 같은 손잡이라
  * 탭 링크 · 경로 링크 · 취소의 「고친 내용을 버립니까?」도 그대로 탄다. 목차 · 원문 패널은 `useGeneralEdit()` 로
@@ -13,13 +14,14 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
 
 import type { Clause } from "@/domain/clause";
-import { clauseSpanBy, numberTree, type DocumentNode } from "@/domain/document";
+import { clauseSpanBy, numberTree, type ArticleOmitMode, type DocumentNode } from "@/domain/document";
 import { applyArticleCopies, productRefIssues, type ArticleCopy, type ClauseOptionOverride, type GeneralDependents } from "@/domain/product";
-import type { Id, Issue } from "@/domain/types";
+import type { Id, Impact, Issue } from "@/domain/types";
 
 import { saveProductGeneralAction } from "../../actions";
 import { draftCopies, generalDraftChanges, generalDraftDirty, generalDraftReducer, initGeneralDraft, issuesByPlace, refBreakRefusal, toGeneralSettings, type GeneralDraft, type GeneralDraftAction } from "./generalDraft";
 import { useProductEdit } from "./ProductEdit";
+import { SaveConfirmDialog } from "./SaveConfirmDialog";
 
 export interface OverrideOptionValue {
   code: string;
@@ -63,6 +65,7 @@ const NO_ERRORS: GeneralEditValue["errors"] = { articles: new Map(), nodes: new 
 const NO_CHANGES: GeneralEditValue["changes"] = { articles: new Set(), nodes: new Set() };
 
 const NO_COPIES: readonly ArticleCopy[] = [];
+const NO_OMIT_MODES: readonly { articleId: Id; mode: ArticleOmitMode }[] = [];
 const NO_BREAKS: readonly Issue[] = [];
 
 export const GeneralEditContext = createContext<GeneralEditValue | undefined>(undefined);
@@ -78,6 +81,7 @@ export function GeneralEditProvider({
   hiddenArticles,
   overrides,
   copies = NO_COPIES,
+  omitModes = NO_OMIT_MODES,
   template,
   dependents,
   clauses,
@@ -92,6 +96,8 @@ export function GeneralEditProvider({
   overrides: readonly ClauseOptionOverride[];
   /** 저장된 조 사본 — 템플릿에 자리가 남은 것만 (page.tsx). */
   copies?: readonly ArticleCopy[];
+  /** 저장된 조 생략 기준 — 템플릿과 다른 조만 (`listArticleOmitModes`, ADR-0093). */
+  omitModes?: readonly { articleId: Id; mode: ArticleOmitMode }[];
   /** 템플릿 트리 — 초안의 참조 깨짐을 바로 센다 (ADR-0081). 없으면 세지 않는다. */
   template?: DocumentNode;
   /** 이 상품이 볼 밖의 참조 재료 — 탑재한 담보의 담보약관 · 함수조항 (서비스 `generalDependents`). */
@@ -102,15 +108,17 @@ export function GeneralEditProvider({
   locked?: readonly Id[];
   children: ReactNode;
 }) {
-  const { editing, register } = useProductEdit();
-  const saved = useMemo(() => initGeneralDraft(hiddenArticles, overrides, copies), [hiddenArticles, overrides, copies]);
+  const { editing, pending, register, save: requestSave } = useProductEdit();
+  const saved = useMemo(() => initGeneralDraft(hiddenArticles, overrides, copies, omitModes), [hiddenArticles, overrides, copies, omitModes]);
   const [draft, dispatch] = useReducer(generalDraftReducer, saved);
   const [errors, setErrors] = useState(NO_ERRORS);
   const [message, setMessage] = useState<string>();
+  const [confirmation, setConfirmation] = useState<Impact>();
 
   const clear = () => {
     setErrors(NO_ERRORS);
     setMessage(undefined);
+    setConfirmation(undefined);
   };
   const begin = () => {
     dispatch({ type: "reset", draft: saved });
@@ -125,7 +133,7 @@ export function GeneralEditProvider({
     const numbers = numberTree(applyArticleCopies(template, copyList), { clauseSpan: clauseSpanBy((code) => clauses?.find((c) => c.code === code)) });
     return productRefIssues({ template, copies: copyList, hidden: current.hidden, ...(dependents ? { dependents } : {}), numbers, coordinate: { document: "product", ownerId: productId } });
   }, [template, current, dependents, clauses, productId, locked]);
-  const save = async (): Promise<"done" | "stay"> => {
+  const save = async (confirmed: boolean): Promise<"done" | "stay"> => {
     // 깨진 참조가 남으면 서버에 보내지 않는다 — 고칠 곳은 목록 · 목차 줄이 이미 보인다 (ADR-0081 결정 2)
     const refusal = refBreakRefusal(breaks);
     if (refusal) {
@@ -134,14 +142,20 @@ export function GeneralEditProvider({
       return "stay";
     }
     try {
-      const outcome = await saveProductGeneralAction(productId, toGeneralSettings(generalDocumentId, draft, templateVersion));
-      if (outcome.ok) {
+      const outcome = await saveProductGeneralAction(productId, toGeneralSettings(generalDocumentId, draft, templateVersion), confirmed);
+      if (outcome.ok === true) {
         clear();
         return "done";
+      }
+      if (outcome.ok === "confirm") {
+        setConfirmation(outcome.impact);
+        setMessage(undefined);
+        return "stay";
       }
       const byPlace = issuesByPlace(outcome.issues);
       setErrors(byPlace);
       setMessage([outcome.message, ...byPlace.other].join(" "));
+      setConfirmation(undefined);
       return "stay";
     } catch {
       setMessage("저장하지 못했습니다. 고친 내용은 유지됩니다. 다시 시도해 주세요.");
@@ -163,5 +177,11 @@ export function GeneralEditProvider({
     breaks,
     dispatch,
   };
-  return <GeneralEditContext.Provider value={value}>{children}</GeneralEditContext.Provider>;
+  return (
+    <GeneralEditContext.Provider value={value}>
+      {/* 생략 기준이 특약 조 판정을 바꾸면 화면 위쪽 모달 하나로 묻는다 — 상품담보 탭과 같은 모양 (ADR-0093 결정 6) */}
+      {editing && confirmation && <SaveConfirmDialog impact={confirmation} pending={pending} onCancel={() => setConfirmation(undefined)} onConfirm={() => requestSave(true)} />}
+      {children}
+    </GeneralEditContext.Provider>
+  );
 }

@@ -34,6 +34,7 @@ import {
   namingTemplates,
   planOptions,
   productArticleCopies,
+  productArticleOmitModes,
   productBaseContracts,
   productCoverageAttributes,
   productCoverageNodes,
@@ -145,6 +146,12 @@ export const ASSEMBLY_STAMP_SOURCES: readonly StampSource[] = [
     table: productArticleCopies,
     time: productArticleCopies.updatedAt,
     where: (productId) => eq(productArticleCopies.productId, productId),
+  },
+  {
+    name: "product_article_omit_modes",
+    table: productArticleOmitModes,
+    time: productArticleOmitModes.updatedAt,
+    where: (productId) => eq(productArticleOmitModes.productId, productId),
   },
   {
     name: "product_base_contracts",
