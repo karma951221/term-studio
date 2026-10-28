@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { Booklet } from "@/domain/assembly";
+import type { DocumentNode } from "@/domain/document";
 import { articleTitles, diffArticlesUnordered, normalizeLine, referenceNumberIssues, renderedToLines, sourceToLines, type UnorderedDiff } from "@/domain/assembly/compare";
 import type { AttributeSelection, ProductCoverage } from "@/domain/product/types";
 import type { Actor, Value } from "@/domain/types";
@@ -13,6 +14,7 @@ import { createServices } from "@/services/container";
 
 import { autoFixtures } from "../../../scripts/terms/auto";
 import { ALPHA2607_AUTO } from "../../../scripts/terms/config";
+import { productGeneral, type ProductGeneralSetting } from "../../../scripts/terms/merge";
 
 import { expectedLines, KNOWN_DIFFERENCES } from "./knownDifferences";
 import { loadAlphaPlus } from "./load";
@@ -109,7 +111,9 @@ const PRODUCTS: { name: string; dir: string; plans: number; general: string; app
 ];
 
 /** 원문 → 기대 줄 — 인수기준 알려진 차이(`knownDifferences.ts`)를 얹는다. 대조기는 완화하지 않는다. */
-const source = (dir: string, file: string) => expectedLines(dir, file, sourceToLines(readFileSync(path.join(FIXTURES, dir, file), "utf8")));
+const fixtureLines = (dir: string, file: string) => sourceToLines(readFileSync(path.join(FIXTURES, dir, file), "utf8"));
+/** 판 대조(공용 템플릿 판의 원문 조)는 그 판 원문도 읽는다. */
+const source = (dir: string, file: string) => expectedLines(dir, file, fixtureLines(dir, file), undefined, fixtureLines);
 
 let snapshot: Promise<() => Promise<TestDb>> | undefined;
 /**
@@ -132,8 +136,10 @@ async function seededDb(): Promise<TestDb> {
 /** 상품이 참조하는 별표 — 보통약관 · 탑재 담보의 템플릿과 그것들이 쓰는 함수조항(두 겹까지)의 별표 참조 (시드 JSON 으로 센다). */
 function referencedAppendices(productCode: string): Set<string> {
   const data = (file: string) => JSON.parse(readFileSync(path.join(process.cwd(), "src/db/seed/data", file), "utf8")) as Record<string, unknown>[];
-  const product = data("products.json").find((p) => p.code === productCode) as { general: string; mounts: { coverage: string }[] };
-  const docs = [...data("generals.json").filter((g) => g.code === product.general), ...data("documents.json").filter((d) => product.mounts.some((m) => m.coverage === d.ownerCoverage))];
+  const product = data("products.json").find((p) => p.code === productCode) as unknown as { general: string; mounts: { coverage: string }[] } & ProductGeneralSetting;
+  // 보통약관은 상품이 보는 것 — 템플릿 「보통약관(일반)」 + 조 사본 − 노출 끈 조
+  const general = data("generals.json").find((g) => g.code === product.general) as { tree: DocumentNode };
+  const docs = [productGeneral(general.tree, product), ...data("documents.json").filter((d) => product.mounts.some((m) => m.coverage === d.ownerCoverage))];
   const clauses = data("clauses.json");
   const codesIn = (x: unknown, key: string) => new Set([...JSON.stringify(x).matchAll(new RegExp(`"${key}":"([A-Z]+\\d+)"`, "g"))].map((m) => m[1]));
   const used = codesIn(docs, "clauseCode");
@@ -206,7 +212,23 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
     it("알려진 차이는 원문과 정말 다르다 — 차이마다 조립에 그 줄이 있고 원문에는 없다(목록이 낡으면 지운다)", () => {
       const lines = renderedToLines(booklet().general!).map(normalizeLine);
       const raw = sourceToLines(readFileSync(path.join(FIXTURES, product.dir, "보통약관.md"), "utf8")).map(normalizeLine);
-      for (const d of KNOWN_DIFFERENCES.filter((x) => x.dir === product.dir && x.file === "보통약관.md")) {
+      const mine = KNOWN_DIFFERENCES.filter((x) => x.dir === product.dir && x.file === "보통약관.md");
+      /** 판 대조한 조 — 그 위에 얹은 차이는 그 판 글을 고치는 것이라 원문 줄로 되돌릴 수 있다(원문에 없음은 보지 않는다). */
+      const editioned = new Set(mine.filter((x) => x.edition !== undefined).map((x) => x.article));
+      for (const d of mine) {
+        if (d.edition !== undefined) {
+          // 판 대조 — 제 원문 조와 그 판 원문 조가 정말 다르다(같으면 목록이 낡았다)
+          const body = (all: string[]) => {
+            // 정규화한 줄은 공백이 없다 — 조 헤딩 「##제§조(…)」, 관 헤딩 「#제§관…」
+            const at = all.findIndex((l) => l.startsWith("##") && l.endsWith(normalizeLine(`(${d.article})`)));
+            const end = all.findIndex((l, i) => i > at && l.startsWith("#"));
+            return all.slice(at + 1, end < 0 ? all.length : end);
+          };
+          const theirs = fixtureLines(d.edition, "보통약관.md").map(normalizeLine);
+          expect(body(raw).length, d.why).toBeGreaterThan(0);
+          expect(body(raw), d.why).not.toEqual(body(theirs));
+          continue;
+        }
         if (d.everywhere || d.within) {
           // 줄 안 글 바꾸기 — 조립 어느 줄엔가 그 글이 있고, 원문 어느 줄에도 없다
           expect(lines.some((l) => l.includes(normalizeLine(d.lines[0]))), d.why).toBe(true);
@@ -215,7 +237,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
         }
         for (const l of d.lines) {
           expect(lines, d.why).toContain(normalizeLine(l));
-          expect(raw, d.why).not.toContain(normalizeLine(l));
+          if (!editioned.has(d.article)) expect(raw, d.why).not.toContain(normalizeLine(l));
         }
       }
     });
