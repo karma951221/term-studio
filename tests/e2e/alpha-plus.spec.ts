@@ -1,4 +1,10 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { type Locator, type Page } from "@playwright/test";
+
+import { indexTree, numberTree, type ArticleNode, type DocumentNode } from "../../src/domain/document";
+import { foldTitle } from "../../src/domain/document/title";
 
 import { pickCombo } from "./_lib/combo";
 import { expect, test } from "./_lib/fixtures";
@@ -16,6 +22,21 @@ import { actualArticle, expectedArticles, type ArticleText } from "./_lib/terms"
 
 /** golden 스냅샷 덕에 매 실행이 새 DB 다 — 유일 이름을 만들 필요가 없다. */
 const PRODUCT_NAME = "알파Plus보장보험 E2E";
+/** 보통약관 템플릿은 하나 — 세 상품이 함께 쓴다 (2026-10-28, 기능/상품 §3.6). */
+const GENERAL_TITLE = "보통약관(일반)";
+
+const DATA = path.join(process.cwd(), "src/db/seed/data");
+const TEMPLATE = (JSON.parse(readFileSync(path.join(DATA, "generals.json"), "utf8")) as { tree: DocumentNode }[])[0].tree;
+/**
+ * 알파Plus 가 끄는 조 — 통합간편 전용 조 · 통합간편 변형(지급사유 · 세부규정 · 납입면제 세 조). 시드 상품 「알파Plus보장보험」의 보통약관 설정과 같다.
+ * 목차 줄 이름은 「제N조(조 명)」 — 번호는 템플릿 번호(끄기 전, 기능/상품 §4.6).
+ */
+const HIDDEN_LABELS = (() => {
+  const product = (JSON.parse(readFileSync(path.join(DATA, "products.json"), "utf8")) as { code: string; hiddenArticles?: string[] }[]).find((p) => p.code === "alpha-plus")!;
+  const ix = indexTree(TEMPLATE);
+  const numbers = numberTree(TEMPLATE);
+  return (product.hiddenArticles ?? []).map((id) => `${numbers.get(id)!.label}(${foldTitle((ix.nodes.get(id)!.node as ArticleNode).title)})`);
+})();
 const DOC_TITLE = "E2E 보통약관";
 
 const SPECIALS: [title: string, file: string][] = [
@@ -92,8 +113,17 @@ test.describe.serial("★ 실물 재현 — 상품모델링을 화면으로 수�
 
       await ev.action("실물재현#1.3", "보통약관 템플릿을 고른다 — 보통약관 탭", async () => {
         await openTab(page, "보통약관");
-        await pickCombo(page.getByRole("combobox", { name: "보통약관 템플릿" }), { label: "무배당 알파Plus보장보험2604 보통약관" });
+        await pickCombo(page.getByRole("combobox", { name: "보통약관 템플릿" }), { label: GENERAL_TITLE });
         await submit(page, page.getByRole("button", { name: "템플릿 지정" }));
+      });
+
+      await ev.action("실물재현#1.3.1", `보통약관 탭 편집 — 목차에서 통합간편 전용 · 변형 조 ${HIDDEN_LABELS.length}개의 노출을 끄고 저장한다`, async () => {
+        await page.getByRole("button", { name: "편집", exact: true }).click();
+        const toc = page.getByRole("navigation", { name: "보통약관 목차" });
+        for (const label of HIDDEN_LABELS) await toc.getByRole("checkbox", { name: `노출 · ${label}`, exact: true }).uncheck();
+        await page.getByRole("button", { name: "저장", exact: true }).click();
+        await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible({ timeout: 60_000 });
+        for (const label of HIDDEN_LABELS) await expect(toc.getByRole("img", { name: `노출 끔 · ${label}`, exact: true })).toBeVisible();
       });
 
       await ev.action("실물재현#1.4", "세목 선택지 4건을 만든다 — 종 축: 1종 적용여부 아니오 · 2종 예 + 사유(암·면책 · 질병 8 · 상해및질병80%), 형 축: 1형 해약환급금 지급형 · 2형 해약환급금미지급형(납입후50%) — 기본정보 탭", async () => {
