@@ -892,7 +892,7 @@ function InlineSwitchForm({ env, node, anchor, onClose }: { env: PopupEnv; node:
         <div key={br.id} className="ts-pop-branch">
           <div className="ts-doc-cond-head is-edit ts-switch-case">
             <span className="ts-cond-badge">{SWITCH_WORD.case}</span>
-            <CaseControls subject={subject} branch={br} branches={cases} apply={caseApply} />
+            <CaseControls subject={subject} branch={br} branches={cases} apply={caseApply} reserve={shell !== undefined} />
             <span className="ts-cond-tools">
               <IconButton className="ts-cond-rowbtn" icon={<IconTrash />} danger label="이 칸 삭제" disabled={cases.length <= 1} onClick={() => update(removeDraftBranch(draft, br.id))} />
             </span>
