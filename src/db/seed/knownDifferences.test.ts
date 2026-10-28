@@ -32,6 +32,20 @@ describe("expectedLines — 알려진 차이를 원문 줄에 얹는다", () => 
     expect(() => expectedLines("테스트", "a.md", source, [{ ...retitle, after: "없는 글" }])).toThrow(/없다/);
   });
 
+  it("판 대조(edition) — 공용 템플릿의 판 글로 찍히는 조는 그 판 원문 조의 기대 줄과 대조한다(조 헤딩은 제 번호 그대로)", () => {
+    const own = ["## 제1조(목적)", "= 옛 판 글", "## 제2조(정의)", "@ 옛 판 정의", "```용어풀이", "【A】", "가", "【B】", "나", "```", "## 제3조(소멸)", "= 제 글"];
+    const edition: Record<string, string[]> = { 새판: ["## 제1조(목적)", "= 새 판 글", "## 제5조(정의)", "@ 새 판 정의", "```용어풀이", "【A】", "가", "```", "```용어풀이", "【B】", "나", "```", "## 제6조(다른 조)"] };
+    const read = (dir: string) => edition[dir];
+    const list = [
+      { dir: "테스트", file: "a.md", article: "정의", after: "", lines: [], edition: "새판", why: "공용 템플릿은 새 판" },
+      // 그 판 쪽 알려진 차이도 얹힌 기대 줄로 대조한다
+      { dir: "새판", file: "a.md", article: "정의", after: "@ 새 판 정의", lines: ["@ 새 판 정의(표준화)"], replace: true as const, why: "표기" },
+    ];
+    expect(expectedLines("테스트", "a.md", own, list, read)).toEqual(["## 제1조(목적)", "= 옛 판 글", "## 제2조(정의)", "@ 새 판 정의(표준화)", "```용어풀이", "【A】", "가", "```", "```용어풀이", "【B】", "나", "```", "## 제3조(소멸)", "= 제 글"]);
+    expect(() => expectedLines("테스트", "a.md", own, [{ ...list[0], article: "없는 조" }], read)).toThrow(/없는 조/);
+    expect(() => expectedLines("테스트", "a.md", own, [list[0]])).toThrow(/판/);
+  });
+
   it("목록의 차이는 모두 제 자리를 찾는다 — 범위는 바꾸기(replace)에만 쓴다", () => {
     for (const d of KNOWN_DIFFERENCES) if (d.span) expect(d.replace, d.why).toBe(true);
   });

@@ -146,6 +146,20 @@ describe("productRefIssues — 화면 · 서버가 같은 한 벌로 (템플릿 
     ]);
     expect(productRefIssues({ template: template(), copies: [], hidden: [] })).toEqual([]);
   });
+
+  it("노출 끈 조 안에서만 쓰는 함수조항은 이 상품의 조립에 나오지 않는다 — 그 참조는 보지 않는다 (상품군 변형 조, 2026-10-28)", () => {
+    // 제3조(a12)가 함수조항 C0002 를 쓰고, C0002 는 제3조 자신과 제4조를 가리킨다 — 제3조 · 제4조를 함께 끈 상품
+    const use = { id: "u12", kind: "clauseBlockRef" as const, clauseCode: "C0002", options: {}, code: "P0200" };
+    const withUse = template();
+    (withUse.children[2] as ArticleNode).children.push(use as unknown as ArticleNode["children"][number]);
+    const dependents = {
+      documents: [],
+      clauses: [{ code: "C0002", refs: [{ key: "a13", articleId: "a13", at: { document: "clause" as const }, where: "함수조항 C0002" }] }],
+    };
+    expect(productRefIssues({ template: withUse, copies: [], hidden: ["a12", "a13"], dependents, coordinate: product })).toEqual([]);
+    // 쓰는 조가 켜져 있으면 끈 조를 가리키는 깨짐이다
+    expect(productRefIssues({ template: withUse, copies: [], hidden: ["a13"], dependents, coordinate: product }).map((i) => i.at.articleId)).toEqual(["a13"]);
+  });
 });
 
 describe("copyCodeIssues — 사본의 새 노드는 PZ 코드여야 한다 (ADR-0081 결정 4)", () => {

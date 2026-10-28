@@ -68,7 +68,7 @@ describe("합성 표본 — 절 형태 세 상품 (PGlite)", () => {
 
   it("ⓐ 주계약 기본계약 2개 — 블록 = 기본계약 둘(담보코드 순) · 일부 연결 1/2 = 특칙(위임 없음 · 제1절 마스터) · 특약은 특약 그룹에", () => {
     const b = booklets.get("표본 — 기본계약 2개(주계약)")!;
-    expect(b.title).toBe("무배당 알파Plus보장보험2604 보통약관");
+    expect(b.title).toBe("보통약관(일반)");
     expect(blocks(b)).toEqual(["1. 일반상해80%이상후유장해", "2. 일반상해사망보장"]);
     expect(delegated(b)).toEqual([]);
     expect(verdicts(b)).toEqual(["보험금의 지급사유 special 1/2", "보험금 지급에 관한 세부규정 special 1/2"]);
@@ -172,10 +172,10 @@ describe("합성 표본 — 절 형태 세 상품 (PGlite)", () => {
     expect(again.ok && again.value.firstSection?.map((x) => `${x.result} ${x.k}/${x.n}`)).toEqual(["delegate 2/2", "delegate 2/2"]);
   });
 
-  it("시드 — 보통약관 템플릿 셋의 「계약의 무효」 조만 생략 기준 「포함하면 생략」, 나머지 조(부지급사유 포함)는 기본 (ADR-0093 결정 8)", async () => {
+  it("시드 — 보통약관 템플릿(「보통약관(일반)」 하나 — 2026-10-28)의 「계약의 무효」 조만 생략 기준 「포함하면 생략」, 나머지 조(부지급사유 포함)는 기본 (ADR-0093 결정 8)", async () => {
     const articles = (nodes: readonly BlockNode[]): BlockNode[] => nodes.flatMap((c) => (c.kind === "section" ? articles(c.children) : c.kind === "article" ? [c] : []));
     const generals = await services.document.list("general");
-    expect(generals).toHaveLength(3);
+    expect(generals).toHaveLength(1);
     for (const g of generals) {
       const record = (await services.document.get(g.id))!;
       const contained = articles(record.tree.children).flatMap((a) =>
@@ -186,7 +186,7 @@ describe("합성 표본 — 절 형태 세 상품 (PGlite)", () => {
   });
 
   it("템플릿 세부규정 조에 준용하기 옵션 「공통항 모으기」 저장 — ⓐ 일부 연결이라 옵션 미적용 경고(partialLinkOption) · ⓑ 공통 항 없음 = 위임 · ⓒ 블록 하나 = 위임(경고 없음)", async () => {
-    const general = (await services.document.list("general")).find((d) => d.title === "무배당 알파Plus보장보험2604 보통약관")!;
+    const general = (await services.document.list("general")).find((d) => d.title === "보통약관(일반)")!;
     const record = (await services.document.get(general.id))!;
     // 조는 관 안에 있다 — 관 · 조 자리를 따라가 그 조에만 옵션을 단다
     const mark = (nodes: readonly BlockNode[]): BlockNode[] =>

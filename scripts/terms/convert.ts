@@ -33,9 +33,12 @@ import { CLAIM_CATALOG_ENTRY, CLAIM_SLOT, inlineClaimNames } from "./claim";
 import type { Discriminator } from "../../src/domain/catalog/types";
 import { applyClauseUse, articleRefParamsOf, guardApplicationOutput, INNER_TARGETS, positionApplicationHead, clauseFromSource, inlineBody, optionCode, parameterize, placeOptions, reId, valueCode, type ClauseRecord } from "./clauses";
 import { articlesDeep, canonicalArticle, claimOf, collapseRenewal, coverageNameOf, localPaths, mergeRenewal, textNodesOf, wordClusters } from "./auto";
-import { APPENDED_CLAUSE_KEYS, APPENDICES, CLAUSES, PRODUCTS, RENEWAL, SEED_DIR, type ClauseUse, type ProductTerms, type SlotOverlay, type SpecialSpec } from "./config";
+import { APPENDED_CLAUSE_KEYS, APPENDICES, CLAUSES, GENERAL_TEMPLATE, PRODUCTS, RENEWAL, SEED_DIR, type ClauseUse, type ProductTerms, type SlotOverlay, type SpecialSpec } from "./config";
 import { parseTerms, type ParsedArticle, type ParsedDoc } from "./parse";
 import { applyExemption, type ExemptionTrait } from "./exemption";
+import { mergeGenerals, remapIds } from "./merge";
+import { applyArticleCopies } from "../../src/domain/product/articleCopies";
+import { productRefIssues } from "../../src/domain/product/copyRefIntegrity";
 import { applyArticleConds, applyBoxConds, applyInlineClauses, applyInlineConds, articlesOf } from "./overlay";
 import { basisDateClause } from "./renewal";
 import { inlinesFromText, leftoverReferences, type ArticleEntry, type ArticleIndex, type ParagraphGroup, type RefEnv } from "./refs";
@@ -531,7 +534,6 @@ function main(): void {
       documents.push({ code: spec.code, ownerCoverage: spec.ownerCoverage, general: p.product.general.code, tree: b.tree });
     }
   }
-  checkClauseOrder(clauses, generals);
 
   // ── 쓰지 않는 박스를 빼고 코드를 다시 매긴다 — 같은 상품군의 판(2607) 보통약관의 박스 중 2604 함수조항이 대신하는 자리(납입면제 정의 · 그림)의 것
   // 보험금명 자리표(claim.ts)는 카탈로그에 없다 — 변환 안에서만 인자로 바꿀 수 있게 더한다
@@ -543,9 +545,43 @@ function main(): void {
   const claimed = inlineClaimNames(documents, parameterized, claimNames(products));
   const finalClauses = claimed.clauses;
   documents.splice(0, documents.length, ...claimed.documents);
-  const generalClauseCodes = new Set(generals.flatMap((g) => [...JSON.stringify(g.tree).matchAll(/"clauseCode":"(C\d+)"/g)].map((m) => m[1])));
+
+  // ── 보통약관 합치기 — 템플릿 「보통약관(일반)」 하나 + 상품별 조 노출 끔 · 조 사본 (merge.ts). 그 판의 담보약관 · 함수조항 참조를 템플릿 조 id 로 고친다
+  const base = generals.find((g) => g.code === GENERAL_TEMPLATE.base)!;
+  const others = generals.filter((g) => g !== base).map((g) => ({ ...g, copies: GENERAL_TEMPLATE.copies[g.code] ?? [], variants: GENERAL_TEMPLATE.variants[g.code] ?? [] }));
+  const { tree: template, products: perGeneral, refMismatches } = mergeGenerals(base, others, { id: GENERAL_TEMPLATE.code, title: GENERAL_TEMPLATE.title });
+  issues.push(...refMismatches.map((m) => `${m.general}: 보통약관 조 「${m.article}」이(가) 템플릿과 다른 대상을 가리킨다 — GENERAL_TEMPLATE.copies 에 사본으로 고른다`));
+  const idMap = new Map([...perGeneral.values()].flatMap((p) => [...p.idMap]));
+  const codeMap = new Map([...perGeneral.values()].flatMap((p) => [...p.codeMap]));
+  finalClauses.splice(0, finalClauses.length, ...remapIds(finalClauses, idMap, codeMap));
+  issues.push(...validate(template, "general").map((l) => `${GENERAL_TEMPLATE.code}: ${l}`));
+  for (const d of documents) {
+    const p = perGeneral.get(d.general)!;
+    d.tree = remapIds(d.tree, p.idMap, p.codeMap);
+    // 담보약관은 상품의 최종 보통약관(템플릿 + 조 사본)을 가리킨다 — 사본에만 있는 자리(PZ)도 그 상품에서는 있다
+    issues.push(...validate(d.tree, "special", applyArticleCopies(template, p.copies.map((a) => ({ articleId: a.id, article: a })))).map((l) => `${d.code}: ${l}`));
+    d.general = GENERAL_TEMPLATE.code;
+  }
+  // 상품마다 최종 보통약관(템플릿 + 사본 + 노출 끔)의 참조 무결성 — 시드 저장(보통약관 탭 저장과 같은 검사)이 거부하기 전에 여기서 멈춘다
+  for (const p of products) {
+    const s = perGeneral.get(p.product.general.code)!;
+    const broken = productRefIssues({ template, copies: s.copies.map((a) => ({ articleId: a.id, article: a })), hidden: s.hidden });
+    issues.push(...broken.map((i) => `${p.product.code}: 보통약관 설정 ${i.at.articleId ?? ""} — ${i.message}`));
+  }
+  generals.splice(0, generals.length, { code: GENERAL_TEMPLATE.code, tree: template });
+  const generalSettings = new Map(
+    products.map((p) => {
+      const s = perGeneral.get(p.product.general.code)!;
+      return [p.product.code, { general: GENERAL_TEMPLATE.code, hiddenArticles: s.hidden, copies: s.copies }] as const;
+    }),
+  );
+  /** 보통약관 쪽 문면 — 템플릿과 상품 조 사본 (보통약관이 쓰는 함수조항 · 박스는 앞 코드다). */
+  const generalSide = [...generals.map((g) => g.tree), ...[...perGeneral.values()].flatMap((p) => p.copies)];
+  checkClauseOrder(finalClauses, generalSide.map((tree) => ({ tree: tree as DocumentNode })));
+
+  const generalClauseCodes = new Set(generalSide.flatMap((tree) => [...JSON.stringify(tree).matchAll(/"clauseCode":"(C\d+)"/g)].map((m) => m[1])));
   const plannedFront = new Set(boxes.filter((b) => b.sites.some((x) => x.general)).map((b) => b.record.code));
-  const boxRecords = compactBoxes(boxes.map((b) => b.record), [generals, documents, finalClauses], [generals, finalClauses.filter((c) => generalClauseCodes.has(c.code))], plannedFront);
+  const boxRecords = compactBoxes(boxes.map((b) => b.record), [generalSide, documents, finalClauses], [generalSide, finalClauses.filter((c) => generalClauseCodes.has(c.code))], plannedFront);
 
   // ── 출력
   const out = (file: string, data: unknown) => writeFileSync(path.join(root, SEED_DIR, file), `${JSON.stringify(data, null, 2)}\n`);
@@ -556,7 +592,7 @@ function main(): void {
   // 함수조항은 구분자를 직접 읽지 않고 인자만 읽는다 (최종 결정 2) — 직접 읽기를 「인자 + 기본 연결 = 그 구분자」로 기계 변환한다.
   // 구분자 카탈로그는 손으로 적는 시드(discriminators.json)다. 사용처는 기본 연결을 쓰므로 조립 결과가 그대로다
   out("clauses.json", finalClauses);
-  writeAutoSeeds(products, exemptions, out);
+  writeAutoSeeds(products, exemptions, generalSettings, out);
 
   const stats = (tree: DocumentNode) => {
     const ix = indexTree(tree);
@@ -785,13 +821,21 @@ function claimNames(products: readonly BuiltProduct[]): Map<string, string> {
  * 기본 그룹(담보분류)과 맞지 않는 파일은 그 상품의 사용자 그룹이고, 상품의 그룹 목록(`groups`)은 원문 파일 순서다 (ADR-0090).
  * 갱신형 짝은 담보 하나 · 탑재 둘(갱신유형 비갱신형 · 갱신형), 갱신형만 있는 특약은 탑재 하나(갱신형).
  */
-function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyMap<string, ExemptionTrait>, out: (file: string, data: unknown) => void): void {
+/** 상품의 보통약관 설정 — 템플릿 · 조 노출 끔 · 조 사본(템플릿 조 대신 통째, 시드 `load.ts`). */
+interface GeneralSetting {
+  general: string;
+  hiddenArticles: Id[];
+  copies: ArticleNode[];
+}
+
+function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyMap<string, ExemptionTrait>, generalSettings: ReadonlyMap<string, GeneralSetting>, out: (file: string, data: unknown) => void): void {
   // 자동 탑재분은 `auto: true` 로 표시한다 — 다시 쓸 때 지난번 자동 탑재분을 모두 지우고 지금 설정으로 새로 쓴다(손으로 쓴 것은 그대로)
   type Coverage = { key: string; code: string; name: string; benefitName: string; category?: string; coverageValues: { path: string; value: unknown }[]; benefitValues: unknown[]; auto?: true };
   type Group = { category: string } | { name: string; coverages: string[] };
   type Mount = { code: string; coverage: string; section: string; attributes: { kindCode: string; valueCode: string }[]; auto?: true };
   const coverages = JSON.parse(readFileSync(path.join(root, SEED_DIR, "coverages.json"), "utf8")) as Coverage[];
-  const seeded = JSON.parse(readFileSync(path.join(root, SEED_DIR, "products.json"), "utf8")) as { code: string; mounts: Mount[]; groups?: Group[] }[];
+  type SeedCopy = { article: Id; replace: ArticleNode };
+  const seeded = JSON.parse(readFileSync(path.join(root, SEED_DIR, "products.json"), "utf8")) as { code: string; general: string; mounts: Mount[]; groups?: Group[]; hiddenArticles?: Id[]; copies?: SeedCopy[] }[];
   const hand = coverages.filter((c) => !c.auto);
   const next: Coverage[] = [...hand];
   for (const p of products) {
@@ -822,7 +866,15 @@ function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyM
       if (spec.auto!.renewal) mounts.push(mount(spec.ownerCoverage, attr("1")), mount(`${spec.ownerCoverage}-renew`, attr("2")));
       else mounts.push(mount(spec.ownerCoverage, renewal ? attr("2") : []));
     }
-    const product = seeded.find((x) => x.code === p.product.code);
+    const product = seeded.find((x) => x.code === (p.product.seedCode ?? p.product.code));
+    const setting = generalSettings.get(p.product.code);
+    if (product && setting) {
+      product.general = setting.general;
+      if (setting.hiddenArticles.length > 0) product.hiddenArticles = setting.hiddenArticles;
+      else delete product.hiddenArticles;
+      if (setting.copies.length > 0) product.copies = setting.copies.map((a) => ({ article: a.id, replace: a }));
+      else delete product.copies;
+    }
     if (product) {
       product.mounts = [...product.mounts.filter((m) => !m.auto), ...mounts];
       if (groups.some((g) => "name" in g)) product.groups = groups;

@@ -81,7 +81,7 @@ test(
 
     // ── 2. 템플릿 제4조 준용하기 「전체항 모으기」 → 블록 조가 제1절로 올라 블록에서 생략
     await page.goto("/documents");
-    await page.getByRole("link", { name: "무배당 알파Plus보장보험2604 보통약관", exact: true }).click();
+    await page.getByRole("link", { name: "보통약관(일반)", exact: true }).click();
     await page.waitForURL(/\/documents\/[0-9a-f-]{36}$/);
     const templateUrl = page.url();
     const setJoinMode = async (value: "all" | "none") => {
