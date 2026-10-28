@@ -2,7 +2,16 @@
   {
     "code": "sample-main-two-base",
     "name": "표본 — 기본계약 2개(주계약)",
-    "general": "alpha-general",
+    "general": "general",
+    "hiddenArticles": [
+      "m-a3",
+      "m-a4",
+      "m-a25",
+      "m-a29",
+      "m-a30",
+      "m-a31",
+      "m-a33"
+    ],
     "namingTemplate": "[A0001] [담보명] [A0002]",
     "planOptions": [
       {
@@ -210,7 +219,16 @@
   {
     "code": "sample-standalone-two-blocks",
     "name": "표본 — 독립특약 블록 2개",
-    "general": "alpha-general",
+    "general": "general",
+    "hiddenArticles": [
+      "m-a3",
+      "m-a4",
+      "m-a25",
+      "m-a29",
+      "m-a30",
+      "m-a31",
+      "m-a33"
+    ],
     "namingTemplate": "[A0001] [담보명] [A0002]",
     "planOptions": [
       {
@@ -382,7 +400,16 @@
   {
     "code": "sample-standalone-one-block",
     "name": "표본 — 독립특약 블록 1개",
-    "general": "alpha-general",
+    "general": "general",
+    "hiddenArticles": [
+      "m-a3",
+      "m-a4",
+      "m-a25",
+      "m-a29",
+      "m-a30",
+      "m-a31",
+      "m-a33"
+    ],
     "namingTemplate": "[A0001] [담보명] [A0002]",
     "planOptions": [
       {

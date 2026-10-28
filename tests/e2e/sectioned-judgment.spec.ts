@@ -4,7 +4,7 @@ import { expect, test } from "./_lib/fixtures";
 /**
  * 절 형태 ⑤ 화면 — 판정 배지 · 조연결 현황 · 준용하기 옵션 → 판정 변화 · 판정 변화 영향 카드 (기능/상품 §3.12 · §4.6 · §3.8, ADR-0082 결정 5 · 11).
  * 합성 표본 「표본 — 독립특약 블록 2개」(같은 담보약관 두 블록 — 지급사유 · 세부규정 위임 2/2)와 「표본 — 기본계약 2개(주계약)」(일부 연결 1/2 = 특칙).
- * 템플릿(무배당 알파Plus보장보험2604 보통약관) 제4조의 준용하기 옵션을 「전체항 모으기」로 저장해 판정이 바뀌는 것을 보고, 끝에 「없음」으로 되돌린다.
+ * 템플릿(보통약관(일반)) 제4조의 준용하기 옵션을 「전체항 모으기」로 저장해 판정이 바뀌는 것을 보고, 끝에 「없음」으로 되돌린다.
  * 상품담보 탭은 저장하지 않고 취소한다 — 다른 spec 이 보는 시드 상품을 바꾸지 않는다.
  */
 test(
@@ -54,7 +54,7 @@ test(
 
     // ── 준용하기 옵션 — 템플릿 문면 편집기의 조 속성(제4조 → 전체항 모으기) · 저장 한 번
     await page.goto("/documents");
-    await page.getByRole("link", { name: "무배당 알파Plus보장보험2604 보통약관", exact: true }).click();
+    await page.getByRole("link", { name: "보통약관(일반)", exact: true }).click();
     await page.waitForURL(/\/documents\/[0-9a-f-]{36}$/);
     const templateUrl = page.url();
     const body = page.locator(".ts-l3-body");

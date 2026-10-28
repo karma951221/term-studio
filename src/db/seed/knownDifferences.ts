@@ -26,6 +26,12 @@ export interface KnownDifference {
    * 조 명 자체가 다른 자리(조 헤딩 + 그 조를 가리키는 조 참조 라벨이 어느 조 · 어느 파일에든 있다). 조 단위 차이(옛 조 명으로 찾는다)를 모두 얹은 뒤에 바꾼다.
    */
   everywhere?: true;
+  /**
+   * 판 대조 — 이 조는 공용 템플릿 「보통약관(일반)」의 판(바탕 알파Plus2607) 글로 찍힌다(상품 조 사본을 두지 않은 판 표기 차이 — 박스 나눔 ·
+   * 띄어쓰기 · 원문 오탈자, 2026-10-28). 그 판 원문(`edition` = 상품 픽스처 폴더)의 같은 조 기대 줄(그 판의 알려진 차이를 얹은 것)로 조 본문을 바꾼다.
+   * 조 헤딩은 제 원문 번호 그대로(대조는 조 번호를 보지 않는다). `after` · `lines` 는 쓰지 않는다. 조 단위 차이 중 가장 먼저 얹는다.
+   */
+  edition?: string;
   /** 인수기준의 차이 이름 — 사람이 읽는다. */
   why: string;
 }
@@ -188,16 +194,36 @@ const ALPHA2607_DIFFERENCES: KnownDifference[] = [
   span("갱신형_수술비(1-7종,_연간3회한)[상해]보장.md", "보험금의 지급사유", "【보험금 지급예시(2)】", [4, 8], ["```표", "제목: 보험금 지급예시(2)", "| 구분 | 사례 1 | 사례 2 | 사례 3 | 사례 4 | 사례 5 |", "|---|---|---|---|---|---|", "| 수술 | A·B수술 동시 | B수술 | B수술 | B수술 | B수술 |", "| 입원일 | 24.4.12 | 24.5.1 | 24.11.1 | 25.4.1 | 25.4.13 |", "| 퇴원일 | 24.4.15 | 24.5.10 | 24.11.5 | 25.4.3 | 25.4.16 |", "| 지급 결과 | A수술 지급 | B수술 지급 | B수술 지급 | B수술 지급 | B수술 지급 |", "| 설명 | 두 수술코드 중 수술종류가 높은 A수술 지급 | 연간 첫 번째 B수술 | 연간 두 번째 B수술 | 연간 세 번째 B수술 | 직전 퇴원일부터 입원일까지 10일이지만 새로운 연간에 해당 |", "| 최초계약일 | 2023.4.10  | 2023.4.10  | 2023.4.10  | 2023.4.10  | 2023.4.10  |", "```"]),
 ];
 
+/**
+ * 공용 템플릿 「보통약관(일반)」은 알파Plus2607 판이다(2026-10-28 — 보통약관 템플릿 하나, 변환 `scripts/terms/merge.ts`).
+ * 상품 조 사본을 두지 않은 조는 그 판 글로 찍힌다 — 아래 조는 2607 원문과 판 표기만 다르다(박스 나눔 · 띄어쓰기 · 줄 나눔 · 박스 자리 · 원문 오탈자).
+ * 상품의 사실이 박힌 조(기본계약 · 형 이름 · 상품군 납입면제 · 그 판의 자리를 가리키는 조)는 사본 · 변형이라 여기 없다.
+ */
+const edition = (dir: string, articles: string[], why: string): KnownDifference[] => articles.map((article) => ({ dir, file: "보통약관.md", article, after: "", lines: [], edition: A7, why }));
+const EDITION_DIFFERENCES: KnownDifference[] = [
+  ...edition(
+    "",
+    ["용어의 정의", "적립부분 적립이율에 관한 사항", "보험금 받는 방법의 변경", "대표자의 지정", "계약 전 알릴 의무", "상해보험계약 후 알릴 의무", "보험계약의 성립", "청약의 철회", "약관교부 및 설명의무 등", "계약의 무효", "보험나이 등", "강제집행 등으로 인하여 해지된 계약의 특별부활(효력회복)", "위법계약의 해지", "해약환급금", "약관의 해석"],
+    "공용 템플릿(2607 판)의 글 — 2604 원문과 박스 나눔(【】 머리 박스 하나 ↔ 박스 여럿) · 띄어쓰기 · 용어 표의 행 자리(「중요한 사항」) · 적립이율 용어 표 ↔ 박스가 다르다",
+  ),
+  ...edition(
+    "메리츠",
+    ["적립부분 적립이율에 관한 사항", "보험금 받는 방법의 변경", "대표자의 지정", "계약 전 알릴 의무", "상해보험계약 후 알릴 의무", "알릴 의무 위반의 효과", "보험계약의 성립", "청약의 철회", "약관교부 및 설명의무 등", "보험료의 납입이 연체되는 경우 납입최고(독촉)와 계약의 해지", "보험료의 납입을 연체하여 해지된 계약의 부활(효력회복)", "강제집행 등으로 인하여 해지된 계약의 특별부활(효력회복)", "중도인출", "약관의 해석", "예금보험에 의한 지급보장"],
+    "공용 템플릿(2607 판)의 글 — 통합간편 원문과 박스 나눔 · 띄어쓰기 · 박스 자리 · 원문 오탈자(「보험금 지급또는 … 사유사유」 · 「다음의 각 호」)가 다르다",
+  ),
+];
+
 export const KNOWN_DIFFERENCES: readonly KnownDifference[] = [
+  ...EDITION_DIFFERENCES,
   {
-    dir: "",
+    // 판 대조(박스 자리 — 2607 판은 ① 뒤, 통합간편 원문은 조 끝) 위에 — 부활일 기준은 상품의 사실(갱신형 = 최초계약일)이라 템플릿 함수조항이 통합간편 글로 찍는다
+    dir: "메리츠",
     file: "보통약관.md",
-    article: "계약의 무효",
-    after: "@ 보험료 납입이 면제된 경우 제1항의「이미 납입한 보험료」는 계약자가 실제로 납입한 보험료로 합니다.",
-    lines: [
-      "@ 회사는 제1항에서 정한 사항 이외에도 피보험자가 계약일부터 암보장개시일의 전일 이전에「암(유사암제외)」으로 진단확정되는 경우에는 계약을 무효로 하며 이미 납입한 보험료를 돌려드립니다. 다만, 회사의 고의 또는 과실로 계약이 무효로 된 경우와 회사가 승낙 전에 무효임을 알았거나 알 수 있었음에도 보험료를 반환하지 않은 경우에는 보험료를 납입한 날의 다음날부터 반환일까지의 기간에 대하여 회사는 보험계약대출이율을 연단위 복리로 계산한 금액을 더하여 돌려 드립니다.",
-    ],
-    why: "원문 누락(오타 가능) — 무효 문구(종들): 면책 사유(암·면책)가 있으면 암보장개시일 항",
+    article: "보험료의 납입을 연체하여 해지된 계약의 부활(효력회복)",
+    after: "@ 부활(효력회복)시 부활(효력회복)일을 계약일로 하여 암보장개시일을 적용합니다.",
+    lines: ["@ 부활(효력회복)시 부활(효력회복)일을 최초계약일로 하여 암보장개시일을 적용합니다."],
+    replace: true,
+    why: "판 대조한 2607 판 조의 부활일 기준 — 갱신형 상품(통합간편)은 템플릿 함수조항이 「최초계약일」로 찍는다(원문 그대로)",
   },
   {
     dir: "메리츠",
@@ -231,15 +257,34 @@ export const KNOWN_DIFFERENCES: readonly KnownDifference[] = [
 
 const squash = (s: string) => s.replace(/\s+/g, "");
 
-/** 원문 줄 → 기대 줄 — 그 파일의 알려진 차이를 적용한다. 자리를 못 찾으면 던진다(목록이 원문과 어긋난 것). */
-export function expectedLines(dir: string, file: string, source: readonly string[], list: readonly KnownDifference[] = KNOWN_DIFFERENCES): string[] {
+/** 조 헤딩 줄 자리와 그 조의 끝(다음 헤딩) — 없으면 heading = -1. */
+function articleSpan(lines: readonly string[], article: string): { heading: number; end: number } {
+  const heading = lines.findIndex((l) => /^##\s/.test(l) && squash(l).endsWith(`(${squash(article)})`));
+  const next = lines.findIndex((l, i) => i > heading && /^##?\s/.test(l));
+  return { heading, end: next < 0 ? lines.length : next };
+}
+
+/**
+ * 원문 줄 → 기대 줄 — 그 파일의 알려진 차이를 적용한다. 자리를 못 찾으면 던진다(목록이 원문과 어긋난 것).
+ * 판 대조(`edition`)는 그 판 원문 줄이 있어야 한다 — `read(dir, file)` 로 받는다(파일 읽기는 호출자 몫).
+ */
+export function expectedLines(dir: string, file: string, source: readonly string[], list: readonly KnownDifference[] = KNOWN_DIFFERENCES, read?: (dir: string, file: string) => readonly string[]): string[] {
   const out = [...source];
   const mine = list.filter((x) => x.dir === dir && x.file === file);
-  for (const d of mine.filter((x) => !x.everywhere)) {
-    const heading = out.findIndex((l) => /^##\s/.test(l) && squash(l).endsWith(`(${squash(d.article)})`));
+  const editions = new Map<string, string[]>();
+  for (const d of mine.filter((x) => x.edition !== undefined)) {
+    const edition = d.edition!;
+    if (!read) throw new Error(`알려진 차이 「${d.why}」: 판 대조(${edition})는 그 판 원문을 읽을 read 가 있어야 한다`);
+    if (!editions.has(edition)) editions.set(edition, expectedLines(edition, file, read(edition, file), list, read));
+    const theirs = editions.get(edition)!;
+    const own = articleSpan(out, d.article);
+    const other = articleSpan(theirs, d.article);
+    if (own.heading < 0 || other.heading < 0) throw new Error(`알려진 차이 「${d.why}」: 조 「${d.article}」 없음(${own.heading < 0 ? dir || "알파Plus" : edition})`);
+    out.splice(own.heading + 1, own.end - own.heading - 1, ...theirs.slice(other.heading + 1, other.end));
+  }
+  for (const d of mine.filter((x) => !x.everywhere && x.edition === undefined)) {
+    const { heading, end } = articleSpan(out, d.article);
     if (heading < 0) throw new Error(`알려진 차이 「${d.why}」: 조 「${d.article}」 없음`);
-    const next = out.findIndex((l, i) => i > heading && /^##?\s/.test(l));
-    const end = next < 0 ? out.length : next;
     if (d.within) {
       let hits = 0;
       for (let i = heading + 1; i < end; i++) {

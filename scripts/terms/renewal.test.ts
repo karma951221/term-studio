@@ -59,9 +59,9 @@ describe("문구 함수조항 「기준일 문구」 (ADR-0086 결정 6)", () =>
     expect(basis.presets).toEqual([{ code: "S01", name: "담보", bindings: { 갱신: { kind: "discriminator", code: RENEWABLE_COVERAGE } } }]);
   });
 
-  it("담보약관만 쓴다 — 보통약관이 쓰는 함수조항 뒤 첫 코드(담보약관 함수조항 맨 앞)", () => {
-    const generals = read<{ tree: Json }[]>("generals.json");
-    const usedByGenerals = new Set(generals.flatMap((g) => [...JSON.stringify(g.tree).matchAll(/"clauseCode":"(C\d+)"/g)].map((m) => m[1])));
+  it("담보약관만 쓴다 — 보통약관 쪽(템플릿 · 상품 조 사본)이 쓰는 함수조항 뒤 첫 코드(담보약관 함수조항 맨 앞)", () => {
+    const generalSide = [...read<{ tree: Json }[]>("generals.json").map((g) => g.tree), ...read<{ copies?: unknown[] }[]>("products.json").map((p) => p.copies ?? [])];
+    const usedByGenerals = new Set(generalSide.flatMap((x) => [...JSON.stringify(x).matchAll(/"clauseCode":"(C\d+)"/g)].map((m) => m[1])));
     expect(usedByGenerals.has(basis.code)).toBe(false);
     expect(Number(basis.code.slice(1))).toBe(usedByGenerals.size + 1);
   });

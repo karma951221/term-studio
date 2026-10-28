@@ -20,7 +20,8 @@ const FIXTURES = path.join(process.cwd(), "tests/fixtures/terms");
 
 /** 원문 픽스처 → 기대 줄(파싱양식) — `dir` 은 상품 폴더(알파Plus 는 뿌리 「」 · 메리츠 「메리츠」). 인수기준 알려진 차이(`knownDifferences.ts`)를 얹는다. */
 export function sourceLines(file: string, dir = ""): string[] {
-  return expectedLines(dir, file, sourceToLines(readFileSync(path.join(FIXTURES, dir, file), "utf8")));
+  const read = (d: string, name: string) => sourceToLines(readFileSync(path.join(FIXTURES, d, name), "utf8"));
+  return expectedLines(dir, file, read(dir, file), undefined, read);
 }
 
 /** 미리보기의 문서 하나(`article.ts-doc`) → 파싱양식 줄. 브라우저 안에서 DOM 을 걷는다. */

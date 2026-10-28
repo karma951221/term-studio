@@ -477,6 +477,8 @@ export const RENEWAL = "exist(attr.A0001) and attr.A0001 = '2'";
 /** 상품 한 벌의 원문 — 픽스처 폴더 · 별표 번호 표 · 보통약관 · 담보약관. */
 export interface ProductTerms {
   code: string;
+  /** 시드 상품(`products.json`)의 code — 없으면 `code`. */
+  seedCode?: string;
   /**
    * 상품군 — 납입면제 템플릿 · 준용규정 함수조항이 상품군 것이다(ADR-0086 결정 7). 같은 상품군의 판(2604 · 2607)은
    * 보통약관 조 id 체계(`general.idPrefix`)를 같이 써서 담보약관 · 준용규정 · 납입면제 함수조항을 함께 쓴다.
@@ -650,6 +652,7 @@ const ALPHA_SPECIALS: SpecialSpec[] = [
 
 export const ALPHA: ProductTerms = {
   code: "alpha",
+  seedCode: "alpha-plus",
   line: "alpha",
   fixtureDir: "tests/fixtures/terms",
   appendixNumbers: new Map(APPENDICES.filter((a) => a.number !== undefined).map((a) => [a.number!, a.code])),
@@ -1087,3 +1090,29 @@ export const ALPHA2607: ProductTerms = {
 
 export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607];
 export const SEED_DIR = "src/db/seed/data";
+
+/**
+ * 보통약관 템플릿은 하나 — 「보통약관(일반)」 (2026-10-28 사용자 결정, 변환 `merge.ts`). 상품마다 원문 보통약관을 따로 변환한 뒤 합친다.
+ * 바탕은 알파Plus2607 판(가장 새 판 · 함께 쓰는 담보약관이 가장 많다). 다른 판은 판마다 고른 조만 상품 조 사본으로 제 글을 지키고,
+ * 나머지 조는 템플릿 글로 찍힌다 — 판 표기 차이(박스 나눔 · 띄어쓰기 · 원문 오탈자)는 실물 재현의 알려진 차이다.
+ * 사본으로 고르는 조 = 상품의 사실이 글에 박힌 조: 기본계약(메리츠 일반상해사망)을 말하는 소멸 · 형 이름(「해약환급금미지급형」)의 2형 단서 ·
+ * 메리츠 납입면제 무효 함수조항을 쓰는 무효 조 · 가리키는 자리가 그 판의 것인 조(아래).
+ * 납입면제 세 조 · 기본계약이 대치하는 두 조는 상품군 · 기본계약마다 모양이 다른 템플릿이라(ADR-0086 결정 7 — 상품군 함수조항이 그 판의 항 · 호를 가리킨다) 사본이 아니라
+ * 변형(`variants`)이다 — 두 상품군의 세 조를 다 템플릿에 두고 조 노출로 고른다.
+ */
+export const GENERAL_TEMPLATE = {
+  code: "general",
+  title: "보통약관(일반)",
+  base: ALPHA2607_GENERAL.code,
+  copies: {
+    [ALPHA_GENERAL.code]: [] as string[],
+    // 글이 같아도 가리키는 자리가 그 판의 것인 조 — 부지급 사유(메리츠 지급사유 조) · 통지(메리츠 납입면제 조) · 지급절차(메리츠 세부규정의 항) ·
+    // 보험나이(메리츠 무효 조의 호) · 위법계약의 해지(메리츠 해약환급금의 항). 변환기가 찾아 알린다(merge.ts `refMismatches`).
+    [MERITZ_GENERAL.code]: ["용어의 정의", "보험금을 지급하지 않는 사유", "보험금 지급사유 등의 통지", "보험금의 지급절차", "계약의 무효", "계약내용의 변경 등", "보험나이 등", "계약의 소멸", "위법계약의 해지", "해약환급금"],
+  } as Record<string, string[]>,
+  // 기본계약이 대치하는 두 조도 변형이다 — 기본계약(일반상해사망 · 일반상해80%이상후유장해)마다 항 구성이 달라 조립이 다른 조의 「제4조 제N항」을
+  // 기본계약 항에 잇지 못하고(booklet `positionAliases` — 템플릿 조와 기본계약 조의 항 수가 같아야 한다), 조연결된 조의 사본은 잠긴다(ADR-0082 결정 10)
+  variants: {
+    [MERITZ_GENERAL.code]: ["보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "보험료 납입면제 사유의 정의 및 진단확정", "납입면제에 관한 세부규정"],
+  } as Record<string, string[]>,
+};

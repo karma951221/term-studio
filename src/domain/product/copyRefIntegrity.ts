@@ -206,12 +206,13 @@ export function newIssuesOnly(finalIssues: readonly Issue[], templateIssues: rea
 
 /**
  * 상품 하나가 보는 밖의 참조 — 제가 탑재한 담보(`coverageIds`)의 담보약관 참조 + 그 담보약관 · 이 상품 보통약관 트리(`final`)가 쓰는 함수조항의 참조.
- * 탑재하지 않은 담보약관 · 쓰지 않는 함수조항은 이 상품의 조립에 나오지 않는다.
+ * 탑재하지 않은 담보약관 · 쓰지 않는 함수조항 · 노출 끈 조(`hidden`) 안에서만 쓰는 함수조항은 이 상품의 조립에 나오지 않는다
+ * (상품군 변형 조 — 다른 상품군의 납입면제 조와 그 함수조항, 2026-10-28).
  */
-export function outsideRefsFor(deps: GeneralDependents, coverageIds: ReadonlySet<Id>, final: DocumentNode): OutsideRef[] {
+export function outsideRefsFor(deps: GeneralDependents, coverageIds: ReadonlySet<Id>, final: DocumentNode, hidden: ReadonlySet<Id> = new Set()): OutsideRef[] {
   const docs = deps.documents.filter((d) => coverageIds.has(d.coverageId));
   const used = new Set<Code>(docs.flatMap((d) => d.clauseCodes));
-  for (const r of collectRefs(final)) if (r.kind === "clause") used.add(r.clauseCode);
+  for (const r of collectRefs(final)) if (r.kind === "clause" && !(r.at.articleId !== undefined && hidden.has(r.at.articleId))) used.add(r.clauseCode);
   return [...docs.flatMap((d) => d.refs), ...deps.clauses.filter((c) => used.has(c.code)).flatMap((c) => c.refs)];
 }
 
@@ -230,8 +231,9 @@ export interface ProductRefInput {
 /** 상품 하나의 참조 깨짐 이슈 — 템플릿 + 사본 + 노출 끔 + 밖의 참조 (서버 저장 검사 · 보통약관 탭 목차 · 조 편집 목록이 같은 한 벌). */
 export function productRefIssues({ template, copies, hidden, dependents, numbers, previous, coordinate }: ProductRefInput): Issue[] {
   const final = applyArticleCopies(template, [...copies]);
-  const outside = dependents ? outsideRefsFor(dependents, new Set(dependents.documents.map((d) => d.coverageId)), final) : [];
-  const breaks = copyRefBreaks({ template, final, hidden, outside, ...(coordinate ? { coordinate } : {}) });
+  const off = new Set(hidden);
+  const outside = dependents ? outsideRefsFor(dependents, new Set(dependents.documents.map((d) => d.coverageId)), final, off) : [];
+  const breaks = copyRefBreaks({ template, final, hidden: off, outside, ...(coordinate ? { coordinate } : {}) });
   return refBreakIssues(breaks, { template, final, ...(numbers ? { numbers } : {}), ...(previous ? { previous } : {}) });
 }
 

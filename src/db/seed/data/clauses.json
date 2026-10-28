@@ -896,12 +896,12 @@
           {
             "id": "c-g-exclusion-n13",
             "kind": "boxRef",
-            "boxCode": "BX000005"
+            "boxCode": "BX000003"
           },
           {
             "id": "c-g-exclusion-n14",
             "kind": "boxRef",
-            "boxCode": "BX000006"
+            "boxCode": "BX000004"
           }
         ],
         "code": "P0100"
@@ -1015,7 +1015,7 @@
       {
         "id": "c-g-first-premium-n5",
         "kind": "boxRef",
-        "boxCode": "BX000035"
+        "boxCode": "BX000015"
       },
       {
         "id": "c-g-first-premium-n6",
@@ -1850,7 +1850,7 @@
               {
                 "id": "c-waiver-definition-cancer-알파Plus-n12",
                 "kind": "boxRef",
-                "boxCode": "BX000039"
+                "boxCode": "BX000019"
               },
               {
                 "id": "c-waiver-definition-cancer-알파Plus-n13",
@@ -1867,7 +1867,7 @@
               {
                 "id": "c-waiver-definition-cancer-알파Plus-n15",
                 "kind": "boxRef",
-                "boxCode": "BX000040"
+                "boxCode": "BX000020"
               }
             ]
           }
@@ -2863,7 +2863,7 @@
               {
                 "id": "c-waiver-addendum-n14",
                 "kind": "boxRef",
-                "boxCode": "BX000037"
+                "boxCode": "BX000017"
               }
             ]
           }
@@ -3767,7 +3767,7 @@
               {
                 "id": "c-waiver-definition-cancer-통합간편-n12",
                 "kind": "boxRef",
-                "boxCode": "BX000075"
+                "boxCode": "BX000041"
               },
               {
                 "id": "c-waiver-definition-cancer-통합간편-n13",
@@ -3784,7 +3784,7 @@
               {
                 "id": "c-waiver-definition-cancer-통합간편-n15",
                 "kind": "boxRef",
-                "boxCode": "BX000076"
+                "boxCode": "BX000042"
               }
             ]
           }
@@ -4060,7 +4060,7 @@
               {
                 "id": "c-waiver-addendum-meritz-n8",
                 "kind": "boxRef",
-                "boxCode": "BX000073"
+                "boxCode": "BX000039"
               }
             ]
           }
@@ -4197,7 +4197,7 @@
                     "kind": "articleRef",
                     "targets": [
                       {
-                        "articleId": "m-a34"
+                        "articleId": "g-a29"
                       }
                     ],
                     "connector": "및"
@@ -4219,7 +4219,7 @@
                     "kind": "articleRef",
                     "targets": [
                       {
-                        "articleId": "m-a35"
+                        "articleId": "g-a30"
                       }
                     ],
                     "connector": "및"
@@ -4729,7 +4729,7 @@
                     "kind": "articleRef",
                     "targets": [
                       {
-                        "articleId": "m-a22",
+                        "articleId": "g-a22",
                         "code": "P0100"
                       }
                     ],
@@ -6608,13 +6608,13 @@
                     "kind": "articleRef",
                     "targets": [
                       {
-                        "articleId": "m-a9"
+                        "articleId": "g-a9"
                       },
                       {
-                        "articleId": "m-a10"
+                        "articleId": "g-a10"
                       },
                       {
-                        "articleId": "m-a43"
+                        "articleId": "g-a38"
                       }
                     ],
                     "connector": "및"
@@ -8139,7 +8139,7 @@
       {
         "id": "c-auto-92-n11",
         "kind": "boxRef",
-        "boxCode": "BX000125"
+        "boxCode": "BX000086"
       },
       {
         "id": "c-auto-92-n12",
@@ -8393,7 +8393,7 @@
       {
         "id": "c-auto-93-n9",
         "kind": "boxRef",
-        "boxCode": "BX000125"
+        "boxCode": "BX000086"
       },
       {
         "id": "c-auto-93-n10",
@@ -8574,7 +8574,7 @@
       {
         "id": "c-auto-94-n9",
         "kind": "boxRef",
-        "boxCode": "BX000125"
+        "boxCode": "BX000086"
       },
       {
         "id": "c-auto-94-n10",
@@ -9674,12 +9674,12 @@
       {
         "id": "c-auto-103-n5",
         "kind": "boxRef",
-        "boxCode": "BX000193"
+        "boxCode": "BX000154"
       },
       {
         "id": "c-auto-103-n6",
         "kind": "boxRef",
-        "boxCode": "BX000194"
+        "boxCode": "BX000155"
       },
       {
         "id": "c-auto-103-n7",
@@ -9869,12 +9869,12 @@
       {
         "id": "c-auto-104-n5",
         "kind": "boxRef",
-        "boxCode": "BX000193"
+        "boxCode": "BX000154"
       },
       {
         "id": "c-auto-104-n6",
         "kind": "boxRef",
-        "boxCode": "BX000194"
+        "boxCode": "BX000155"
       },
       {
         "id": "c-auto-104-n7",
@@ -10013,7 +10013,7 @@
       {
         "id": "c-auto-105-n3",
         "kind": "boxRef",
-        "boxCode": "BX000195"
+        "boxCode": "BX000156"
       },
       {
         "id": "c-auto-105-n4",
@@ -10107,7 +10107,7 @@
       {
         "id": "c-auto-106-n5",
         "kind": "boxRef",
-        "boxCode": "BX000195"
+        "boxCode": "BX000156"
       },
       {
         "id": "c-auto-106-n6",
@@ -10312,7 +10312,7 @@
       {
         "id": "c-auto-107-n16",
         "kind": "boxRef",
-        "boxCode": "BX000125"
+        "boxCode": "BX000086"
       },
       {
         "id": "c-auto-107-n17",
@@ -11394,7 +11394,7 @@
           {
             "id": "c-auto-113-n7",
             "kind": "boxRef",
-            "boxCode": "BX000201"
+            "boxCode": "BX000162"
           },
           {
             "id": "c-auto-113-n8",
@@ -13191,7 +13191,7 @@
           {
             "id": "c-auto-124-n9",
             "kind": "boxRef",
-            "boxCode": "BX000005"
+            "boxCode": "BX000003"
           }
         ],
         "code": "P0100"
@@ -14363,7 +14363,7 @@
       {
         "id": "c-auto-141-n24",
         "kind": "boxRef",
-        "boxCode": "BX000375"
+        "boxCode": "BX000336"
       },
       {
         "id": "c-auto-141-n25",
@@ -14447,7 +14447,7 @@
       {
         "id": "c-auto-142-n9",
         "kind": "boxRef",
-        "boxCode": "BX000125"
+        "boxCode": "BX000086"
       },
       {
         "id": "c-auto-142-n10",
@@ -14784,7 +14784,7 @@
       {
         "id": "c-auto-143-n10",
         "kind": "boxRef",
-        "boxCode": "BX000075"
+        "boxCode": "BX000041"
       },
       {
         "id": "c-auto-143-n11",
@@ -15755,7 +15755,7 @@
       {
         "id": "c-auto-151-n18",
         "kind": "boxRef",
-        "boxCode": "BX000380"
+        "boxCode": "BX000341"
       },
       {
         "id": "c-auto-151-n19",
@@ -15924,7 +15924,7 @@
       {
         "id": "c-auto-152-n18",
         "kind": "boxRef",
-        "boxCode": "BX000380"
+        "boxCode": "BX000341"
       },
       {
         "id": "c-auto-152-n19",
@@ -16018,7 +16018,7 @@
       {
         "id": "c-auto-153-n11",
         "kind": "boxRef",
-        "boxCode": "BX000125"
+        "boxCode": "BX000086"
       },
       {
         "id": "c-auto-153-n12",
@@ -17550,7 +17550,7 @@
       {
         "id": "c-auto-162-n28",
         "kind": "boxRef",
-        "boxCode": "BX000404"
+        "boxCode": "BX000365"
       },
       {
         "id": "c-auto-162-n29",
@@ -17733,7 +17733,7 @@
       {
         "id": "c-auto-163-n28",
         "kind": "boxRef",
-        "boxCode": "BX000404"
+        "boxCode": "BX000365"
       },
       {
         "id": "c-auto-163-n29",
@@ -17916,7 +17916,7 @@
       {
         "id": "c-auto-164-n28",
         "kind": "boxRef",
-        "boxCode": "BX000404"
+        "boxCode": "BX000365"
       },
       {
         "id": "c-auto-164-n29",
@@ -18091,7 +18091,7 @@
           {
             "id": "c-auto-165-n25",
             "kind": "boxRef",
-            "boxCode": "BX000405"
+            "boxCode": "BX000366"
           }
         ],
         "code": "P0400"
@@ -18441,7 +18441,7 @@
       {
         "id": "c-auto-168-n9",
         "kind": "boxRef",
-        "boxCode": "BX000125"
+        "boxCode": "BX000086"
       },
       {
         "id": "c-auto-168-n10",
@@ -19898,7 +19898,7 @@
           {
             "id": "c-auto-183-n7",
             "kind": "boxRef",
-            "boxCode": "BX000202"
+            "boxCode": "BX000163"
           },
           {
             "id": "c-auto-183-n8",
@@ -21688,7 +21688,7 @@
           {
             "id": "c-auto-192-n30",
             "kind": "boxRef",
-            "boxCode": "BX000533"
+            "boxCode": "BX000494"
           }
         ],
         "code": "P0200"
@@ -21935,7 +21935,7 @@
           {
             "id": "c-auto-193-n30",
             "kind": "boxRef",
-            "boxCode": "BX000533"
+            "boxCode": "BX000494"
           }
         ],
         "code": "P0200"
@@ -22718,7 +22718,7 @@
           {
             "id": "c-auto-198-n55",
             "kind": "boxRef",
-            "boxCode": "BX000006"
+            "boxCode": "BX000004"
           },
           {
             "id": "c-auto-198-n56",
@@ -22735,7 +22735,7 @@
           {
             "id": "c-auto-198-n58",
             "kind": "boxRef",
-            "boxCode": "BX000005"
+            "boxCode": "BX000003"
           }
         ],
         "code": "P1000"
@@ -22999,7 +22999,7 @@
       {
         "id": "c-auto-200-n12",
         "kind": "boxRef",
-        "boxCode": "BX000162"
+        "boxCode": "BX000123"
       },
       {
         "id": "c-auto-200-n13",
@@ -23017,12 +23017,12 @@
       {
         "id": "c-auto-200-n15",
         "kind": "boxRef",
-        "boxCode": "BX000540"
+        "boxCode": "BX000501"
       },
       {
         "id": "c-auto-200-n16",
         "kind": "boxRef",
-        "boxCode": "BX000541"
+        "boxCode": "BX000502"
       },
       {
         "id": "c-auto-200-n17",
@@ -23285,7 +23285,7 @@
           {
             "id": "c-auto-201-n30",
             "kind": "boxRef",
-            "boxCode": "BX000533"
+            "boxCode": "BX000494"
           }
         ],
         "code": "P0200"
@@ -23316,7 +23316,7 @@
       {
         "id": "c-auto-201-n34",
         "kind": "boxRef",
-        "boxCode": "BX000405"
+        "boxCode": "BX000366"
       },
       {
         "id": "c-auto-201-n35",
@@ -23563,7 +23563,7 @@
           {
             "id": "c-auto-202-n30",
             "kind": "boxRef",
-            "boxCode": "BX000533"
+            "boxCode": "BX000494"
           }
         ],
         "code": "P0200"
@@ -23594,7 +23594,7 @@
       {
         "id": "c-auto-202-n34",
         "kind": "boxRef",
-        "boxCode": "BX000405"
+        "boxCode": "BX000366"
       },
       {
         "id": "c-auto-202-n35",
@@ -23719,7 +23719,7 @@
       {
         "id": "c-auto-203-n12",
         "kind": "boxRef",
-        "boxCode": "BX000076"
+        "boxCode": "BX000042"
       },
       {
         "id": "c-auto-203-n13",
@@ -23959,7 +23959,7 @@
       {
         "id": "c-auto-204-n22",
         "kind": "boxRef",
-        "boxCode": "BX000608"
+        "boxCode": "BX000569"
       },
       {
         "id": "c-auto-204-n23",
@@ -24240,7 +24240,7 @@
           {
             "id": "c-auto-205-n42",
             "kind": "boxRef",
-            "boxCode": "BX000006"
+            "boxCode": "BX000004"
           },
           {
             "id": "c-auto-205-n43",
@@ -24257,7 +24257,7 @@
           {
             "id": "c-auto-205-n45",
             "kind": "boxRef",
-            "boxCode": "BX000005"
+            "boxCode": "BX000003"
           }
         ],
         "code": "P0800"
@@ -24415,7 +24415,7 @@
       {
         "id": "c-auto-206-n12",
         "kind": "boxRef",
-        "boxCode": "BX000162"
+        "boxCode": "BX000123"
       },
       {
         "id": "c-auto-206-n13",
@@ -24433,12 +24433,12 @@
       {
         "id": "c-auto-206-n15",
         "kind": "boxRef",
-        "boxCode": "BX000118"
+        "boxCode": "BX000079"
       },
       {
         "id": "c-auto-206-n16",
         "kind": "boxRef",
-        "boxCode": "BX000610"
+        "boxCode": "BX000571"
       },
       {
         "id": "c-auto-206-n17",
@@ -25509,7 +25509,7 @@
       {
         "id": "c-auto-212-n36",
         "kind": "boxRef",
-        "boxCode": "BX000626"
+        "boxCode": "BX000587"
       },
       {
         "id": "c-auto-212-n37",
@@ -25593,7 +25593,7 @@
       {
         "id": "c-auto-213-n9",
         "kind": "boxRef",
-        "boxCode": "BX000125"
+        "boxCode": "BX000086"
       },
       {
         "id": "c-auto-213-n10",
@@ -25786,7 +25786,7 @@
       {
         "id": "c-auto-214-n9",
         "kind": "boxRef",
-        "boxCode": "BX000125"
+        "boxCode": "BX000086"
       },
       {
         "id": "c-auto-214-n10",
@@ -25979,7 +25979,7 @@
       {
         "id": "c-auto-215-n9",
         "kind": "boxRef",
-        "boxCode": "BX000125"
+        "boxCode": "BX000086"
       },
       {
         "id": "c-auto-215-n10",
@@ -26126,22 +26126,22 @@
       {
         "id": "c-auto-216-n3",
         "kind": "boxRef",
-        "boxCode": "BX000533"
+        "boxCode": "BX000494"
       },
       {
         "id": "c-auto-216-n4",
         "kind": "boxRef",
-        "boxCode": "BX000655"
+        "boxCode": "BX000616"
       },
       {
         "id": "c-auto-216-n5",
         "kind": "boxRef",
-        "boxCode": "BX000656"
+        "boxCode": "BX000617"
       },
       {
         "id": "c-auto-216-n6",
         "kind": "boxRef",
-        "boxCode": "BX000657"
+        "boxCode": "BX000618"
       },
       {
         "id": "c-auto-216-n7",
@@ -26330,22 +26330,22 @@
           {
             "id": "c-auto-217-n9",
             "kind": "boxRef",
-            "boxCode": "BX000658"
+            "boxCode": "BX000619"
           },
           {
             "id": "c-auto-217-n10",
             "kind": "boxRef",
-            "boxCode": "BX000659"
+            "boxCode": "BX000620"
           },
           {
             "id": "c-auto-217-n11",
             "kind": "boxRef",
-            "boxCode": "BX000660"
+            "boxCode": "BX000621"
           },
           {
             "id": "c-auto-217-n12",
             "kind": "boxRef",
-            "boxCode": "BX000661"
+            "boxCode": "BX000622"
           }
         ],
         "code": "P0100"
@@ -26502,7 +26502,7 @@
       {
         "id": "c-auto-218-n3",
         "kind": "boxRef",
-        "boxCode": "BX000464"
+        "boxCode": "BX000425"
       },
       {
         "id": "c-auto-218-n4",
@@ -26612,22 +26612,22 @@
       {
         "id": "c-auto-219-n3",
         "kind": "boxRef",
-        "boxCode": "BX000533"
+        "boxCode": "BX000494"
       },
       {
         "id": "c-auto-219-n4",
         "kind": "boxRef",
-        "boxCode": "BX000655"
+        "boxCode": "BX000616"
       },
       {
         "id": "c-auto-219-n5",
         "kind": "boxRef",
-        "boxCode": "BX000656"
+        "boxCode": "BX000617"
       },
       {
         "id": "c-auto-219-n6",
         "kind": "boxRef",
-        "boxCode": "BX000657"
+        "boxCode": "BX000618"
       },
       {
         "id": "c-auto-219-n7",
@@ -26721,12 +26721,12 @@
           {
             "id": "c-auto-219-n20",
             "kind": "boxRef",
-            "boxCode": "BX000672"
+            "boxCode": "BX000633"
           },
           {
             "id": "c-auto-219-n21",
             "kind": "boxRef",
-            "boxCode": "BX000673"
+            "boxCode": "BX000634"
           }
         ],
         "code": "P0700"
@@ -27871,7 +27871,7 @@
       {
         "id": "c-auto-227-n8",
         "kind": "boxRef",
-        "boxCode": "BX000009"
+        "boxCode": "BX000007"
       },
       {
         "id": "c-auto-227-n9",
@@ -27943,7 +27943,7 @@
       {
         "id": "c-auto-228-n3",
         "kind": "boxRef",
-        "boxCode": "BX000786"
+        "boxCode": "BX000747"
       },
       {
         "id": "c-auto-228-n4",
