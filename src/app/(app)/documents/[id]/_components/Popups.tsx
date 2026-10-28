@@ -77,6 +77,7 @@ import { PopActions, Popover } from "./Popover";
 import { addCase, addElif, addElse, branchDraftOf, branchFormOps, removeDraftBranch, setDraftCase, setDraftSubject, setDraftWhen, shownBranches, type BranchDraft } from "./branchForm";
 import { formSnapshot } from "./editTabRules";
 import { RefTargetTree } from "./RefTargetTree";
+import { connectorEnabled, pickedPreview, restrictShown, restrictSuffix } from "./refFields";
 import { keyChoicesFor, restrictHint, restrictMode, restrictOfForm, treeLoopChoicesFor, treeLoopsAt } from "./restrict";
 import { loopChoices, loopsAround, nodeTreeAt, repeatChoices, sourceOfValue, sourceValue, type RepeatChoice } from "./repeatSources";
 import { CaseControls } from "./SwitchControls";
@@ -257,6 +258,10 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
   const [mode, setMode] = useState(() => restrictMode(saved));
   const savedValues = saved && "values" in saved ? saved.values : [];
   const savedKeys = saved && "keys" in saved ? saved.keys : [];
+  // 지금 고른 한정 값 · 키 — 미리보기 끝 표기 재료 (칸은 폼 값 그대로 비제어)
+  const [pickedValues, setPickedValues] = useState<readonly string[]>(savedValues);
+  const [pickedKeys, setPickedKeys] = useState<readonly string[]>(savedKeys);
+  const toggleIn = (list: readonly string[], v: string, on: boolean) => (on ? [...list.filter((x) => x !== v), v] : list.filter((x) => x !== v));
   const keyOfRow = (rowId: Id): string | undefined => {
     for (const index of [ctx.references.self, ctx.references.general, ...(ctx.articleRefChoices ?? []).map((c) => c.index)]) {
       const t = index.get(rowId);
@@ -273,8 +278,18 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
     }
     return undefined;
   });
+  // 고른 대상(트리 순서) — 찍힐 문구 미리보기 재료
+  const targetOfRow = (rowId: Id): ReferenceTarget | undefined => {
+    for (const index of [ctx.references.self, ctx.references.general, ...(ctx.articleRefChoices ?? []).map((c) => c.index)]) {
+      const t = index.get(rowId);
+      if (t) return t;
+    }
+    return undefined;
+  };
+  const [pickedTargets, setPickedTargets] = useState<readonly ReferenceTarget[]>(() => (node ? initialTargets(node, ctx) : []));
   const onPicked = (n: number, ids: readonly Id[]) => {
     setCount(n);
+    setPickedTargets(ids.flatMap((rowId) => targetOfRow(rowId) ?? []));
     if (restrict) {
       let lv: "subCoverage" | "benefit" | undefined;
       for (const rowId of ids) {
@@ -295,7 +310,23 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
       return key !== undefined && multiTarget(parseRefKey(key), ctx.repeatedKeys);
     }));
   };
-  const joins = count >= 2 || repeatedPicked || mode !== "";
+  const state = { count, repeatedPicked, mode, hasValues: (restrict?.values.length ?? 0) > 0, hasValueLoops: (restrict?.loops.length ?? 0) > 0, treeLevel };
+  const joins = connectorEnabled(state);
+  const currentLabel = (() => {
+    if (!mode.startsWith("current:") || !restrict) return undefined;
+    const loopId = mode.slice("current:".length);
+    const tree = restrict.treeLoops.find((l) => l.id === loopId);
+    return tree ? (tree.level === "subCoverage" ? "현재 세부보장" : "현재 급부") : restrict.loops.find((l) => l.id === loopId)?.label;
+  })();
+  const chunk = pickedPreview(pickedTargets, connector, joins);
+  const preview =
+    chunk === undefined
+      ? undefined
+      : `${chunk}${restrictSuffix(mode, {
+          values: (restrict?.values ?? []).filter((v) => pickedValues.includes(v.code)).map((v) => v.label),
+          keys: (restrict?.keys ?? []).filter((k) => pickedKeys.includes(k.path)).map((k) => k.label),
+          ...(currentLabel !== undefined ? { current: currentLabel } : {}),
+        })}`;
   // 범위를 화면이 정하면(함수조항 — 보통약관 · 이 함수조항 · 인자) 그 목록이 범위 고르기, 고른 범위의 후보만 선다
   const choices = ctx.articleRefChoices;
   const [choice, setChoice] = useState(() => initialChoice(choices, node));
@@ -316,6 +347,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
               onChange={(e) => {
                 setChoice(e.target.value);
                 setCount(0);
+                setPickedTargets([]);
               }}
             >
               {choices.map((c) => {
@@ -385,7 +417,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
               }
             />
           </div>
-          {restrict && (restrict.values.length > 0 || treeLevel !== undefined) && (
+          {restrict && restrictShown(state) && (
             <div className="ts-form-row">
               <FormLabel htmlFor={`${idBase}-restrict`} info={restrictHint(mode, new Set(restrict.treeLoops.map((l) => l.id)), restrict.values.length > 0)}>
                 {restrict.values.length > 0 ? "값 한정" : "키 한정"}
@@ -412,7 +444,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
                   <div className="ts-form-checks" role="group" aria-label="한정할 키">
                     {keyChoicesFor(restrict.keys, treeLevel).map((k) => (
                       <label key={k.path} className="ts-form-radio">
-                        <input type="checkbox" name={field("restrictKey")} value={k.path} defaultChecked={savedKeys.includes(k.path)} />
+                        <input type="checkbox" name={field("restrictKey")} value={k.path} defaultChecked={savedKeys.includes(k.path)} onChange={(e) => setPickedKeys((list) => toggleIn(list, k.path, e.target.checked))} />
                         {k.label}
                       </label>
                     ))}
@@ -422,7 +454,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
                   <div className="ts-form-checks" role="group" aria-label="한정할 값">
                     {restrict.values.map((v) => (
                       <label key={v.code} className="ts-form-radio">
-                        <input type="checkbox" name={field("restrictValue")} value={v.code} defaultChecked={savedValues.includes(v.code)} />
+                        <input type="checkbox" name={field("restrictValue")} value={v.code} defaultChecked={savedValues.includes(v.code)} onChange={(e) => setPickedValues((list) => toggleIn(list, v.code, e.target.checked))} />
                         {v.label}
                       </label>
                     ))}
@@ -431,29 +463,48 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
               </div>
             </div>
           )}
-          <div className="ts-form-row">
-            <FormLabel
-              info={
-                joins
-                  ? `골라야 적용된다 — 기본값이 없다.${count < 2 ? " 반복 · 함수조항으로 펼치면 여러 번호가 될 수 있다." : ""} 마지막 대상 앞에 붙는다. 번호가 잇달아 셋 이상이면 「제3조부터 제5조까지」로 묶이고, 분기로 빠진 대상은 산출 때 제외된다.`
-                  : "대상을 둘 이상(또는 반복 블록 · 함수조항 참조 · 그 안 대상을) 고르거나 값 한정을 걸면 고를 수 있다."
-              }
-            >
-              연결어
-            </FormLabel>
-            <div className="ts-form-radios" role="radiogroup" aria-label="연결어" aria-disabled={!joins}>
-              {REFERENCE_CONNECTORS.map((c) => (
-                <label key={c} className="ts-form-radio">
-                  <input type="radio" name={field("connector")} value={c} disabled={!joins} checked={joins && connector === c} onChange={() => setConnector(c)} />
-                  {c}
-                </label>
-              ))}
+          {joins ? (
+            <div className="ts-form-row">
+              <FormLabel info={`골라야 적용된다 — 기본값이 없다.${count < 2 ? " 반복 · 함수조항으로 펼치면 여러 번호가 될 수 있다." : ""} 마지막 대상 앞에 붙는다. 번호가 잇달아 셋 이상이면 「제3조부터 제5조까지」로 묶이고, 분기로 빠진 대상은 산출 때 제외된다.`}>연결어</FormLabel>
+              <div className="ts-form-radios" role="radiogroup" aria-label="연결어">
+                {REFERENCE_CONNECTORS.map((c) => (
+                  <label key={c} className="ts-form-radio">
+                    <input type="radio" name={field("connector")} value={c} checked={connector === c} onChange={() => setConnector(c)} />
+                    {c}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            // 못 고르는 연결어는 라디오를 늘어놓지 않고 한 줄 — 이유는 ⓘ (2026-10-29)
+            <div className="ts-form-row ts-ref-connector-off">
+              <FormLabel info="대상을 둘 이상(또는 반복 블록 · 함수조항 참조 · 그 안 대상을) 고르거나 값 한정을 걸면 고를 수 있다.">연결어</FormLabel>
+              <span className="ts-form-value ts-muted">필요 없음</span>
+            </div>
+          )}
+          {preview !== undefined && (
+            <p className="ts-ref-preview" aria-live="polite">
+              <span className="ts-ref-preview-label">찍힐 문구</span>
+              <span className="ts-ref-preview-text">{preview}</span>
+              <InfoTip text="편집기 번호로 미리 본다 — 반복 · 분기 · 펼친 함수조항의 실제 번호는 조립이 매긴다." />
+            </p>
+          )}
         </>
       )}
     </>
   );
+}
+
+/** 고치기로 연 참조의 대상(저장 순서) — 미리보기 처음 값. 범위 색인 어디서든 찾고, 못 찾은 대상은 뺀다. */
+function initialTargets(node: Pick<ArticleRefNode, "targets">, ctx: DocCtx): ReferenceTarget[] {
+  const keys = [ctx.references.self, ctx.references.general, ...(ctx.articleRefChoices ?? []).map((c) => c.index)].map(referenceKeyIndex);
+  return node.targets.flatMap((t) => {
+    for (const k of keys) {
+      const hit = k.get(refKey(t));
+      if (hit) return [hit.target];
+    }
+    return [];
+  });
 }
 
 /** 「인자」 범위 잠김 사유 — 조 참조 인자가 없다 (ADR-0083 결정 7). */
