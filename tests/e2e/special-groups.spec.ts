@@ -66,7 +66,7 @@ test(
       await page.getByRole("button", { name: "저장", exact: true }).click();
       await expect(groups.getByRole("alert").filter({ hasText: "그룹 이름은 비울 수 없습니다" })).toBeVisible();
       await expect(groups.getByRole("alert").filter({ hasText: "이 상품의 다른 그룹 제목과 같습니다 — 「상해 관련 특별약관」" })).toBeVisible();
-      await page.getByRole("button", { name: "취소", exact: true }).click();
+      await page.getByRole("button", { name: "편집 취소", exact: true }).click();
       await page.getByRole("button", { name: "저장하지 않고 나가기" }).click();
       await expect(groupRows).toHaveCount(3);
 

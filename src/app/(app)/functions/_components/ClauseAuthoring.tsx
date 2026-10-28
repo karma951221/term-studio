@@ -19,8 +19,9 @@ import { useRouter } from "next/navigation";
 
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { DiscardDialog } from "@/app/_components/EditShell";
-import { IconButton, IconClose, IconTrash } from "@/app/_components/icons";
+import { IconClose, IconTrash } from "@/app/_components/icons";
 import { MoreMenu } from "@/app/_components/MoreMenu";
+import { HeadActions, HeadButton, HeadIconButton } from "@/app/_components/HeadActions";
 import { ENTITY_LABEL, newLabel } from "@/app/_lib/labels";
 import { refLabelOf } from "@/app/(app)/documents/[id]/_components/condition/display";
 import { anchorOf, type Anchor, type ArticleRefChoice, type DocCtx, type EditHandlers } from "@/app/(app)/documents/[id]/_components/ctx";
@@ -787,27 +788,11 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
       <div className="ts-l3-bar">
         <Breadcrumb items={[{ label: ENTITY_LABEL.clause, href: "/functions" }, { label: clauseName }]} guard={editing ? leave : undefined} />
         {editing && <span className="ts-l3-dirty">{isNew ? "새 함수조항 — 저장하면 만들어진다" : dirty ? "편집 중 · 저장해야 반영" : "편집 중"}</span>}
-        <span className="ts-l3-bar-actions">
+        <HeadActions>
           {/* 「수정 흔적 보기」 — 문면 편집기와 같이 더보기의 체크 항목 (2026-10-10) */}
           <MoreMenu items={[marksMenuItem(marksShown, setMarksShown)]} />
-          {editing ? (
-            <>
-              {isNew ? (
-                <IconButton icon={<IconClose />} label="만들기 취소 — 함수조항 목록으로" disabled={pending} onClick={() => leave(() => router.push("/functions"))} />
-              ) : (
-                <IconButton icon={<IconClose />} label="편집 취소 — 고친 내용을 버리고 읽기 모드로" disabled={pending} onClick={() => leave(endEdit)} />
-              )}
-              <button type="button" className="primary" disabled={pending || (!isNew && !dirty)} onClick={save}>
-                {pending ? "저장 중…" : "저장"}
-              </button>
-            </>
-          ) : (
-            <button type="button" onClick={startEdit} disabled={pending}>
-              편집
-            </button>
-          )}
           {!isNew && (
-            <IconButton
+            <HeadIconButton
               icon={<IconTrash />}
               danger
               label={editing ? "저장하거나 취소한 뒤 실행" : `함수조항 ${props.label}(${code}) 삭제`}
@@ -815,7 +800,23 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
               onClick={() => remove(false)}
             />
           )}
-        </span>
+          {editing ? (
+            <>
+              {isNew ? (
+                <HeadIconButton icon={<IconClose />} label="만들기 취소 — 함수조항 목록으로" disabled={pending} onClick={() => leave(() => router.push("/functions"))} />
+              ) : (
+                <HeadIconButton icon={<IconClose />} label="편집 취소 — 고친 내용을 버리고 읽기 모드로" disabled={pending} onClick={() => leave(endEdit)} />
+              )}
+              <HeadButton primary disabled={pending || (!isNew && !dirty)} onClick={save}>
+                {pending ? "저장 중…" : "저장"}
+              </HeadButton>
+            </>
+          ) : (
+            <HeadButton onClick={startEdit} disabled={pending}>
+              편집
+            </HeadButton>
+          )}
+        </HeadActions>
       </div>
 
       <div className="ts-l3-body ts-clause-page" ref={bodyRef}>

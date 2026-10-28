@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import { ACTION_LABEL } from "@/app/_lib/labels";
 
 import { Breadcrumb, type Crumb } from "./Breadcrumb";
+import { HeadActions, HeadButton } from "./HeadActions";
 
 export function FormRow({ label, htmlFor, children }: { label: string; htmlFor?: string; children: ReactNode }) {
   return (
@@ -47,12 +48,12 @@ export function CreateHead({
     <>
       <div className="ts-edit-head">
         <Breadcrumb items={[...path, { label: title }]} />
-        <span className="ts-edit-actions">
+        <HeadActions>
           {actions}
-          <button type="submit" form={formId} className="primary">
+          <HeadButton type="submit" form={formId} primary>
             {label}
-          </button>
-        </span>
+          </HeadButton>
+        </HeadActions>
       </div>
       {banner}
     </>
