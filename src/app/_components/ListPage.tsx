@@ -12,6 +12,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
 import { ErrorBanner } from "./ErrorBanner";
 import { ColumnFilter, ListFilterBar, type ColumnFilterSpec } from "./ListFilters";
 import { ListShell } from "./ListShell";
@@ -116,7 +119,8 @@ export function ListPage<T>({
       {create && "menu" in create ? (
         <MoreMenu label={create.label} items={create.menu} trigger={<IconPlus />} buttonClassName="ts-iconbtn" />
       ) : create ? (
-        <Link href={create.href} className="ts-iconbtn" title={create.label} aria-label={create.label}>
+        // 제목 줄 `+` — 더보기 ⋯ 과 같은 32×32 테두리 아이콘 (디자인원칙 §1.9)
+        <Link href={create.href} className={cn(buttonVariants({ variant: "default", size: "icon" }), "ts-iconbtn")} title={create.label} aria-label={create.label}>
           <IconPlus />
         </Link>
       ) : null}

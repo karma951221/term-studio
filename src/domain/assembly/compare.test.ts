@@ -102,6 +102,17 @@ describe("대조기 — 조립 결과 ↔ 원문 (파싱양식)", () => {
     ]);
   });
 
+  it("박스 머리가 본문 첫 줄이어도(제목은 목록 이름 — 2026-10-28) 같은 파싱양식이 나온다 — 첫 줄 【그림】이면 그림 fence", () => {
+    const art = (box: { title: string; lines: string[] }): RenderedDoc => ({
+      kind: "document",
+      id: "d",
+      title: "",
+      children: [{ kind: "article", id: "a", number: 1, label: "제1조", title: "목적", children: [{ kind: "box", id: "bx", ...box }] }],
+    } as RenderedDoc);
+    expect(renderedToLines(art({ title: "", lines: ["【심신상실】", "정신병"] }))).toEqual(renderedToLines(art({ title: "심신상실", lines: ["정신병"] })));
+    expect(renderedToLines(art({ title: "", lines: ["【그림】", "자동차 그림"] }))).toEqual(["## 제1조(목적)", "```그림", "설명: 자동차 그림", "```"]);
+  });
+
   it("원문은 머리·통계·주석·빈 줄을 버리고 관 헤딩은 남긴다", () => {
     expect(sourceToLines("# 제목\n\n> 출처: x\n\n# 제1관 목적\n\n## 제1조(목적)\n\n= 본문 <!-- 원문번호: 3 -->\n> 통계: 조 1\n")).toEqual(["# 제1관 목적", "## 제1조(목적)", "= 본문"]);
   });

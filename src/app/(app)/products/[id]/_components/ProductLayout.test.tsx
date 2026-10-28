@@ -86,7 +86,7 @@ describe("기본정보 — 상품정보(상품명 · 평균공시이율 · 상�
 
   it("편집은 헤더가 아니라 이 탭 첫 줄 오른쪽에 — 상품정보보다 위 (2026-10-03 사용자 QA)", () => {
     const html = render();
-    expect(html).toMatch(/<div class="ts-tab-head"><div class="ts-product-actions"><button type="button">편집<\/button>/);
+    expect(html).toMatch(/<div class="ts-tab-head"><span class="ts-head-actions"><button[^>]*>편집<\/button>/);
     expect(html.indexOf("ts-tab-head")).toBeLessThan(html.indexOf("<h3>상품정보</h3>"));
   });
 
@@ -211,13 +211,13 @@ describe("보통약관 탭 — 템플릿 한 줄 + 세 패널, 다른 것은 없
     expect(html).not.toContain('role="combobox"');
     expect(html).not.toContain("템플릿 바꾸기");
     expect(html).toContain('aria-label="노출 · 제1조(목적)"');
-    expect(html).toMatch(/ts-terms-template-end[\s\S]*<button type="button">편집<\/button>/);
+    expect(html).toMatch(/ts-terms-template-end[\s\S]*<button[^>]*>편집<\/button>/);
     expect(html).not.toContain("저장하면 미리보기에 반영됩니다");
   });
 
-  it("편집 — [취소] [저장] · 목차 체크박스 · 상자 안 옵션 고르기 · 안내 한 줄 · 「템플릿 바꾸기…」", () => {
+  it("편집 — ✕ [저장] · 목차 체크박스 · 상자 안 옵션 고르기 · 안내 한 줄 · 「템플릿 바꾸기…」", () => {
     const html = render(true);
-    expect(html).toMatch(/ts-terms-template-end[\s\S]*>취소<[\s\S]*>저장</);
+    expect(html).toMatch(/ts-terms-template-end[\s\S]*aria-label="편집 취소"[\s\S]*>저장</);
     expect(html).not.toContain(">편집<");
     expect(html).toMatch(/<input type="checkbox" aria-label="노출 · 제1조\(목적\)"[^>]*checked=""/);
     expect(html).toContain("<select");

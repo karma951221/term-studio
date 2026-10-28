@@ -1,6 +1,7 @@
 import { type Page } from "@playwright/test";
 
 import { pickCombo } from "./_lib/combo";
+import { editForm, insertFrom } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 
 /**
@@ -47,10 +48,9 @@ test(
       await paragraph.fill("납입면제사유: ");
       await paragraph.press("End");
       await toolbar.getByRole("button", { name: "슬롯", exact: true }).click();
-      const dialog = page.getByRole("dialog", { name: "치환 슬롯 넣기", exact: true });
+      const dialog = editForm(page, "치환 슬롯 넣기");
       await pickCombo(dialog.locator("#pop-slot"), { value: "var.대표" });
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await insertFrom(page, dialog);
       await page.getByRole("button", { name: "저장", exact: true }).click();
       await page.waitForURL(/\/functions\/C\d+$/);
       const locals = page.getByRole("region", { name: "내부 변수" });

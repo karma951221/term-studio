@@ -513,3 +513,29 @@ describe("0035_drop_dyn_table_column_basis", () => {
     expect(await read()).toEqual(after);
   });
 });
+
+describe("0036_box_heading_in_body", () => {
+  it("제목이 있는 박스는 본문 앞에 「【제목】」 줄이 들어가고 제목은 그대로(목록 이름) — 제목 없는 박스 · 이미 머리가 있는 박스는 그대로 · 두 번 돌려도 같다", async () => {
+    for (let idx = 6; idx <= 35; idx++) for (const s of statementsOf(tagOf(idx))) await client.exec(s);
+    await client.query(
+      `INSERT INTO boxes (code, title, lines) VALUES
+        ('BX000001', '연단위 복리', '["회사가 지급할 금전에"]'::jsonb),
+        ('BX000002', '', '["발생할 경우"]'::jsonb),
+        ('BX000003', '보험료', '["【보험료】", "가"]'::jsonb)`,
+    );
+    const apply0036 = async () =>
+      client.transaction(async (tx) => {
+        for (const s of statementsOf(tagOf(36))) await tx.exec(s);
+      });
+    const read = async () => (await client.query<{ code: string; title: string; lines: string[] }>(`SELECT code, title, lines FROM boxes ORDER BY code`)).rows;
+    await apply0036();
+    const after = await read();
+    expect(after).toEqual([
+      { code: "BX000001", title: "연단위 복리", lines: ["【연단위 복리】", "회사가 지급할 금전에"] },
+      { code: "BX000002", title: "", lines: ["발생할 경우"] },
+      { code: "BX000003", title: "보험료", lines: ["【보험료】", "가"] },
+    ]);
+    await apply0036();
+    expect(await read()).toEqual(after);
+  });
+});

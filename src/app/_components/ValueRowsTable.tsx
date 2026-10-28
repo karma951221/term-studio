@@ -20,6 +20,8 @@ export type ValueRowsColumn<T> = {
   key: string;
   header: ReactNode;
   className?: string;
+  /** 묶음 머리 — 이어진 열들이 같은 이름이면 그 위에 한 칸으로 걸친다(열거형 값 표의 「필드」). 묶음 밖 열 머리는 두 줄을 차지한다. */
+  group?: string;
   cell: (row: T, index: number) => ReactNode;
 };
 
@@ -47,6 +49,17 @@ export type ValueRowsTableProps<T> = {
 };
 
 export const ADD_ROW_LABEL = "행 추가";
+
+/** 이어진 열을 묶음 머리별로 — 묶음 없는 열은 한 열씩. */
+function groupRuns<T>(columns: readonly ValueRowsColumn<T>[]): { group?: string; columns: ValueRowsColumn<T>[] }[] {
+  const runs: { group?: string; columns: ValueRowsColumn<T>[] }[] = [];
+  for (const column of columns) {
+    const last = runs.at(-1);
+    if (column.group !== undefined && last?.group === column.group) last.columns.push(column);
+    else runs.push(column.group === undefined ? { columns: [column] } : { group: column.group, columns: [column] });
+  }
+  return runs;
+}
 export const removeRowLabel = (name: string) => `행 삭제 · ${name}`;
 export const moveRowLabel = (name: string) => `순서 옮기기 · ${name}`;
 export const moveRowTip = (name: string) => `${moveRowLabel(name)} — 끌거나 ↑ ↓ 키`;
@@ -177,14 +190,19 @@ export function ValueRowsTable<T>({ rows, rowKey, rowName, columns, editing, ord
   };
 
   const span = columns.length + (order ? 1 : 0) + (controls ? 1 : 0);
+  const headRows = columns.some((column) => column.group !== undefined) ? 2 : 1;
   const cls = ["ts-table", "ts-vrows", editing ? "is-editing" : null, className].filter(Boolean).join(" ");
   return <>
     <table className={cls} aria-label={ariaLabel} onDragOver={movable ? dragOverTable : undefined} onDrop={movable ? drop : undefined}>
       <thead><tr>
-        {controls ? <th className="ts-vrows-ctl"><span className="sr-only">{FIELD_LABEL.actions}</span></th> : null}
-        {order ? <th className="col-num">{FIELD_LABEL.order}</th> : null}
-        {columns.map((column) => <th key={column.key} className={column.className}>{column.header}</th>)}
-      </tr></thead>
+        {controls ? <th className="ts-vrows-ctl" rowSpan={headRows === 2 ? 2 : undefined}><span className="sr-only">{FIELD_LABEL.actions}</span></th> : null}
+        {order ? <th className="col-num" rowSpan={headRows === 2 ? 2 : undefined}>{FIELD_LABEL.order}</th> : null}
+        {headRows === 1
+          ? columns.map((column) => <th key={column.key} className={column.className}>{column.header}</th>)
+          : groupRuns(columns).map((run) => run.group === undefined
+            ? <th key={run.columns[0]!.key} className={run.columns[0]!.className} rowSpan={2}>{run.columns[0]!.header}</th>
+            : <th key={`g:${run.columns[0]!.key}`} colSpan={run.columns.length} className="ts-vrows-group">{run.group}</th>)}
+      </tr>{headRows === 2 ? <tr>{columns.filter((column) => column.group !== undefined).map((column) => <th key={column.key} className={column.className}>{column.header}</th>)}</tr> : null}</thead>
       <tbody>
         {rows.length === 0 && empty ? <tr><td colSpan={span} className="ts-empty-cell">{empty}</td></tr> : null}
         {rows.map((row, index) => {

@@ -114,7 +114,7 @@ export const SEED = {
   products: read<ProductSpec[]>("products.json").map((p) => ({ ...p, mounts: p.mounts.filter((m) => !m.auto) })),
 };
 
-/** 박스 코드 → 툴바 「박스」 고르기 메뉴의 줄 이름(「【제목】(코드) 본문 앞머리」 — 기능/박스 §4.4, 2026-10-21). */
+/** 박스 코드 → 툴바 「박스」 고르기 메뉴의 줄 이름(「제목(코드) 본문 앞머리」 — 기능/박스 §4.4, 2026-10-28). */
 export const BOX_PICK_LABELS: ReadonlyMap<string, string> = new Map(SEED.boxes.map((b) => [b.code, boxPickLabel(b)]));
 
 /**

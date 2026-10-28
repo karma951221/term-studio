@@ -1016,10 +1016,11 @@ button:where(:not([data-slot])).danger:focus-visible {
   margin-bottom: 10px;
 }
 
-.ts-edit-actions {
+/* 제목 줄 · 탭 첫 줄 오른쪽 조작 줄 (HeadActions, 디자인원칙 §1.9) — 버튼은 모두 높이 32 · 모서리 6 · 테두리 */
+.ts-head-actions {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   margin-left: auto;
 }
 
@@ -1640,9 +1641,24 @@ button:where(:not([data-slot])).danger:focus-visible {
   margin: 0 0 2px;
 }
 
-/* 오른쪽 단 탭 — 「인자 · 옵션」 · 「시험」 (기능/함수조항 §4.3) */
+/* 오른쪽 단 탭 — 「편집」(편집 모드) · 「인자 · 옵션」 · 「시험」 (기능/함수조항 §4.3) */
 .ts-clause-side-tabs {
   margin-bottom: 10px;
+}
+
+/* 「편집」 탭이 보이는 동안 단이 본문 스크롤을 따라 선다 — 아래쪽 칩을 골라도 폼이 화면에 (문면 우측 패널처럼). 넓은 두 단에서만 */
+.ts-clause-options:has(> #ts-side-panel-edit:not([hidden])) {
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+/* 고정 줄 — 단은 안쪽 여백이 왼쪽뿐이라 문면 패널의 음수 여백을 푼다 */
+.ts-clause-options .ts-edit-foot {
+  bottom: 0;
+  margin: 12px 0 0;
+  padding: 8px 0;
 }
 
 /* 단독 시험 — 값 칸 · 출력(본문 글꼴) · 문제 줄 (기능/함수조항 §3.7) */
@@ -2030,6 +2046,12 @@ input:where(:not([data-slot])).ts-option-title {
   .ts-clause-options {
     padding-left: 0;
     border-left: 0;
+  }
+
+  .ts-clause-options:has(> #ts-side-panel-edit:not([hidden])) {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 }
 
@@ -3731,6 +3753,23 @@ label.ts-field > textarea:where(:not([data-slot])) {
   margin: 0;
 }
 
+/* 박스 화면 본문 칸 — 읽기(박스 모양)도 편집(밑줄 여러 줄 칸)도 값 열 전폭. 박스는 문서 안 들여쓰기를 떼고 라벨 줄에 맞춘다. */
+.ts-form-control > .ts-doc-box {
+  flex: 1 1 100%;
+  margin: 2px 0 0;
+}
+
+.ts-form-control > .ts-box-lines-edit {
+  flex: 1 1 100%;
+  min-height: 4.5em;
+  line-height: 1.7;
+}
+
+/* 본문의 【…】 머리 줄 — 옛 제목 줄과 같은 굵기 (기능/박스 §3.1, 2026-10-28) */
+.ts-doc-box-heading {
+  font-weight: 700;
+}
+
 /* 정적 마스터 박스 참조의 머리 띠 — 어느 박스인지(내용은 박스 화면에서 고친다) */
 .ts-doc-box-ref {
   margin: 0 0 4px;
@@ -4595,13 +4634,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   color: var(--ts-ink-2);
 }
 
-.ts-l3-bar .ts-l3-bar-actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 /* 바는 한 줄이다 — 조각은 줄바꿈하지 않고, 넘치면 경로만 말줄임으로 준다 */
 .ts-l3-bar > * {
   flex-shrink: 0;
@@ -5119,9 +5151,68 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   border-bottom: 0;
 }
 
-/* 열거형 필드 표 — 제목 「필드」 한 줄 + 값 행 표. 값 표와 사이를 띄운다 (ADR-0078 결정 2) */
-.ts-enum-fields {
-  margin: 0 0 16px;
+/* 열거형 상세 · 생성 — 세 섹션(기본정보 · 필드 · 값), 섹션마다 괘선 + 제목 (기능/열거형 §4.3, 2026-10-29).
+ * 필드 섹션의 정의가 값 표의 열이 된다 — 값 표 머리의 「필드」 묶음(.ts-vrows-group)과 필드 열 바탕이 그 짝을 보인다. */
+.ts-l2-main > .ts-enum-basic:first-child {
+  margin-top: 4px;
+}
+
+.ts-section-title > .ts-section-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ts-ink-3);
+}
+
+/* 필드 표는 세 칸뿐 — 화면 폭을 다 쓰면 이름과 타입이 멀어진다 */
+.ts-enum-field-table {
+  max-width: 560px;
+}
+
+.ts-enum-field-table td > input:where(:not([data-slot])),
+.ts-enum-field-table td > select:where(:not([data-slot])),
+.ts-enum-values td > input:where(:not([data-slot])),
+.ts-enum-values td > select:where(:not([data-slot])) {
+  width: 100%;
+}
+
+/* 두 줄 머리 — 두 줄을 차지하는 머리(순서 · 값 이름)도 아래 줄 머리와 같은 높이에 글자가 선다 */
+.ts-enum-values thead th {
+  vertical-align: bottom;
+}
+
+.ts-enum-values th.ts-vrows-group {
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--ts-rule);
+  color: var(--ts-ink-2);
+  text-align: left;
+}
+
+.ts-enum-values th.ts-vrows-group,
+.ts-enum-values .ts-enum-fcol {
+  background: color-mix(in srgb, var(--ts-surface-2) 55%, transparent);
+}
+
+.ts-enum-values th.ts-vrows-group,
+.ts-enum-values .ts-enum-fcol.is-first {
+  border-left: 1px solid var(--ts-rule);
+}
+
+/* 값 이름은 가변 열이지만 좁은 화면에서도 이름이 읽히게, 필드 열은 문자열 넓게 · 참거짓 좁게 */
+.ts-enum-values th.col-flex,
+.ts-enum-values td.col-flex {
+  min-width: 150px;
+}
+
+.ts-enum-values th.ts-enum-fcol-text,
+.ts-enum-values td.ts-enum-fcol-text {
+  width: 220px;
+  min-width: 120px;
+}
+
+.ts-enum-values th.ts-enum-fcol-bool,
+.ts-enum-values td.ts-enum-fcol-bool {
+  width: 104px;
+  min-width: 84px;
 }
 
 .ts-table tr.is-error > td {
@@ -5204,6 +5295,50 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   background: var(--ts-surface-2);
   color: var(--ts-ink-3);
   font-size: 12px;
+}
+
+/* 열거형 목록의 값 칩 (기능/열거형 §4.1, 2026-10-29) — 값 열이 남는 폭을 먹고, 칩은 글자를 자르지 않은 채 한 줄에 들어가는 만큼만.
+ * 넘친 칩(.is-overflow)은 자리에서 빼 숨기고(폭은 재야 하니 absolute) 「+N」이 센다 (ValueChips). width 140px · min-width 100% 는
+ * 칩 줄이 표 칸을 밀어 넓히지 않게 — 칸 폭은 표가 정하고 칩 줄은 거기 맞춘다. 좁은 화면에서도 칩 하나 + 「+N」 자리(140px)는 남긴다. */
+.ts-enum-chips {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 140px;
+  min-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ts-enum-chips > .ts-chip {
+  flex: 0 0 auto;
+  display: inline-block;
+  min-height: 22px;
+  padding: 0 8px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 첫 칩 하나도 칸에 안 들어갈 때만 그 칩이 줄어 말줄임 */
+.ts-enum-chips > .ts-chip:only-of-type,
+.ts-enum-chips > .ts-chip:first-child:has(+ .is-overflow) {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.ts-enum-chips > .ts-chip.is-overflow {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ts-enum-chips > .ts-chip-more {
+  justify-content: center;
+  min-width: 36px;
+  min-height: 22px;
+  box-sizing: border-box;
 }
 
 /* 목록에서 상세로 들어가는 이름은 굵게 — 훑을 때 눈이 걸리는 열이 이름이다 */
@@ -5639,12 +5774,8 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 }
 
 /* ── 상품 상세 — 경로 · 편집/더보기 · 기본정보 표 (와이어프레임 §19A · §20.2) ─────────────
- * 버튼 규격은 이 범위 안에서만 통일한다: 높이 32 · 모서리 4 · 글자 13 · 같은 테두리와 좌우 여백.
- * 주 행동(저장)은 강조색만 다르다. 전역 button 규칙은 건드리지 않는다. */
+ * 헤더 · 탭 첫 줄의 조작은 HeadActions(§1.9). 탭 안 조작 버튼은 이 범위 안에서 높이 32 · 글자 13 · 같은 테두리와 좌우 여백. */
 .ts-product-head { align-items: center; }
-.ts-product-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
-.ts-product-actions > button:where(:not([data-slot])),
-.ts-product-actions > a:where(:not([data-slot])),
 .ts-terms-template > button:where(:not([data-slot])),
 .ts-terms-template-end > button:where(:not([data-slot])),
 .ts-tool-menu-item,
@@ -5667,8 +5798,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   text-decoration: none;
   white-space: nowrap;
 }
-.ts-product-actions > button:where(:not([data-slot])).primary { border-color: var(--ts-mark); color: var(--ts-mark); font-weight: 700; }
-.ts-product-actions > button:where(:not([data-slot])).primary:hover { background: var(--ts-mark-bg); }
 
 /* 문서 툴바 자체 메뉴(더보기 ⋯ · 글자색) — 항목은 같은 높이·정렬 (§20.2 버튼 원칙). 공용 MoreMenu 는 shadcn DropdownMenu 라 여기 없다 (ADR-0085). */
 .ts-tool-menu {
@@ -5748,7 +5877,7 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 @media (max-width: 680px) {
   .ts-basic-name { grid-template-columns: 1fr; gap: 6px; }
   .ts-basic-name > span:first-child { line-height: 1.4; }
-  .ts-product-actions { margin-left: 0; }
+  .ts-product-head > .ts-head-actions { margin-left: 0; }
 }
 
 /* 표 입력 (기능/담보 §3.4) — table 필드 편집: 머리글 · 셀 · 붙여넣기 힌트. */
@@ -5892,7 +6021,7 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
 .ts-terms-template-name { color: var(--ts-ink-2); }
 .ts-terms-template .ts-combo { width: 280px; }
 .ts-terms-template-end { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; }
-.ts-terms-template-end .ts-product-actions { margin-left: 0; }
+.ts-terms-template-end .ts-head-actions { margin-left: 0; }
 .ts-terms-template-count { font-size: 12px; }
 .ts-terms-template-pick { margin-top: -4px; padding: 8px 12px; border: 1px solid var(--ts-rule); border-radius: 4px; background: var(--ts-surface-2); }
 .ts-terms-focus .ts-terms-panel { height: calc(100vh - 230px); min-height: 420px; max-height: none; }

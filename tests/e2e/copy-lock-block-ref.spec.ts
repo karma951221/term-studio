@@ -65,6 +65,6 @@ test(
     await expect(panel.locator("[data-chip]").filter({ hasText: "제2절 보장조항 2. 일반상해사망보장" })).toHaveCount(2);
 
     // 저장하지 않는다 — 시드 그대로
-    await page.getByRole("button", { name: "취소", exact: true }).click();
+    await page.getByRole("button", { name: "편집 취소", exact: true }).click();
   },
 );

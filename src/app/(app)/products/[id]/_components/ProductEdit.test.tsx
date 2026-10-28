@@ -74,11 +74,11 @@ describe("ProductEditButtons — 탭 첫 줄 오른쪽의 편집 조작", () => 
     expect(render(false)).toBe("");
   });
 
-  it("읽기는 [편집], 편집은 같은 자리에 [취소] [저장]", () => {
+  it("읽기는 [편집], 편집은 같은 자리에 ✕ [저장]", () => {
     expect(render(true)).toContain(">편집<");
     const editing = render(true, true);
     expect(editing).not.toContain(">편집<");
-    expect(editing).toContain(">취소<");
-    expect(editing).toMatch(/class="primary"[^>]*>저장</);
+    expect(editing).toContain('aria-label="편집 취소"');
+    expect(editing).toMatch(/border-mark[^>]*>저장</);
   });
 });

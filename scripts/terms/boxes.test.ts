@@ -30,7 +30,7 @@ describe("원문 박스 → 정적 마스터 박스 (기능/박스 §3.1 · 최�
     const plans = planBoxes([...sitesOf(a, "alpha", true), ...sitesOf(m, "meritz")]);
     expect(plans.map((p) => p.record.title)).toEqual(["보장개시일", "예금자보호", "예금자보호"]);
     expect(plans[0].sites).toHaveLength(2);
-    expect(plans[0].record).toEqual({ code: "", title: "보장개시일", lines: ["보장을 개시하는 날"] });
+    expect(plans[0].record).toEqual({ code: "", title: "보장개시일", lines: ["【보장개시일】", "보장을 개시하는 날"] });
   });
 
   it("자동 탑재 특약(`late`)의 박스는 앞 박스와 낱말만 달라도 그 무리에 들지 않는다 — 앞 박스 순서(코드)를 밀지 않는다", () => {
@@ -46,8 +46,17 @@ describe("원문 박스 → 정적 마스터 박스 (기능/박스 §3.1 · 최�
     const m = doc("m", [box("m-b1", "계약 전 알릴 의무", ["회사가 서면으로 질문한 사항"])]);
     const plans = planBoxes([...sitesOf(a, "alpha", true), ...sitesOf(m, "meritz")]);
     expect(plans.map((p) => p.record.title)).toEqual(["계약 전 알릴 의무", "계약 전 알릴 의무"]);
-    expect(plans.map((p) => p.record.lines)).toEqual([["회사가 청약서에서 질문한 사항"], ["회사가 서면으로 질문한 사항"]]);
+    expect(plans.map((p) => p.record.lines)).toEqual([["【계약 전 알릴 의무】", "회사가 청약서에서 질문한 사항"], ["【계약 전 알릴 의무】", "회사가 서면으로 질문한 사항"]]);
     expect(plans.map((p) => p.sites.map((s) => s.node.id))).toEqual([["a-b1"], ["m-b1"]]);
+  });
+
+  it("원문 박스 머리(【제목】)는 레코드 본문 첫 줄이 되고 제목은 목록 이름으로 남는다 — 머리 없는 박스는 본문 그대로 (2026-10-28)", () => {
+    const a = doc("a", [box("a-b1", "그림", ["자동차"]), box("a-b2", "", ["머리 없는 줄"])]);
+    const plans = planBoxes(sitesOf(a, "alpha"));
+    expect(plans.map((p) => p.record)).toEqual([
+      { code: "", title: "그림", lines: ["【그림】", "자동차"] },
+      { code: "", title: "", lines: ["머리 없는 줄"] },
+    ]);
   });
 
   it("박스 자리는 같은 목록 자리의 박스 참조가 된다 (항의 호 목록 뒤)", () => {

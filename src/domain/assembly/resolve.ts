@@ -711,11 +711,14 @@ class Walker {
     return f.ok ? f.text : String(value);
   }
 
-  /** 정적 마스터 박스 참조 → 박스(제목 + 고정 글 줄). 줄 id 는 `${참조노드id}/l${n}` (옛 문면 박스와 같은 모양). */
+  /**
+   * 정적 마스터 박스 참조 → 박스(고정 글 줄만). 줄 id 는 `${참조노드id}/l${n}` (옛 문면 박스와 같은 모양).
+   * 박스 제목은 목록 이름이라 싣지 않는다 — 찍히는 【…】 머리는 본문에 있다 (기능/박스 §3.1, 2026-10-28).
+   */
   boxRef(n: BoxRefNode, f: Frame): RStatic<RInline> | ErrorNode {
     const box = this.env.boxes?.get(n.boxCode);
     if (!box) return this.error(n.id, { kind: "brokenRef", message: `박스 ${n.boxCode} 이(가) 정적 마스터에 없습니다`, at: this.at(f, n.id) });
-    return { kind: "box", id: n.id, title: box.title, lines: box.lines.map((text, i) => [{ kind: "text", id: `${n.id}/l${i + 1}`, text }]) };
+    return { kind: "box", id: n.id, title: "", lines: box.lines.map((text, i) => [{ kind: "text", id: `${n.id}/l${i + 1}`, text }]) };
   }
 
   inlines(list: readonly AnyInline[], f: Frame): RInline[] {

@@ -293,7 +293,7 @@ test(
       await page.getByRole("button", { name: "인자 추가" }).click();
     });
 
-    await ev.action("함수조항생성#6b", "항 문장을 고른 채 「조건식」 — 팝업 없이 항이 조건 블록 안에 서고, 머리 줄의 변수 「인자」 묶음에서 조건을 고른다", async () => {
+    await ev.action("함수조항생성#6b", "항 문장을 고른 채 「조건식」 — 팝업 없이 항이 조건 블록 안에 서고, 오른쪽 단 편집 탭의 변수 「인자」 묶음에서 조건을 고른다(문면과 같다, 2026-10-28)", async () => {
       const editor = page.locator(".ts-clause-editor");
       const paragraph = editor.getByRole("textbox", { name: "항", exact: true });
       await paragraph.click();
@@ -303,11 +303,12 @@ test(
       await expect(page.locator("dialog[open]")).toHaveCount(0);
       const head = editor.locator("[data-cond-head]");
       await expect(head).toHaveCount(1);
-      await expect(head.getByRole("combobox", { name: "IF 1번 줄 변수" })).toBeFocused();
-      await pickCombo(head.getByRole("combobox", { name: "IF 1번 줄 변수" }), { value: "arg.보험금명" });
-      const value = head.getByRole("textbox", { name: "IF 1번 줄 값" });
-      await value.fill("사망보험금");
-      await value.press("Enter");
+      const form = editForm(page, "조건식");
+      await expect(form.getByRole("combobox", { name: "IF 1번 줄 변수" })).toBeFocused();
+      await pickCombo(form.getByRole("combobox", { name: "IF 1번 줄 변수" }), { value: "arg.보험금명" });
+      await form.getByRole("textbox", { name: "IF 1번 줄 값" }).fill("사망보험금");
+      await applyFrom(page);
+      await expect(head).toContainText("보험금명");
       await expect(editor.locator(".ts-doc-cond")).toContainText("〔제한 사유〕");
     });
 

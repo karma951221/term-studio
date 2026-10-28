@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { IconButton, IconClose, IconTrash } from "./icons";
+import { IconClose, IconTrash } from "./icons";
+import { HeadActions, HeadButton, HeadIconButton } from "./HeadActions";
 import { RadioGroup, type RadioOption } from "./RadioGroup";
 import { Toggle } from "./Toggle";
 import { InfoTip } from "./InfoTip";
@@ -224,12 +225,13 @@ export function EditShell<T extends EditData>({
       {code ? <code className="ts-mono ts-muted">{code}</code> : null}
       {headerMeta}
       {mode === "read" && readBadges ? <span className="ts-edit-badges">{readBadges}</span> : null}
-      <span className="ts-edit-actions">
-        {mode === "edit" ? editActions : null}
-        {mode === "read" ? <Button onClick={() => setMode("edit")} disabled={pending}>편집</Button> : <>{createLabel ? null : <IconButton icon={<IconClose />} label="편집 취소" disabled={pending} onClick={() => leave(cancel)} />}<Button variant="primary" disabled={(!dirty && !createLabel) || blocked || pending} onClick={() => handle("save")}>{pending ? `${createLabel ?? "저장"} 중…` : createLabel ?? "저장"}</Button></>}
+      {/* 보조 아이콘(🗑) → 편집 조작(검사 · ✕) → 주 동작(편집 / 저장) — 디자인원칙 §1.9 */}
+      <HeadActions>
         {/* 즉시 실행 명령은 편집 모드에서 비활성 — 미저장 변경과 즉시 삭제가 한 화면에 겹치지 않게 (디자인원칙 §2 L2 · 점검 P2) */}
-        {deleteAction ? <IconButton icon={<IconTrash />} label={mode === "edit" ? EDIT_MODE_LOCKED_TIP : deleteBlocked ?? deleteTooltip ?? deleteLabel ?? `${shownTitle} 삭제`} danger disabled={pending || mode === "edit" || deleteBlocked !== undefined} onClick={() => handle("delete")} /> : null}
-      </span>
+        {deleteAction ? <HeadIconButton icon={<IconTrash />} label={mode === "edit" ? EDIT_MODE_LOCKED_TIP : deleteBlocked ?? deleteTooltip ?? deleteLabel ?? `${shownTitle} 삭제`} danger disabled={pending || mode === "edit" || deleteBlocked !== undefined} onClick={() => handle("delete")} /> : null}
+        {mode === "edit" ? editActions : null}
+        {mode === "read" ? <HeadButton onClick={() => setMode("edit")} disabled={pending}>편집</HeadButton> : <>{createLabel ? null : <HeadIconButton icon={<IconClose />} label="편집 취소" disabled={pending} onClick={() => leave(cancel)} />}<HeadButton primary disabled={(!dirty && !createLabel) || blocked || pending} onClick={() => handle("save")}>{pending ? `${createLabel ?? "저장"} 중…` : createLabel ?? "저장"}</HeadButton></>}
+      </HeadActions>
     </div>
     {error ? <p className="ts-error-banner">{error}</p> : null}
     <fieldset className="ts-edit-fields" disabled={pending}>{children}</fieldset>
