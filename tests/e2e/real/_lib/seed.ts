@@ -79,6 +79,8 @@ export interface ProductSpec {
   planOptions: { code: string; axis: "type" | "form"; number: number; name: string; planTypeCode: string; values: { path: string; value: unknown }[] }[];
   plans: string[][];
   mounts: { code: string; coverage: string; section: "base" | "special"; attributes: { kindCode: string; valueCode: string }[]; auto?: true }[];
+  /** 보통약관 탭에서 노출을 끄는 템플릿 조 id — 다른 상품군 · 기본계약의 변형 조 (보통약관 통합 6031636, 기능/상품 §3.6). */
+  hiddenArticles?: string[];
 }
 
 /**

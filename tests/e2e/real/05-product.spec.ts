@@ -2,6 +2,8 @@ import { writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { articleTitles, diffArticlesUnordered, referenceNumberIssues, type UnorderedDiff } from "../../../src/domain/assembly/compare";
+import { indexTree, numberTree, type ArticleNode } from "../../../src/domain/document";
+import { foldTitle } from "../../../src/domain/document/title";
 import { pickCombo } from "../_lib/combo";
 import { expect, test } from "../_lib/fixtures";
 import { NO_COORD, arrive, login, open, submit } from "./_lib/app";
@@ -75,6 +77,13 @@ async function setProductValue(page: import("@playwright/test").Page, info: impo
   await setPlanValue(info, path, value);
 }
 
+/** 상품이 끄는 템플릿 조 → 목차 줄 이름 「제N조(조 명)」(템플릿 번호). */
+function hiddenLabels(general: ReturnType<typeof generalTreeOf>, ids: readonly string[]): string[] {
+  const ix = indexTree(general);
+  const numbers = numberTree(general);
+  return ids.map((id) => `${numbers.get(id)!.label}(${foldTitle((ix.nodes.get(id)!.node as ArticleNode).title)})`);
+}
+
 for (const seeded of SEED.products) {
   // 사람처럼 넣는 탑재(알파Plus2607 의 말기신부전증)는 06-human 이 더한다
   const product: ProductSpec = { ...seeded, mounts: seeded.mounts.filter((m) => m.coverage !== HUMAN.coverage) };
@@ -100,6 +109,20 @@ for (const seeded of SEED.products) {
         await pickCombo(page.getByRole("combobox", { name: "보통약관 템플릿" }), { label: general.title });
         await submit(page, page.getByRole("button", { name: "템플릿 지정" }));
       });
+
+      // 템플릿은 하나 「보통약관(일반)」 — 상품군 · 기본계약마다 모양이 다른 조는 변형을 함께 두고 상품이 노출을 끈다 (보통약관 통합 6031636, 기능/상품 §3.6).
+      // 목차 줄 이름은 「제N조(조 명)」 — 번호는 템플릿 번호(끄기 전, 기능/상품 §4.6). 시드 상품의 보통약관 설정과 같다
+      const hidden = hiddenLabels(general, product.hiddenArticles ?? []);
+      if (hidden.length > 0) {
+        await ev.action("실물화면#5.3.1", `보통약관 탭 편집 — 목차에서 다른 상품군 · 변형 조 ${hidden.length}개의 노출을 끄고 저장한다`, async () => {
+          await page.getByRole("button", { name: "편집", exact: true }).click();
+          const toc = page.getByRole("navigation", { name: "보통약관 목차" });
+          for (const label of hidden) await toc.getByRole("checkbox", { name: `노출 · ${label}`, exact: true }).uncheck();
+          await page.getByRole("button", { name: "저장", exact: true }).click();
+          await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible({ timeout: 60_000 });
+          for (const label of hidden) await expect(toc.getByRole("img", { name: `노출 끔 · ${label}`, exact: true })).toBeVisible();
+        });
+      }
 
       const types = product.planOptions.filter((o) => o.axis === "type").length;
       const forms = product.planOptions.length - types;
