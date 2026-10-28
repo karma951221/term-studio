@@ -17,7 +17,7 @@ import { Combobox, type ComboOption } from "@/app/_components/Combobox";
 import { IconButton, IconTrash } from "@/app/_components/icons";
 import { blockRefChipText, blockRefValue, parseBlockRefValue, type BlockRefChoice } from "@/app/_lib/blockRef";
 import { InfoTip } from "@/app/_components/InfoTip";
-import { DOC_KIND_LABEL, JOIN_MODE_INFO, REPEAT_DEPTH_LABEL, STRUCT_KEY_CHIP, SWITCH_WORD } from "@/app/_lib/labels";
+import { DOC_KIND_LABEL, JOIN_MODE_INFO, OMIT_MODE_INFO, OMIT_MODE_LABEL, REPEAT_DEPTH_LABEL, STRUCT_KEY_CHIP, SWITCH_WORD } from "@/app/_lib/labels";
 import { bindingLabel, bindingOptions, constBindingOfText, planFormChoices, staleBindingOption, type LoopChoice, type NodeTree } from "@/app/(app)/functions/_components/params";
 import type { EnumDef } from "@/domain/catalog";
 import { unfoldPreset, type Bindings, type Clause, type ParamDef } from "@/domain/clause";
@@ -56,7 +56,6 @@ import {
   type RefRestrict,
   type RefTarget,
   type RepeatSource,
-  isJoinMode,
 } from "@/domain/document";
 import { boxGistLabel, type Box } from "@/domain/document/box";
 import { ATTACH_LEVEL_LABEL, INLINE_REPEAT_CONNECTORS, REFERENCE_CONNECTORS, isInlineRepeatConnector, isReferenceConnector, type Code, type Id, type InlineRepeatConnector, type ReferenceConnector } from "@/domain/types";
@@ -74,7 +73,7 @@ import { runsFromTokens } from "./inlineRuns";
 import { clausesFitting, type PopupSpec } from "./menus";
 import { PopActions, Popover } from "./Popover";
 import { addCase, addElif, addElse, branchDraftOf, branchFormOps, removeDraftBranch, setDraftCase, setDraftSubject, setDraftWhen, shownBranches, type BranchDraft } from "./branchForm";
-import { formSnapshot } from "./editTabRules";
+import { articleOptionOps, formSnapshot } from "./editTabRules";
 import { RefTargetTree } from "./RefTargetTree";
 import { keyChoicesFor, restrictHint, restrictMode, restrictOfForm, treeLoopChoicesFor, treeLoopsAt } from "./restrict";
 import { loopChoices, loopsAround, nodeTreeAt, repeatChoices, sourceOfValue, sourceValue, type RepeatChoice } from "./repeatSources";
@@ -1625,7 +1624,7 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
     }
 
     case "joinMode": {
-      // 준용하기 옵션 (ADR-0082 결정 5 · 기능/문면 §3.10) — 보통약관 템플릿 조의 속성. 적용은 편집본에만, 저장은 바의 〔저장〕 하나
+      // 준용하기 · 생략 기준 옵션 (ADR-0082 결정 5 · ADR-0093 · 기능/문면 §3.10) — 보통약관 템플릿 조의 속성. 적용은 편집본에만, 저장은 바의 〔저장〕 하나
       const a = ix.nodes.get(spec.articleId)?.node;
       if (!a || a.kind !== "article") return null;
       return (
@@ -1633,10 +1632,7 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
           <PopForm
             env={env}
             onClose={onClose}
-            build={(fd) => {
-              const mode = str(fd, "joinMode");
-              return [{ type: "joinMode", articleId: a.id, mode: isJoinMode(mode) ? mode : "none" }];
-            }}
+            build={(fd) => articleOptionOps(a, str(fd, "joinMode"), str(fd, "omitMode"))}
           >
             <div className="ts-form-row">
               <label htmlFor="pop-join-mode">
@@ -1647,6 +1643,16 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
                 <option value="none">없음</option>
                 <option value="common">공통항 모으기</option>
                 <option value="all">전체항 모으기</option>
+              </select>
+            </div>
+            <div className="ts-form-row">
+              <label htmlFor="pop-omit-mode">
+                생략 기준
+                <InfoTip text={OMIT_MODE_INFO} />
+              </label>
+              <select id="pop-omit-mode" name="omitMode" defaultValue={a.omitMode ?? "exact"}>
+                <option value="exact">{OMIT_MODE_LABEL.exact}</option>
+                <option value="contained">{OMIT_MODE_LABEL.contained}</option>
               </select>
             </div>
             <Actions onCancel={onClose} />

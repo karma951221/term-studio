@@ -7,6 +7,7 @@ import type { OmissionRecord, OmitRuleSource } from "@/domain/assembly/types";
 import type { ClauseMode } from "@/domain/clause/types";
 import type { CoverageNodeLevel } from "@/domain/coverage/types";
 import type { EdgeVia } from "@/domain/refs";
+import type { ArticleOmitMode } from "@/domain/document";
 
 /**
  * 화면에서 실체와 필드를 부르는 말. 목록 컬럼 · 생성 폼 · 상세 필드가 이 값을 함께 쓴다.
@@ -176,6 +177,12 @@ export const OMIT_RULE_SOURCE_LABEL = {
 export function containedReason(source: OmitRuleSource): string {
   return `보통약관 조에 포함 — 생략 기준 「포함하면 생략」(${OMIT_RULE_SOURCE_LABEL[source]})`;
 }
+
+/** 생략 기준 옵션 (ADR-0093 · 기능/문면 §3.10) — 문면 편집기 조 폼 · 상품 조 단위 변경이 같은 말을 쓴다. */
+export const OMIT_MODE_LABEL: Record<ArticleOmitMode, string> = { exact: "같을 때만 생략", contained: "포함하면 생략" };
+
+/** 생략 기준 ⓘ (기능/문면 §4.3 · ADR-0093) — 문면 편집기 조 폼. */
+export const OMIT_MODE_INFO = "기본은 같을 때만 · 남발하지 않는다 · 무효 조에만 · 상품이 조마다 바꿀 수 있다";
 
 /** 문서(약관 템플릿) 종류 → 실체 이름. `/documents` 목록·상세·생성 화면이 같은 말을 쓴다. */
 export const DOC_TEMPLATE_LABEL = {

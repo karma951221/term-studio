@@ -7,7 +7,7 @@
  */
 import { useCallback, useRef, useState } from "react";
 
-import type { EditOp } from "@/domain/document";
+import { isArticleOmitMode, isJoinMode, type ArticleNode, type EditOp } from "@/domain/document";
 import type { Id } from "@/domain/types";
 
 import { insertedChip } from "./editOps";
@@ -34,6 +34,19 @@ export const tabOnPick = tabOnEnterEdit;
 
 export function tabOnLeaveEdit(s: TabState): TabState {
   return s.tab === "edit" ? { tab: s.before, before: s.before } : s;
+}
+
+/**
+ * 조 옵션 폼(준용하기 · 생략 기준 — 보통약관 템플릿 조, ADR-0082 결정 5 · ADR-0093)의 명령 — 바뀐 값만.
+ * 모르는 값은 기본(없음 · 같을 때만)으로, 둘 다 그대로면 빈 목록(폼은 그냥 닫는다). 「같을 때만」은 `omitMode exact`(속성 삭제).
+ */
+export function articleOptionOps(a: ArticleNode, joinMode: string, omitMode: string): EditOp[] {
+  const join = isJoinMode(joinMode) ? joinMode : "none";
+  const omit = isArticleOmitMode(omitMode) ? omitMode : "exact";
+  const ops: EditOp[] = [];
+  if (join !== (a.joinMode ?? "none")) ops.push({ type: "joinMode", articleId: a.id, mode: join });
+  if (omit !== (a.omitMode ?? "exact")) ops.push({ type: "omitMode", articleId: a.id, mode: omit });
+  return ops;
 }
 
 /** 넣기 폼인가 — 주 버튼 「넣기」. */
