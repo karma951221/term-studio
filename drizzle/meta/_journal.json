@@ -267,6 +267,13 @@
       "when": 1793201908736,
       "tag": "0037_product_article_omit_modes",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793204683152,
+      "tag": "0038_drop_notice_subtypes",
+      "breakpoints": true
     }
   ]
 }

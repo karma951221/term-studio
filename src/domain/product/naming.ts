@@ -2,12 +2,20 @@
 import type { AttributeKind, AttributeSelection } from "./types";
 
 export const DEFAULT_NAMING_TEMPLATE = "[담보명]";
+/** 상품의 담보명 접사 칩 — 간편심사 · 건강고지 상품의 「(통합간편심사형)」 류 (기능/상품 §3.1 · 2026-10-29). */
+export const NOTICE_AFFIX_CHIP = "고지 접사";
+
+/** 작명 재료 중 상품 사실 — 칩 `[고지 접사]` 의 값 (`noticeAffixOf`). */
+export interface ProductNamingFacts {
+  noticeAffix?: string;
+}
 
 export function defaultCoverageName(
   coverageName: string,
   selections: readonly AttributeSelection[],
   kinds: readonly AttributeKind[],
   template: string,
+  facts: ProductNamingFacts = {},
 ): string {
   const fragments = new Map<string, string>();
   for (const kind of kinds) {
@@ -17,7 +25,7 @@ export function defaultCoverageName(
     if (value) fragments.set(kind.code, value.fragment.trim());
   }
   return template
-    .replace(/\[([^\]]+)]/g, (_chip, code: string) => (code === "담보명" ? coverageName.trim() : (fragments.get(code) ?? "")))
+    .replace(/\[([^\]]+)]/g, (_chip, code: string) => (code === "담보명" ? coverageName.trim() : code === NOTICE_AFFIX_CHIP ? (facts.noticeAffix ?? "").trim() : (fragments.get(code) ?? "")))
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -30,5 +38,5 @@ export function missingTemplateKinds(kinds: readonly AttributeKind[], template: 
 /** 편집기 안내용: 저장 칩 코드를 표시명으로 바꾼다. */
 export function displayNamingTemplate(template: string, kinds: readonly AttributeKind[]): string {
   const labels = new Map(kinds.map((kind) => [kind.code, kind.label]));
-  return template.replace(/\[([^\]]+)]/g, (chip, code: string) => (code === "담보명" ? chip : `[${labels.get(code) ?? code}]`));
+  return template.replace(/\[([^\]]+)]/g, (chip, code: string) => (code === "담보명" || code === NOTICE_AFFIX_CHIP ? chip : `[${labels.get(code) ?? code}]`));
 }

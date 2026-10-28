@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { defaultCoverageName, missingTemplateKinds } from "./naming";
+import { NOTICE_AFFIX_CHIP, defaultCoverageName, displayNamingTemplate, missingTemplateKinds } from "./naming";
 import type { AttributeKind } from "./types";
 
 const renewal: AttributeKind = {
@@ -74,5 +74,19 @@ describe("3차 S2 — 전역 명명 템플릿", () => {
 
   it("템플릿에 칩이 없는 속성 종류를 찾는다", () => {
     expect(missingTemplateKinds(kinds, "[담보명] [A0002]").map((kind) => kind.code)).toEqual(["A0001"]);
+  });
+});
+
+describe("[고지 접사] 칩 — 상품의 담보명 접사 (2026-10-29 사용자 결정, 기능/상품 §3.1)", () => {
+  const template = `[담보명] [${NOTICE_AFFIX_CHIP}]`;
+  it("상품 사실의 접사를 칩 자리에 넣는다", () => {
+    expect(defaultCoverageName("일반상해사망", [], kinds, template, { noticeAffix: "(통합간편심사형)" })).toBe("일반상해사망 (통합간편심사형)");
+  });
+  it("접사가 없으면 칩은 빈 글자 — 남는 공백은 접는다", () => {
+    expect(defaultCoverageName("일반상해사망", [], kinds, template, { noticeAffix: "" })).toBe("일반상해사망");
+    expect(defaultCoverageName("일반상해사망", [], kinds, template)).toBe("일반상해사망");
+  });
+  it("편집기 안내는 칩을 그대로 둔다", () => {
+    expect(displayNamingTemplate(template, kinds)).toBe(template);
   });
 });

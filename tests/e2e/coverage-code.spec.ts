@@ -150,7 +150,7 @@ test(
 
     await ev.action("세목형#3", "기본정보 › 보험종목 정의 — 종 2 · 형 2", async () => {
       await page.goto(`${productPath}?tab=basic`);
-      const rows = page.locator("#definitions-panel tbody tr");
+      const rows = page.locator("#definitions-panel [data-plan-option]");
       await expect(rows).toHaveCount(4);
       const text = (await rows.allInnerTexts()).join("\n");
       for (const label of ["제1종", "제2종", "제1형", "제2형", "보험료 납입면제 미적용형", "보험료 납입면제형", "해약환급금 지급형", "해약환급금미지급형(납입후50%)"]) expect(text).toContain(label);
@@ -158,9 +158,10 @@ test(
 
     await ev.action("세목형#4", "기본정보 › 종·형 조합 — 4건 (1종1형 · 1종2형 · 2종1형 · 2종2형)", async () => {
       await page.getByRole("tab", { name: "종·형 조합" }).click();
-      const rows = page.locator("#combinations-panel tbody tr");
+      const rows = page.locator("#combinations-panel [data-plan-combination]");
       await expect(rows).toHaveCount(4);
-      const labels = (await rows.allInnerTexts()).map((t) => (t.match(/제\d종|제\d형/g) ?? []).join(""));
+      // 조합 카드 — 종이 카드 머리, 형이 줄. 줄의 data-label 이 조합 전체 이름이다 (2026-10-28 세목 카드)
+      const labels = (await rows.evaluateAll((els) => els.map((el) => el.getAttribute("data-label") ?? ""))).map((t) => (t.match(/제\d종|제\d형/g) ?? []).join(""));
       expect([...labels].sort()).toEqual(["제1종제1형", "제1종제2형", "제2종제1형", "제2종제2형"]);
     });
   },

@@ -539,3 +539,28 @@ describe("0036_box_heading_in_body", () => {
     expect(await read()).toEqual(after);
   });
 });
+
+describe("0038_drop_notice_subtypes", () => {
+  const PRODUCT = "66666666-6666-4666-8666-666666666666";
+  const apply0038 = async () =>
+    client.transaction(async (tx) => {
+      for (const s of statementsOf(tagOf(38))) await tx.exec(s);
+    });
+  const features = async () =>
+    (await client.query<{ field_path: string }>(`SELECT field_path FROM entity_values WHERE owner_id = $1 ORDER BY field_path`, [PRODUCT])).rows.map((r) => r.field_path);
+
+  it("상품특성의 세부 고지유형 값 행(간편심사구분 · 간편심사유형 · 건강고지유형)만 지운다 — 고지유형은 남는다 · 두 번 돌려도 같다", async () => {
+    for (const [path, value] of [
+      ["feature.notice_kind", '"V02"'],
+      ["feature.review_scope", '"V02"'],
+      ["feature.review_type", '["V01","V02"]'],
+      ["feature.notice_type", '["V01"]'],
+      ["feature.renewable", "true"],
+    ])
+      await client.query(`INSERT INTO entity_values (owner_kind, owner_id, field_path, value) VALUES ('product', $1, $2, $3::jsonb)`, [PRODUCT, path, value]);
+    await apply0038();
+    expect(await features()).toEqual(["feature.notice_kind", "feature.renewable"]);
+    await apply0038();
+    expect(await features()).toEqual(["feature.notice_kind", "feature.renewable"]);
+  });
+});

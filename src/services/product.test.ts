@@ -130,9 +130,21 @@ describe("product 서비스 (PGlite)", () => {
     await t.close();
   });
 
+  /** 필수 상품특성 — 갱신형여부 · 고지유형 (2026-10-29). 기본정보 저장은 이 둘이 있어야 지난다. */
+  const REQUIRED_FEATURE = [
+    { path: "feature.renewable", value: false },
+    { path: "feature.notice_kind", value: "V01" },
+  ];
+  /** 필수 상품특성을 채운 새 상품. */
+  const readyProduct = async (name: string, generalDocumentId?: string) => {
+    const p = unwrap(await svc.createProduct(editor, { name, ...(generalDocumentId ? { generalDocumentId } : {}) }));
+    unwrap(await svc.setProductValues(editor, p.id, REQUIRED_FEATURE));
+    return p;
+  };
+
   describe("기본정보 한 번에 저장", () => {
     it("상품명·새 보험종목 값·조합을 함께 저장하고 기존 조합 ID를 유지한다", async () => {
-      const p = unwrap(await svc.createProduct(editor, { name: "기본정보 통합 저장" }));
+      const p = await readyProduct("기본정보 통합 저장");
       const draftId = "bbbbbbbb-0000-4000-8000-000000000001";
       unwrap(await svc.saveBasic(editor, p.id, {
         name: "기본정보 통합 저장 완료", values: [],
@@ -151,7 +163,7 @@ describe("product 서비스 (PGlite)", () => {
     });
 
     it("뒤쪽 값 또는 조합 검증이 실패하면 이름과 앞쪽 값도 쓰지 않는다", async () => {
-      const p = unwrap(await svc.createProduct(editor, { name: "기본정보 원자성" }));
+      const p = await readyProduct("기본정보 원자성");
       const o = unwrap(await svc.addPlanOption(editor, p.id, { axis: "type", number: 1, name: "기존", planTypeCode: "waiver" }));
       const input = { name: "바뀌면 안 됨", values: [], options: [{ ...o, isNew: false, values: [{ path: "waiver.applies", value: true }, { path: "waiver.reasons", value: 123 }] }], combinations: [[o.id]] };
       expect(reason(await svc.saveBasic(editor, p.id, input))).toBe("invalid");
@@ -163,7 +175,7 @@ describe("product 서비스 (PGlite)", () => {
     });
 
     it("납입면제 적용여부 = 예인데 사유가 0개면 저장 거부 — 저장된 값 위에 이번 제출을 얹은 최종 상태로 본다 (결정 16)", async () => {
-      const p = unwrap(await svc.createProduct(editor, { name: "기본정보 납입면제 폼 검사" }));
+      const p = await readyProduct("기본정보 납입면제 폼 검사");
       const draftId = "bbbbbbbb-0000-4000-8000-000000000002";
       const draft = { id: draftId, isNew: true, axis: "type" as const, number: 1, name: "보험료납입면제형", planTypeCode: "waiver" };
       const r = await svc.saveBasic(editor, p.id, { name: p.name, values: [], options: [{ ...draft, values: [{ path: "waiver.applies", value: true }] }], combinations: [] });
@@ -178,26 +190,20 @@ describe("product 서비스 (PGlite)", () => {
       expect((await svc.getPlanOptionValues(o.id)).get("waiver.reasons")).toEqual(entered(["V02"]));
     });
 
-    it("상품특성 고지유형 조건을 저장 때 검사한다 — 건강고지인데 건강고지유형 0개 · 통합간편심사인데 간편심사유형 1개면 거부 (2026-10-01)", async () => {
+    it("상품특성 — 갱신형여부 · 고지유형은 비울 수 없고, 담보명 접사는 일반심사가 아닐 때만 남는다 (2026-10-29)", async () => {
       const p = unwrap(await svc.createProduct(editor, { name: "기본정보 고지유형 검사" }));
       const save = (values: { path: string; value: Value }[]) => svc.saveBasic(editor, p.id, { name: p.name, values, options: [], combinations: [] });
-      const health = await save([{ path: "feature.notice_kind", value: "V03" }]);
-      expect(reason(health)).toBe("invalid");
-      if (!health.ok && health.rejection.reason === "invalid") expect(health.rejection.issues[0]).toMatchObject({ at: { refPath: "feature.notice_type" } });
-      expect((await svc.getProductValues(p.id)).get("feature.notice_kind")).toBeUndefined();
+      const empty = await save([]);
+      expect(reason(empty)).toBe("invalid");
+      if (!empty.ok && empty.rejection.reason === "invalid") expect(empty.rejection.issues.map((i) => i.at.refPath)).toEqual(["feature.renewable", "feature.notice_kind"]);
 
-      const combined = [{ path: "feature.notice_kind", value: "V02" }, { path: "feature.review_scope", value: "V02" }];
-      const one = await save([...combined, { path: "feature.review_type", value: ["V01"] }]);
-      expect(reason(one)).toBe("invalid");
-      if (!one.ok && one.rejection.reason === "invalid") expect(one.rejection.issues[0]).toMatchObject({ message: expect.stringContaining("2개 이상"), at: { refPath: "feature.review_type" } });
-
-      unwrap(await save([...combined, { path: "feature.review_type", value: ["V01", "V02"] }]));
-      expect((await svc.getProductValues(p.id)).get("feature.review_type")).toEqual(entered(["V01", "V02"]));
+      unwrap(await save([...REQUIRED_FEATURE, { path: "feature.notice_kind", value: "V02" }, { path: "feature.notice_affix", value: "(통합간편심사형)" }]));
+      expect((await svc.getProductValues(p.id)).get("feature.notice_affix")).toEqual(entered("(통합간편심사형)"));
     });
 
     it("다른 상품의 종목을 거부하고 삭제는 권한·영향 확인 후에만 반영한다", async () => {
-      const p = unwrap(await svc.createProduct(editor, { name: "기본정보 삭제" }));
-      const other = unwrap(await svc.createProduct(editor, { name: "기본정보 다른 상품" }));
+      const p = await readyProduct("기본정보 삭제");
+      const other = await readyProduct("기본정보 다른 상품");
       const o = unwrap(await svc.addPlanOption(editor, p.id, { axis: "type", number: 1, name: "종목", planTypeCode: "waiver" }));
       unwrap(await svc.registerPlan(editor, p.id, [o.id]));
       expect(reason(await svc.saveBasic(editor, other.id, { name: other.name, values: [], options: [{ ...o, isNew: false, values: [] }], combinations: [] }))).toBe("invalid");
@@ -215,7 +221,7 @@ describe("product 서비스 (PGlite)", () => {
     const STANDALONE = [{ path: "feature.contract_kind", value: "V02" }];
 
     it("기본계약이 있는 상품을 독립특약으로 저장 — 확인 먼저(편집자도), 확인 뒤 같은 저장에서 기본계약 해제 · 상품담보는 특별약관 표로 남는다", async () => {
-      const p = unwrap(await svc.createProduct(editor, { name: "독립특약 전환" }));
+      const p = await readyProduct("독립특약 전환");
       const base = unwrap(await svc.mount(editor, p.id, DEATH, [], "base"));
       const input = { name: p.name, values: STANDALONE, options: [], combinations: [] };
       const first = await svc.saveBasic(editor, p.id, input);
@@ -236,7 +242,7 @@ describe("product 서비스 (PGlite)", () => {
     });
 
     it("세목 제거와 겹치면 확인은 한 번 — 세목 관문(관리자) 하나에 해제 줄이 함께 실린다", async () => {
-      const p = unwrap(await svc.createProduct(editor, { name: "독립특약 전환 + 세목 제거" }));
+      const p = await readyProduct("독립특약 전환 + 세목 제거");
       const o = unwrap(await svc.addPlanOption(editor, p.id, { axis: "type", number: 1, name: "종목", planTypeCode: "waiver" }));
       unwrap(await svc.registerPlan(editor, p.id, [o.id]));
       unwrap(await svc.mount(editor, p.id, DEATH, [], "base"));
@@ -253,7 +259,7 @@ describe("product 서비스 (PGlite)", () => {
     });
 
     it("독립특약 상품은 기본계약 표 탑재 · 지정을 거부한다 — 특별약관 탑재는 그대로", async () => {
-      const p = unwrap(await svc.createProduct(editor, { name: "독립특약 탑재" }));
+      const p = await readyProduct("독립특약 탑재");
       unwrap(await svc.saveBasic(editor, p.id, { name: p.name, values: STANDALONE, options: [], combinations: [] }));
       const mounted = await svc.mount(editor, p.id, DEATH, [], "base");
       expect(reason(mounted)).toBe("invalid");
@@ -266,7 +272,7 @@ describe("product 서비스 (PGlite)", () => {
     });
 
     it("우회로 독립특약 상품에 기본계약이 남아 있으면 검사가 오류로 드러낸다 · 주계약 0개는 여전히 noBaseContract", async () => {
-      const p = unwrap(await svc.createProduct(editor, { name: "독립특약 우회" }));
+      const p = await readyProduct("독립특약 우회");
       const pc = unwrap(await svc.mount(editor, p.id, DEATH, [], "base"));
       await writeSlot(t.db, { kind: "product", id: p.id }, "feature.contract_kind", "V02");
       const check = await svc.checkBaseContract(p.id);
@@ -476,6 +482,15 @@ describe("product 서비스 (PGlite)", () => {
       const snap2 = unwrap(await svc.getSnapshot(again.id));
       expect((await svc.getSnapshotValues(again.id)).get(snap2.subCoverages[0].benefits[0].id)?.get("pay.rate")).toEqual({ entered: true, value: 60 });
       unwrap(await svc.unmount(admin, again.id, { confirm: true }));
+    });
+
+    it("상품담보명 규칙의 [고지 접사] 칩 — 간편심사 상품의 담보명 접사가 붙는다 (2026-10-29, 기능/상품 §3.1)", async () => {
+      unwrap(await svc.setNamingTemplate(editor, "[A0001] [담보명] [A0002] [고지 접사]"));
+      unwrap(await svc.setProductValues(editor, productId, [{ path: "feature.notice_kind", value: "V02" }, { path: "feature.notice_affix", value: "(통합간편심사형)" }]));
+      expect(unwrap(await svc.regenerateName(editor, pcSurgery)).name).toBe("갱신형 수술비 (통합간편심사형)");
+      unwrap(await svc.setProductValues(editor, productId, [{ path: "feature.notice_kind", value: "V01" }, { path: "feature.notice_affix", value: undefined }]));
+      expect(unwrap(await svc.regenerateName(editor, pcSurgery)).name).toBe("갱신형 수술비");
+      unwrap(await svc.setNamingTemplate(editor, "[A0001] [담보명] [A0002]"));
     });
 
     it("이름 수동 변경 「갱신형 수술비Ⅱ」 → 규칙 재생성으로 되돌림 · 속성 조합 수정(중복 검사) 후 재생성", async () => {

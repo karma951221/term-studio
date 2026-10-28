@@ -15,7 +15,7 @@ import { bookletForm, specialAsBooklet, type ExplainTarget } from "@/domain/asse
 import { articleRefLabel, collectRefs, type NodeNumber } from "@/domain/document";
 import type { Id } from "@/domain/types";
 import { CATEGORY_TITLE_FIELD, COVERAGE_CATEGORY_ENUM } from "@/domain/coverage";
-import { CONTRACT_KIND_PATH, findForm, isStandaloneContract } from "@/domain/master";
+import { CONTRACT_KIND_PATH, findForm, isStandaloneContract, noticeAffixOf } from "@/domain/master";
 import { applyArticleCopies, defaultCoverageName, liveArticleCopies, lockingCoverageIds, planOptionLabel, planTypeOptions, type ProductCoverage } from "@/domain/product";
 import { buildForm } from "@/forms";
 import { currentActor, getServices } from "@/lib/services";
@@ -117,7 +117,7 @@ export default async function ProductDetailPage({
   const specialCoverages = productCoverages.filter((coverage) => !baseContractSet.has(coverage.id));
 
   /** 작명 규칙이 지금 지어 줄 이름 — 누르기 전에 결과를 보여준다 (리뷰 #27 · §9.3). */
-  const wouldBeName = (pc: ProductCoverage) => defaultCoverageName(coverageName.get(pc.coverageId) ?? "", pc.attributes, attributeKinds, namingTemplate);
+  const wouldBeName = (pc: ProductCoverage) => defaultCoverageName(coverageName.get(pc.coverageId) ?? "", pc.attributes, attributeKinds, namingTemplate, { noticeAffix: noticeAffixOf(productValues) });
   // 상품담보 탭 (기능/상품 §4.5) — 세목 부착 · 작명 결과는 그 탭을 열었을 때만 (클라이언트로 넘기는 재료라 함수가 아니라 값으로)
   const attachedPlans = tab === "coverages" ? Object.fromEntries(await services.product.listAttachedPlanIdsOf(id)) : {};
   const suggestedNames = tab === "coverages" ? Object.fromEntries(productCoverages.map((pc) => [pc.id, wouldBeName(pc)])) : {};

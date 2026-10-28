@@ -39,10 +39,8 @@ export interface EnumOption {
 export type FieldSource = "direct" | "snapshot";
 
 /** 조건 — 같은 폼 다른 필드의 경로와 비교 값. */
-export interface ViewCondition {
-  path: SlotPath;
-  equals: Value;
-}
+/** 조건 — 이 경로가 이 값일 때(`equals`), 또는 입력돼 있고 이 값이 아닐 때(`notEquals`). */
+export type ViewCondition = { path: SlotPath; equals: Value } | { path: SlotPath; notEquals: Value };
 
 /** 필드 하나의 화면 표현. 직렬화 가능 — 서버 컴포넌트에서 클라이언트로 그대로 넘긴다. */
 export interface FieldView {
@@ -79,6 +77,8 @@ export interface FieldView {
   description?: string;
   /** 선택 필드 — 값이 없으면 자리를 보이지 않고 「⊕ {라벨}」로 더한다 (`isFieldAbsent`, 2026-09-27). */
   optional?: true;
+  /** 입력 모양 — `radio` 면 enum 을 라디오로 (마스터 `display`). */
+  display?: "radio";
 }
 
 /**
@@ -141,7 +141,7 @@ function fieldView(
   defaultValue: Value | undefined,
   hiddenByDefault: boolean,
   optional: boolean,
-  field: Pick<MasterField, "unit" | "visibleWhen" | "singleWhen" | "description" | "infoTip">,
+  field: Pick<MasterField, "unit" | "visibleWhen" | "singleWhen" | "description" | "infoTip" | "display">,
   form: FormRef,
   enums: EnumLookup,
   current: Map<SlotPath, ValueSlot>,
@@ -164,7 +164,11 @@ function fieldView(
   if (optional) view.optional = true;
   if (field.unit !== undefined) view.unit = field.unit;
   if (field.infoTip && field.description !== undefined) view.description = field.description;
-  if (field.visibleWhen) view.visibleWhen = { path: masterPath(form.key, field.visibleWhen.field), equals: field.visibleWhen.equals };
+  if (field.display !== undefined) view.display = field.display;
+  if (field.visibleWhen) {
+    const at = masterPath(form.key, field.visibleWhen.field);
+    view.visibleWhen = "equals" in field.visibleWhen ? { path: at, equals: field.visibleWhen.equals } : { path: at, notEquals: field.visibleWhen.notEquals };
+  }
   if (field.singleWhen) view.singleWhen = { path: masterPath(form.key, field.singleWhen.field), equals: field.singleWhen.equals };
   // 스냅샷 문맥 — 마스터 값이 있는 자리는 그 값을 싣는다(편집 중 「현재 마스터 값 가져오기」의 재료, 기능/상품 §3.4).
   // 저장값이 마스터와 다른 자리만 「스냅샷 · 변경됨」 — 같으면 평범한 직접값이다 (§1.2)
@@ -553,12 +557,16 @@ export function savedValueOf(model: FormModel): (path: SlotPath) => Value | unde
 
 /** 조건부 필드가 지금 칸을 갖나 (마스터 `isFieldShown` 의 화면판). */
 export function isViewShown(view: FieldView, valueOf: (path: SlotPath) => Value | undefined): boolean {
-  return view.visibleWhen === undefined || valueOf(view.visibleWhen.path) === view.visibleWhen.equals;
+  const when = view.visibleWhen;
+  if (when === undefined) return true;
+  const value = valueOf(when.path);
+  return "equals" in when ? value === when.equals : value !== undefined && value !== when.notEquals;
 }
 
 /** list<enum> 칸을 지금 하나만 고르나 (마스터 `isFieldSingle` 의 화면판). */
 export function isViewSingle(view: FieldView, valueOf: (path: SlotPath) => Value | undefined): boolean {
-  return view.singleWhen !== undefined && valueOf(view.singleWhen.path) === view.singleWhen.equals;
+  const when = view.singleWhen;
+  return when !== undefined && "equals" in when && valueOf(when.path) === when.equals;
 }
 
 /**
