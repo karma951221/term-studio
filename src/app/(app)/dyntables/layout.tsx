@@ -8,7 +8,7 @@ import { getServices } from "@/lib/services";
 export default async function DynTablesLayout({ children }: { children: React.ReactNode }) {
   const items = (await getServices().dynTable.summaries()).map((t) => ({ key: t.code, code: t.code, name: t.label, href: `/dyntables/${t.code}` }));
   return (
-    <ListDetailLayout menus={[{ id: "dyntables", title: ENTITY_LABEL.dynTable, listHref: "/dyntables", base: "/dyntables", items }]}>
+    <ListDetailLayout menus={[{ id: "dyntables", title: ENTITY_LABEL.dynTable, listHref: "/dyntables", defaultCollapsed: true, base: "/dyntables", items }]}>
       {children}
     </ListDetailLayout>
   );

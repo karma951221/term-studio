@@ -8,7 +8,7 @@ import { getServices } from "@/lib/services";
 export default async function FunctionsLayout({ children }: { children: React.ReactNode }) {
   const items = (await getServices().clause.summaries()).map((c) => ({ key: c.code, code: c.code, name: c.label, href: `/functions/${c.code}` }));
   return (
-    <ListDetailLayout menus={[{ id: "functions", title: ENTITY_LABEL.clause, listHref: "/functions", base: "/functions", items }]}>
+    <ListDetailLayout menus={[{ id: "functions", title: ENTITY_LABEL.clause, listHref: "/functions", defaultCollapsed: true, base: "/functions", items }]}>
       {children}
     </ListDetailLayout>
   );

@@ -15,8 +15,8 @@ export default async function DocumentsLayout({ children }: { children: React.Re
   return (
     <ListDetailLayout
       menus={[
-        { id: "documents-general", title: ENTITY_LABEL.generalTemplate, listHref: docListHref("general"), base: "/documents", items: generals.map(item) },
-        { id: "documents-coverage", title: ENTITY_LABEL.coverageTemplate, listHref: docListHref("coverage"), base: "/documents", newQuery: { kind: "coverage" }, items: specials.map(item) },
+        { id: "documents-general", title: ENTITY_LABEL.generalTemplate, listHref: docListHref("general"), defaultCollapsed: true, base: "/documents", items: generals.map(item) },
+        { id: "documents-coverage", title: ENTITY_LABEL.coverageTemplate, listHref: docListHref("coverage"), defaultCollapsed: true, base: "/documents", newQuery: { kind: "coverage" }, items: specials.map(item) },
       ]}
     >
       {children}

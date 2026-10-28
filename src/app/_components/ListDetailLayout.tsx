@@ -50,6 +50,8 @@ export interface ListDetailMenu {
   exclude?: readonly string[];
   /** 항목 키가 마디의 이 글자 앞까지(폼 필드 상세 `폼키.필드키` → 폼 탭). */
   keySeparator?: string;
+  /** 고른 적이 없을 때 패널이 접힌 채 시작하나 — 칸이 많은 약관 편집기(조 목차 | 본문 | 오른쪽 패널)는 접어 두고 쓴다. */
+  defaultCollapsed?: boolean;
   /** 생성 화면(`/new`)이 이 메뉴 것인지 — 쿼리가 맞으면(`kind=coverage`). 없으면 첫 메뉴. */
   newQuery?: Readonly<Record<string, string>>;
   items: readonly PanelItem[];
@@ -163,7 +165,7 @@ export function ListDetailLayout({
   const detail = itemKey !== undefined || isNew;
 
   const tabs = useSyncExternalStore(subscribe, () => getTabs(menu.id), () => NO_TABS);
-  const collapsed = useSyncExternalStore(subscribe, () => getCollapsed(menu.id), () => false);
+  const collapsed = useSyncExternalStore(subscribe, () => getCollapsed(menu.id, menu.defaultCollapsed), () => menu.defaultCollapsed ?? false);
   const editing = useSyncExternalStore(subscribe, () => getEditing(menu.id), () => undefined);
 
   const byKey = useMemo(() => new Map(menu.items.map((i) => [i.key, i] as const)), [menu.items]);

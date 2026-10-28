@@ -59,16 +59,19 @@ export function setTabs(menu: string, next: ItemTabs): void {
 const collapsedCache = new Map<string, boolean>();
 const collapsedKey = (menu: string) => `ts-ld:${menu}:collapsed`;
 
-export function getCollapsed(menu: string): boolean {
+/** 접혔나 — 고른 적이 없으면 메뉴의 기본값(칸이 많은 약관 편집기 메뉴는 접힘, ADR-0094). */
+export function getCollapsed(menu: string, fallback = false): boolean {
   let value = collapsedCache.get(menu);
   if (value === undefined) {
-    value = typeof window !== "undefined" && readJson(collapsedKey(menu)) === true;
+    if (typeof window === "undefined") return fallback;
+    const stored = readJson(collapsedKey(menu));
+    value = typeof stored === "boolean" ? stored : fallback;
     collapsedCache.set(menu, value);
   }
   return value;
 }
 export function setCollapsed(menu: string, value: boolean): void {
-  if (getCollapsed(menu) === value) return;
+  if (collapsedCache.get(menu) === value) return;
   collapsedCache.set(menu, value);
   writeJson(collapsedKey(menu), value);
   emit();
