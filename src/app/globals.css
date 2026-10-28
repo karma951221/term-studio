@@ -5685,6 +5685,13 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   flex: none;
 }
 
+/* 조 생략 기준 고르기 (ADR-0093 결정 7) — 줄 끝 작은 고르기, 줄지 않는다 */
+.ts-toc-row > select:where(:not([data-slot])) {
+  flex: none;
+  font-size: 12px;
+  padding: 0 2px;
+}
+
 .ts-toc-row a:where(:not([data-slot])) {
   display: block;
   flex: 1 1 0;

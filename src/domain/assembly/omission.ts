@@ -5,6 +5,8 @@
  * - 생략: 항 수가 같고 i 번째 항끼리 리터럴 일치.
  * - 준용: 보통약관의 모든 항이 담보 조 안에 같은 상대 순서로 정확히 한 번씩 나타나고 담보 조에 항이 더 있다
  *   → 제1항 = 준용 문장, 그 뒤에 보통약관에 없는 항만 원래 순서대로.
+ * - 포함 생략: 유효 생략 기준이 「포함하면 생략」인 조만 (ADR-0093) — 담보 조의 모든 항이 보통약관 조 안에 같은 상대 순서로
+ *   나타나고 보통약관에 항이 더 있다 → 담보 조를 지운다(사유 `basis: "contained"`). 준용의 거울상. 기준이 없는 조는 이 대조를 하지 않는다.
  * - 통째: 그 외 전부. **미합의 사례**(같은 항 두 번 · 항 순서 변경 · 항 참조 슬롯 · 조 참조 슬롯 / 표)는 리터럴로
  *   맞아떨어져도 통째로 두고 `omissionUndecided` warning 하나(표 순서의 첫 사유)를 낸다 — 자동으로 지우는 범위는 좁게.
  *
@@ -14,10 +16,11 @@
  * 띄어쓰기 하나도 다르면 다르다 — 정규화·유사도 없음.
  */
 
+import { indexTree, type ArticleOmitMode, type DocumentNode } from "../document/nodes";
 import { refKey } from "../document/pcode";
 import { SCOPE_WORDS } from "../expression/output";
 import type { Id, Issue } from "../types";
-import type { ErrorNode, OmissionPair, OmissionPairKind, OmissionRecord, RArticle, RBulletList, RItem, RParagraph, RStatic, RSubitem, SInline, SubstitutedDoc } from "./types";
+import type { ErrorNode, OmissionPair, OmissionPairKind, OmissionRecord, OmitRuleSource, RArticle, RBulletList, RItem, RParagraph, RStatic, RSubitem, SInline, SubstitutedDoc } from "./types";
 import { articlesOf, mapArticles } from "./walk";
 
 // ───────────────────────────── 직렬화 ─────────────────────────────
@@ -287,6 +290,24 @@ function orderedPairs(special: readonly ComparedParagraph[], general: readonly C
   };
 }
 
+/**
+ * 포함 대조 — orderedPairs 의 역할 바꿈: 담보 항을 보통약관 조 안에서 앞에서부터 차례로 찾는다 (ADR-0093).
+ * `all` = 담보 항 전부 찾음 && 보통약관에 항이 더 있음. `pairs` 는 **보통약관 항 순** — 짝 없는 보통약관 항은 `special: null`.
+ * 실패면 위치 대조 표를 돌려준다.
+ */
+function containedPairs(special: readonly ComparedParagraph[], general: readonly ComparedParagraph[], key: Key): { all: boolean; pairs: OmissionPair[] } {
+  const specialAt = new Map<number, ComparedParagraph>();
+  let cursor = 0;
+  for (const s of special) {
+    const found = general.findIndex((g, i) => i >= cursor && g[key] === s[key]);
+    if (found < 0) return { all: false, pairs: positionalPairs(special, general, key).pairs };
+    specialAt.set(found, s);
+    cursor = found + 1;
+  }
+  if (special.length >= general.length) return { all: false, pairs: positionalPairs(special, general, key).pairs };
+  return { all: true, pairs: general.map((g, i) => pairOf(specialAt.get(i), g, specialAt.has(i))) };
+}
+
 /** 옛 순서 무관 매칭(ADR-0020)이라면 맞았을 것인가 — 보통약관 항 멀티셋이 담보 조에 다 들어 있다. */
 function containsAllUnordered(special: readonly ComparedParagraph[], general: readonly ComparedParagraph[]): boolean {
   const used = new Set<number>();
@@ -324,6 +345,8 @@ interface Verdict {
   reason?: string;
   /** 준용에서 남기는 담보 항의 (a.children) 인덱스. */
   keep?: number[];
+  /** 포함 생략 (ADR-0093). */
+  basis?: "contained";
 }
 
 /**
@@ -338,22 +361,31 @@ interface Verdict {
  * 참조 슬롯 · 표는 **지워질 담보 항**(생략은 전부, 준용은 보통약관과 짝지은 항)에서 찾고, 준용에서 **남는 항**은 같은 조 안을
  * 가리키는 참조가 있는지 본다 — 지워질 항을 가리키면 렌더가 `articleGone` 오류를 내므로 (원문 유지가 ADR 의 뜻) 준용하지 않는다.
  * @param kinds 두 문서의 살아남은 항 · 호 · 목 참조 열쇠 (참조 슬롯 대상이 조인지 항·호·목인지).
+ * @param contained 유효 생략 기준이 「포함하면 생략」인 조 (ADR-0093) — 포함 대조와 그 미합의 판정(반복 · 순서 · 참조 · 표)을 더한다.
+ *   false 면 위 경로 그대로 — 포함 관계여도 경고 없는 통째.
  */
-function judgeArticle(a: RArticle<SInline>, target: RArticle<SInline>, kinds: ReadonlySet<string>): Verdict {
+function judgeArticle(a: RArticle<SInline>, target: RArticle<SInline>, kinds: ReadonlySet<string>, contained: boolean): Verdict {
   const special = comparedParagraphs(a, false);
   const general = comparedParagraphs(target, true);
   const positional = positionalPairs(special, general, "body");
   const ordered = orderedPairs(special, general, "body");
+  const contain = contained ? containedPairs(special, general, "body") : undefined;
   const nodes = (list: readonly ComparedParagraph[]) => list.map((p) => p.node);
-  const undecided = (reason: string, pairs: OmissionPair[] = positional.pairs): Verdict => ({ disposition: "full", pairs, reason });
+  // 미합의의 대조 표 — 위치로 안 맞고 포함으로 맞는 조(기준 「포함하면」)는 포함 대조 표를 싣는다(ADR-0093 — 위치 대조는 엉뚱한 항끼리 짝짓는다).
+  const undecidedPairs = !positional.all && contain?.all ? contain.pairs : positional.pairs;
+  const undecided = (reason: string, pairs: OmissionPair[] = undecidedPairs): Verdict => ({ disposition: "full", pairs, reason });
 
-  if (!positional.all && !ordered.all && !containsAllUnordered(special, general)) {
-    // 참조 무시 대조 — 위치 또는 순서 유지로 맞으면 지워질 항에서 참조·표를 찾는다 (있어야만 이 길로 온 것이 설명된다).
+  // 포함 — 순서 유지 포함 또는 옛 순서 무관 포함(순서 변경 사유의 문). 기준이 「포함하면」인 조만.
+  const containHit = contain !== undefined && (contain.all || (special.length < general.length && containsAllUnordered(general, special)));
+  if (!positional.all && !ordered.all && !containsAllUnordered(special, general) && !containHit) {
+    // 참조 무시 대조 — 위치 · 순서 유지 · (포함 기준이면) 포함으로 맞으면 지워질 항에서 참조·표를 찾는다 (있어야만 이 길로 온 것이 설명된다).
     const loosePositional = positionalPairs(special, general, "loose");
     const looseOrdered = loosePositional.all ? undefined : orderedPairs(special, general, "loose");
-    const looseHit = loosePositional.all ? loosePositional : looseOrdered?.all ? looseOrdered : undefined;
+    const looseContain = contained && !loosePositional.all && !looseOrdered?.all ? containedPairs(special, general, "loose") : undefined;
+    const looseHit = loosePositional.all ? loosePositional : looseOrdered?.all ? looseOrdered : looseContain?.all ? looseContain : undefined;
     if (looseHit) {
-      const removed = loosePositional.all ? special : special.filter((_p, i) => looseOrdered!.matchedSpecial.has(i));
+      // 포함이면 지워질 항 = 담보 항 전부.
+      const removed = loosePositional.all || !looseOrdered?.all ? special : special.filter((_p, i) => looseOrdered.matchedSpecial.has(i));
       const scanned = scanRefsAndTables(nodes(removed), kinds);
       if (scanned.paragraphRef) return undecided(UNDECIDED_REASON.paragraphRef, looseHit.pairs);
       if (scanned.refOrTable) return undecided(UNDECIDED_REASON.refOrTable, looseHit.pairs);
@@ -364,14 +396,16 @@ function judgeArticle(a: RArticle<SInline>, target: RArticle<SInline>, kinds: Re
   // 1. 같은 항 두 번 — 어느 쪽이든.
   if (hasDuplicate(special.map((p) => p.body)) || hasDuplicate(general.map((p) => p.body))) return undecided(UNDECIDED_REASON.duplicate);
   // 2. 항 순서 변경 — 옛 순서 무관 매칭(ADR-0020)이라면 생략·준용이었을 텐데 위치·순서 대조가 실패.
-  if (!positional.all && !ordered.all) return undecided(UNDECIDED_REASON.reordered);
-  // 3·4. 지워질 항 안의 참조 슬롯 · 표 — 항 이하 참조가 하나라도 있으면 셋째 문구, 그 외 참조·표는 넷째 문구.
-  const removed = positional.all ? special : special.filter((_p, i) => ordered.matchedSpecial.has(i));
+  if (!positional.all && !ordered.all && !contain?.all) return undecided(UNDECIDED_REASON.reordered);
+  // 3·4. 지워질 항 안의 참조 슬롯 · 표 — 항 이하 참조가 하나라도 있으면 셋째 문구, 그 외 참조·표는 넷째 문구. 포함 생략은 담보 항 전부가 지워진다.
+  const removed = positional.all || !ordered.all ? special : special.filter((_p, i) => ordered.matchedSpecial.has(i));
   const scanned = scanRefsAndTables(nodes(removed), kinds);
   if (scanned.paragraphRef) return undecided(UNDECIDED_REASON.paragraphRef);
   if (scanned.refOrTable) return undecided(UNDECIDED_REASON.refOrTable);
 
   if (positional.all) return { disposition: "omitted", pairs: positional.pairs };
+  // 포함 생략 — 생략 > 준용 > 포함 생략 순. 준용과 포함은 항 수 대소가 반대라 겹치지 않는다.
+  if (!ordered.all && contain?.all) return { disposition: "omitted", pairs: contain.pairs, basis: "contained" };
   // 준용 — 남는 항이 같은 조 안을 가리키면 준용하지 않는다 (지워질 항을 가리키는 참조는 깨진다).
   const kept = special.filter((_p, i) => !ordered.matchedSpecial.has(i));
   if (refersInsideArticle(nodes(kept), a.id)) return undecided(UNDECIDED_REASON.paragraphRef, ordered.pairs);
@@ -379,11 +413,38 @@ function judgeArticle(a: RArticle<SInline>, target: RArticle<SInline>, kinds: Re
 }
 
 /**
+ * 실효 생략 기준 (ADR-0093 결정 3) — 템플릿 조 전부(관 · 조건 가지 안까지)에 대해 상품 값 > 템플릿 원본 `omitMode`.
+ * 상품 `contained` → product, 상품 `exact` → 「같을 때만」(없음), 상품 값이 없으면 템플릿 `contained` → template.
+ * 템플릿 **원본**만 읽는다 — 상품 조 사본에 복사돼 남은 `omitMode` 는 보지 않는다(준용하기와 같은 결). 템플릿에 없는 상품 id 는 무시.
+ */
+export function effectiveOmitRules(template: DocumentNode | undefined, product?: ReadonlyMap<Id, ArticleOmitMode>): Map<Id, OmitRuleSource> {
+  const out = new Map<Id, OmitRuleSource>();
+  if (!template) return out;
+  for (const [id, { node }] of indexTree(template).nodes) {
+    if (node.kind !== "article") continue;
+    const chosen = product?.get(id);
+    if (chosen !== undefined) {
+      if (chosen === "contained") out.set(id, "product");
+    } else if (node.omitMode === "contained") out.set(id, "template");
+  }
+  return out;
+}
+
+/**
  * @param hidden 상품이 노출을 끈 보통약관 조 id → 조 명 (기능/상품 §3.6). 준용 대상이 이 중에 있으면 오류를 내고 그 조는 `full` 로 둔다.
  * @param delegated 기본계약 2+ 의 제1절에서 위임된 템플릿 조(위임 문구만 남은 조) — 거기 연결한 특약 조는 판정 없이 통째다(`delegated`, ADR-0082 결정 4 · ADR-0021 결정 4).
  *   그 밖의 조는 **실제로 찍힌 제1절**(`general` — 공통 · 공통항 분리 · 전체항 합침으로 오른 글 포함)과 견준다.
+ * @param contained 유효 생략 기준이 「포함하면 생략」인 보통약관(템플릿) 조 id → 기준을 정한 곳 (ADR-0093). 없는 조는 「같을 때만」.
+ *   있으면 판정 결과와 무관하게 기록에 `omitRule` 을 싣는다(위임 · 오류 마커 · 노출 끔으로 판정을 안 탄 조도).
  */
-export function judgeOmission(special: SubstitutedDoc, general: SubstitutedDoc | undefined, owner: OmissionOwner, hidden?: ReadonlyMap<Id, string>, delegated?: ReadonlySet<Id>): OmissionOutcome {
+export function judgeOmission(
+  special: SubstitutedDoc,
+  general: SubstitutedDoc | undefined,
+  owner: OmissionOwner,
+  hidden?: ReadonlyMap<Id, string>,
+  delegated?: ReadonlySet<Id>,
+  contained?: ReadonlyMap<Id, OmitRuleSource>,
+): OmissionOutcome {
   const generalArticles = new Map<Id, RArticle<SInline>>();
   if (general) for (const a of articlesOf(general)) generalArticles.set(a.id, a);
   const kinds = liveCodedKeys([special, general]);
@@ -402,8 +463,9 @@ export function judgeOmission(special: SubstitutedDoc, general: SubstitutedDoc |
     let verdict: Verdict = { disposition: "full", pairs: [] };
     let output: RArticle<SInline> | null = a;
     const isDelegated = delegated?.has(a.linkedArticleId) === true;
+    const ruleSource = contained?.get(a.linkedArticleId);
     if (target && !isDelegated && !containsErrors(a) && !containsErrors(target)) {
-      verdict = judgeArticle(a, target, kinds);
+      verdict = judgeArticle(a, target, kinds, ruleSource !== undefined);
       if (verdict.disposition === "omitted") output = null;
       else if (verdict.disposition === "applied") output = { ...a, children: [applicationParagraph(a, a.linkedArticleId, owner), ...(verdict.keep ?? []).map((index) => a.children[index])] };
       if (verdict.reason !== undefined) {
@@ -421,6 +483,8 @@ export function judgeOmission(special: SubstitutedDoc, general: SubstitutedDoc |
       excludedClauseNodeIds: target ? excludedClauseNodeIds(target) : [],
       ...(verdict.reason !== undefined ? { reason: verdict.reason } : {}),
       ...(isDelegated ? { delegated: true as const } : {}),
+      ...(ruleSource !== undefined ? { omitRule: { mode: "contained" as const, source: ruleSource } } : {}),
+      ...(verdict.basis !== undefined ? { basis: verdict.basis } : {}),
     });
     return output;
   });
