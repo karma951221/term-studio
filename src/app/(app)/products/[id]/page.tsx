@@ -125,7 +125,7 @@ export default async function ProductDetailPage({
   // ── 보통약관 탭의 재료 (기능/상품 §4.6) ───────────────────────
   // 템플릿 트리 · 템플릿 번호 · 숨긴 조 · 조립 결과. 그 탭을 열었을 때만 읽는다 — 조립은 매번 재계산이라 싸지 않다.
   const gid = tab === "general" ? product.generalDocumentId : undefined;
-  const [generalDoc, generalNumbers, hiddenArticles, bookletResult, savedCopies, baseVersion, generalDependents] = gid
+  const [generalDoc, generalNumbers, hiddenArticles, bookletResult, savedCopies, baseVersion, generalDependents, omitModes] = gid
     ? await Promise.all([
         services.document.get(gid),
         services.document.numbering(gid),
@@ -135,8 +135,10 @@ export default async function ProductDetailPage({
         services.product.generalBaseVersion(id),
         // 템플릿 밖의 참조(탑재한 담보의 담보약관 · 함수조항) — 참조 깨짐을 화면이 바로 센다 (ADR-0081)
         services.product.generalDependents(id),
+        // 조 생략 기준 (ADR-0093) — 템플릿과 다른 조만
+        services.product.listArticleOmitModes(id),
       ])
-    : [undefined, new Map<Id, NodeNumber>(), [] as Id[], undefined, [], undefined, undefined];
+    : [undefined, new Map<Id, NodeNumber>(), [] as Id[], undefined, [], undefined, undefined, []];
   // 조 사본 (ADR-0079) — 템플릿에서 조가 지워진 사본은 쓰이지 않는다(다음 저장에서 지워진다). 이 상품의 본문 = 템플릿 + 사본.
   const articleCopies = generalDoc ? liveArticleCopies(generalDoc.tree, savedCopies) : [];
   const effectiveTree = generalDoc ? applyArticleCopies(generalDoc.tree, articleCopies) : undefined;
@@ -272,7 +274,7 @@ export default async function ProductDetailPage({
         <p className="ts-error-banner">{outcome.message}</p>
       ) : null;
   } else if (c?.startsWith("template:")) {
-    // 템플릿 교체 — 조 노출·오버라이드는 템플릿의 노드에 매달린 설정이라 함께 초기화된다 (기능/상품 §3 「보통약관」).
+    // 템플릿 교체 — 조 노출 · 조 생략 기준 · 옵션 오버라이드 · 조 사본은 템플릿의 노드에 매달린 설정이라 함께 초기화된다 (기능/상품 §3 「보통약관」).
     // `dryRun` 으로 묻는다: 확인 주소를 그리는 GET 이 템플릿을 바꿔서는 안 되는데 (뒤로가기 · 다른 창),
     // 「잃을 것이 있는가」를 화면이 다시 계산하면 서비스와 갈라진다 — 판정은 서비스가 한다 (코덱스 리뷰 후속).
     const newId = c.slice(9) || undefined;
@@ -360,6 +362,7 @@ export default async function ProductDetailPage({
           templateChanged={templateChanged}
           articleCopies={articleCopies}
           lockedArticles={lockedArticles}
+          omitModes={omitModes}
           {...(generalDependents ? { dependents: generalDependents } : {})}
           {...(copyEditorData ? { copyEditorData } : {})}
           generalNumbers={generalNumbers}

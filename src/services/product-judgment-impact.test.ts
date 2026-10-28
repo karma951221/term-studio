@@ -57,6 +57,10 @@ describe("상품담보 탭 저장의 판정 변화 영향 (PGlite)", () => {
   let svc: ProductService;
   /** 판정 기록 가짜 — 조립 대신 부를 때마다 차례로 돌려준다(없으면 판정 기록 없음 = 대치 형태로 본다). */
   let records: (undefined | { articleId: string; result: "special" | "delegate"; k: number; n: number }[])[] = [];
+  /** 특약 조 판정 기록 가짜 (ADR-0093 결정 6) — 같은 조립 한 번이 돌려주는 생략 기록, 부를 때마다 차례로(없으면 빈 목록). */
+  type Omission = { productCoverageId: string; productCoverageName: string; articleId: string; articleTitle: string; disposition: "omitted" | "applied" | "full" };
+  let omissions: Omission[][] = [];
+  let bookletCalls = 0;
 
   beforeAll(async () => {
     t = await createTestDb();
@@ -70,7 +74,13 @@ describe("상품담보 탭 저장의 판정 변화 영향 (PGlite)", () => {
         validate: async () => [],
         dependents: async (id) => (id === GENERAL ? dependents() : { documents: [], clauses: [] }),
       },
-      judgment: { firstSection: async () => records.shift() },
+      judgment: {
+        booklet: async () => {
+          bookletCalls++;
+          const firstSection = records.shift();
+          return { ...(firstSection ? { firstSection } : {}), omitted: omissions.shift() ?? [] };
+        },
+      },
     });
   });
   afterAll(async () => {
@@ -131,5 +141,58 @@ describe("상품담보 탭 저장의 판정 변화 영향 (PGlite)", () => {
     expect(impact.judgment?.verdicts.map((v) => `${v.label} ${v.before} → ${v.after}`)).toEqual(["제1조(지급사유) 특칙 1/2 → 대치", "제2조(세부규정) 특칙 1/2 → 마스터"]);
     expect(impact.judgment?.revived).toEqual([{ articleId: "a21", label: "제2조(세부규정)" }]);
     expect(impact.judgment?.brokenRefs).toEqual([{ articleId: "a22", label: "제3조(계약의 소멸)", message: expect.stringContaining("이 상품의 블록이 아닙니다") }]);
+  });
+  it("상품담보 탭 저장이 특약 조 판정을 바꾸면(제1절 판정은 그대로) 영향에 「특약 조 판정이 바뀌는 조」 묶음(specials) — 확인 모달 · 1차는 되돌린다", async () => {
+    const p = unwrap(await svc.createProduct(editor, { name: "판정 변화 — 특약 조", generalDocumentId: GENERAL }));
+    const pc = unwrap(await svc.mount(editor, p.id, BASE, [], "base"));
+    const rec = (disposition: Omission["disposition"]): Omission => ({ productCoverageId: "pc9", productCoverageName: "골절진단", articleId: "b9", articleTitle: "제2조(보험금 지급에 관한 세부규정)", disposition });
+    records = [undefined, undefined];
+    omissions = [[rec("applied")], [rec("full")]];
+    const rename = { added: [], updated: [{ id: pc.id, name: "새 이름", plans: [] }], removed: [] };
+    const impact = confirmation(await svc.saveCoverages(editor, p.id, rename));
+    expect(impact.valueRowsLost).toBe(0);
+    expect(impact.judgment?.verdicts).toEqual([]);
+    expect(impact.judgment?.specials).toEqual([{ productCoverageId: "pc9", articleId: "b9", label: "골절진단 › 제2조(보험금 지급에 관한 세부규정)", before: "준용", after: "통째" }]);
+    expect((await svc.getProductCoverage(pc.id))?.name).not.toBe("새 이름");
+    omissions = [];
+    unwrap(await svc.saveCoverages(editor, p.id, rename, { confirm: true }));
+    expect((await svc.getProductCoverage(pc.id))?.name).toBe("새 이름");
+  });
+
+  it("보통약관 탭 — 생략 기준을 바꿔 특약 조 판정이 바뀌면 확인(편집자도) · 확인하면 저장 · 판정이 그대로면 묻지 않고 저장 · 생략 기준을 안 바꾼 저장은 probe 하지 않는다", async () => {
+    const p = unwrap(await svc.createProduct(editor, { name: "판정 변화 — 생략 기준", generalDocumentId: GENERAL }));
+    const settings = (omitModes: { articleId: string; mode: "exact" | "contained" }[], hiddenArticles: string[] = [], confirm = false) =>
+      svc.saveGeneralSettings(editor, p.id, { generalDocumentId: GENERAL, hiddenArticles, overrides: [], copies: [], omitModes }, { confirm });
+    const rec = (disposition: Omission["disposition"]): Omission => ({ productCoverageId: "pc1", productCoverageName: "암진단", articleId: "b1", articleTitle: "제1조(보험금의 지급사유)", disposition });
+    records = [];
+
+    // 통째 → 생략 — 편집자도 확인 모달(잃는 값 없음), 1차는 되돌린다
+    omissions = [[rec("full")], [rec("omitted")]];
+    const impact = confirmation(await settings([{ articleId: "a22", mode: "contained" }]));
+    expect(impact.valueRowsLost).toBe(0);
+    expect(impact.cascade).toEqual([]);
+    expect(impact.judgment?.specials).toEqual([{ productCoverageId: "pc1", articleId: "b1", label: "암진단 › 제1조(보험금의 지급사유)", before: "통째", after: "생략" }]);
+    expect(await svc.listArticleOmitModes(p.id)).toEqual([]);
+
+    // 확인하면 저장 — 다시 견주지 않는다
+    const calls = bookletCalls;
+    unwrap(await settings([{ articleId: "a22", mode: "contained" }], [], true));
+    expect(await svc.listArticleOmitModes(p.id)).toEqual([{ articleId: "a22", mode: "contained" }]);
+    expect(bookletCalls).toBe(calls);
+
+    // 판정이 그대로 — 묻지 않고 저장된다(해 본 저장을 그대로 남긴다)
+    omissions = [[rec("full")], [rec("full")]];
+    unwrap(await settings([{ articleId: "a22", mode: "contained" }, { articleId: "a20", mode: "contained" }]));
+    expect(await svc.listArticleOmitModes(p.id)).toEqual([
+      { articleId: "a20", mode: "contained" },
+      { articleId: "a22", mode: "contained" },
+    ]);
+    expect(bookletCalls).toBe(calls + 2);
+
+    // 생략 기준을 안 바꾼 저장(조 노출 끔)은 견주지 않는다
+    omissions = [];
+    unwrap(await settings([{ articleId: "a20", mode: "contained" }, { articleId: "a22", mode: "contained" }], ["a21"]));
+    expect(await svc.listHiddenArticles(p.id)).toEqual(["a21"]);
+    expect(bookletCalls).toBe(calls + 2);
   });
 });

@@ -7,7 +7,7 @@ import { ENUMS_MENU, menuCrumb } from "@/app/_lib/menu";
 
 import { createEnumEditAction } from "../edit-actions";
 import type { EnumEditData } from "../edit-types";
-import { duplicateValueCodes, FieldsEditor, ValuesEditor } from "../[code]/EnumTables";
+import { BasicSection, duplicateValueCodes, FieldsEditor, ValuesEditor } from "../[code]/EnumTables";
 
 /** 이름 칸 — 목록 검색어가 넘어왔고 아직 그대로면 「제안」 배지. */
 function NameRow({ suggested }: { suggested: string }) {
@@ -35,7 +35,7 @@ export function EnumCreator({ suggested }: { suggested: string }) {
     saveDisabled={(data) => !data.label.trim() || duplicateValueCodes(data.values).size > 0}
   >
     <div className="ts-l2-main">
-      <NameRow suggested={suggested} />
+      <BasicSection><NameRow suggested={suggested} /></BasicSection>
       <FieldsEditor />
       <ValuesEditor />
     </div>

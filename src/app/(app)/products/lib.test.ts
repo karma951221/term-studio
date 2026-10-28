@@ -26,6 +26,7 @@ import {
   generalTabIssues,
   omissionCounts,
   omissionPairLabel,
+  omissionPairVerdict,
   productDetailPath,
   productTabOf,
   legacyProductTabRedirect,
@@ -333,6 +334,15 @@ describe("products lib — 조립 미리보기의 조연결 판정 절 (기능/�
     expect(omissionPairLabel(1, "table")).toBe("표 1");
     expect(omissionPairLabel(2, "box")).toBe("박스 2");
     expect(omissionPairLabel(1, "error")).toBe("오류 노드 1");
+  });
+
+  it("포함 생략의 대조 표 — 보통약관에만 있는 항은 「보통약관에만」", () => {
+    const extra = { special: null, general: 2, matched: false };
+    expect(omissionPairVerdict(extra, { basis: "contained" })).toBe("보통약관에만");
+    expect(omissionPairVerdict({ special: 1, general: 1, matched: true }, { basis: "contained" })).toBe("일치");
+    expect(omissionPairVerdict({ special: 1, general: 1, matched: false }, { basis: "contained" })).toBe("불일치");
+    // 포함 생략이 아닌 기록(통째 · 옛 기록)은 그대로 불일치
+    expect(omissionPairVerdict(extra, {})).toBe("불일치");
   });
 
   it("excludedClauseLabel — 보통약관 트리의 block 함수조항 참조 노드면 「함수조항 코드(라벨)」, 못 찾으면 노드 id", () => {

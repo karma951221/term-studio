@@ -22,7 +22,11 @@ export function caseValueLabel(subject: SwitchSubject | undefined, code: string)
   return known ? switchValueLabel(subject, code) : `없는 값 ${code}`;
 }
 
-export function CaseControls({ subject, branch, branches, apply }: { subject: SwitchSubject | undefined; branch: CaseLike; branches: readonly CaseLike[]; apply: (ops: readonly EditOp[]) => boolean }) {
+/**
+ * `reserve` — 「칸이 비었다」 줄의 자리를 늘 잡아 둔다(편집 탭 폼). 좁은 폭에서 그 줄은 제 줄을 차지하는데, 칸 문구를 쓰다 다른 칸을 누르면
+ * 누르는 순간(초점이 떠나며 문구가 적용) 줄이 사라져 아래 칸이 밀려 올라가고, 뗄 때 다른 곳을 눌러 클릭이 빗나간다.
+ */
+export function CaseControls({ subject, branch, branches, apply, reserve = false }: { subject: SwitchSubject | undefined; branch: CaseLike; branches: readonly CaseLike[]; apply: (ops: readonly EditOp[]) => boolean; reserve?: boolean }) {
   const values = branch.values ?? [];
   const known = new Set((subject?.values ?? []).map((v) => v.code));
   const set = (next: readonly string[], empty = branch.empty === true) => apply([{ type: "setCase", branchId: branch.id, values: sortValues(subject, next), empty }]);
@@ -52,7 +56,11 @@ export function CaseControls({ subject, branch, branches, apply }: { subject: Sw
       <label className="ts-switch-empty" title={hasBody && !branch.empty ? "본문을 지운 뒤 켠다 — 「문구 없음」 칸은 본문이 없다" : "이 칸은 아무것도 내지 않는다"}>
         <input type="checkbox" checked={branch.empty === true} disabled={hasBody && !branch.empty} onChange={(e) => set(values, e.target.checked)} /> {SWITCH_WORD.empty}
       </label>
-      {!branch.empty && !hasBody && <span className="ts-cond-issue">칸이 비었다 — 본문을 쓰거나 「{SWITCH_WORD.empty}」</span>}
+      {(reserve || (!branch.empty && !hasBody)) && (
+        <span className="ts-cond-issue" style={!branch.empty && !hasBody ? undefined : { visibility: "hidden" }} aria-hidden={!branch.empty && !hasBody ? undefined : true}>
+          칸이 비었다 — 본문을 쓰거나 「{SWITCH_WORD.empty}」
+        </span>
+      )}
     </>
   );
 }

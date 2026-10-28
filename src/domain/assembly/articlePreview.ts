@@ -5,7 +5,7 @@
  * - 담보약관: 넘긴 트리(편집본)를 그 담보의 문서 자리에 끼워 `assembleSpecial` (그 상품담보 문맥 · 그 특약 한 벌 번호).
  *   대치 형태의 기본계약 상품담보는 특약으로 찍히지 않으므로(보통약관 조를 대치한다) 미리보기 대상이 아니다. 절 형태의 블록은 그 블록이다.
  * - 보통약관: 넘긴 트리를 그 상품의 보통약관 자리에 끼워 `assembleGeneral` (기본계약 문맥 · 조 사본 · 노출 끔 · 대치 그대로).
- * - 조립이 그 조를 내지 않으면 까닭 하나 — 생략 판정(보통약관 조와 같음) · 노출 끔 · 그 밖(조건으로 빠짐 · 빈 조).
+ * - 조립이 그 조를 내지 않으면 까닭 하나 — 생략 판정(보통약관 조와 같음 · 포함됨) · 노출 끔 · 그 밖(조건으로 빠짐 · 빈 조).
  */
 import type { DocumentNode } from "../document/nodes";
 import type { Id, Issue } from "../types";
@@ -31,7 +31,8 @@ export type ArticlePreview =
       /** 상품이 이 조의 사본을 쓴다 (ADR-0079). */
       articleCopy?: true;
     }
-  | { kind: "dropped"; reason: "omitted"; linkedArticleTitle: string }
+  /** `contained` — 보통약관 조에 포함돼 생략(생략 기준 「포함하면 생략」 · ADR-0093). 없으면 「같아서」 생략. */
+  | { kind: "dropped"; reason: "omitted"; linkedArticleTitle: string; contained?: true }
   | { kind: "dropped"; reason: "hidden" | "notEmitted" }
   | { kind: "unavailable"; message: string };
 
@@ -61,7 +62,12 @@ export function previewArticle(master: MasterBundle, product: ProductInput, targ
     const omitted = r.value.omitted.find((o) => o.articleId === articleId && o.disposition === "omitted");
     if (omitted) {
       const linked = articleIn(r.value.general, omitted.linkedArticleId);
-      return { kind: "dropped", reason: "omitted", linkedArticleTitle: linked ? `${linked.label}(${linked.title})` : omitted.articleTitle };
+      return {
+        kind: "dropped",
+        reason: "omitted",
+        linkedArticleTitle: linked ? `${linked.label}(${linked.title})` : omitted.articleTitle,
+        ...(omitted.basis === "contained" ? { contained: true as const } : {}),
+      };
     }
     return { kind: "dropped", reason: "notEmitted" };
   }

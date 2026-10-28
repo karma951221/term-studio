@@ -52,10 +52,9 @@ test(
       await item.fill("면제사유: ");
       await item.press("End");
       await tool("슬롯").click();
-      const dialog = page.getByRole("dialog", { name: "치환 슬롯 넣기", exact: true });
+      const dialog = editForm(page, "치환 슬롯 넣기");
       await pickCombo(dialog.locator("#pop-slot"), { value: "arg.사유" });
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await insertFrom(page, dialog);
       await page.getByRole("button", { name: "저장", exact: true }).click();
       await page.waitForURL(/\/functions\/C\d+$/);
       return decodeURIComponent(page.url().split("/").at(-1)!);

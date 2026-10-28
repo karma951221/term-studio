@@ -425,8 +425,8 @@ describe("refs 그래프 — 정적 마스터 박스 (최종 결정 9)", () => {
 
   it("박스는 선언된 실체(box:코드)이고, 문서 · 함수조항 본문의 박스 참조가 boxRef 간선을 낸다", () => {
     const g = buildGraph({ boxes: [{ code: "BX000001", title: "암 정의", lines: ["x"] }, { code: "BX000002", title: "", lines: ["y"] }], clauses: [박스조항], documents: [doc] });
-    // 표시 이름 = 【제목】, 제목 없는 박스는 「(제목 없음) 본문 앞머리」 (기능/박스 §3.1, 2026-10-21)
-    expect(g.nodes.get("box:BX000001")?.label).toBe("【암 정의】");
+    // 표시 이름 = 제목(목록 이름, 【】 없이), 제목 없는 박스는 「(제목 없음) 본문 앞머리」 (기능/박스 §3.1, 2026-10-28)
+    expect(g.nodes.get("box:BX000001")?.label).toBe("암 정의");
     expect(g.nodes.get("box:BX000002")?.label).toBe("(제목 없음) y");
     expect(edgesTo(g, "box:BX000001").map((e) => [e.from.kind, e.via, e.at.nodePath?.at(-1)])).toEqual([
       ["clause", "boxRef", "bx-in"],

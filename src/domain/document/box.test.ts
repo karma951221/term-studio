@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { boxGist, boxGistLabel, boxHeading, boxLabel, boxLinesFromText, boxLinesText, boxPickLabel, boxSearchTexts, createBox, formatBoxCode, isValidBoxCode, normalizeBoxTitle, reviseBox } from "./box";
+import { boxGist, boxGistLabel, boxLabel, boxLinesFromText, boxLinesText, boxPickLabel, boxSearchTexts, createBox, formatBoxCode, headedBoxLines, isBoxHeadingLine, isValidBoxCode, normalizeBoxTitle, reviseBox } from "./box";
 
 /** 순번 출처 흉내 — 부를 때마다 1 씩 오른다. */
 function seqSource(start = 1) {
@@ -32,14 +32,14 @@ describe("박스 마스터 (기능/박스 §3.1 — 정적 마스터, 코드는 
     expect(await createBox({ title: "보험료", lines: ["나"] }, nextSeq)).toMatchObject({ ok: true, value: { code: "BX000002", title: "보험료" } });
   });
 
-  it("제목은 괄호 없이 적는다 — 통째로 【】에 싸여 들어오면 벗기고, 안에 【】가 남으면 거부한다 (순번도 태우지 않는다)", async () => {
+  it("제목은 목록 이름이라 괄호 없이 적는다 — 통째로 【】에 싸여 들어오면 벗기고, 안에 【】가 남으면 거부한다(【】 머리는 본문에) (순번도 태우지 않는다)", async () => {
     const nextSeq = seqSource();
     expect(normalizeBoxTitle(" 【 보험료 】 ")).toBe("보험료");
     expect(normalizeBoxTitle("보험료")).toBe("보험료");
     expect(await createBox({ title: "【보험료】", lines: ["x"] }, nextSeq)).toMatchObject({ ok: true, value: { code: "BX000001", title: "보험료" } });
     const r = await createBox({ title: "【보험료】(알파Plus)", lines: ["x"] }, nextSeq);
     expect(r.ok).toBe(false);
-    if (!r.ok && r.rejection.reason === "invalid") expect(r.rejection.issues[0].message).toContain("【】");
+    if (!r.ok && r.rejection.reason === "invalid") expect(r.rejection.issues[0].message).toContain("본문");
     expect(await createBox({ title: "x", lines: ["x"] }, nextSeq)).toMatchObject({ ok: true, value: { code: "BX000002" } });
   });
 
@@ -56,25 +56,42 @@ describe("박스 마스터 (기능/박스 §3.1 — 정적 마스터, 코드는 
     expect(reviseBox(box, { title: "보험연도", lines: [] }).ok).toBe(false);
   });
 
-  it("표시 — 제목은 시스템이 【】로 감싸고, 제목 없는 박스는 「(제목 없음)」 + 첫 줄 앞머리, 고르는 칸의 줄은 【제목】 + 본문 앞머리", () => {
-    expect(boxHeading("보험료")).toBe("【보험료】");
-    expect(boxHeading("")).toBe("");
-    expect(boxLabel({ title: "보험료", lines: ["가"] })).toBe("【보험료】");
+  it("표시 — 제목은 목록 이름 그대로(【】로 감싸지 않는다), 제목 없는 박스는 「(제목 없음)」 + 앞머리, 고르는 칸의 줄은 제목 + 본문 앞머리 (2026-10-28)", () => {
+    expect(boxLabel({ title: "보험료", lines: ["【보험료】", "가"] })).toBe("보험료");
     expect(boxLabel({ title: "", lines: ["", "발생할 경우 미리 정해진 비율로 보험금을 감액하여 지급"] })).toBe("(제목 없음) 발생할 경우 미리 정해진 비율로…");
     expect(boxLabel({ title: "", lines: [] })).toBe("(제목 없음)");
     expect(boxGist({ lines: ["  짧은 줄  "] })).toBe("짧은 줄");
-    expect(boxGistLabel({ title: "보험료", lines: ["보험료는 계약자가 회사에 내는 돈으로 매월 납입한다"] })).toBe("【보험료】 보험료는 계약자가 회사에 내는 돈으로…");
+    expect(boxGistLabel({ title: "보험료", lines: ["보험료는 계약자가 회사에 내는 돈으로 매월 납입한다"] })).toBe("보험료 보험료는 계약자가 회사에 내는 돈으로…");
     expect(boxGistLabel({ title: "", lines: ["가"] })).toBe("(제목 없음) 가");
   });
 
-  it("고르기 목록 한 줄 — 【제목】(코드) 본문 앞머리 · 제목 없는 박스는 (제목 없음)(코드) 본문 앞머리", () => {
-    expect(boxPickLabel({ code: "BX000001", title: "보험료", lines: ["가 나"] })).toBe("【보험료】(BX000001) 가 나");
+  it("앞머리는 본문의 【…】 머리 줄을 건너뛴다 — 머리는 제목과 겹쳐 가르는 데 쓸모가 없다", () => {
+    expect(boxGist({ lines: ["【보험료】", "", "보험료는 매월"] })).toBe("보험료는 매월");
+    expect(boxGist({ lines: ["【보험료】"] })).toBe("");
+    expect(boxLabel({ title: "", lines: ["【보험료】", "가"] })).toBe("(제목 없음) 가");
+  });
+
+  it("머리 줄 — 줄 전체가 【…】 한 덩이면 머리 줄이다(출력에서 굵게)", () => {
+    expect(isBoxHeadingLine("【연단위 복리】")).toBe(true);
+    expect(isBoxHeadingLine(" 【연단위 복리】 ")).toBe(true);
+    expect(isBoxHeadingLine("【가】 설명")).toBe(false);
+    expect(isBoxHeadingLine("【】")).toBe(false);
+    expect(isBoxHeadingLine("보통 줄")).toBe(false);
+  });
+
+  it("옛 박스 → 본문 머리 — 제목이 있으면 본문 앞에 「【제목】」 줄을 넣는다(렌더 결과가 같게), 없으면 그대로", () => {
+    expect(headedBoxLines("연단위 복리", ["회사가 …"])).toEqual(["【연단위 복리】", "회사가 …"]);
+    expect(headedBoxLines("", ["가"])).toEqual(["가"]);
+  });
+
+  it("고르기 목록 한 줄 — 제목(코드) 본문 앞머리 · 제목 없는 박스는 (제목 없음)(코드) 본문 앞머리", () => {
+    expect(boxPickLabel({ code: "BX000001", title: "보험료", lines: ["【보험료】", "가 나"] })).toBe("보험료(BX000001) 가 나");
     expect(boxPickLabel({ code: "BX000002", title: "", lines: ["가 나"] })).toBe("(제목 없음)(BX000002) 가 나");
-    expect(boxPickLabel({ code: "BX000003", title: "보험료", lines: [] })).toBe("【보험료】(BX000003)");
+    expect(boxPickLabel({ code: "BX000003", title: "보험료", lines: [] })).toBe("보험료(BX000003)");
   });
 
   it("검색 — 코드 · 제목 · 본문 글", () => {
-    expect(boxSearchTexts({ code: "BX000001", title: "보험료", lines: ["가", "나"] })).toEqual(["BX000001", "보험료", "【보험료】", "가", "나"]);
+    expect(boxSearchTexts({ code: "BX000001", title: "보험료", lines: ["【보험료】", "나"] })).toEqual(["BX000001", "보험료", "【보험료】", "나"]);
   });
 
   it("줄 칸 글 ↔ 줄 목록 — 한 줄 = 한 줄, 가운데 빈 줄은 남고 끝의 빈 줄은 버린다", () => {

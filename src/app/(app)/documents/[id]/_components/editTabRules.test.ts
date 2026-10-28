@@ -2,9 +2,9 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import type { EditOp } from "@/domain/document";
+import { nodeBuilders, sequentialIds, type ArticleNode, type EditOp } from "@/domain/document";
 
-import { alwaysSubmittable, followUpSpec, formSnapshot, panelTabsFor, pickedOf, submitLabel, tabOnEnterEdit, tabOnLeaveEdit, tabOnPick, useEditGuard } from "./editTabRules";
+import { alwaysSubmittable, articleOptionOps, clauseSideTabsFor, followUpSpec, formSnapshot, panelTabsFor, pickedOf, submitLabel, tabOnEnterEdit, tabOnLeaveEdit, tabOnPick, useEditGuard } from "./editTabRules";
 
 describe("우측 패널 탭 — 편집 탭은 편집 모드에만 맨 앞", () => {
   it("읽기 모드엔 편집 탭이 없다", () => {
@@ -25,6 +25,19 @@ describe("우측 패널 탭 — 편집 탭은 편집 모드에만 맨 앞", () =
   it("무언가 고르면 편집 탭으로 — 돌아갈 탭은 고르기 직전 탭, 이미 편집 탭이면 그대로", () => {
     expect(tabOnPick({ tab: "preview", before: "issues" })).toEqual({ tab: "edit", before: "preview" });
     expect(tabOnPick({ tab: "edit", before: "issues" })).toEqual({ tab: "edit", before: "issues" });
+  });
+});
+
+describe("함수조항 오른쪽 단 탭 — 문면과 같은 규칙", () => {
+  it("읽기 모드엔 「인자 · 옵션」 · 「시험」, 편집 모드면 맨 앞에 편집", () => {
+    expect(clauseSideTabsFor(false)).toEqual(["define", "trial"]);
+    expect(clauseSideTabsFor(true)).toEqual(["edit", "define", "trial"]);
+  });
+  it("편집에 들어가거나 고르면 편집 탭 — 끝나면 들어오기 전 탭으로", () => {
+    const s = tabOnEnterEdit({ tab: "trial", before: "define" });
+    expect(s).toEqual({ tab: "edit", before: "trial" });
+    expect(tabOnPick({ tab: "define", before: "define" })).toEqual({ tab: "edit", before: "define" });
+    expect(tabOnLeaveEdit(s)).toEqual({ tab: "trial", before: "trial" });
   });
 });
 
@@ -110,5 +123,29 @@ describe("미적용 가로채기 — 적용하지 않은 변경이 있으면 확
     act(() => result.current.guard(run));
     act(() => result.current.resolve("apply", () => true));
     expect(run).toHaveBeenCalledOnce();
+  });
+});
+
+describe("조 옵션 폼 (보통약관 템플릿 · ADR-0082 결정 5 · ADR-0093)", () => {
+  const b = nodeBuilders(sequentialIds("o"));
+  const art = (extra: Partial<ArticleNode> = {}): ArticleNode => ({ ...b.article("지급사유", []), ...extra });
+
+  it("준용하기 · 생략 기준 폼 — 바뀐 값만 명령으로, 둘 다 그대로면 빈 목록, 「같을 때만」은 omitMode exact(속성 삭제)", () => {
+    const plain = art();
+    expect(articleOptionOps(plain, "none", "exact")).toEqual([]);
+    expect(articleOptionOps(plain, "common", "exact")).toEqual([{ type: "joinMode", articleId: plain.id, mode: "common" }]);
+    expect(articleOptionOps(plain, "none", "contained")).toEqual([{ type: "omitMode", articleId: plain.id, mode: "contained" }]);
+    const both = art({ joinMode: "all", omitMode: "contained" });
+    expect(articleOptionOps(both, "all", "contained")).toEqual([]);
+    expect(articleOptionOps(both, "none", "exact")).toEqual([
+      { type: "joinMode", articleId: both.id, mode: "none" },
+      { type: "omitMode", articleId: both.id, mode: "exact" },
+    ]);
+    // 모르는 값은 기본(없음 · 같을 때만)으로
+    expect(articleOptionOps(both, "??", "??")).toEqual([
+      { type: "joinMode", articleId: both.id, mode: "none" },
+      { type: "omitMode", articleId: both.id, mode: "exact" },
+    ]);
+    expect(articleOptionOps(plain, "??", "??")).toEqual([]);
   });
 });

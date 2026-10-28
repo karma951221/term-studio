@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { DocumentNode } from "../document/nodes";
+import type { ArticleNode, DocumentNode } from "../document/nodes";
 import { previewArticle, previewSourceView } from "./articlePreview";
 import { assemble } from "./booklet";
 import { alphaBaseDocument, alphaDeathDocument, alphaGeneralDocument, alphaPlusFixture } from "./fixture";
@@ -63,6 +63,17 @@ describe("previewArticle — 저작 화면 미리보기: 고른 상품 문맥으
     for (const o of omitted) {
       expect(run(input, { document: "special", productCoverageId: "pc-addon", tree: alphaDeathDocument() }, o.articleId)).toEqual({ kind: "dropped", reason: "omitted", linkedArticleTitle: expect.any(String) });
     }
+  });
+
+  it("포함 생략이면 dropped omitted + contained", () => {
+    const input = fx();
+    const general = alphaGeneralDocument();
+    (general.children.find((c) => c.id === "g-art-refund") as ArticleNode).omitMode = "contained";
+    const contained: AssemblyInput = { ...input, generalDocuments: new Map([["g-doc", general]]) };
+    const tree = alphaDeathDocument();
+    const reduce = tree.children.find((c) => c.id === "s-art-reduce") as ArticleNode;
+    reduce.children = reduce.children.filter((c) => c.id === "s-par-refund-1");
+    expect(run(contained, { document: "special", productCoverageId: "pc-addon", tree }, "s-art-reduce")).toEqual({ kind: "dropped", reason: "omitted", linkedArticleTitle: expect.any(String), contained: true });
   });
 
   it("담보약관 — 없는 상품담보 · 기본계약 상품담보는 미리보기할 수 없다", () => {

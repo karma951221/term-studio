@@ -439,6 +439,37 @@ describe("준용하기 옵션 (ADR-0082 결정 5 · 기능/문면 §3.10) — �
   });
 });
 
+describe("생략 기준 옵션 (ADR-0093 · 기능/문면 §3.10) — 보통약관 템플릿 조의 메타", () => {
+  it("omitMode 로 「포함하면 생략」을 저장 · 「같을 때만」은 속성을 지운다 · 담보약관 문서 · 조 아닌 노드 · 모르는 값은 거부", () => {
+    const { doc } = twoArticles();
+    const env = { kind: "general" as const };
+    const contained = unwrap(applyCommand(doc, { type: "omitMode", articleId: "n3", mode: "contained" }, { env }));
+    expect((contained.children[0] as ArticleNode).omitMode).toBe("contained");
+    const exact = unwrap(applyCommand(contained, { type: "omitMode", articleId: "n3", mode: "exact" }, { env }));
+    expect("omitMode" in (exact.children[0] as ArticleNode)).toBe(false);
+    expect(rejection(applyCommand(doc, { type: "omitMode", articleId: "n3", mode: "contained" }, { env: { kind: "special" } })).reason).toBe("invalid");
+    expect(rejection(applyCommand(doc, { type: "omitMode", articleId: "n2", mode: "contained" }, { env })).reason).toBe("invalid");
+    expect(rejection(applyCommand(doc, { type: "omitMode", articleId: "n3", mode: "loose" as never }, { env })).reason).toBe("invalid");
+  });
+
+  it("저장 검사(validateTree) — 담보약관의 조에 omitMode 가 있거나 값이 contained 가 아니면 structure · joinMode 와 함께 있어도 둘 다 본다", () => {
+    const { doc } = twoArticles();
+    const withMeta = (meta: Record<string, unknown>) =>
+      ({ ...doc, children: [{ ...(doc.children[0] as ArticleNode), ...meta }, ...doc.children.slice(1)] }) as unknown as DocumentNode;
+    expect(validateTree(withMeta({ omitMode: "contained" }), { kind: "general" })).toEqual([]);
+    expect(validateTree(withMeta({ omitMode: "contained" }), { kind: "special" }).map((i) => i.kind)).toEqual(["structure"]);
+    expect(validateTree(withMeta({ omitMode: "exact" }), { kind: "general" }).map((i) => i.kind)).toEqual(["structure"]);
+    expect(validateTree(withMeta({ joinMode: "common", omitMode: "contained" }), { kind: "general" })).toEqual([]);
+    expect(validateTree(withMeta({ joinMode: "common", omitMode: "loose" }), { kind: "general" }).map((i) => i.message)).toEqual([
+      "생략 기준은 「포함하면 생략」만 저장합니다 — 「같을 때만」은 속성 없음",
+    ]);
+    expect(validateTree(withMeta({ joinMode: "common", omitMode: "contained" }), { kind: "special" }).map((i) => i.message)).toEqual([
+      "준용하기 옵션은 보통약관 템플릿의 조에만 둘 수 있습니다",
+      "생략 기준은 보통약관 템플릿의 조에만 둘 수 있습니다",
+    ]);
+  });
+});
+
 describe("복제 (D-P4-9) — 하위 트리·조연결·참조 대상 id 를 그대로, 노드 id 는 새로", () => {
   it("조 복제 → 바로 뒤에 사본, 사본 안의 자기 조 참조는 사본을 가리킨다", () => {
     const { b, doc } = twoArticles();

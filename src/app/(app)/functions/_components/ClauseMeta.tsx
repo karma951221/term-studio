@@ -13,6 +13,7 @@
 import { useSyncExternalStore } from "react";
 
 import { IconChevron, IconWarn } from "@/app/_components/icons";
+import { InfoTip } from "@/app/_components/InfoTip";
 import { MODE_LABEL, MODE_OPTIONS, NAME_LABEL } from "@/app/_lib/labels";
 import type { ClauseMode, RequiredRefs } from "@/domain/clause";
 import type { AttachLevel, Code } from "@/domain/types";
@@ -187,6 +188,7 @@ export function ClauseMeta(props: ClauseMetaProps) {
           <div className="ts-form-row">
             <span className="ts-form-label" id="clause-mode-label">
               반환 타입
+              {isNew && props.modeLocked ? <InfoTip text="본문을 쓰기 시작해서 반환 타입이 잠겼다 — 바꾸려면 본문을 비운다." /> : null}
             </span>
             {isNew ? (
               <div className="ts-clause-mode" role="radiogroup" aria-labelledby="clause-mode-label">
@@ -197,7 +199,6 @@ export function ClauseMeta(props: ClauseMetaProps) {
                     <span className="ts-clause-mode-hint">{o.hint}</span>
                   </label>
                 ))}
-                {props.modeLocked ? <p className="ts-muted ts-clause-sec-note">본문을 쓰기 시작해서 반환 타입이 잠겼다 — 바꾸려면 본문을 비운다.</p> : null}
               </div>
             ) : (
               <div className="ts-clause-meta-value">

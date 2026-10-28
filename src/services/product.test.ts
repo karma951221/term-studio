@@ -39,7 +39,7 @@ const ART_A = "ffffffff-0000-4000-8000-000000000001"; // GENERAL_DOC 의 조
 const ART_B = "ffffffff-0000-4000-8000-000000000002";
 const ART_OTHER = "ffffffff-0000-4000-8000-000000000003"; // OTHER_DOC 의 조
 
-/** GENERAL_DOC 템플릿 — ART_A(글 + 함수조항 NODE) · ART_B(함수조항 SEED_NODE). */
+/** GENERAL_DOC 템플릿 — ART_A(글 + 함수조항 NODE) · ART_B(함수조항 SEED_NODE · 생략 기준 「포함하면 생략」). */
 function generalTree(): DocumentNode {
   return {
     id: GENERAL_DOC,
@@ -47,7 +47,8 @@ function generalTree(): DocumentNode {
     title: "보통약관",
     children: [
       { id: ART_A, kind: "article", title: titleNodes("목적", ART_A), children: [{ id: "par-a", kind: "paragraph", children: [{ id: "txt-a", kind: "text", text: "원문 A" }] }, { id: NODE, kind: "clauseBlockRef", clauseCode: "C0001", options: MASTER_OPTIONS }] },
-      { id: ART_B, kind: "article", title: titleNodes("지급", ART_B), children: [{ id: SEED_NODE, kind: "clauseBlockRef", clauseCode: "C0001", options: MASTER_OPTIONS }] },
+      // ART_B 의 생략 기준은 템플릿에서 「포함하면 생략」 (ADR-0093) — 상품 조 생략 기준 테스트의 템플릿 값
+      { id: ART_B, kind: "article", title: titleNodes("지급", ART_B), omitMode: "contained", children: [{ id: SEED_NODE, kind: "clauseBlockRef", clauseCode: "C0001", options: MASTER_OPTIONS }] },
     ],
   };
 }
@@ -809,6 +810,64 @@ describe("product 서비스 (PGlite)", () => {
       expect(reason(await svc.setArticleHidden(editor, bare.id, ART_A, true))).toBe("invalid");
       expect(await svc.listHiddenArticles(bare.id)).toEqual([]);
       expect(reason(await svc.setArticleHidden(editor, "cccccccc-0000-4000-8000-000000000009", ART_A, true))).toBe("notFound");
+    });
+  });
+
+  describe("조 생략 기준 (ADR-0093 · 기능/상품 §3.6)", () => {
+    const save = (productId: string, input: Partial<Parameters<ProductService["saveGeneralSettings"]>[2]>) =>
+      svc.saveGeneralSettings(editor, productId, { generalDocumentId: GENERAL_DOC, hiddenArticles: [], overrides: [], ...input });
+
+    it("템플릿과 다른 값만 저장한다 — 같은 값은 행을 두지 않고 목록에서 빠지면 지운다", async () => {
+      const p = unwrap(await svc.createProduct(editor, { name: "생략 기준 저장", generalDocumentId: GENERAL_DOC }));
+      expect(await svc.listArticleOmitModes(p.id)).toEqual([]);
+      // ART_A 템플릿 값 = 같을 때만(속성 없음) · ART_B 템플릿 값 = 포함하면 — 템플릿과 같은 ART_B 는 행을 두지 않는다
+      unwrap(await save(p.id, { omitModes: [{ articleId: ART_A, mode: "contained" }, { articleId: ART_B, mode: "contained" }] }));
+      expect(await svc.listArticleOmitModes(p.id)).toEqual([{ articleId: ART_A, mode: "contained" }]);
+      // 목록에서 빠진 ART_A 는 지운다 · 템플릿과 다른 ART_B 「같을 때만」은 행
+      unwrap(await save(p.id, { omitModes: [{ articleId: ART_B, mode: "exact" }] }));
+      expect(await svc.listArticleOmitModes(p.id)).toEqual([{ articleId: ART_B, mode: "exact" }]);
+      // 생략 기준을 안 보내면(옛 화면) 전부 템플릿대로
+      unwrap(await save(p.id, {}));
+      expect(await svc.listArticleOmitModes(p.id)).toEqual([]);
+    });
+
+    it("템플릿에 없는 조 · 같은 조 두 번 · 모르는 값은 거부하고 아무것도 쓰지 않는다", async () => {
+      const p = unwrap(await svc.createProduct(editor, { name: "생략 기준 거부", generalDocumentId: GENERAL_DOC }));
+      unwrap(await save(p.id, { omitModes: [{ articleId: ART_A, mode: "contained" }] }));
+      const bad = await save(p.id, {
+        hiddenArticles: [ART_A],
+        omitModes: [
+          { articleId: ART_OTHER, mode: "contained" },
+          { articleId: ART_B, mode: "exact" },
+          { articleId: ART_B, mode: "exact" },
+          { articleId: ART_A, mode: "loose" as never },
+        ],
+      });
+      if (bad.ok || bad.rejection.reason !== "invalid") throw new Error("기대: invalid");
+      expect(bad.rejection.issues.map((i) => [i.kind, i.at.articleId, i.message])).toEqual([
+        ["brokenRef", ART_OTHER, "템플릿에 없는 조입니다 — 새로고침해 주세요"],
+        ["typeMismatch", ART_B, "같은 조의 생략 기준이 두 번 왔습니다"],
+        ["typeMismatch", ART_A, expect.stringContaining("생략 기준")],
+      ]);
+      expect(await svc.listArticleOmitModes(p.id)).toEqual([{ articleId: ART_A, mode: "contained" }]);
+      expect(await svc.listHiddenArticles(p.id)).toEqual([]);
+    });
+
+    it("템플릿 교체 · 해제는 생략 기준도 초기화 — 잃을 것 「생략 기준 1」 · 편집자는 「… 숨긴 조 1 · 생략 기준 1 · 옵션 오버라이드 1 가 초기화됩니다」", async () => {
+      const p = unwrap(await svc.createProduct(editor, { name: "생략 기준 교체", generalDocumentId: GENERAL_DOC }));
+      unwrap(await save(p.id, { omitModes: [{ articleId: ART_A, mode: "contained" }] }));
+      const dry = await svc.setGeneralDocument(admin, p.id, OTHER_DOC, { dryRun: true });
+      if (dry.ok || dry.rejection.reason !== "needsConfirmation") throw new Error("기대: needsConfirmation");
+      expect(dry.rejection.impact.cascade).toEqual(["생략 기준 1"]);
+
+      unwrap(await save(p.id, { hiddenArticles: [ART_B], overrides: [{ nodeId: NODE, clauseCode: "C0001", options: { style: "B" } }], omitModes: [{ articleId: ART_A, mode: "contained" }] }));
+      const refused = await svc.setGeneralDocument(editor, p.id, undefined, { confirm: true });
+      if (refused.ok || refused.rejection.reason !== "invalid") throw new Error("기대: invalid");
+      expect(refused.rejection.issues.map((i) => i.message)).toEqual(["템플릿 해제는 관리자만 할 수 있습니다 — 숨긴 조 1 · 생략 기준 1 · 옵션 오버라이드 1 가 초기화됩니다"]);
+      expect(await svc.listArticleOmitModes(p.id)).toEqual([{ articleId: ART_A, mode: "contained" }]);
+
+      unwrap(await svc.setGeneralDocument(admin, p.id, OTHER_DOC, { confirm: true }));
+      expect(await svc.listArticleOmitModes(p.id)).toEqual([]);
     });
   });
 

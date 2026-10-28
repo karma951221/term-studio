@@ -2,18 +2,23 @@
 
 /**
  * 우측 패널 「편집」 탭 (2026-10-21, 기능/문면 §4.3) — 본문에서 고른 것의 고치기 폼 · 툴바 넣기 폼. 예전 본문 위 팝업 자리.
+ * 함수조항 편집기 오른쪽 단의 「편집」 탭도 이 부품이다 (2026-10-28, 기능/함수조항 §4.3).
  *
  * - 고른 것이 없으면 안내 한 줄.
  * - 탭 맨 아래 고정 줄 〔되돌리기 · 적용〕(넣기 폼이면 〔되돌리기 · 넣기〕) — 고친 것이 없으면 둘 다 꺼진다(넣기는 처음 값으로도 넣는다).
+ *   버튼은 제목 줄과 같은 글자 버튼 규격(`HeadButton`, 디자인원칙 §1.9).
  *   적용은 편집본에만(저장은 바의 `저장` 한 번, ADR-0074). 되돌리기는 폼을 처음 값으로 다시 그린다.
  */
+import type { ReactNode } from "react";
+
+import { HeadButton } from "@/app/_components/HeadActions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import type { EditOp } from "@/domain/document";
 
 import { alwaysSubmittable, submitLabel, type GuardChoice } from "./editTabRules";
 import type { PopupSpec } from "./menus";
-import { PopupHost, type PopupEnv } from "./Popups";
+import { PopupHost, ShellHost, type PopupEnv } from "./Popups";
 
 export const EDIT_FORM_ID = "ts-edit-form";
 
@@ -28,10 +33,16 @@ export function EditTab({
   onApplied,
   onRevert,
   onClear,
+  form,
+  empty = EDIT_TAB_EMPTY,
 }: {
   env: PopupEnv;
   /** 지금 폼 — 없으면 빈 상태. */
   spec?: PopupSpec;
+  /** `spec` 대신 그릴 편집기 고유 폼(함수조항 옵션 자리) — `Frame` · `PopForm` 으로 지으면 이 탭의 고정 줄을 쓴다. */
+  form?: ReactNode;
+  /** 빈 상태 안내 — 편집기마다 고를 수 있는 것이 다르다. */
+  empty?: string;
   /** 폼을 처음 값으로 다시 그릴 열쇠(되돌리기 · 적용 뒤 · 새로 고름). */
   formKey: number;
   dirty: boolean;
@@ -40,19 +51,26 @@ export function EditTab({
   onRevert: () => void;
   onClear: () => void;
 }) {
-  if (!spec) return <p className="ts-edit-empty">{EDIT_TAB_EMPTY}</p>;
+  if (!spec) return <p className="ts-edit-empty">{empty}</p>;
+  const panel = { formId: EDIT_FORM_ID, onApplied, onDirty };
   return (
     <div className="ts-edit-tab">
       <div className="ts-edit-body">
-        <PopupHost key={formKey} env={env} spec={spec} anchor={{ x: 0, y: 0 }} onClose={onClear} panel={{ formId: EDIT_FORM_ID, onApplied, onDirty }} />
+        {form ? (
+          <ShellHost key={formKey} panel={panel}>
+            {form}
+          </ShellHost>
+        ) : (
+          <PopupHost key={formKey} env={env} spec={spec} anchor={{ x: 0, y: 0 }} onClose={onClear} panel={panel} />
+        )}
       </div>
       <div className="ts-edit-foot">
-        <button type="button" disabled={!dirty} onClick={onRevert}>
+        <HeadButton disabled={!dirty} onClick={onRevert}>
           되돌리기
-        </button>
-        <button type="submit" form={EDIT_FORM_ID} className="primary" disabled={!dirty && !alwaysSubmittable(spec)}>
+        </HeadButton>
+        <HeadButton type="submit" form={EDIT_FORM_ID} primary disabled={!dirty && !alwaysSubmittable(spec)}>
           {submitLabel(spec)}
-        </button>
+        </HeadButton>
       </div>
     </div>
   );

@@ -20,7 +20,7 @@ import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 
 import { IconButton, IconCopy, IconTrash } from "@/app/_components/icons";
 import { StaticTable } from "@/app/_components/StaticNodes";
-import { REPEAT_DEPTH_LABEL, SWITCH_WORD } from "@/app/_lib/labels";
+import { OMIT_MODE_LABEL, REPEAT_DEPTH_LABEL, SWITCH_WORD } from "@/app/_lib/labels";
 import {
   refChunkText,
   referenceTargetLabel,
@@ -841,6 +841,27 @@ function ArticleJoinMode({ article, ctx }: { article: ArticleNode; ctx: DocCtx }
   );
 }
 
+/** 생략 기준 옵션 (보통약관 템플릿 조 · ADR-0093) — 「포함하면 생략」일 때만 조 바로 위 평문(준용하기와 같은 자리 · 같은 모양). 편집 모드면 같은 폼을 연다. */
+function ArticleOmitMode({ article, ctx }: { article: ArticleNode; ctx: DocCtx }) {
+  const text = `생략 기준 — ${OMIT_MODE_LABEL.contained}`;
+  const title = "생략 기준 — 특약 조가 이 조에 포함되면 생략한다(기본은 같을 때만)";
+  if (!ctx.edit) {
+    return (
+      <p className="ts-doc-cond-head" title={title}>
+        {text}
+      </p>
+    );
+  }
+  const edit = ctx.edit;
+  return (
+    <p>
+      <button type="button" className="ts-doc-cond-head ts-doc-cond-btn" title="생략 기준 고치기" onClick={(e) => edit.popup({ kind: "joinMode", articleId: article.id }, anchorOf(e.currentTarget))}>
+        {text}
+      </button>
+    </p>
+  );
+}
+
 function Article({ node, ctx }: { node: ArticleNode; ctx: DocCtx }) {
   const num = ctx.numbers.get(node.id);
   const label = num?.label ?? "조";
@@ -848,6 +869,7 @@ function Article({ node, ctx }: { node: ArticleNode; ctx: DocCtx }) {
     <section id={`art-${node.id}`} className="ts-doc-article" data-article={node.id}>
       {node.linkedArticleId !== undefined && <ArticleLink article={node} ctx={ctx} />}
       {node.joinMode !== undefined && <ArticleJoinMode article={node} ctx={ctx} />}
+      {node.omitMode === "contained" && !ctx.copyEditor && <ArticleOmitMode article={node} ctx={ctx} />}
       <h3 className={`ts-doc-article-title${flash(ctx, node.id)}`} data-article-title={node.id} data-node={node.id}>
         {label}(<InlineSlot at={{ parentId: node.id, slot: "title" }} nodes={node.title} ctx={ctx} placeholder="조 제목" />)
         <BlockActs id={node.id} what={label} ctx={ctx} />

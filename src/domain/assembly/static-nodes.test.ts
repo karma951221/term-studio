@@ -157,11 +157,11 @@ describe("순번 별칭은 구조가 같음을 증명한 경우에만 만든다 
 
 describe("정적 마스터 박스 참조가 조립에서 박스 내용으로 펼쳐진다 (최종 결정 9)", () => {
   const boxes = [
-    { code: "BX000001", name: "암 정의 박스", title: "암의 정의", lines: ["암이란 …", "", "유사암 제외"] },
-    { code: "BX000002", name: "예시", title: "", lines: ["예시 줄"] },
+    { code: "BX000001", title: "암 정의 박스", lines: ["【암의 정의】", "암이란 …", "", "유사암 제외"] },
+    { code: "BX000002", title: "", lines: ["예시 줄"] },
   ];
 
-  it("boxRef가 박스 내용으로 펼쳐진다 — 조 자리 · 항 뒤(호 목록 자리) 모두, 제목 · 줄은 마스터 그대로", () => {
+  it("boxRef가 박스 내용으로 펼쳐진다 — 조 자리 · 항 뒤(호 목록 자리) 모두, 본문(줄)만 마스터 그대로 — 제목은 목록 이름이라 찍히지 않는다 (2026-10-28)", () => {
     const input = alphaPlusFixture();
     const b = nodeBuilders(sequentialIds("x"));
     const general = input.generalDocuments.get("g-doc")!;
@@ -173,7 +173,7 @@ describe("정적 마스터 박스 참조가 조립에서 박스 내용으로 펼
     expect(booklet.issues).toEqual([]);
     const a1 = booklet.general!.children[0] as RenderedArticle;
     expect(a1.children.map((c) => c.kind)).toEqual(["paragraph", "box"]);
-    expect(a1.children[1]).toMatchObject({ kind: "box", title: "암의 정의", lines: ["암이란 …", "", "유사암 제외"] });
+    expect(a1.children[1]).toEqual({ kind: "box", id: expect.any(String), title: "", lines: ["【암의 정의】", "암이란 …", "", "유사암 제외"] });
     expect((a1.children[0] as RenderedParagraph).items?.map((i) => i.kind)).toEqual(["item", "box"]);
   });
 
@@ -187,7 +187,7 @@ describe("정적 마스터 박스 참조가 조립에서 박스 내용으로 펼
     const booklet = assembleInput({ ...input, clauses: [...input.clauses, clause], boxes });
     expect(booklet.issues).toEqual([]);
     const a1 = booklet.general!.children[0] as RenderedArticle;
-    expect(a1.children.at(-1)).toMatchObject({ kind: "box", title: "암의 정의" });
+    expect(a1.children.at(-1)).toMatchObject({ kind: "box", title: "", lines: ["【암의 정의】", "암이란 …", "", "유사암 제외"] });
   });
 
   it("없는 박스를 가리키면 그 자리가 brokenRef 오류 마커가 된다", () => {

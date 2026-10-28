@@ -202,7 +202,7 @@ export function createAssemblyService(db: Db, services: AssemblyServices): Assem
     const p = await product.getProduct(productId);
     if (!p) return reject({ reason: "notFound", what: `상품 ${productId}` });
 
-    const [coverages, baseContractIds, productValues, planOptions, definedPlanOptions, productOverrides, hiddenArticleIds, articleCopies, groups] = await Promise.all([
+    const [coverages, baseContractIds, productValues, planOptions, definedPlanOptions, productOverrides, hiddenArticleIds, articleCopies, omitModes, groups] = await Promise.all([
       loadCoverages(productId),
       listBaseContractIds(db, productId),
       product.getProductValues(productId),
@@ -211,6 +211,7 @@ export function createAssemblyService(db: Db, services: AssemblyServices): Assem
       product.listOptionOverrides({ kind: "product", id: productId }),
       product.listHiddenArticles(productId),
       product.listArticleCopies(productId),
+      product.listArticleOmitModes(productId),
       product.listGroups(productId),
     ]);
     // 가리키는 문서가 마스터에 없으면 「템플릿 미선택」과 같다 — id 를 싣지 않는다
@@ -229,6 +230,8 @@ export function createAssemblyService(db: Db, services: AssemblyServices): Assem
         hiddenArticleIds: new Set(hiddenArticleIds),
         // 조 사본 (ADR-0079) — 템플릿에 자리가 없는 사본은 조립이 쓰지 않는다(generalDocumentOf)
         ...(articleCopies.length > 0 ? { articleCopies: new Map(articleCopies.map((c) => [c.articleId, c.article] as const)) } : {}),
+        // 조 생략 기준 (ADR-0093) — 템플릿과 다른 값만 저장돼 있다 · 실효 기준은 조립이 템플릿 원본과 합쳐 정한다
+        ...(omitModes.length > 0 ? { articleOmitModes: new Map(omitModes.map((o) => [o.articleId, o.mode] as const)) } : {}),
         // 특약 그룹 설정 (ADR-0090) — 저장한 적 없으면 싣지 않는다(기본 그룹만 열거값 순)
         ...(groups.groups.length > 0 || groups.memberships.length > 0 ? { groups } : {}),
       },

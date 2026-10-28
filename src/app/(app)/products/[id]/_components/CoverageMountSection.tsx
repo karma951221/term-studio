@@ -115,11 +115,11 @@ export function CoverageMountSection({ productId, section, items, coverages, att
       </td>
     );
   };
-  // 담보 칸 (2026-10-21) — 두 줄: 담보명(담보 마스터 링크) 위 · 담보코드 작게 아래. 묶음 첫 행에만, 편집 중에도 같다
+  // 담보 칸 (2026-10-21) — 두 줄 칸(IdentCell): 담보명(담보 마스터 링크) 위 · 담보코드 작게 아래. 묶음 첫 행에만, 편집 중에도 같다
   const codeCell = (groupStart: boolean, coverageId: Id, code: string | undefined, name: string | undefined) => (
     <td className="col-fixed-md">
       {!groupStart ? null : code ? (
-        <IdentCell order="name-first" code={code} name={name ?? "—"} href={`/coverages/${coverageId}`} title={`담보 마스터 열기 · ${name ?? "담보"}`} />
+        <IdentCell code={code} name={name ?? "—"} href={`/coverages/${coverageId}`} title={`담보 마스터 열기 · ${name ?? "담보"}`} />
       ) : (
         <span className="ts-muted" title="담보 마스터가 없어졌다">
           —
