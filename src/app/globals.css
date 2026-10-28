@@ -6524,6 +6524,7 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
   align-items: center;
   gap: 6px;
   font-size: 13px;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 

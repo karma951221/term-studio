@@ -6,7 +6,7 @@
  * 메뉴의 `layout.tsx` 가 요약 목록(코드 · 이름)을 읽어 이것으로 감싼다. 전체 목록(L1)에서는 아무것도 더하지 않고,
  * 상세(`/<메뉴>/<항목>…`) · 생성(`/<메뉴>/new`)이면 목록을 왼쪽 패널로 줄이고 상세 맨 위에 항목 탭 줄을 세운다.
  *
- * - 패널: 머리 = L1 이름(누르면 목록 펼치기 — 전체 목록으로) · 패널 접기. 검색칸 · 코드 + 이름 줄 · 총 N건. 접히면 얇은 띠. 접힘은 메뉴마다 기억.
+ * - 패널: 머리 = L1 이름(누르면 목록 펼치기 — 전체 목록으로) · 패널 접기. 검색칸 · 이름 + 코드 줄 · 총 N건. 접히면 얇은 띠. 접힘은 메뉴마다 기억.
  * - 항목 탭: 고른 항목이 쌓이고(현재 = 밑줄), ✕ 로 닫는다. 탭마다 마지막으로 본 주소를 기억한다. 규칙은 순수 함수 `itemTabs`.
  * - 편집은 한 탭만: 편집기는 `useItemEdit` 으로 잠금을 묻고 · 「편집 중」을 알리고 · 떠날 때 초안을 맡긴다.
  *
@@ -338,11 +338,12 @@ function ListPanel({
           const current = item.key === currentKey;
           return (
             <Link key={item.key} ref={current ? currentRow : undefined} href={tabHref(item.key) ?? item.href} className="ts-ld-row" aria-current={current ? "page" : undefined}>
-              {item.code ? <span className="ts-ld-row-code ts-mono">{item.code}</span> : null}
+              {/* 이름 위(진하게) · 코드 아래(회색 고정폭) — 목록의 두 줄 표기와 같은 순서 (2026-10-29) */}
               <span className="ts-ld-row-name">
                 {item.name}
                 {item.key === editingKey ? <span aria-label="편집 중" title="편집 중" className="ts-ld-dot" /> : null}
               </span>
+              {item.code ? <span className="ts-ld-row-code ts-mono">{item.code}</span> : null}
             </Link>
           );
         })}
