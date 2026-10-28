@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { DiscardDialog } from "@/app/_components/EditShell";
+import { useItemEdit, useRestoredDraft } from "@/app/_components/ListDetailLayout";
 import { IconClose } from "@/app/_components/icons";
 import { InfoTip } from "@/app/_components/InfoTip";
 import { MoreMenu } from "@/app/_components/MoreMenu";
@@ -115,8 +116,10 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  const [editing, setEditing] = useState(isNew);
-  const [draft, setDraft] = useState<NewDynTable>(props.table);
+  // 다른 항목 탭에 갔다 돌아왔으면 맡겨 둔 편집본으로 편집을 잇는다 (ADR-0094)
+  const restored = useRestoredDraft<{ draft: NewDynTable }>("dyntable");
+  const [editing, setEditing] = useState(isNew || restored !== undefined);
+  const [draft, setDraft] = useState<NewDynTable>(restored?.draft ?? props.table);
   const [banner, setBanner] = useState<Banner>();
   const [placed, setPlaced] = useState<ReturnType<typeof placeIssues>>();
   const [discard, setDiscard] = useState<{ go: () => void }>();
@@ -127,6 +130,9 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
 
   const shown = editing ? draft : props.table;
   const dirty = editing && (isNew ? draft.label.trim() !== "" || JSON.stringify(draft) !== JSON.stringify(props.table) : JSON.stringify(draft) !== JSON.stringify(props.table));
+
+  // 편집은 한 항목 탭만 (ADR-0094)
+  const itemEdit = useItemEdit({ part: "dyntable", editing: editing && !isNew, dirty, snapshot: () => ({ draft }) });
 
   const patch = (next: Partial<NewDynTable>) => setDraft((d) => ({ ...d, ...next }));
   const setHeader = (key: keyof DynTableHeaders, inlines: Inline[]) => setDraft((d) => ({ ...d, headers: { ...d.headers, [key]: inlines } }));
@@ -146,6 +152,7 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
   };
 
   const startEdit = () => {
+    if (!itemEdit.allowEdit()) return;
     setDraft(props.table);
     setEditing(true);
     setBanner(undefined);
@@ -209,6 +216,8 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!anchor || anchor.target === "_blank") return;
+      // 항목 탭 · 목록 패널 — 떠나는 것이 아니다, 편집본이 남는다 (ADR-0094)
+      if (anchor.closest("[data-ld-keep]")) return;
       const url = new URL(anchor.href, window.location.href);
       if (url.origin === window.location.origin && url.pathname === window.location.pathname && url.search === window.location.search) return;
       event.preventDefault();
@@ -353,6 +362,7 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
           onDiscard={() => {
             const { go } = discard;
             setDiscard(undefined);
+            itemEdit.release();
             endEdit();
             go();
           }}

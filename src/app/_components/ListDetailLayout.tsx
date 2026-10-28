@@ -141,7 +141,16 @@ function matchesQuery(search: URLSearchParams, query: Readonly<Record<string, st
   return query !== undefined && Object.entries(query).every(([k, v]) => search.get(k) === v);
 }
 
-export function ListDetailLayout({ menus, children }: { menus: readonly ListDetailMenu[]; children: ReactNode }) {
+export function ListDetailLayout({
+  menus,
+  listHead,
+  children,
+}: {
+  menus: readonly ListDetailMenu[];
+  /** 전체 목록(L1)에서만 서는 머리 — 하위 탭 줄(담보속성). 상세에서는 패널 머리가 대신한다. */
+  listHead?: ReactNode;
+  children: ReactNode;
+}) {
   const pathname = usePathname();
   const search = useSearchParams();
   const router = useRouter();
@@ -186,7 +195,13 @@ export function ListDetailLayout({ menus, children }: { menus: readonly ListDeta
   }, [menu.id, itemKey]);
   const ctx = useMemo<ItemTabContextValue | null>(() => (itemKey !== undefined ? { menu: menu.id, itemKey, requestEdit } : null), [menu.id, itemKey, requestEdit]);
 
-  if (!detail) return <>{children}</>;
+  if (!detail)
+    return (
+      <>
+        {listHead}
+        {children}
+      </>
+    );
 
   const labelOf = (key: string) => byKey.get(key)?.name ?? key;
   const tabHref = (key: string) => tabs.tabs.find((t) => t.key === key)?.href;

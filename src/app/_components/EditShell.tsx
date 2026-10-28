@@ -17,6 +17,7 @@ import { HeadActions, HeadButton, HeadIconButton } from "./HeadActions";
 import { RadioGroup, type RadioOption } from "./RadioGroup";
 import { Toggle } from "./Toggle";
 import { InfoTip } from "./InfoTip";
+import { useItemEdit, useRestoredDraft } from "./ListDetailLayout";
 
 type EditData = Record<string, unknown>;
 interface EditContextValue<T extends EditData = EditData> {
@@ -152,9 +153,11 @@ export function EditShell<T extends EditData>({
   onSaved?: (outcome: Extract<EditOutcome, { ok: true }>) => void;
   children: ReactNode;
 }) {
-  const [mode, setMode] = useState<"read" | "edit">(initialMode);
-  const [baseline, setBaseline] = useState<T>(initial);
-  const [data, setData] = useState<T>(initial);
+  // 다른 항목 탭에 갔다 돌아왔으면 맡겨 둔 초안으로 편집을 잇는다 (ADR-0094)
+  const restored = useRestoredDraft<{ baseline: T; data: T }>("edit-shell");
+  const [mode, setMode] = useState<"read" | "edit">(restored ? "edit" : initialMode);
+  const [baseline, setBaseline] = useState<T>(restored?.baseline ?? initial);
+  const [data, setData] = useState<T>(restored?.data ?? initial);
   // 서버가 새 원본을 넘기면(저장 뒤 refresh — 서버가 채번한 코드 등) 읽기 모드의 화면을 그 원본으로 맞춘다.
   // 저장 직후 로컬 값(`new:1` 같은 임시 코드)이 「새 값」으로 남던 결함 (2026-09-28, 실물재현 E2E). 편집 중이면 초안을 지킨다.
   const initialKey = JSON.stringify(initial);
@@ -173,6 +176,8 @@ export function EditShell<T extends EditData>({
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const dirty = isDirty(baseline, data);
+  // 편집은 한 항목 탭만 — 생성 화면은 항목이 아니라 빠진다 (ADR-0094)
+  const itemEdit = useItemEdit({ part: "edit-shell", editing: mode === "edit" && !createLabel, dirty, snapshot: () => ({ baseline, data }) });
   const blocked = saveDisabled?.(data) ?? false;
   // 생성 화면의 제목은 「새 ○○」 그대로 — 적는 이름을 따라가지 않는다
   const shownTitle = !createLabel && typeof data.label === "string" ? data.label : title;
@@ -230,12 +235,12 @@ export function EditShell<T extends EditData>({
         {/* 즉시 실행 명령은 편집 모드에서 비활성 — 미저장 변경과 즉시 삭제가 한 화면에 겹치지 않게 (디자인원칙 §2 L2 · 점검 P2) */}
         {deleteAction ? <HeadIconButton icon={<IconTrash />} label={mode === "edit" ? EDIT_MODE_LOCKED_TIP : deleteBlocked ?? deleteTooltip ?? deleteLabel ?? `${shownTitle} 삭제`} danger disabled={pending || mode === "edit" || deleteBlocked !== undefined} onClick={() => handle("delete")} /> : null}
         {mode === "edit" ? editActions : null}
-        {mode === "read" ? <HeadButton onClick={() => setMode("edit")} disabled={pending}>편집</HeadButton> : <>{createLabel ? null : <HeadIconButton icon={<IconClose />} label="편집 취소" disabled={pending} onClick={() => leave(cancel)} />}<HeadButton primary disabled={(!dirty && !createLabel) || blocked || pending} onClick={() => handle("save")}>{pending ? `${createLabel ?? "저장"} 중…` : createLabel ?? "저장"}</HeadButton></>}
+        {mode === "read" ? <HeadButton onClick={() => { if (itemEdit.allowEdit()) setMode("edit"); }} disabled={pending}>편집</HeadButton> : <>{createLabel ? null : <HeadIconButton icon={<IconClose />} label="편집 취소" disabled={pending} onClick={() => leave(cancel)} />}<HeadButton primary disabled={(!dirty && !createLabel) || blocked || pending} onClick={() => handle("save")}>{pending ? `${createLabel ?? "저장"} 중…` : createLabel ?? "저장"}</HeadButton></>}
       </HeadActions>
     </div>
     {error ? <p className="ts-error-banner">{error}</p> : null}
     <fieldset className="ts-edit-fields" disabled={pending}>{children}</fieldset>
-    {discard ? <DiscardDialog onStay={() => setDiscard(undefined)} onDiscard={() => { const { go } = discard; setDiscard(undefined); go(); }} /> : null}
+    {discard ? <DiscardDialog onStay={() => setDiscard(undefined)} onDiscard={() => { const { go } = discard; setDiscard(undefined); itemEdit.release(); go(); }} /> : null}
     {confirm ? <Dialog open onOpenChange={(open) => { if (!open && !pending) setConfirm(undefined); }}>
       <DialogContent showCloseButton={false} aria-describedby={undefined} className="sm:max-w-md">
         <DialogTitle className="ts-confirm-title">{confirm.kind === "save" ? confirm.outcome.title ?? "변경하면 저장된 값이 사라질 수 있다" : `${deleteLabel ?? shownTitle} 삭제`}</DialogTitle>
