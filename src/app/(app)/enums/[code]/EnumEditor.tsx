@@ -14,7 +14,7 @@ import type { RefEdge } from "@/domain/refs";
 import { ENUMS_MENU, menuCrumb } from "@/app/_lib/menu";
 import { removeEnumEditAction, saveEnumEditAction } from "../edit-actions";
 import type { EnumEditData } from "../edit-types";
-import { FieldsEditor, ValuesEditor } from "./EnumTables";
+import { BasicSection, FieldsEditor, ValuesEditor } from "./EnumTables";
 
 /**
  * 열거값 추가의 재검사 목록 — 저장 뒤 「재검사 N건」 (ADR-0078 결정 4). 값을 나열해 비교하는 곳은 새 값을 조용히 놓치므로
@@ -45,7 +45,7 @@ function EnumEditorBody({ item, highlight, removalBlock, onSaved }: EditorProps 
   const initial: EnumEditData = { label: item.label, description: item.description ?? "", fields, values };
   return <EditShell initial={initial} title={item.label} code={item.code} path={[menuCrumb(ENUMS_MENU)]} saveAction={(input, confirm) => saveEnumEditAction(item.code, { ...input, values: input.values.filter((value) => value.label.trim() || !value.code.startsWith("new:")) }, confirm)} onSaved={(outcome) => onSaved(outcome.recheck ?? [])} deleteAction={removeEnumEditAction.bind(null, item.code)} deleteLabel={`${item.label} 삭제`} deleteTooltip={`${ENTITY_LABEL.enum} ${item.label}(${item.code}) 삭제`} deleteSuccessHref="/enums" deleteBlocked={removalBlock}>
     <div className="ts-l2-main">
-      <Field name="label" label={NAME_LABEL.enum} />
+      <BasicSection><Field name="label" label={NAME_LABEL.enum} /></BasicSection>
       <FieldsEditor />
       <ValuesEditor highlight={highlight} />
     </div>

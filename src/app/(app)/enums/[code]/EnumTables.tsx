@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 
 import { useEditField } from "@/app/_components/EditShell";
 import { ADD_ROW_LABEL, ValueRowsTable, moveItem, type ValueRowsColumn } from "@/app/_components/ValueRowsTable";
@@ -11,7 +11,10 @@ import type { EnumEditField, EnumEditValue } from "../edit-types";
 
 const isNew = (key: string) => key.startsWith("new:");
 
+const BASIC_TITLE = "기본정보";
 const NEW_FIELD = "새 필드";
+/** 필드 섹션이 말하는 것 — 여기 정의한 필드가 값 표의 열이 된다 (2026-10-29). 값 표 머리의 「필드」 묶음과 짝. */
+const FIELD_HINT = "값 표의 열 — 값마다 채운다";
 /** 같은 값 이름이 둘 이상인 행의 코드 — 동일성은 서버와 같은 `enumValueLabelKey`(공백 · 대소문자 무시). 빈 칸끼리는 중복이 아니다. */
 export function duplicateValueCodes(values: readonly EnumEditValue[]): Set<string> {
   const counts = new Map<string, number>();
@@ -29,6 +32,17 @@ function cellText(value: EnumFieldValue | undefined): string {
   if (value === undefined || value === "") return "—";
   if (typeof value === "boolean") return value ? "예" : "아니오";
   return value;
+}
+
+/**
+ * 상세 · 생성 화면은 세 섹션 — 기본정보(이름) · 필드 · 값 (2026-10-29). 필드 섹션의 정의가 값 섹션 표의 열이 된다.
+ * 이 섹션은 이름 칸을 담는 껍데기 — 이름 칸은 화면마다 다르다(상세는 읽기/편집 Field, 생성은 「제안」 배지가 붙는 입력).
+ */
+export function BasicSection({ children }: { children: ReactNode }) {
+  return <section className="ts-section ts-enum-basic" aria-label={BASIC_TITLE}>
+    <h3 className="ts-section-title">{BASIC_TITLE}</h3>
+    {children}
+  </section>;
 }
 
 /**
@@ -64,9 +78,10 @@ export function FieldsEditor() {
     clearColumn(key);
   };
 
-  return <section className="ts-enum-fields" aria-label={FIELD_LABEL.field}>
-    <p className="ts-l2-side-title">{FIELD_LABEL.field}</p>
+  return <section className="ts-section ts-enum-fields" aria-label={FIELD_LABEL.field}>
+    <h3 className="ts-section-title">{FIELD_LABEL.field}<span className="ts-section-sub">{FIELD_HINT}</span></h3>
     {list.length === 0 && !edit ? <p className="ts-muted">필드가 없다 — 값마다 딸린 사실(표시명 등)을 두려면 편집에서 필드를 더한다.</p> : <ValueRowsTable
+      className="ts-enum-field-table"
       rows={list}
       rowKey={(field) => field.key}
       rowName={(field) => field.label || NEW_FIELD}
@@ -80,7 +95,7 @@ export function FieldsEditor() {
       columns={[
         { key: "label", header: FIELD_LABEL.fieldName, className: "col-flex", cell: (field, index) => edit
           ? <input value={field.label} aria-label={`${FIELD_LABEL.fieldName} ${field.label}`} onChange={(event) => change(field.key, { label: event.target.value })} className="ts-field-direct" placeholder={index === 0 ? "예: 약관표시명" : undefined} />
-          : <span className="ts-field-locked">{field.label}</span> },
+          : field.label },
         { key: "type", header: FIELD_LABEL.valueType, className: "col-fixed-md", cell: (field) => edit
           ? <select value={field.type} aria-label={`${field.label || NEW_FIELD} ${FIELD_LABEL.valueType}`} onChange={(event) => retype(field.key, event.target.value as EnumFieldType)} className="ts-field-direct">{ENUM_FIELD_TYPES.map((type) => <option key={type} value={type}>{TYPE_LABEL[type]}</option>)}</select>
           : TYPE_LABEL[field.type] },
@@ -133,12 +148,15 @@ export function ValuesEditor({ highlight }: { highlight?: string } = {}) {
     }));
   const columns: ValueRowsColumn<EnumEditValue>[] = [
     { key: "label", header: FIELD_LABEL.valueName, className: "col-flex", cell: (value, index) => !edit
-      ? <span className="ts-field-locked">{value.label}</span>
+      ? value.label
       : <><input value={value.label} aria-invalid={duplicates.has(value.code) || undefined} aria-label={`${FIELD_LABEL.valueName}${isNew(value.code) ? "" : ` ${value.code}`}`} ref={(el) => { if (el) inputs.current.set(value.code, el); else inputs.current.delete(value.code); }} onChange={(event) => field.update((current) => current.map((item) => item.code === value.code ? { ...item, label: event.target.value } : item))} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); if (index === field.value.length - 1) add(); else inputs.current.get(field.value[index + 1]!.code)?.focus(); }} className="ts-field-direct" placeholder={index === 0 ? "예: 일반심사" : undefined} />
         {duplicates.has(value.code) ? <p className="ts-form-error">중복된 값입니다.</p> : null}</> },
-    ...fieldDefs.map((def): ValueRowsColumn<EnumEditValue> => ({ key: `f:${def.key}`, header: def.label || NEW_FIELD, className: "col-fixed-md", cell: (value) => edit ? <FieldCell value={value} field={def} disabled={field.pending} onChange={(cell) => setCell(value.code, def.key, cell)} /> : cellText(value.fields?.[def.key]) })),
+    // 필드 열은 머리 위 「필드」 묶음 아래에 선다 — 필드 섹션에서 정의한 것이 이 열들이다. 문자열은 넓게, 참거짓은 좁게.
+    ...fieldDefs.map((def, index): ValueRowsColumn<EnumEditValue> => ({ key: `f:${def.key}`, header: def.label || NEW_FIELD, group: FIELD_LABEL.field, className: ["ts-enum-fcol", def.type === "boolean" ? "ts-enum-fcol-bool" : "ts-enum-fcol-text", index === 0 ? "is-first" : null].filter(Boolean).join(" "), cell: (value) => edit ? <FieldCell value={value} field={def} disabled={field.pending} onChange={(cell) => setCell(value.code, def.key, cell)} /> : cellText(value.fields?.[def.key]) })),
   ];
-  return <ValueRowsTable
+  return <section className="ts-section ts-enum-values" aria-label={FIELD_LABEL.values}>
+    <h3 className="ts-section-title">{FIELD_LABEL.values}</h3>
+    <ValueRowsTable
     rows={field.value}
     rowKey={(value) => value.code}
     rowName={(value) => value.label || NEW_VALUE}
@@ -151,5 +169,6 @@ export function ValuesEditor({ highlight }: { highlight?: string } = {}) {
     onMove={(from, to) => field.update((current) => moveItem(current, from, to))}
     rowClassName={(value) => (duplicates.has(value.code) ? "is-error" : highlight !== undefined && value.code === highlight ? "is-highlighted" : undefined)}
     columns={columns}
-  />;
+  />
+  </section>;
 }
