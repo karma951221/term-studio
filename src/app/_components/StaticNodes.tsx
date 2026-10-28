@@ -8,6 +8,8 @@
  */
 import type { ReactNode } from "react";
 
+import { BoxLines } from "./BoxView";
+
 export interface StaticTableShape {
   id: string;
   title?: string;
@@ -94,12 +96,9 @@ export function StaticBox({ node, controls }: { node: StaticBoxShape; controls?:
   return (
     <aside id={`node-${node.id}`} className="ts-doc-box">
       {controls}
+      {/* 제목 칸은 옛 문면 박스 노드만 든다 — 박스 참조는 머리가 본문 첫 줄이다 (기능/박스 §3.1, 2026-10-28) */}
       {node.title && <p className="ts-doc-box-title">【{node.title}】</p>}
-      {node.lines.map((l, i) => (
-        <p key={i} className="ts-doc-box-line">
-          {l}
-        </p>
-      ))}
+      <BoxLines lines={node.lines} />
     </aside>
   );
 }

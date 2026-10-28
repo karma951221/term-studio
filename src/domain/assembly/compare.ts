@@ -17,9 +17,13 @@ const inlineText = (list: readonly RenderedInline[]): string =>
 
 function staticLines(n: RenderedStatic, indent = ""): string[] {
   if (n.kind === "bulletList") return n.items.map((b) => `${indent}* ${inlineText(b.children)}`);
-  // 파싱양식 대칭: 그림은 ```그림 + 「설명: 」, 제목 없는 박스는 【】 줄 없이
-  if (n.kind === "box" && n.title === "그림") return ["```그림", ...n.lines.map((l) => `설명: ${l}`), "```"];
-  if (n.kind === "box") return ["```용어풀이", ...(n.title ? [`【${n.title}】`] : []), ...n.lines, "```"];
+  // 파싱양식 대칭: 그림은 ```그림 + 「설명: 」, 머리 없는 박스는 【】 줄 없이.
+  // 박스 참조의 머리는 본문 첫 줄이다(제목은 목록 이름, 2026-10-28) — 옛 문면 박스 노드만 제목 칸에 머리를 든다.
+  if (n.kind === "box") {
+    const lines = [...(n.title ? [`【${n.title}】`] : []), ...n.lines];
+    if (lines[0] === "【그림】") return ["```그림", ...lines.slice(1).map((l) => `설명: ${l}`), "```"];
+    return ["```용어풀이", ...lines, "```"];
+  }
   const separator = `|${n.columns.map(() => "---").join("|")}|`;
   const out = ["```표", `제목: ${n.title ?? "(없음)"}`];
   let separated = false;

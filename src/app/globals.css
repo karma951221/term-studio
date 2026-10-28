@@ -3731,6 +3731,11 @@ label.ts-field > textarea:where(:not([data-slot])) {
   margin: 0;
 }
 
+/* 본문의 【…】 머리 줄 — 옛 제목 줄과 같은 굵기 (기능/박스 §3.1, 2026-10-28) */
+.ts-doc-box-heading {
+  font-weight: 700;
+}
+
 /* 정적 마스터 박스 참조의 머리 띠 — 어느 박스인지(내용은 박스 화면에서 고친다) */
 .ts-doc-box-ref {
   margin: 0 0 4px;

@@ -3,7 +3,7 @@
 import { BoxView } from "@/app/_components/BoxView";
 import { EditShell, Field, useEditField } from "@/app/_components/EditShell";
 import { BOX_BODY_LABEL, ENTITY_LABEL, FIELD_LABEL } from "@/app/_lib/labels";
-import { boxHeading, boxLabel, boxLinesFromText, boxLinesText, type Box } from "@/domain/document/box";
+import { boxLabel, boxLinesFromText, boxLinesText, type Box } from "@/domain/document/box";
 
 import { removeBoxEditAction, saveBoxEditAction } from "../edit-actions";
 import type { BoxEditData } from "../edit-types";
@@ -53,8 +53,8 @@ export function BoxEditor({ box }: { box: Box }) {
             <span className="ts-field-static ts-mono">{box.code}</span>
           </div>
         </div>
-        {/* 제목은 【】 없이 적는다 — 읽기에서는 시스템이 감싼 모양(【제목】)으로 보인다 (기능/박스 §3.1, 2026-10-21). */}
-        <Field name="title" label={FIELD_LABEL.title} info="【】 없이 적는다 — 화면 · 출력에서 【제목】으로 감싼다. 비워도 된다." readValue={(v) => (typeof v === "string" && v !== "" ? boxHeading(v) : "없음")} />
+        {/* 제목은 목록 · 고르기에서 박스를 부르는 이름일 뿐 — 출력에 찍히지 않는다. 【】 머리는 본문에 (기능/박스 §3.1, 2026-10-28). */}
+        <Field name="title" label={FIELD_LABEL.title} info="목록 · 고르기에서 박스를 부르는 이름이다 — 약관에 찍히지 않는다. 【】 없이 적고, 찍을 【…】 머리는 본문 첫 줄에 적는다. 비워도 된다." />
         <LinesField code={box.code} />
       </div>
     </EditShell>
