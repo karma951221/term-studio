@@ -230,21 +230,29 @@ export function mergeGenerals(
       for (const n of codedNodes(copy)) if (!templateIds.has(n.id)) n.code = codeMap.get(b.id)?.get(n.code) ?? n.code;
       return copy;
     });
-    // 그 판에만 있는 조(· 변형) — 감싼 조건 블록째, 그 판의 앞 단위(템플릿에 있는 조의 단위) 뒤에. 같은 앞 단위 뒤에 여럿이면 원문 순서대로
+    // 그 판에만 있는 조 · 변형을 감싼 조건 블록째 넣는다 — 변형은 바탕의 같은 조(의 단위) 바로 뒤(바탕 판의 조 번호가 변형 때문에 밀리지 않는다),
+    // 그 판에만 있는 조는 그 판의 앞 단위(템플릿에 있는 조의 단위) 뒤. 같은 자리 뒤에 여럿이면 원문 순서대로
     const unitOfArticle = new Map(unitsOf(tree).flatMap((u) => u.articles.map((a) => [a.id, u.node.id] as const)));
+    const lastAfter = new Map<Id, Id>();
     const inserted: Id[] = [];
+    const units = unitsOf(o.tree);
+    const isVariant = (u: Unit) => u.articles.every((a) => variants.has(foldTitle(a.title)));
+    /** 잇닿은 변형 묶음의 마지막 단위 — 묶음째 그 바탕 조 뒤에 둔다(바탕 조 사이에 엇갈려 끼지 않게). */
+    const runEnd = (i: number): Unit => (i + 1 < units.length && isVariant(units[i + 1]) ? runEnd(i + 1) : units[i]);
     let anchor: Id | undefined;
-    for (const u of unitsOf(o.tree)) {
+    for (const [i, u] of units.entries()) {
       const mapped = u.articles.filter((a) => idMap.has(a.id));
       if (mapped.length === u.articles.length) {
         anchor = unitOfArticle.get(idMap.get(mapped.at(-1)!.id)!);
         continue;
       }
       if (mapped.length > 0) throw new Error(`보통약관 합치기: ${o.code} 의 조건 블록 ${u.node.id} 에 바탕 판에 있는 조와 없는 조가 섞였다`);
-      if (!anchor) throw new Error(`보통약관 합치기: ${o.code} 의 첫 조 「${foldTitle(u.articles[0].title)}」 이(가) 바탕 판에 없다`);
-      insertAfter(tree, anchor, remapIds(u.node, idMap, codeMap));
+      const counterpart = isVariant(u) ? baseByTitle.get(foldTitle(runEnd(i).articles.at(-1)!.title)) : undefined;
+      const at = counterpart ? unitOfArticle.get(counterpart.id) : anchor;
+      if (!at) throw new Error(`보통약관 합치기: ${o.code} 의 첫 조 「${foldTitle(u.articles[0].title)}」 이(가) 바탕 판에 없다`);
+      insertAfter(tree, lastAfter.get(at) ?? at, remapIds(u.node, idMap, codeMap));
+      lastAfter.set(at, u.node.id);
       inserted.push(...u.articles.map((a) => a.id));
-      anchor = u.node.id;
     }
     const copied = new Set(o.copies);
     for (const a of own) {

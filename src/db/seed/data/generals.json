@@ -716,159 +716,6 @@
                   "boxCode": "BX000046"
                 }
               ]
-            },
-            {
-              "id": "m-a3",
-              "kind": "article",
-              "title": [
-                {
-                  "id": "m-a3.title",
-                  "kind": "text",
-                  "text": "보험금의 지급사유"
-                }
-              ],
-              "children": [
-                {
-                  "id": "m-a3-p1",
-                  "kind": "paragraph",
-                  "children": [
-                    {
-                      "id": "m-a3-p1-x1",
-                      "kind": "text",
-                      "text": "회사는 피보험자가 보험기간 중에 상해의 직접결과로써 사망한 경우(질병으로 인한 사망은 제외합니다)에는 보험수익자에게 일반상해사망 보험가입금액 전액을 사망보험금으로 지급합니다."
-                    }
-                  ],
-                  "code": "P0100"
-                }
-              ]
-            },
-            {
-              "id": "m-a4",
-              "kind": "article",
-              "title": [
-                {
-                  "id": "m-a4.title",
-                  "kind": "text",
-                  "text": "보험금 지급에 관한 세부규정"
-                }
-              ],
-              "children": [
-                {
-                  "id": "m-a4-p1",
-                  "kind": "paragraph",
-                  "children": [
-                    {
-                      "id": "m-a4-p1-x1",
-                      "kind": "articleRef",
-                      "targets": [
-                        {
-                          "articleId": "m-a3"
-                        }
-                      ],
-                      "connector": "및",
-                      "scope": "self"
-                    },
-                    {
-                      "id": "m-a4-p1-x2",
-                      "kind": "text",
-                      "text": "「사망」에는 보험기간에 다음 어느 하나의 사유가 발생한 경우를 포함합니다."
-                    }
-                  ],
-                  "items": [
-                    {
-                      "id": "m-a4-p1-i1",
-                      "kind": "item",
-                      "children": [
-                        {
-                          "id": "m-a4-p1-i1-x1",
-                          "kind": "text",
-                          "text": "실종선고를 받은 경우: 법원에서 인정한 실종기간이 끝나는 때에 사망한 것으로 봅니다."
-                        }
-                      ],
-                      "code": "P0400"
-                    },
-                    {
-                      "id": "m-a4-p1-i2",
-                      "kind": "item",
-                      "children": [
-                        {
-                          "id": "m-a4-p1-i2-x1",
-                          "kind": "text",
-                          "text": "관공서에서 수해, 화재나 그 밖의 재난을 조사하고 사망한 것으로 통보하는 경우: 가족관계등록부에 기재된 사망연월일을 기준으로 합니다."
-                        }
-                      ],
-                      "code": "P0500"
-                    },
-                    {
-                      "id": "m-a4-b1-k",
-                      "kind": "boxRef",
-                      "boxCode": "BX000031"
-                    }
-                  ],
-                  "code": "P0100"
-                },
-                {
-                  "id": "m-a4-p2",
-                  "kind": "paragraph",
-                  "children": [
-                    {
-                      "id": "m-a4-p2-x2",
-                      "kind": "text",
-                      "text": "「호스피스·완화의료 및 임종과정에 있는 환자의 연명의료 결정에 관한 법률」에 따른 연명의료중단 등 결정 및 그 이행으로 피보험자가 사망하는 경우 연명의료중단 등 결정 및 그 이행은 "
-                    },
-                    {
-                      "id": "m-a4-p2-x1",
-                      "kind": "articleRef",
-                      "targets": [
-                        {
-                          "articleId": "m-a3"
-                        }
-                      ],
-                      "connector": "및",
-                      "scope": "self"
-                    },
-                    {
-                      "id": "m-a4-p2-x3",
-                      "kind": "text",
-                      "text": " ｢사망｣의 원인 및 ｢사망보험금｣ 지급에 영향을 미치지 않습니다."
-                    }
-                  ],
-                  "code": "P0200"
-                },
-                {
-                  "id": "m-a4-p3",
-                  "kind": "paragraph",
-                  "children": [
-                    {
-                      "id": "m-a4-p3-x2",
-                      "kind": "text",
-                      "text": "보험수익자와 회사가 "
-                    },
-                    {
-                      "id": "m-a4-p3-x1",
-                      "kind": "articleRef",
-                      "targets": [
-                        {
-                          "articleId": "m-a3"
-                        }
-                      ],
-                      "connector": "및",
-                      "scope": "self"
-                    },
-                    {
-                      "id": "m-a4-p3-x3",
-                      "kind": "text",
-                      "text": "의 보험금 지급사유에 대해 합의하지 못할 때는 보험수익자와 회사가 함께 제3자를 정하고 그 제3자의 의견에 따를 수 있습니다. 제3자는 의료법 제3조(의료기관)에 규정한 종합병원 소속 전문의 중에 정하며, 보험금 지급사유 판정에 드는 의료비용은 회사가 전액 부담합니다."
-                    }
-                  ],
-                  "code": "P0300"
-                },
-                {
-                  "id": "m-a4-b2-k",
-                  "kind": "boxRef",
-                  "boxCode": "BX000032"
-                }
-              ]
             }
           ]
         },
@@ -1122,6 +969,159 @@
                     }
                   ],
                   "code": "P0800"
+                }
+              ]
+            },
+            {
+              "id": "m-a3",
+              "kind": "article",
+              "title": [
+                {
+                  "id": "m-a3.title",
+                  "kind": "text",
+                  "text": "보험금의 지급사유"
+                }
+              ],
+              "children": [
+                {
+                  "id": "m-a3-p1",
+                  "kind": "paragraph",
+                  "children": [
+                    {
+                      "id": "m-a3-p1-x1",
+                      "kind": "text",
+                      "text": "회사는 피보험자가 보험기간 중에 상해의 직접결과로써 사망한 경우(질병으로 인한 사망은 제외합니다)에는 보험수익자에게 일반상해사망 보험가입금액 전액을 사망보험금으로 지급합니다."
+                    }
+                  ],
+                  "code": "P0100"
+                }
+              ]
+            },
+            {
+              "id": "m-a4",
+              "kind": "article",
+              "title": [
+                {
+                  "id": "m-a4.title",
+                  "kind": "text",
+                  "text": "보험금 지급에 관한 세부규정"
+                }
+              ],
+              "children": [
+                {
+                  "id": "m-a4-p1",
+                  "kind": "paragraph",
+                  "children": [
+                    {
+                      "id": "m-a4-p1-x1",
+                      "kind": "articleRef",
+                      "targets": [
+                        {
+                          "articleId": "m-a3"
+                        }
+                      ],
+                      "connector": "및",
+                      "scope": "self"
+                    },
+                    {
+                      "id": "m-a4-p1-x2",
+                      "kind": "text",
+                      "text": "「사망」에는 보험기간에 다음 어느 하나의 사유가 발생한 경우를 포함합니다."
+                    }
+                  ],
+                  "items": [
+                    {
+                      "id": "m-a4-p1-i1",
+                      "kind": "item",
+                      "children": [
+                        {
+                          "id": "m-a4-p1-i1-x1",
+                          "kind": "text",
+                          "text": "실종선고를 받은 경우: 법원에서 인정한 실종기간이 끝나는 때에 사망한 것으로 봅니다."
+                        }
+                      ],
+                      "code": "P0400"
+                    },
+                    {
+                      "id": "m-a4-p1-i2",
+                      "kind": "item",
+                      "children": [
+                        {
+                          "id": "m-a4-p1-i2-x1",
+                          "kind": "text",
+                          "text": "관공서에서 수해, 화재나 그 밖의 재난을 조사하고 사망한 것으로 통보하는 경우: 가족관계등록부에 기재된 사망연월일을 기준으로 합니다."
+                        }
+                      ],
+                      "code": "P0500"
+                    },
+                    {
+                      "id": "m-a4-b1-k",
+                      "kind": "boxRef",
+                      "boxCode": "BX000031"
+                    }
+                  ],
+                  "code": "P0100"
+                },
+                {
+                  "id": "m-a4-p2",
+                  "kind": "paragraph",
+                  "children": [
+                    {
+                      "id": "m-a4-p2-x2",
+                      "kind": "text",
+                      "text": "「호스피스·완화의료 및 임종과정에 있는 환자의 연명의료 결정에 관한 법률」에 따른 연명의료중단 등 결정 및 그 이행으로 피보험자가 사망하는 경우 연명의료중단 등 결정 및 그 이행은 "
+                    },
+                    {
+                      "id": "m-a4-p2-x1",
+                      "kind": "articleRef",
+                      "targets": [
+                        {
+                          "articleId": "m-a3"
+                        }
+                      ],
+                      "connector": "및",
+                      "scope": "self"
+                    },
+                    {
+                      "id": "m-a4-p2-x3",
+                      "kind": "text",
+                      "text": " ｢사망｣의 원인 및 ｢사망보험금｣ 지급에 영향을 미치지 않습니다."
+                    }
+                  ],
+                  "code": "P0200"
+                },
+                {
+                  "id": "m-a4-p3",
+                  "kind": "paragraph",
+                  "children": [
+                    {
+                      "id": "m-a4-p3-x2",
+                      "kind": "text",
+                      "text": "보험수익자와 회사가 "
+                    },
+                    {
+                      "id": "m-a4-p3-x1",
+                      "kind": "articleRef",
+                      "targets": [
+                        {
+                          "articleId": "m-a3"
+                        }
+                      ],
+                      "connector": "및",
+                      "scope": "self"
+                    },
+                    {
+                      "id": "m-a4-p3-x3",
+                      "kind": "text",
+                      "text": "의 보험금 지급사유에 대해 합의하지 못할 때는 보험수익자와 회사가 함께 제3자를 정하고 그 제3자의 의견에 따를 수 있습니다. 제3자는 의료법 제3조(의료기관)에 규정한 종합병원 소속 전문의 중에 정하며, 보험금 지급사유 판정에 드는 의료비용은 회사가 전액 부담합니다."
+                    }
+                  ],
+                  "code": "P0300"
+                },
+                {
+                  "id": "m-a4-b2-k",
+                  "kind": "boxRef",
+                  "boxCode": "BX000032"
                 }
               ]
             },
@@ -4380,6 +4380,477 @@
               ]
             },
             {
+              "id": "g-a27_1-if-waiver",
+              "kind": "condBlock",
+              "branches": [
+                {
+                  "id": "g-a27_1-if-waiver-b",
+                  "when": "D0002",
+                  "children": [
+                    {
+                      "id": "g-a27_1",
+                      "kind": "article",
+                      "title": [
+                        {
+                          "id": "g-a27_1.title",
+                          "kind": "text",
+                          "text": "보험료의 납입면제"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "id": "g-a27_1-for-plans",
+                          "kind": "forBlock",
+                          "source": {
+                            "kind": "planOptions",
+                            "form": "waiver",
+                            "filter": "waiver.applies = true"
+                          },
+                          "children": [
+                            {
+                              "id": "g-a27_1-p1",
+                              "kind": "paragraph",
+                              "children": [
+                                {
+                                  "id": "g-a27_1-p1-x1",
+                                  "kind": "text",
+                                  "text": "회사는 피보험자가 "
+                                },
+                                {
+                                  "id": "g-a27_1-p1-x2",
+                                  "kind": "slot",
+                                  "ref": "builtin.plan.number"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-x3",
+                                  "kind": "text",
+                                  "text": "종("
+                                },
+                                {
+                                  "id": "g-a27_1-p1-x4",
+                                  "kind": "slot",
+                                  "ref": "builtin.plan.name"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-x5",
+                                  "kind": "text",
+                                  "text": ") 가입시 보험료 납입기간 중에 다음 중 어느 하나의 사유에 해당되고 계약이 소멸되지 않은 경우에는 차회 이후 보장보험료의 납입을 면제합니다."
+                                }
+                              ],
+                              "items": [
+                                {
+                                  "id": "g-a27_1-p1-k-V01",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0022",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P0700"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-k-V02",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0023",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P0800"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-k-V03",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0024",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P0900"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-k-V04",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0025",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P1000"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-k-V05",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0026",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P1100"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-k-V06",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0027",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P1200"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-k-V07",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0028",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P1300"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-k-V08",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0029",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P1400"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-k-V09",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0030",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P1500"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-k-V10",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0031",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P1600"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-k-V11",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0032",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P1700"
+                                },
+                                {
+                                  "id": "g-a27_1-p1-k-V14",
+                                  "kind": "clauseBlockRef",
+                                  "clauseCode": "C0033",
+                                  "options": {},
+                                  "bindings": {
+                                    "종들": {
+                                      "kind": "current",
+                                      "loop": "g-a27_1-for-plans"
+                                    }
+                                  },
+                                  "code": "P1800"
+                                }
+                              ],
+                              "code": "P0200"
+                            }
+                          ],
+                          "code": "P0100"
+                        },
+                        {
+                          "id": "g-a27_1-p2-k",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0044",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P0300"
+                        },
+                        {
+                          "id": "g-a27_1-p3",
+                          "kind": "paragraph",
+                          "children": [
+                            {
+                              "id": "g-a27_1-p3-x1",
+                              "kind": "articleRef",
+                              "targets": [
+                                {
+                                  "articleId": "g-a27_1",
+                                  "code": "P0200"
+                                }
+                              ],
+                              "connector": "및",
+                              "scope": "self"
+                            },
+                            {
+                              "id": "g-a27_1-p3-x2",
+                              "kind": "text",
+                              "text": "에도 불구하고 아래의 보험료 납입면제 제외대상 특별약관 및「자동갱신 특별약관」에서 정한「자동갱신 적용대상 특별약관」은 보장보험료의 납입을 면제하지 않습니다."
+                            }
+                          ],
+                          "code": "P0400"
+                        },
+                        {
+                          "id": "g-a27_1-b2-k",
+                          "kind": "boxRef",
+                          "boxCode": "BX000018"
+                        },
+                        {
+                          "id": "g-a27_1-p4-if",
+                          "kind": "condBlock",
+                          "branches": [
+                            {
+                              "id": "g-a27_1-p4-if-b",
+                              "when": "D0004",
+                              "children": [
+                                {
+                                  "id": "g-a27_1-p4",
+                                  "kind": "paragraph",
+                                  "children": [
+                                    {
+                                      "id": "g-a27_1-p4-x2",
+                                      "kind": "text",
+                                      "text": "1형(해약환급금 지급형)의 경우 회사는 "
+                                    },
+                                    {
+                                      "id": "g-a27_1-p4-x1",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "g-a27_1",
+                                          "code": "P0200"
+                                        }
+                                      ],
+                                      "connector": "및",
+                                      "scope": "self"
+                                    },
+                                    {
+                                      "id": "g-a27_1-p4-x3",
+                                      "kind": "text",
+                                      "text": "에 따라 보장보험료 납입면제가 된 경우에 차회 이후의 적립보험료 납입을 중지합니다."
+                                    }
+                                  ],
+                                  "code": "P0500"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "g-a27_1-p5",
+                          "kind": "paragraph",
+                          "children": [
+                            {
+                              "id": "g-a27_1-p5-x1",
+                              "kind": "articleRef",
+                              "targets": [
+                                {
+                                  "articleId": "g-a27_1",
+                                  "code": "P0200"
+                                },
+                                {
+                                  "articleId": "g-a27_1",
+                                  "code": "P0300"
+                                },
+                                {
+                                  "articleId": "g-a27_1",
+                                  "code": "P0400"
+                                },
+                                {
+                                  "articleId": "g-a27_1",
+                                  "code": "P0500"
+                                }
+                              ],
+                              "connector": "및",
+                              "scope": "self"
+                            },
+                            {
+                              "id": "g-a27_1-p5-x5",
+                              "kind": "text",
+                              "text": "의 규정에도 불구하고 보장보험료의 납입이 면제되기 이전에 보험료 납입 연체가 있는 경우에는 연체된 보험료를 납입하여야 하며, 납입하지 않은 경우 "
+                            },
+                            {
+                              "id": "g-a27_1-p5-x3",
+                              "kind": "articleRef",
+                              "targets": [
+                                {
+                                  "articleId": "g-a29"
+                                }
+                              ],
+                              "connector": "및",
+                              "scope": "self"
+                            },
+                            {
+                              "id": "g-a27_1-p5-x6",
+                              "kind": "text",
+                              "text": "에 따라 해지될 수 있습니다."
+                            }
+                          ],
+                          "code": "P0600"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "g-a27_2",
+                      "kind": "article",
+                      "title": [
+                        {
+                          "id": "g-a27_2.title",
+                          "kind": "text",
+                          "text": "납입면제에 관한 세부규정"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "id": "g-a27_2-p1-k",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0045",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P0100"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "g-a27_3",
+                      "kind": "article",
+                      "title": [
+                        {
+                          "id": "g-a27_3.title",
+                          "kind": "text",
+                          "text": "보험료 납입면제 사유의 정의 및 진단확정"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "id": "g-a27_3-p1-k-cancer",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0034",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P0100"
+                        },
+                        {
+                          "id": "g-a27_3-p1-k-V03",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0035",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P0200"
+                        },
+                        {
+                          "id": "g-a27_3-p1-k-V04",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0036",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P0300"
+                        },
+                        {
+                          "id": "g-a27_3-p1-k-V05",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0037",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P0400"
+                        },
+                        {
+                          "id": "g-a27_3-p1-k-V06",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0038",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P0500"
+                        },
+                        {
+                          "id": "g-a27_3-p1-k-V07",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0039",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P0600"
+                        },
+                        {
+                          "id": "g-a27_3-p1-k-V08",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0040",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P0700"
+                        },
+                        {
+                          "id": "g-a27_3-p1-k-V09",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0041",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P0800"
+                        },
+                        {
+                          "id": "g-a27_3-p1-k-V10",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0042",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P0900"
+                        },
+                        {
+                          "id": "g-a27_3-p1-k-V14",
+                          "kind": "clauseBlockRef",
+                          "clauseCode": "C0043",
+                          "options": {},
+                          "preset": "S01",
+                          "code": "P1000"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "id": "m-a29-if-waiver",
               "kind": "condBlock",
               "branches": [
@@ -4875,477 +5346,6 @@
                           "options": {},
                           "preset": "S01",
                           "code": "P0100"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "g-a27_1-if-waiver",
-              "kind": "condBlock",
-              "branches": [
-                {
-                  "id": "g-a27_1-if-waiver-b",
-                  "when": "D0002",
-                  "children": [
-                    {
-                      "id": "g-a27_1",
-                      "kind": "article",
-                      "title": [
-                        {
-                          "id": "g-a27_1.title",
-                          "kind": "text",
-                          "text": "보험료의 납입면제"
-                        }
-                      ],
-                      "children": [
-                        {
-                          "id": "g-a27_1-for-plans",
-                          "kind": "forBlock",
-                          "source": {
-                            "kind": "planOptions",
-                            "form": "waiver",
-                            "filter": "waiver.applies = true"
-                          },
-                          "children": [
-                            {
-                              "id": "g-a27_1-p1",
-                              "kind": "paragraph",
-                              "children": [
-                                {
-                                  "id": "g-a27_1-p1-x1",
-                                  "kind": "text",
-                                  "text": "회사는 피보험자가 "
-                                },
-                                {
-                                  "id": "g-a27_1-p1-x2",
-                                  "kind": "slot",
-                                  "ref": "builtin.plan.number"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-x3",
-                                  "kind": "text",
-                                  "text": "종("
-                                },
-                                {
-                                  "id": "g-a27_1-p1-x4",
-                                  "kind": "slot",
-                                  "ref": "builtin.plan.name"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-x5",
-                                  "kind": "text",
-                                  "text": ") 가입시 보험료 납입기간 중에 다음 중 어느 하나의 사유에 해당되고 계약이 소멸되지 않은 경우에는 차회 이후 보장보험료의 납입을 면제합니다."
-                                }
-                              ],
-                              "items": [
-                                {
-                                  "id": "g-a27_1-p1-k-V01",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0022",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P0700"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-k-V02",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0023",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P0800"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-k-V03",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0024",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P0900"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-k-V04",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0025",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P1000"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-k-V05",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0026",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P1100"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-k-V06",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0027",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P1200"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-k-V07",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0028",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P1300"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-k-V08",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0029",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P1400"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-k-V09",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0030",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P1500"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-k-V10",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0031",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P1600"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-k-V11",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0032",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P1700"
-                                },
-                                {
-                                  "id": "g-a27_1-p1-k-V14",
-                                  "kind": "clauseBlockRef",
-                                  "clauseCode": "C0033",
-                                  "options": {},
-                                  "bindings": {
-                                    "종들": {
-                                      "kind": "current",
-                                      "loop": "g-a27_1-for-plans"
-                                    }
-                                  },
-                                  "code": "P1800"
-                                }
-                              ],
-                              "code": "P0200"
-                            }
-                          ],
-                          "code": "P0100"
-                        },
-                        {
-                          "id": "g-a27_1-p2-k",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0044",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P0300"
-                        },
-                        {
-                          "id": "g-a27_1-p3",
-                          "kind": "paragraph",
-                          "children": [
-                            {
-                              "id": "g-a27_1-p3-x1",
-                              "kind": "articleRef",
-                              "targets": [
-                                {
-                                  "articleId": "g-a27_1",
-                                  "code": "P0200"
-                                }
-                              ],
-                              "connector": "및",
-                              "scope": "self"
-                            },
-                            {
-                              "id": "g-a27_1-p3-x2",
-                              "kind": "text",
-                              "text": "에도 불구하고 아래의 보험료 납입면제 제외대상 특별약관 및「자동갱신 특별약관」에서 정한「자동갱신 적용대상 특별약관」은 보장보험료의 납입을 면제하지 않습니다."
-                            }
-                          ],
-                          "code": "P0400"
-                        },
-                        {
-                          "id": "g-a27_1-b2-k",
-                          "kind": "boxRef",
-                          "boxCode": "BX000018"
-                        },
-                        {
-                          "id": "g-a27_1-p4-if",
-                          "kind": "condBlock",
-                          "branches": [
-                            {
-                              "id": "g-a27_1-p4-if-b",
-                              "when": "D0004",
-                              "children": [
-                                {
-                                  "id": "g-a27_1-p4",
-                                  "kind": "paragraph",
-                                  "children": [
-                                    {
-                                      "id": "g-a27_1-p4-x2",
-                                      "kind": "text",
-                                      "text": "1형(해약환급금 지급형)의 경우 회사는 "
-                                    },
-                                    {
-                                      "id": "g-a27_1-p4-x1",
-                                      "kind": "articleRef",
-                                      "targets": [
-                                        {
-                                          "articleId": "g-a27_1",
-                                          "code": "P0200"
-                                        }
-                                      ],
-                                      "connector": "및",
-                                      "scope": "self"
-                                    },
-                                    {
-                                      "id": "g-a27_1-p4-x3",
-                                      "kind": "text",
-                                      "text": "에 따라 보장보험료 납입면제가 된 경우에 차회 이후의 적립보험료 납입을 중지합니다."
-                                    }
-                                  ],
-                                  "code": "P0500"
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "id": "g-a27_1-p5",
-                          "kind": "paragraph",
-                          "children": [
-                            {
-                              "id": "g-a27_1-p5-x1",
-                              "kind": "articleRef",
-                              "targets": [
-                                {
-                                  "articleId": "g-a27_1",
-                                  "code": "P0200"
-                                },
-                                {
-                                  "articleId": "g-a27_1",
-                                  "code": "P0300"
-                                },
-                                {
-                                  "articleId": "g-a27_1",
-                                  "code": "P0400"
-                                },
-                                {
-                                  "articleId": "g-a27_1",
-                                  "code": "P0500"
-                                }
-                              ],
-                              "connector": "및",
-                              "scope": "self"
-                            },
-                            {
-                              "id": "g-a27_1-p5-x5",
-                              "kind": "text",
-                              "text": "의 규정에도 불구하고 보장보험료의 납입이 면제되기 이전에 보험료 납입 연체가 있는 경우에는 연체된 보험료를 납입하여야 하며, 납입하지 않은 경우 "
-                            },
-                            {
-                              "id": "g-a27_1-p5-x3",
-                              "kind": "articleRef",
-                              "targets": [
-                                {
-                                  "articleId": "g-a29"
-                                }
-                              ],
-                              "connector": "및",
-                              "scope": "self"
-                            },
-                            {
-                              "id": "g-a27_1-p5-x6",
-                              "kind": "text",
-                              "text": "에 따라 해지될 수 있습니다."
-                            }
-                          ],
-                          "code": "P0600"
-                        }
-                      ]
-                    },
-                    {
-                      "id": "g-a27_2",
-                      "kind": "article",
-                      "title": [
-                        {
-                          "id": "g-a27_2.title",
-                          "kind": "text",
-                          "text": "납입면제에 관한 세부규정"
-                        }
-                      ],
-                      "children": [
-                        {
-                          "id": "g-a27_2-p1-k",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0045",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P0100"
-                        }
-                      ]
-                    },
-                    {
-                      "id": "g-a27_3",
-                      "kind": "article",
-                      "title": [
-                        {
-                          "id": "g-a27_3.title",
-                          "kind": "text",
-                          "text": "보험료 납입면제 사유의 정의 및 진단확정"
-                        }
-                      ],
-                      "children": [
-                        {
-                          "id": "g-a27_3-p1-k-cancer",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0034",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P0100"
-                        },
-                        {
-                          "id": "g-a27_3-p1-k-V03",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0035",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P0200"
-                        },
-                        {
-                          "id": "g-a27_3-p1-k-V04",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0036",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P0300"
-                        },
-                        {
-                          "id": "g-a27_3-p1-k-V05",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0037",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P0400"
-                        },
-                        {
-                          "id": "g-a27_3-p1-k-V06",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0038",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P0500"
-                        },
-                        {
-                          "id": "g-a27_3-p1-k-V07",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0039",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P0600"
-                        },
-                        {
-                          "id": "g-a27_3-p1-k-V08",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0040",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P0700"
-                        },
-                        {
-                          "id": "g-a27_3-p1-k-V09",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0041",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P0800"
-                        },
-                        {
-                          "id": "g-a27_3-p1-k-V10",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0042",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P0900"
-                        },
-                        {
-                          "id": "g-a27_3-p1-k-V14",
-                          "kind": "clauseBlockRef",
-                          "clauseCode": "C0043",
-                          "options": {},
-                          "preset": "S01",
-                          "code": "P1000"
                         }
                       ]
                     }

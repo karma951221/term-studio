@@ -110,10 +110,19 @@ describe("mergeGenerals — 보통약관 여러 벌을 템플릿 하나 + 상품
       title: "보통약관(일반)",
     });
     const s1 = tree.children[0] as SectionNode;
-    expect(s1.children.map((n) => n.id)).toEqual(["g-a1", "g-a2", "m-a3", "m-w", "g-w"]);
+    // 변형은 바탕의 같은 조(감싼 단위) 바로 뒤 — 바탕 판의 조 번호가 변형 때문에 밀리지 않는다. 그 판에만 있는 조는 그 판의 앞 조 뒤
+    expect(s1.children.map((n) => n.id)).toEqual(["g-a1", "g-a2", "m-a3", "g-w", "m-w"]);
     expect(products.get("base")!.hidden).toEqual(["m-a3", "m-a9"]);
     expect(products.get("other")!.hidden).toEqual(["g-a9"]);
     expect(products.get("other")!.idMap.has("m-a9")).toBe(false);
+  });
+
+  it("잇닿은 변형 여럿은 묶음째 — 묶음 마지막 조의 바탕 조 뒤에 원문 순서대로 (바탕 조 사이에 엇갈려 끼지 않는다)", () => {
+    const flat = (prefix: string, titles: string[]) => doc(prefix, "보통약관", section(`${prefix}-s1`, "관", ...titles.map((t, i) => article(`${prefix}-a${i + 1}`, t, paragraph(`${prefix}-a${i + 1}-p1`, `${prefix} ${t}`, "P0100")))));
+    const titles = ["목적", "보험금의 지급사유", "보험금 지급에 관한 세부규정", "약관의 해석"];
+    const { tree, products } = mergeGenerals({ code: "base", tree: flat("g", titles) }, [{ code: "other", tree: flat("m", titles), copies: [], variants: ["보험금의 지급사유", "보험금 지급에 관한 세부규정"] }], { id: "general", title: "보통약관(일반)" });
+    expect((tree.children[0] as SectionNode).children.map((a) => a.id)).toEqual(["g-a1", "g-a2", "g-a3", "m-a2", "m-a3", "g-a4"]);
+    expect(products.get("other")!.hidden).toEqual(["g-a2", "g-a3"]);
   });
 
   it("사본으로 고르지 않은 조가 템플릿과 다른 대상을 가리키면 알린다 — 글이 같아도 그 판의 조립이 달라진다", () => {
