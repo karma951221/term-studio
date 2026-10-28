@@ -72,7 +72,7 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     expect(defs.find((d) => d.code === "D0001")).toBeUndefined(); // 담보명(coverage_basic.claim_name 투영)은 2026-10-21 뺐다 — 코드는 재사용하지 않는다
     // 세목유형 4종은 이제 세목 레벨 마스터 폼이다 (ADR-0037 · 기능/마스터 §3.3)
     expect(planTypeOptions().map((t) => t.label)).toEqual(["납입면제", "무저해지", "계약전환", "영위업종적용"]);
-    // E0001 납입면제사유 — 면책은 값을 나눠(암·면책 / 암·무면책), 장해는 값으로, 한 값이 호 여럿(최종 결정 17). 유저 정의 필드 셋(결정 18)
+    // E0001 납입면제사유 — 면책은 값을 나눠(암·면책 / 암·무면책), 장해는 값으로, 한 값이 호 여럿(최종 결정 17). 유저 정의 필드 넷(결정 18 · F04 장해호 ADR-0095)
     const reasons = await services.catalog.getEnum("E0001");
     expect(reasons?.values.map((v) => v.label)).toEqual([
       "암(유사암제외)·면책", "암(유사암제외)·무면책", "뇌졸중", "급성심근경색증", "말기폐질환", "말기간경화", "말기신부전증", "양성뇌종양", "중대한재생불량성빈혈", "만성당뇨합병증",
@@ -80,13 +80,13 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     ]);
     // 상해80% · 질병80%(V12 · V13)는 쓰는 상품이 없어 지웠다 — 코드는 채번값이라 중증화상및부식은 V14 그대로 (ADR-0086 결정 5)
     expect(reasons?.values.map((v) => v.code)).toEqual(["V01", "V02", "V03", "V04", "V05", "V06", "V07", "V08", "V09", "V10", "V11", "V14"]);
-    expect(reasons?.fields?.map((f) => [f.key, f.label, f.type])).toEqual([["F01", "약관표시명", "string"], ["F02", "면책여부", "boolean"], ["F03", "정의조대상", "boolean"]]);
+    expect(reasons?.fields?.map((f) => [f.key, f.label, f.type])).toEqual([["F01", "약관표시명", "string"], ["F02", "면책여부", "boolean"], ["F03", "정의조대상", "boolean"], ["F04", "장해호", "boolean"]]);
     expect(reasons?.values.slice(0, 3).map((v) => v.fields)).toEqual([
-      { F01: "암(유사암제외)", F02: true, F03: true },
-      { F01: "암(유사암제외)", F02: false, F03: true },
-      { F01: "뇌졸중", F02: false, F03: true },
+      { F01: "암(유사암제외)", F02: true, F03: true, F04: false },
+      { F01: "암(유사암제외)", F02: false, F03: true, F04: false },
+      { F01: "뇌졸중", F02: false, F03: true, F04: false },
     ]);
-    expect(reasons?.values.find((v) => v.code === "V11")?.fields).toEqual({ F01: "상해 또는 질병 80% 이상 후유장해", F02: false, F03: false });
+    expect(reasons?.values.find((v) => v.code === "V11")?.fields).toEqual({ F01: "상해 또는 질병 80% 이상 후유장해", F02: false, F03: false, F04: true });
     expect((await services.catalog.getEnum("E0002"))?.values.map((v) => v.label)).toEqual(["해약환급금지급형", "해약환급금미지급형", "해약환급금미지급형(납입후50%)"]);
 
     // 세목 — 종 2(납입면제) · 형 2(무저해지 E0002) · 조합 4 = 종 × 형 전부 (실물 상품, 2026-09-27)
@@ -191,9 +191,8 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     ]);
   });
 
-  it("함수조항 71건 — 조 · 여러 항(두 곳 이상이 되풀이) 36 + 납입면제 함수조항 32(사유별 호 12 · 사유별 정의 13 · 역할 7) + 문구 「기준일 문구」 + 알파Plus2607 질병 특약 둘(맨 뒤) · 박스는 함수조항이 아니라 정적 마스터 142 (알파플러스_모델명세 §4 · §6 · 메리츠_모델명세 §4)", async () => {
+  it("함수조항 60건 — 조 · 여러 항(두 곳 이상이 되풀이) 36 + 납입면제 함수조항 21(호 1 · 사유별 정의 13 · 역할 7) + 문구 「기준일 문구」 + 알파Plus2607 질병 특약 둘(맨 뒤) · 박스는 함수조항이 아니라 정적 마스터 142 (알파플러스_모델명세 §4 · §6 · 메리츠_모델명세 §4)", async () => {
     const list = await services.clause.list();
-    const reasons = ["암(유사암제외)·면책", "암(유사암제외)·무면책", "뇌졸중", "급성심근경색증", "말기폐질환", "말기간경화", "말기신부전증", "양성뇌종양", "중대한재생불량성빈혈", "만성당뇨합병증", "상해및질병80%이상후유장해", "중증화상및부식"];
     const lineDefinitions = (line: string) => ["암(유사암제외)", "뇌졸중", "급성심근경색증"].map((r) => `${r} 정의 및 진단확정(${line})`);
     const sharedDefinitions = ["말기폐질환", "말기간경화", "말기신부전증", "양성뇌종양", "중대한재생불량성빈혈", "만성당뇨합병증", "중증화상및부식"].map((r) => `${r} 정의 및 진단확정`);
     // 코드 = 적재 순서: 보통약관이 쓰는 것(조째 21 → 알파Plus 납입면제 26 → 통합간편 납입면제 6) → 담보약관만 쓰는 것(기준일 문구 · 조째 13) → 보통약관 조를 가리키는 준용규정 두 벌(맨 뒤)
@@ -221,8 +220,8 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
         "보험금을 지급하지 않는 사유",
         "제1회 보험료 및 회사의 보장개시",
       ].map((label): [string, string] => ["block", label]),
-      // 납입면제 (ADR-0086) — 사유별 호 12(호 유형) · 정의(알파Plus 셋 + 함께 쓰는 일곱) · 역할 넷 · 통합간편 정의 셋 · 역할 셋
-      ...reasons.map((r): [string, string] => ["item", `납입면제 호 — ${r}`]),
+      // 납입면제 (ADR-0086 · ADR-0095) — 호 하나(호 유형, 사유 필드로 문구) · 정의(알파Plus 셋 + 함께 쓰는 일곱) · 역할 넷 · 통합간편 정의 셋 · 역할 셋
+      ["item", "납입면제 호"],
       ...[...lineDefinitions("알파Plus"), ...sharedDefinitions, "면제 부가항(알파Plus)", "납입면제 세부규정(알파Plus)", "무효 문구(알파Plus)", "부활 문구"].map((label): [string, string] => ["block", label]),
       ...[...lineDefinitions("통합간편"), "면제 부가항(통합간편)", "납입면제 세부규정(통합간편)", "무효 문구(통합간편)"].map((label): [string, string] => ["block", label]),
       ["inline", "기준일 문구"],
@@ -253,8 +252,9 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     expect(found).toHaveLength(seedClauses.length - expected.length);
     expect(found.filter((c) => c.mode !== "block" || !/\(알파Plus2607( \d+)?\)$/.test(c.label)).map((c) => c.label)).toEqual([]);
     const byLabel = (label: string) => list.find((c) => c.label === label)!;
-    // 사유별 호 · 정의는 인자 종들 하나 + 내부 변수 사유들 · 해당, 역할 함수조항은 종들 + 내부 변수
-    for (const c of list.slice(0, expected.length).filter((x) => x.label.startsWith("납입면제 호 — ") || x.label.includes(" 정의 및 진단확정"))) {
+    // 사유별 정의는 인자 종들 하나 + 내부 변수 사유들 · 해당, 역할 함수조항은 종들 + 내부 변수. 호는 인자 사유 하나(내부 변수 없음)
+    expect([byLabel("납입면제 호").params?.map((p) => p.name), byLabel("납입면제 호").locals ?? []]).toEqual([["사유"], []]);
+    for (const c of list.slice(0, expected.length).filter((x) => x.label.includes(" 정의 및 진단확정"))) {
       if (c.label === "중증화상및부식진단의 정의 및 진단확정") continue;
       expect([c.params?.map((p) => p.name), c.locals?.map((l) => l.name)], c.label).toEqual([["종들"], ["사유들", "해당"]]);
     }
@@ -306,9 +306,9 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     atLeast("특별약관의 소멸(지급사유 발생)", 8);
     atLeast("보험금 지급에 관한 세부규정(제3자 합의)", 5);
     atLeast("준용규정(알파Plus 질병)", 5);
-    // 납입면제 — 템플릿에 상품군 변형 두 벌(알파Plus · 통합간편 세 조)이 함께 있다. 사유별 호 · 상품군 사이에 같은 정의는 두 변형이 함께 쓰고,
+    // 납입면제 — 템플릿에 상품군 변형 두 벌(알파Plus · 통합간편 세 조)이 함께 있다. 호 · 상품군 사이에 같은 정의는 두 변형이 함께 쓰고,
     // 상품군 꼬리표가 붙은 것 · 부활 문구(부활 조 하나)는 한 자리씩. 무효 문구(통합간편)는 통합간편 「계약의 무효」 조 사본에만 있다
-    for (const r of reasons) expect(usage(`납입면제 호 — ${r}`), r).toBe(2);
+    expect(usage("납입면제 호")).toBe(2);
     for (const label of sharedDefinitions) expect(usage(label), label).toBe(2);
     for (const label of [...lineDefinitions("알파Plus"), "면제 부가항(알파Plus)", "납입면제 세부규정(알파Plus)", "무효 문구(알파Plus)", "부활 문구"]) expect(usage(label), label).toBe(1);
     for (const label of [...lineDefinitions("통합간편"), "면제 부가항(통합간편)", "납입면제 세부규정(통합간편)"]) expect(usage(label), label).toBe(1);

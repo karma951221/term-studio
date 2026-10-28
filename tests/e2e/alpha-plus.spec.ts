@@ -131,7 +131,7 @@ test.describe.serial("★ 실물 재현 — 상품모델링을 화면으로 수�
         await page.getByRole("button", { name: "편집", exact: true }).click();
         // 상품특성 갱신형여부 = 아니오(세만기) — 부활 문구의 「계약일」 ↔ 「최초계약일」을 가른다(구분자 갱신형 상품, ADR-0086 결정 6 · 알파플러스_모델명세 §8)
         await page.getByRole("region", { name: "상품정보" }).locator('[data-path="feature.renewable"]').last().getByRole("radio", { name: "아니오", exact: true }).check();
-        // 보통약관의 납입면제 세 조는 「납입면제 있음」 IF · 납입면제종마다 반복 · 사유별 호 함수조항(ADR-0086)으로 모델링돼 있다 — 사유가 원문 호 11개를 낸다
+        // 보통약관의 납입면제 세 조는 「납입면제 있음」 IF · 납입면제종마다 › 사유마다 반복 · 호 함수조항 하나(ADR-0095)로 모델링돼 있다 — 사유가 원문 호 11개를 낸다
         for (const [number, name, reasons] of [
           [1, "보험료 납입면제 미적용형", undefined],
           [2, "보험료 납입면제형", ["암(유사암제외)·면책", "뇌졸중", "급성심근경색증", "말기폐질환", "말기간경화", "말기신부전증", "양성뇌종양", "중대한재생불량성빈혈", "만성당뇨합병증", "상해및질병80%이상후유장해"]],

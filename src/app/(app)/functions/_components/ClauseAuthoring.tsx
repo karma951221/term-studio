@@ -673,6 +673,8 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     generals: [],
     setGeneral: () => undefined,
     condition,
+    // 보통약관 대상의 값 한정 후보(해당 값들) · 반복 이름 — 세부규정의 「사유 = V01 인 호」 참조 (ADR-0095 결정 3)
+    enumOf: (c) => enumDefs.get(c),
   };
 
   // ── 편집 시작 · 끝 · 저장 · 삭제 ──

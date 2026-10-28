@@ -154,7 +154,7 @@ describe("collapseRenewal — 함수조항을 얹은 뒤 같은 글이 된 두 �
       "m",
     );
     // 함수조항을 얹은 모양 — 두 준용규정이 같은 함수조항 블록 하나가 된다
-    for (const a of articlesDeep(merged).filter((x) => foldTitle(x.title) === "준용규정")) a.children = [{ id: `${a.id}-p1-k`, kind: "clauseBlockRef", clauseCode: "C0068", options: {} }];
+    for (const a of articlesDeep(merged).filter((x) => foldTitle(x.title) === "준용규정")) a.children = [{ id: `${a.id}-p1-k`, kind: "clauseBlockRef", clauseCode: "C0057", options: {} }];
     expect(collapseRenewal(merged, "m", () => false)).toBe(1);
     expect(merged.children.map((c) => c.id)).toEqual(["b-a1", "m-m1", "b-a2"]);
     const kept = mergeRenewal(

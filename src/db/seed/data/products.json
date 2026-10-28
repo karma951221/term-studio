@@ -1828,7 +1828,7 @@
             {
               "id": "g-a22-p3-k",
               "kind": "clauseBlockRef",
-              "clauseCode": "C0053",
+              "clauseCode": "C0042",
               "options": {},
               "preset": "S01",
               "code": "P0300"

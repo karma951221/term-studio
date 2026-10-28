@@ -215,6 +215,18 @@ const EDITION_DIFFERENCES: KnownDifference[] = [
 
 export const KNOWN_DIFFERENCES: readonly KnownDifference[] = [
   ...EDITION_DIFFERENCES,
+  // 납입면제 진단 호는 사유 필드로 짓는 틀 하나다(ADR-0095) — 조사는 약관표시명 끝 글자로 고른다. 「빈혈」(ㄹ 받침)은 「로」, 원문은 「으로」
+  ...["", A7].map(
+    (dir): KnownDifference => ({
+      dir,
+      file: "보통약관.md",
+      article: "보험료의 납입면제",
+      after: "「중대한재생불량성빈혈」으로",
+      lines: ["「중대한재생불량성빈혈」로"],
+      within: true,
+      why: "호 함수조항 하나(ADR-0095) — 진단 호의 조사는 약관표시명 끝 글자(ㄹ 받침 → 「로」)로 고른다. 원문은 「으로」",
+    }),
+  ),
   {
     // 판 대조(박스 자리 — 2607 판은 ① 뒤, 통합간편 원문은 조 끝) 위에 — 부활일 기준은 상품의 사실(갱신형 = 최초계약일)이라 템플릿 함수조항이 통합간편 글로 찍는다
     dir: "메리츠",

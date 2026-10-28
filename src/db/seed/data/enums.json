@@ -17,6 +17,11 @@
         "key": "F03",
         "label": "정의조대상",
         "type": "boolean"
+      },
+      {
+        "key": "F04",
+        "label": "장해호",
+        "type": "boolean"
       }
     ],
     "values": [
@@ -27,7 +32,8 @@
         "fields": {
           "F01": "암(유사암제외)",
           "F02": true,
-          "F03": true
+          "F03": true,
+          "F04": false
         }
       },
       {
@@ -37,7 +43,8 @@
         "fields": {
           "F01": "암(유사암제외)",
           "F02": false,
-          "F03": true
+          "F03": true,
+          "F04": false
         }
       },
       {
@@ -47,7 +54,8 @@
         "fields": {
           "F01": "뇌졸중",
           "F02": false,
-          "F03": true
+          "F03": true,
+          "F04": false
         }
       },
       {
@@ -57,7 +65,8 @@
         "fields": {
           "F01": "급성심근경색증",
           "F02": false,
-          "F03": true
+          "F03": true,
+          "F04": false
         }
       },
       {
@@ -67,7 +76,8 @@
         "fields": {
           "F01": "말기폐질환",
           "F02": false,
-          "F03": true
+          "F03": true,
+          "F04": false
         }
       },
       {
@@ -77,7 +87,8 @@
         "fields": {
           "F01": "말기간경화",
           "F02": false,
-          "F03": true
+          "F03": true,
+          "F04": false
         }
       },
       {
@@ -87,7 +98,8 @@
         "fields": {
           "F01": "말기신부전증",
           "F02": false,
-          "F03": true
+          "F03": true,
+          "F04": false
         }
       },
       {
@@ -97,7 +109,8 @@
         "fields": {
           "F01": "양성뇌종양",
           "F02": false,
-          "F03": true
+          "F03": true,
+          "F04": false
         }
       },
       {
@@ -107,7 +120,8 @@
         "fields": {
           "F01": "중대한재생불량성빈혈",
           "F02": false,
-          "F03": true
+          "F03": true,
+          "F04": false
         }
       },
       {
@@ -117,7 +131,8 @@
         "fields": {
           "F01": "만성당뇨합병증",
           "F02": false,
-          "F03": true
+          "F03": true,
+          "F04": false
         }
       },
       {
@@ -127,7 +142,8 @@
         "fields": {
           "F01": "상해 또는 질병 80% 이상 후유장해",
           "F02": false,
-          "F03": false
+          "F03": false,
+          "F04": true
         }
       },
       {
@@ -137,7 +153,8 @@
         "fields": {
           "F01": "중증화상및부식",
           "F02": false,
-          "F03": true
+          "F03": true,
+          "F04": false
         }
       }
     ]
