@@ -25,6 +25,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, use
 import { useRouter } from "next/navigation";
 
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
+import { useItemEdit, useRestoredDraft } from "@/app/_components/ListDetailLayout";
 import { coordinateHref } from "@/app/_components/coordinateHref";
 import { DiscardDialog } from "@/app/_components/EditShell";
 import { IconClose, IconPanel } from "@/app/_components/icons";
@@ -192,16 +193,18 @@ export function DocumentEditor(props: EditorProps) {
   const { doc } = props;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [mode, setMode] = useState<DocMode>("read");
+  // 다른 항목 탭에 갔다 돌아왔으면 맡겨 둔 편집본으로 편집을 잇는다 (ADR-0094)
+  const restored = useRestoredDraft<{ draft: Draft; generalCache: Record<Id, GeneralForEdit> }>("document");
+  const [mode, setMode] = useState<DocMode>(restored ? "edit" : "read");
   /** 좁은 폭에서만 뜻이 있다 — 우측 패널을 본문 위에 연다. 넓은 폭에서는 패널이 늘 서 있고 이 버튼도 숨는다. */
   const [sideOpen, setSideOpen] = useState(false);
-  const [draft, setDraftState] = useState<Draft>();
-  const draftRef = useRef<Draft | undefined>(undefined);
+  const [draft, setDraftState] = useState<Draft | undefined>(restored?.draft);
+  const draftRef = useRef<Draft | undefined>(restored?.draft);
   const setDraft = (next: Draft | undefined) => {
     draftRef.current = next;
     setDraftState(next);
   };
-  const [generalCache, setGeneralCache] = useState<Record<Id, GeneralForEdit>>(() => (props.general ? { [props.general.id]: props.general } : {}));
+  const [generalCache, setGeneralCache] = useState<Record<Id, GeneralForEdit>>(() => restored?.generalCache ?? (props.general ? { [props.general.id]: props.general } : {}));
   const generalRef = useRef(generalCache);
   const [art, setArt] = useState<Id | undefined>(() => (props.initialNode ? articleOfNode(doc.tree, props.initialNode) : undefined));
   const [flashId, setFlashId] = useState<Id | undefined>(props.initialNode);
@@ -230,6 +233,8 @@ export function DocumentEditor(props: EditorProps) {
   const menuAt = useRef<Anchor>({ x: 0, y: 0 });
 
   const dirty = mode === "edit" && (draft?.ops.length ?? 0) > 0;
+  // 편집은 한 항목 탭만 — 탭을 옮겨도 편집본은 남는다 (ADR-0094)
+  const itemEdit = useItemEdit({ part: "document", editing: mode === "edit", dirty, snapshot: () => ({ draft: draftRef.current, generalCache: generalRef.current }) });
   const original: DraftState = useMemo(() => ({ tree: doc.tree, ...(doc.generalDocumentId ? { generalDocumentId: doc.generalDocumentId } : {}) }), [doc.tree, doc.generalDocumentId]);
   const current = mode === "edit" && draft ? draft.state : original;
   const tree = current.tree;
@@ -416,6 +421,7 @@ export function DocumentEditor(props: EditorProps) {
   };
 
   const startEdit = () => {
+    if (!itemEdit.allowEdit()) return;
     startTransition(async () => {
       const fresh = await startDocumentEditAction(doc.id);
       if (!fresh) {
@@ -532,6 +538,8 @@ export function DocumentEditor(props: EditorProps) {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!anchor || anchor.target === "_blank") return;
+      // 항목 탭 · 목록 패널 — 떠나는 것이 아니다, 편집본이 남는다 (ADR-0094)
+      if (anchor.closest("[data-ld-keep]")) return;
       const url = new URL(anchor.href, window.location.href);
       if (url.origin === window.location.origin && url.pathname === window.location.pathname && url.search === window.location.search) return;
       // 미리보기 탭 출처 패널의 같은 문서 링크(「원본 조 열기」)는 떠나지 않는다 — 가운데에서 그 노드를 연다(PreviewTab)
@@ -1136,6 +1144,7 @@ export function DocumentEditor(props: EditorProps) {
           onDiscard={() => {
             const { go: proceed } = discard;
             setDiscard(undefined);
+            itemEdit.release();
             endEdit();
             proceed();
           }}
