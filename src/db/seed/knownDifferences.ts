@@ -26,6 +26,12 @@ export interface KnownDifference {
    * 조 명 자체가 다른 자리(조 헤딩 + 그 조를 가리키는 조 참조 라벨이 어느 조 · 어느 파일에든 있다). 조 단위 차이(옛 조 명으로 찾는다)를 모두 얹은 뒤에 바꾼다.
    */
   everywhere?: true;
+  /**
+   * 판 대조 — 이 조는 공용 템플릿 「보통약관(일반)」의 판(바탕 알파Plus2607) 글로 찍힌다(상품 조 사본을 두지 않은 판 표기 차이 — 박스 나눔 ·
+   * 띄어쓰기 · 원문 오탈자, 2026-10-28). 그 판 원문(`edition` = 상품 픽스처 폴더)의 같은 조 기대 줄(그 판의 알려진 차이를 얹은 것)로 조 본문을 바꾼다.
+   * 조 헤딩은 제 원문 번호 그대로(대조는 조 번호를 보지 않는다). `after` · `lines` 는 쓰지 않는다. 조 단위 차이 중 가장 먼저 얹는다.
+   */
+  edition?: string;
   /** 인수기준의 차이 이름 — 사람이 읽는다. */
   why: string;
 }
@@ -231,15 +237,34 @@ export const KNOWN_DIFFERENCES: readonly KnownDifference[] = [
 
 const squash = (s: string) => s.replace(/\s+/g, "");
 
-/** 원문 줄 → 기대 줄 — 그 파일의 알려진 차이를 적용한다. 자리를 못 찾으면 던진다(목록이 원문과 어긋난 것). */
-export function expectedLines(dir: string, file: string, source: readonly string[], list: readonly KnownDifference[] = KNOWN_DIFFERENCES): string[] {
+/** 조 헤딩 줄 자리와 그 조의 끝(다음 헤딩) — 없으면 heading = -1. */
+function articleSpan(lines: readonly string[], article: string): { heading: number; end: number } {
+  const heading = lines.findIndex((l) => /^##\s/.test(l) && squash(l).endsWith(`(${squash(article)})`));
+  const next = lines.findIndex((l, i) => i > heading && /^##?\s/.test(l));
+  return { heading, end: next < 0 ? lines.length : next };
+}
+
+/**
+ * 원문 줄 → 기대 줄 — 그 파일의 알려진 차이를 적용한다. 자리를 못 찾으면 던진다(목록이 원문과 어긋난 것).
+ * 판 대조(`edition`)는 그 판 원문 줄이 있어야 한다 — `read(dir, file)` 로 받는다(파일 읽기는 호출자 몫).
+ */
+export function expectedLines(dir: string, file: string, source: readonly string[], list: readonly KnownDifference[] = KNOWN_DIFFERENCES, read?: (dir: string, file: string) => readonly string[]): string[] {
   const out = [...source];
   const mine = list.filter((x) => x.dir === dir && x.file === file);
-  for (const d of mine.filter((x) => !x.everywhere)) {
-    const heading = out.findIndex((l) => /^##\s/.test(l) && squash(l).endsWith(`(${squash(d.article)})`));
+  const editions = new Map<string, string[]>();
+  for (const d of mine.filter((x) => x.edition !== undefined)) {
+    const edition = d.edition!;
+    if (!read) throw new Error(`알려진 차이 「${d.why}」: 판 대조(${edition})는 그 판 원문을 읽을 read 가 있어야 한다`);
+    if (!editions.has(edition)) editions.set(edition, expectedLines(edition, file, read(edition, file), list, read));
+    const theirs = editions.get(edition)!;
+    const own = articleSpan(out, d.article);
+    const other = articleSpan(theirs, d.article);
+    if (own.heading < 0 || other.heading < 0) throw new Error(`알려진 차이 「${d.why}」: 조 「${d.article}」 없음(${own.heading < 0 ? dir || "알파Plus" : edition})`);
+    out.splice(own.heading + 1, own.end - own.heading - 1, ...theirs.slice(other.heading + 1, other.end));
+  }
+  for (const d of mine.filter((x) => !x.everywhere && x.edition === undefined)) {
+    const { heading, end } = articleSpan(out, d.article);
     if (heading < 0) throw new Error(`알려진 차이 「${d.why}」: 조 「${d.article}」 없음`);
-    const next = out.findIndex((l, i) => i > heading && /^##?\s/.test(l));
-    const end = next < 0 ? out.length : next;
     if (d.within) {
       let hits = 0;
       for (let i = heading + 1; i < end; i++) {
