@@ -399,6 +399,8 @@ function main(): void {
     reportLeftovers(general, `[${product.general.code}]`, report);
     for (const a of articlesOf(general.tree)) {
       if (product.general.emptyArticles.includes(general.numberOf.get(a.id) ?? "")) a.children = [];
+      // 생략 기준 「포함하면 생략」 (ADR-0093 결정 8) — 나머지 조는 속성 없음(「같을 때만」)
+      if (product.general.omitContained?.includes(general.numberOf.get(a.id) ?? "")) a.omitMode = "contained";
     }
     const specials = new Map<string, Built>();
     for (const spec of product.specials) specials.set(spec.code, buildSpecial(spec, product, parsed, general, report));

@@ -3370,7 +3370,8 @@
                   "preset": "S01",
                   "code": "P0300"
                 }
-              ]
+              ],
+              "omitMode": "contained"
             },
             {
               "id": "g-a23",
@@ -9437,7 +9438,8 @@
                   "preset": "S01",
                   "code": "P0300"
                 }
-              ]
+              ],
+              "omitMode": "contained"
             },
             {
               "id": "m-a23",
@@ -16060,7 +16062,8 @@
                   "preset": "S01",
                   "code": "P0300"
                 }
-              ]
+              ],
+              "omitMode": "contained"
             },
             {
               "id": "g-a23",
