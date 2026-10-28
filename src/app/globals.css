@@ -5151,9 +5151,68 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   border-bottom: 0;
 }
 
-/* 열거형 필드 표 — 제목 「필드」 한 줄 + 값 행 표. 값 표와 사이를 띄운다 (ADR-0078 결정 2) */
-.ts-enum-fields {
-  margin: 0 0 16px;
+/* 열거형 상세 · 생성 — 세 섹션(기본정보 · 필드 · 값), 섹션마다 괘선 + 제목 (기능/열거형 §4.3, 2026-10-29).
+ * 필드 섹션의 정의가 값 표의 열이 된다 — 값 표 머리의 「필드」 묶음(.ts-vrows-group)과 필드 열 바탕이 그 짝을 보인다. */
+.ts-l2-main > .ts-enum-basic:first-child {
+  margin-top: 4px;
+}
+
+.ts-section-title > .ts-section-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ts-ink-3);
+}
+
+/* 필드 표는 세 칸뿐 — 화면 폭을 다 쓰면 이름과 타입이 멀어진다 */
+.ts-enum-field-table {
+  max-width: 560px;
+}
+
+.ts-enum-field-table td > input:where(:not([data-slot])),
+.ts-enum-field-table td > select:where(:not([data-slot])),
+.ts-enum-values td > input:where(:not([data-slot])),
+.ts-enum-values td > select:where(:not([data-slot])) {
+  width: 100%;
+}
+
+/* 두 줄 머리 — 두 줄을 차지하는 머리(순서 · 값 이름)도 아래 줄 머리와 같은 높이에 글자가 선다 */
+.ts-enum-values thead th {
+  vertical-align: bottom;
+}
+
+.ts-enum-values th.ts-vrows-group {
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--ts-rule);
+  color: var(--ts-ink-2);
+  text-align: left;
+}
+
+.ts-enum-values th.ts-vrows-group,
+.ts-enum-values .ts-enum-fcol {
+  background: color-mix(in srgb, var(--ts-surface-2) 55%, transparent);
+}
+
+.ts-enum-values th.ts-vrows-group,
+.ts-enum-values .ts-enum-fcol.is-first {
+  border-left: 1px solid var(--ts-rule);
+}
+
+/* 값 이름은 가변 열이지만 좁은 화면에서도 이름이 읽히게, 필드 열은 문자열 넓게 · 참거짓 좁게 */
+.ts-enum-values th.col-flex,
+.ts-enum-values td.col-flex {
+  min-width: 150px;
+}
+
+.ts-enum-values th.ts-enum-fcol-text,
+.ts-enum-values td.ts-enum-fcol-text {
+  width: 220px;
+  min-width: 120px;
+}
+
+.ts-enum-values th.ts-enum-fcol-bool,
+.ts-enum-values td.ts-enum-fcol-bool {
+  width: 104px;
+  min-width: 84px;
 }
 
 .ts-table tr.is-error > td {
@@ -5236,6 +5295,50 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   background: var(--ts-surface-2);
   color: var(--ts-ink-3);
   font-size: 12px;
+}
+
+/* 열거형 목록의 값 칩 (기능/열거형 §4.1, 2026-10-29) — 값 열이 남는 폭을 먹고, 칩은 글자를 자르지 않은 채 한 줄에 들어가는 만큼만.
+ * 넘친 칩(.is-overflow)은 자리에서 빼 숨기고(폭은 재야 하니 absolute) 「+N」이 센다 (ValueChips). width 140px · min-width 100% 는
+ * 칩 줄이 표 칸을 밀어 넓히지 않게 — 칸 폭은 표가 정하고 칩 줄은 거기 맞춘다. 좁은 화면에서도 칩 하나 + 「+N」 자리(140px)는 남긴다. */
+.ts-enum-chips {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 140px;
+  min-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ts-enum-chips > .ts-chip {
+  flex: 0 0 auto;
+  display: inline-block;
+  min-height: 22px;
+  padding: 0 8px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 첫 칩 하나도 칸에 안 들어갈 때만 그 칩이 줄어 말줄임 */
+.ts-enum-chips > .ts-chip:only-of-type,
+.ts-enum-chips > .ts-chip:first-child:has(+ .is-overflow) {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.ts-enum-chips > .ts-chip.is-overflow {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ts-enum-chips > .ts-chip-more {
+  justify-content: center;
+  min-width: 36px;
+  min-height: 22px;
+  box-sizing: border-box;
 }
 
 /* 목록에서 상세로 들어가는 이름은 굵게 — 훑을 때 눈이 걸리는 열이 이름이다 */
