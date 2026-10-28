@@ -135,7 +135,7 @@ export function ArticleCopyEditor({ data, articleId, label }: { data: CopyEditor
   const copies = edit?.current.copies;
   const copy = copies?.[articleId];
   const templateArticle = useMemo(() => articlesById(data.template).get(articleId), [data.template, articleId]);
-  const tree = useMemo(() => (copies ? applyArticleCopies(data.template, draftCopies({ hidden: [], overrides: {}, copies })) : data.template), [data.template, copies]);
+  const tree = useMemo(() => (copies ? applyArticleCopies(data.template, draftCopies({ hidden: [], overrides: {}, copies, omitModes: {} })) : data.template), [data.template, copies]);
   // 방금 적용한 트리 — 초안 반영(다음 렌더) 전에 이어지는 명령이 그 위에서 돈다. 트리가 바뀌어 다시 그려지면 비운다.
   const pendingRef = useRef<DocumentNode | undefined>(undefined);
   useEffect(() => {

@@ -184,6 +184,9 @@ export const OMIT_MODE_LABEL: Record<ArticleOmitMode, string> = { exact: "같을
 /** 생략 기준 ⓘ (기능/문면 §4.3 · ADR-0093) — 문면 편집기 조 폼. */
 export const OMIT_MODE_INFO = "기본은 같을 때만 · 남발하지 않는다 · 무효 조에만 · 상품이 조마다 바꿀 수 있다";
 
+/** 생략 기준 고르기 title (기능/상품 §3.6 · ADR-0093 결정 7) — 상품 보통약관 탭 목차 줄. */
+export const OMIT_MODE_TOC_INFO = "특약 조가 이 조에 포함될 때 생략할지 — 기본은 같을 때만 · 무효 조에만";
+
 /** 문서(약관 템플릿) 종류 → 실체 이름. `/documents` 목록·상세·생성 화면이 같은 말을 쓴다. */
 export const DOC_TEMPLATE_LABEL = {
   general: ENTITY_LABEL.generalTemplate,

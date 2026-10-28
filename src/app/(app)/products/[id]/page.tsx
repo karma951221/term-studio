@@ -125,7 +125,7 @@ export default async function ProductDetailPage({
   // ── 보통약관 탭의 재료 (기능/상품 §4.6) ───────────────────────
   // 템플릿 트리 · 템플릿 번호 · 숨긴 조 · 조립 결과. 그 탭을 열었을 때만 읽는다 — 조립은 매번 재계산이라 싸지 않다.
   const gid = tab === "general" ? product.generalDocumentId : undefined;
-  const [generalDoc, generalNumbers, hiddenArticles, bookletResult, savedCopies, baseVersion, generalDependents] = gid
+  const [generalDoc, generalNumbers, hiddenArticles, bookletResult, savedCopies, baseVersion, generalDependents, omitModes] = gid
     ? await Promise.all([
         services.document.get(gid),
         services.document.numbering(gid),
@@ -135,8 +135,10 @@ export default async function ProductDetailPage({
         services.product.generalBaseVersion(id),
         // 템플릿 밖의 참조(탑재한 담보의 담보약관 · 함수조항) — 참조 깨짐을 화면이 바로 센다 (ADR-0081)
         services.product.generalDependents(id),
+        // 조 생략 기준 (ADR-0093) — 템플릿과 다른 조만
+        services.product.listArticleOmitModes(id),
       ])
-    : [undefined, new Map<Id, NodeNumber>(), [] as Id[], undefined, [], undefined, undefined];
+    : [undefined, new Map<Id, NodeNumber>(), [] as Id[], undefined, [], undefined, undefined, []];
   // 조 사본 (ADR-0079) — 템플릿에서 조가 지워진 사본은 쓰이지 않는다(다음 저장에서 지워진다). 이 상품의 본문 = 템플릿 + 사본.
   const articleCopies = generalDoc ? liveArticleCopies(generalDoc.tree, savedCopies) : [];
   const effectiveTree = generalDoc ? applyArticleCopies(generalDoc.tree, articleCopies) : undefined;
@@ -360,6 +362,7 @@ export default async function ProductDetailPage({
           templateChanged={templateChanged}
           articleCopies={articleCopies}
           lockedArticles={lockedArticles}
+          omitModes={omitModes}
           {...(generalDependents ? { dependents: generalDependents } : {})}
           {...(copyEditorData ? { copyEditorData } : {})}
           generalNumbers={generalNumbers}

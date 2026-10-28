@@ -6,7 +6,7 @@ import { RenderedBlocksView, RenderedDoc } from "@/app/_components/RenderedDoc";
 import { bookletForm, type Booklet } from "@/domain/assembly";
 import type { EnumDef } from "@/domain/catalog";
 import type { Clause } from "@/domain/clause";
-import { clauseSpanBy, foldTitle, numberTree, referenceTargetIndex, type ArticleNode, type Box, type DocumentNode, type NodeNumber } from "@/domain/document";
+import { clauseSpanBy, foldTitle, numberTree, referenceTargetIndex, type ArticleNode, type ArticleOmitMode, type Box, type DocumentNode, type NodeNumber } from "@/domain/document";
 import { applyArticleCopies, articleHash, articlesById, productRefIssues, type ArticleCopy, type ClauseOptionOverride, type GeneralDependents, type ProductCoverage } from "@/domain/product";
 import type { Id } from "@/domain/types";
 
@@ -47,6 +47,8 @@ export interface GeneralTabProps {
   articleCopies?: readonly ArticleCopy[];
   /** 잠긴 조 id (ADR-0082 결정 10) — 그 조의 사본은 회색(쓰이지 않음): 모델링 · 깨짐 검사에서 빼고 목차에 회색 점. */
   lockedArticles?: readonly Id[];
+  /** 이 상품의 조 생략 기준 — 템플릿과 다른 조만 (ADR-0093 · `listArticleOmitModes`). */
+  omitModes?: readonly { articleId: Id; mode: ArticleOmitMode }[];
   /** 이 상품이 볼 밖의 참조 재료 — 탑재한 담보의 담보약관 · 함수조항 (ADR-0081). 참조 깨짐 목록 · 목차 줄의 재료. */
   dependents?: GeneralDependents;
   /** 편집 중 조 편집 패널의 재료(템플릿 · 트리 밖) — 별표 · 박스 · 함수조항 · 구분자 · 열거형 · 조건 문맥. */
@@ -93,6 +95,7 @@ export function GeneralTab({
   templateChanged = false,
   articleCopies = [],
   lockedArticles = [],
+  omitModes = [],
   dependents,
   copyEditorData,
   generalNumbers: templateNumbers,
@@ -155,7 +158,7 @@ export function GeneralTab({
     articles: s.articles.map((a) => {
       const number = generalNumbers.get(a.id)?.label ?? "조";
       const original = templateArticles.get(a.id);
-      return { id: a.id, label: `${number}(${foldTitle(a.title)})`, number, templateTitle: foldTitle(original?.title ?? a.title), hidden: hidden.has(a.id), templateHash: original ? articleHash(original) : "", ...(locked.has(a.id) ? { locked: true } : {}), ...(marks.has(a.id) ? { mark: marks.get(a.id) } : {}) };
+      return { id: a.id, label: `${number}(${foldTitle(a.title)})`, number, templateTitle: foldTitle(original?.title ?? a.title), hidden: hidden.has(a.id), templateHash: original ? articleHash(original) : "", templateOmitMode: original?.omitMode ?? "exact", ...(locked.has(a.id) ? { locked: true } : {}), ...(marks.has(a.id) ? { mark: marks.get(a.id) } : {}) };
     }),
   }));
 
@@ -258,6 +261,7 @@ export function GeneralTab({
             hiddenArticles={hiddenArticles}
             overrides={overrides}
             copies={articleCopies}
+            omitModes={omitModes}
             {...(templateTree ? { template: templateTree } : {})}
             {...(dependents ? { dependents } : {})}
             clauses={clauses}

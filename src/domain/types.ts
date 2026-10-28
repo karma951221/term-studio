@@ -307,6 +307,8 @@ export interface JudgmentImpact {
   grayed: { articleId: Id; label: string }[];
   revived: { articleId: Id; label: string }[];
   brokenRefs: { articleId: Id; label: string; message: string }[];
+  /** 특약 조 판정이 바뀌는 조 (ADR-0093 결정 6) — 보통약관 탭이 생략 기준을 바꿀 때. 줄 이름은 「상품담보명 › 조 명」. 비지 않을 때만. */
+  specials?: { productCoverageId: Id; articleId: Id; label: string; before: string; after: string }[];
 }
 
 /** 여러 삭제 대상의 영향을 확인 한 번으로 — 저장 한 번에 값 행 여럿을 뺄 때 (점검 2026-09-27 D2). */

@@ -83,6 +83,7 @@ import {
   judgmentImpact,
   judgmentSnapshot,
   type JudgmentSnapshot,
+  type OmissionDisposition,
   type VerdictResult,
 } from "@/domain/product";
 import { CONTRACT_KIND_PATH, describeTraitDetachment, findForm, findMasterField, formRuleIssues, formsOfLevel, isStandaloneContract, traitDetachments, type MasterForm } from "@/domain/master";
@@ -110,10 +111,19 @@ export interface ProductServiceDeps {
   /** 담보속성의 식 참조 사용처 (C1). 기본: 없음. */
   attributeRefs?: AttributeRefSource;
   /**
-   * 이 상품의 제1절 판정 기록 (ADR-0082 결정 11) — 상품담보 탭 저장의 판정 변화 견주기 재료(조립 `Booklet.firstSection`).
-   * 지금 열린 트랜잭션에서 읽어야 한다(저장을 세이브포인트에서 해 본 뒤 부른다). 없거나 undefined 면 대치 형태로 보고 잠긴 조를 「대치」로 둔다.
+   * 이 상품의 판정 기록 (ADR-0082 결정 11 · ADR-0093 결정 6) — 저장 전후 판정 변화 견주기 재료. 조립 한 번으로 제1절 판정 기록(`Booklet.firstSection`)과
+   * 특약 조 생략 기록(`Booklet.omitted`)을 함께 받는다. 지금 열린 트랜잭션에서 읽어야 한다(저장을 세이브포인트에서 해 본 뒤 부른다).
+   * 조립이 안 되면 undefined. `firstSection` 이 없으면 대치 형태로 보고 잠긴 조를 「대치」로 둔다.
    */
-  judgment?: { firstSection(productId: Id): Promise<readonly { articleId: Id; result: VerdictResult; k: number; n: number }[] | undefined> };
+  judgment?: {
+    booklet(productId: Id): Promise<
+      | {
+          firstSection?: readonly { articleId: Id; result: VerdictResult; k: number; n: number }[];
+          omitted: readonly { productCoverageId: Id; productCoverageName: string; articleId: Id; articleTitle: string; disposition: OmissionDisposition }[];
+        }
+      | undefined
+    >;
+  };
 }
 
 export interface Confirmable {
@@ -271,7 +281,7 @@ export interface ProductService {
    * 오버라이드 자리도 그 트리에서 찾는다. 저장하면 「기준 판」을 편집을 시작한 템플릿 판으로 적는다.
    * 편집을 시작한 템플릿과 지금 템플릿이 다르면(템플릿 없음 포함) `conflict`.
    */
-  saveGeneralSettings(actor: Actor, productId: Id, input: GeneralSettingsInput): Promise<Result<void>>;
+  saveGeneralSettings(actor: Actor, productId: Id, input: GeneralSettingsInput, opts?: Confirmable): Promise<Result<void>>;
   /** 상품의 조 사본 (ADR-0079) — 템플릿에서 조가 지워진 사본도 그대로 돌려준다(가리는 것은 화면 · 조립). */
   listArticleCopies(productId: Id): Promise<ArticleCopy[]>;
   /**
@@ -589,7 +599,8 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
     const dependents = await dependentsFor(tx, productId, p.generalDocumentId);
     const [locks, blocks, saved] = await Promise.all([locksOf(tx, productId, dependents), blocksOf(tx, productId, dependents), repo.listArticleCopies(tx, productId)]);
     const copies = liveArticleCopies(template, saved);
-    const records = deps.judgment ? await deps.judgment.firstSection(productId) : undefined;
+    const booklet = deps.judgment ? await deps.judgment.booklet(productId) : undefined;
+    const records = booklet?.firstSection;
     const numbers = numberTree(template);
     const articles = articlesById(template);
     const labelOf = (id: Id) => {
@@ -599,6 +610,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
     };
     const snapshot = judgmentSnapshot({
       ...(records ? { records } : {}),
+      ...(booklet ? { omitted: booklet.omitted } : {}),
       locks,
       copyIds: copies.map((c) => c.articleId),
       // 회색 사본은 쓰이지 않아 그 안의 참조도 깨지지 않는다 (ADR-0082 결정 10)
@@ -1264,7 +1276,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
           return ok(undefined);
         }),
       ),
-    saveGeneralSettings: (actor, productId, input) =>
+    saveGeneralSettings: (actor, productId, input, opts = {}) =>
       db.transaction((tx) =>
         withProduct(tx, productId, async (p) => {
           const templateId = p.generalDocumentId;
@@ -1393,28 +1405,48 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
           if (issues.length > 0) return invalid(issues);
 
           // 검사가 끝난 뒤에만 쓴다 — 숨김은 바뀐 것만(숨긴 순서 유지), 오버라이드는 빠진 자리를 지우고 남은 자리를 덮는다
-          const before = await repo.listHiddenArticles(tx, productId);
-          const next = new Set(hidden);
-          for (const id of before) if (!next.has(id)) await repo.removeHiddenArticle(tx, productId, id);
-          for (const id of hidden) if (!before.includes(id)) await repo.addHiddenArticle(tx, productId, id, actor.userId);
-          const scope = { kind: "product", id: productId } as const;
-          const kept = new Set(writes.map((w) => w.nodeId));
-          for (const o of await repo.listOverrides(tx, scope)) if (!kept.has(o.nodeId)) await repo.deleteOverride(tx, scope, o.nodeId, o.clauseCode);
-          for (const w of writes) await repo.upsertOverride(tx, scope, w.nodeId, w.clauseCode, w.diff, actor.userId);
-          // 조 사본 — 빠진 것은 지우고, 바뀐 것만 쓴다 (내용 · 지문이 같으면 행을 건드리지 않는다)
-          const keptCopies = new Set([...copies.map((c) => c.articleId), ...grayKept]);
-          for (const id of savedCopies.keys()) if (!keptCopies.has(id)) await repo.deleteArticleCopy(tx, productId, id);
-          for (const c of copies) {
-            const was = savedCopies.get(c.articleId);
-            if (!was || was.templateHash !== c.templateHash || !sameArticle(was.article, c.article)) await repo.upsertArticleCopy(tx, productId, c, actor.userId);
-          }
-          // 조 생략 기준 — 빠진 행은 지우고, 값이 다른 행만 쓴다
-          const savedOmitModes = new Map((await repo.listArticleOmitModes(tx, productId)).map((o) => [o.articleId, o.mode] as const));
-          for (const id of savedOmitModes.keys()) if (!omitModes.has(id)) await repo.deleteArticleOmitMode(tx, productId, id);
-          for (const [id, mode] of omitModes) if (savedOmitModes.get(id) !== mode) await repo.upsertArticleOmitMode(tx, productId, id, mode, actor.userId);
-          // 기준 판 — 편집을 시작할 때 본 판(그 사이 템플릿이 또 바뀌었으면 경고가 남는다)
-          await repo.setGeneralBaseVersion(tx, productId, input.templateVersion ?? template?.version ?? null);
-          return ok(undefined);
+          const execute = async (): Promise<Result<void>> => {
+            const before = await repo.listHiddenArticles(tx, productId);
+            const next = new Set(hidden);
+            for (const id of before) if (!next.has(id)) await repo.removeHiddenArticle(tx, productId, id);
+            for (const id of hidden) if (!before.includes(id)) await repo.addHiddenArticle(tx, productId, id, actor.userId);
+            const scope = { kind: "product", id: productId } as const;
+            const kept = new Set(writes.map((w) => w.nodeId));
+            for (const o of await repo.listOverrides(tx, scope)) if (!kept.has(o.nodeId)) await repo.deleteOverride(tx, scope, o.nodeId, o.clauseCode);
+            for (const w of writes) await repo.upsertOverride(tx, scope, w.nodeId, w.clauseCode, w.diff, actor.userId);
+            // 조 사본 — 빠진 것은 지우고, 바뀐 것만 쓴다 (내용 · 지문이 같으면 행을 건드리지 않는다)
+            const keptCopies = new Set([...copies.map((c) => c.articleId), ...grayKept]);
+            for (const id of savedCopies.keys()) if (!keptCopies.has(id)) await repo.deleteArticleCopy(tx, productId, id);
+            for (const c of copies) {
+              const was = savedCopies.get(c.articleId);
+              if (!was || was.templateHash !== c.templateHash || !sameArticle(was.article, c.article)) await repo.upsertArticleCopy(tx, productId, c, actor.userId);
+            }
+            // 조 생략 기준 — 빠진 행은 지우고, 값이 다른 행만 쓴다
+            const savedOmitModes = new Map((await repo.listArticleOmitModes(tx, productId)).map((o) => [o.articleId, o.mode] as const));
+            for (const id of savedOmitModes.keys()) if (!omitModes.has(id)) await repo.deleteArticleOmitMode(tx, productId, id);
+            for (const [id, mode] of omitModes) if (savedOmitModes.get(id) !== mode) await repo.upsertArticleOmitMode(tx, productId, id, mode, actor.userId);
+            // 기준 판 — 편집을 시작할 때 본 판(그 사이 템플릿이 또 바뀌었으면 경고가 남는다)
+            await repo.setGeneralBaseVersion(tx, productId, input.templateVersion ?? template?.version ?? null);
+            return ok(undefined);
+          };
+          // 특약 조 판정 변화 (ADR-0093 결정 6) — 생략 기준이 바뀐 저장만 세이브포인트에서 해 보고 전후 판정을 견준다(상품담보 탭 카드와 같은 확인 2단).
+          // 바뀐 판정이 없으면 해 본 저장을 그대로 남긴다. 잃는 값이 없어 역할 관문 없이 — 편집자도 확인하고 저장한다
+          const savedModes = await repo.listArticleOmitModes(tx, productId);
+          const modesChanged = savedModes.length !== omitModes.size || savedModes.some((o) => omitModes.get(o.articleId) !== o.mode);
+          if (!modesChanged || opts.confirm) return execute();
+          const was = await judgmentOf(tx, productId);
+          if (!was) return execute();
+          const judgment = await rollbackUnless(
+            tx,
+            async () => {
+              await execute();
+              const after = await judgmentOf(tx, productId);
+              return after ? judgmentImpact(was.snapshot, after.snapshot, after.labelOf) : undefined;
+            },
+            (changed) => changed === undefined,
+          );
+          if (judgment === undefined) return ok(undefined);
+          return reject({ reason: "needsConfirmation", impact: { valueRowsLost: 0, brokenRefs: [], cascade: [], judgment } });
         }),
       ),
     listArticleCopies: (productId) => repo.listArticleCopies(db, productId),

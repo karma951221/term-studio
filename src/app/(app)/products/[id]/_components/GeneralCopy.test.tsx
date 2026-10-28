@@ -32,13 +32,13 @@ const template: DocumentNode = {
 const hashOf = (id: string) => articleHash((template.children.flatMap((s) => (s.kind === "section" ? s.children : [])) as ArticleNode[]).find((a) => a.id === id)!);
 
 const toc: TocSection[] = [
-  { key: "S1", label: "제1관 목적", articles: [{ id: "A1", label: "제1조(목적)", number: "제1조", templateTitle: "목적", hidden: false, templateHash: hashOf("A1") }] },
+  { key: "S1", label: "제1관 목적", articles: [{ id: "A1", label: "제1조(목적)", number: "제1조", templateTitle: "목적", hidden: false, templateHash: hashOf("A1"), templateOmitMode: "exact" }] },
   {
     key: "S2",
     label: "제2관 보험금",
     articles: [
-      { id: "A2", label: "제2조(지급사유)", number: "제2조", templateTitle: "지급사유", hidden: false, templateHash: hashOf("A2") },
-      { id: "A3", label: "제3조(지급제한)", number: "제3조", templateTitle: "지급제한", hidden: false, templateHash: hashOf("A3") },
+      { id: "A2", label: "제2조(지급사유)", number: "제2조", templateTitle: "지급사유", hidden: false, templateHash: hashOf("A2"), templateOmitMode: "exact" },
+      { id: "A3", label: "제3조(지급제한)", number: "제3조", templateTitle: "지급제한", hidden: false, templateHash: hashOf("A3"), templateOmitMode: "exact" },
     ],
   },
 ];

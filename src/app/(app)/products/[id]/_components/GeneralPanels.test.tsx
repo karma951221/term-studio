@@ -5,8 +5,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import { GeneralEditProvider } from "./GeneralEdit";
 import { GeneralPanels, paneOf, type GeneralPane } from "./GeneralPanels";
-import type { TocSection } from "./GeneralToc";
+import { GeneralToc, type TocSection } from "./GeneralToc";
+import { ProductEditProvider } from "./ProductEdit";
 import { selectArticleOnClick, type TocClickEvent } from "./tocNav";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => undefined, push: () => undefined }) }));
@@ -54,13 +56,13 @@ describe("selectArticleOnClick — 목차 누름은 이동이 아니라 고르�
 });
 
 const toc: TocSection[] = [
-  { key: "S1", label: "제1관 목적", articles: [{ id: "A1", label: "제1조(목적)", number: "제1조", templateTitle: "목적", hidden: false, templateHash: "h1" }] },
+  { key: "S1", label: "제1관 목적", articles: [{ id: "A1", label: "제1조(목적)", number: "제1조", templateTitle: "목적", hidden: false, templateHash: "h1", templateOmitMode: "exact" }] },
   {
     key: "S2",
     label: "제2관 보험금",
     articles: [
-      { id: "A2", label: "제2조(지급사유)", number: "제2조", templateTitle: "지급사유", hidden: true, templateHash: "h2" },
-      { id: "A3", label: "제3조(지급제한)", number: "제3조", templateTitle: "지급제한", hidden: false, templateHash: "h3" },
+      { id: "A2", label: "제2조(지급사유)", number: "제2조", templateTitle: "지급사유", hidden: true, templateHash: "h2", templateOmitMode: "exact", locked: true },
+      { id: "A3", label: "제3조(지급제한)", number: "제3조", templateTitle: "지급제한", hidden: false, templateHash: "h3", templateOmitMode: "contained" },
     ],
   },
 ];
@@ -92,5 +94,41 @@ describe("GeneralPanels — 관은 미리 그려 두고 고른 조의 관만 붙
     expect(paneOf(panes, "A2")?.key).toBe("S2");
     expect(paneOf(panes, "없는조")?.key).toBe("S1");
     expect(paneOf(panes, undefined)?.key).toBe("S1");
+  });
+});
+
+describe("목차 줄 생략 기준 (ADR-0093 결정 7 · 기능/상품 §3.6)", () => {
+  const render = (editing: boolean, omitModes: { articleId: string; mode: "exact" | "contained" }[] = []) =>
+    renderToStaticMarkup(
+      <ProductEditProvider canEdit initialEditing={editing}>
+        <GeneralEditProvider productId="p1" generalDocumentId="g" hiddenArticles={[]} overrides={[]} omitModes={omitModes}>
+          <GeneralToc productId="p1" sections={toc} currentArticleId="A1" onSelect={() => undefined} />
+        </GeneralEditProvider>
+      </ProductEditProvider>,
+    );
+
+  it("편집 중 목차 줄에 생략 기준 고르기(템플릿대로(…) · 같을 때만 · 포함하면) — 잠긴 조에도 선다", () => {
+    const html = render(true, [{ articleId: "A1", mode: "contained" }]);
+    const select = (label: string) => html.match(new RegExp(`<select aria-label="생략 기준 · ${label.replace(/[()]/g, "\\$&")}"[^>]*>(.*?)</select>`))?.[1];
+    const a1 = select("제1조(목적)");
+    expect(a1).toContain(">템플릿대로(같을 때만)</option>");
+    expect(a1).toContain(">같을 때만 생략</option>");
+    expect(a1).toMatch(/<option value="contained" selected="">포함하면 생략<\/option>/);
+    // 잠긴 조(제2조)에도 선다 · 템플릿이 「포함하면」인 조는 그 말로
+    expect(select("제2조(지급사유)")).toMatch(/<option value="template" selected="">템플릿대로\(같을 때만\)<\/option>/);
+    expect(select("제3조(지급제한)")).toContain(">템플릿대로(포함하면)</option>");
+    expect(html).toContain('title="특약 조가 이 조에 포함될 때 생략할지 — 기본은 같을 때만 · 무효 조에만"');
+  });
+
+  it("읽기 — 템플릿과 다른 조에만 「포함 생략」/「같을 때만」 표시", () => {
+    const html = render(false, [
+      { articleId: "A1", mode: "contained" },
+      { articleId: "A3", mode: "exact" },
+    ]);
+    expect(html).not.toContain("<select");
+    expect(html.match(/class="ts-badge ts-omit-mark"/g)).toHaveLength(2);
+    expect(html).toMatch(/<div id="toc-A1".*?<span class="ts-badge ts-omit-mark"[^>]*>포함 생략<\/span>/);
+    expect(html).toMatch(/<div id="toc-A3".*?<span class="ts-badge ts-omit-mark"[^>]*>같을 때만<\/span>/);
+    expect(render(false)).not.toContain("ts-omit-mark");
   });
 });
