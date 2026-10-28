@@ -1,22 +1,25 @@
 "use client";
 
 /**
- * 상품 상세의 편집 상태 — 탭 첫 줄의 조작(편집 / 취소 · 저장)과 탭 본문이 함께 쓴다
+ * 상품 상세의 편집 상태 — 제목 줄 오른쪽 끝의 조작(편집 / 취소 · 저장)과 영역 본문이 함께 쓴다
  * (와이어프레임 §20.2 「화면 전체의 저장 버튼 하나」 · 기능/상품 §3.8).
  *
  * 서버 컴포넌트인 page.tsx 는 `ProductEditProvider` 로 본문을 감싸기만 한다. 편집이 있는 탭(기본정보 · 상품담보 · 보통약관)의 본문이
- * 마운트되며 제 begin · cancel · save · dirty 를 등록하고, 그 탭 첫 줄 오른쪽의 `ProductEditButtons` 가 그것을 부른다.
- * 편집 버튼은 헤더에 두지 않는다 — 머리의 편집은 모든 탭에 걸리는 것처럼 보였다 (2026-10-03 사용자 QA). 헤더에는 더보기만.
+ * 마운트되며 제 begin · cancel · save · dirty 를 등록하고, 제목 줄 오른쪽 끝의 `ProductHeadActions` 가 그것을 부른다.
+ * 영역 탭(세그먼트)이 상품명 바로 오른쪽에 서서 편집이 지금 영역의 것으로 읽힌다 (2026-10-28, ADR-0094 — 앞서 탭 첫 줄 오른쪽).
+ *
+ * 편집은 한 항목 탭만(ADR-0094) — 다른 상품 탭으로 가도 초안은 남는다: 본문의 `snapshot` 을 맡기고, 돌아오면 같은 영역의 본문에 `restore`.
  * 저장이 끝나면 여기서 읽기로 돌아가고 `router.refresh()` 로 서버 값을 다시 받는다.
  *
  * 편집 중 떠나는 조작 — ✕ 취소 · 하위 탭 링크(`ProductTabs`) · 경로 링크(`ProductPath`) — 은 고친 것이 있으면
  * EditShell 과 같은 `DiscardDialog`(「고친 내용을 버립니까?」)를 거친다 (디자인원칙 §1.7 · 점검 M21).
  */
-import { createContext, useCallback, useContext, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { DiscardDialog } from "@/app/_components/EditShell";
+import { useItemEdit, useRestoredDraft } from "@/app/_components/ListDetailLayout";
 import { MoreMenu, type MoreMenuItem } from "@/app/_components/MoreMenu";
 import { HeadActions, HeadButton, HeadIconButton } from "@/app/_components/HeadActions";
 import { IconClose } from "@/app/_components/icons";
@@ -31,6 +34,9 @@ export interface ProductEditHandlers {
   cancel(): void;
   save(confirmed: boolean): Promise<"done" | "stay">;
   dirty(): boolean;
+  /** 항목 탭을 옮길 때 맡길 초안 — 돌아오면 `restore` 로 받는다 (ADR-0094). */
+  snapshot?(): unknown;
+  restore?(kept: unknown): void;
 }
 
 interface ProductEditContextValue {
@@ -65,12 +71,29 @@ export function leaveNeedsConfirm({ editing, dirty }: { editing: boolean; dirty:
   return editing && dirty;
 }
 
-export function ProductEditProvider({ canEdit, initialEditing = false, children }: { canEdit: boolean; /** 테스트 · 렌더 검사용 — 편집 상태로 시작. */ initialEditing?: boolean; children: ReactNode }) {
-  const [editingState, setEditing] = useState(initialEditing);
+export function ProductEditProvider({
+  canEdit,
+  area = "",
+  initialEditing = false,
+  children,
+}: {
+  canEdit: boolean;
+  /** 지금 영역(`?tab=` · 상품담보 값 화면) — 맡긴 초안은 같은 영역에서만 돌려받는다. */
+  area?: string;
+  /** 테스트 · 렌더 검사용 — 편집 상태로 시작. */
+  initialEditing?: boolean;
+  children: ReactNode;
+}) {
+  // 다른 항목 탭에 갔다 돌아왔으면 맡겨 둔 초안으로 편집을 잇는다 (ADR-0094)
+  const restored = useRestoredDraft<{ area: string; body: unknown }>("product");
+  const resume = restored !== undefined && restored.area === area;
+  const [editingState, setEditing] = useState(initialEditing || resume);
   /** 「버립니까?」 확인 — 버리면 그 조작의 `go` 로. */
   const [discard, setDiscard] = useState<{ go: () => void }>();
   const [pending, startTransition] = useTransition();
   const handlers = useRef<ProductEditHandlers | null>(null);
+  /** 본문이 손잡이를 내려놓기 직전의 초안 — 화면이 사라질 때 본문이 먼저 내려놓아도 맡길 수 있게. */
+  const lastBody = useRef<unknown>(undefined);
   const router = useRouter();
 
   // 편집할 것이 없는 탭으로 옮겨 오면(탭은 URL 이라 이 Provider 는 남는다) 편집을 푼다 —
@@ -79,12 +102,22 @@ export function ProductEditProvider({ canEdit, initialEditing = false, children 
   const editing = editingState && canEdit;
 
   const register = useCallback((h: ProductEditHandlers | null) => {
+    if (h === null && handlers.current?.snapshot) lastBody.current = handlers.current.snapshot();
     handlers.current = h;
   }, []);
+  // 고친 것은 본문 손잡이만 알아 렌더 중에 못 읽는다 — 편집 중인 상품 탭을 닫으면 늘 「버립니까?」를 묻는다
+  const itemEdit = useItemEdit({ part: "product", editing, dirty: editing, snapshot: () => ({ area, body: handlers.current?.snapshot?.() ?? lastBody.current }) });
+  // 맡긴 초안을 본문에 돌려준다 — 본문(자식)의 등록 이펙트가 먼저 돈 뒤다
+  useEffect(() => {
+    if (resume && restored.body !== undefined) handlers.current?.restore?.(restored.body);
+    // 마운트 때 한 번
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const begin = useCallback(() => {
+    if (!itemEdit.allowEdit()) return;
     handlers.current?.begin();
     setEditing(true);
-  }, []);
+  }, [itemEdit]);
   const leave = useCallback(
     (go: () => void) => (leaveNeedsConfirm({ editing, dirty: handlers.current?.dirty() ?? false }) ? setDiscard({ go }) : go()),
     [editing],
@@ -128,6 +161,7 @@ export function ProductEditProvider({ canEdit, initialEditing = false, children 
           onDiscard={() => {
             const { go } = discard;
             setDiscard(undefined);
+            itemEdit.release();
             go();
           }}
         />
@@ -137,7 +171,8 @@ export function ProductEditProvider({ canEdit, initialEditing = false, children 
 }
 
 /**
- * 상품 상세의 경로 「상품 › {상품명}」 (디자인원칙 §1.7) — 편집 중 고친 것이 있으면 상위로 가는 링크가 「버립니까?」 확인을 거친다.
+ * 상품 상세의 제목 「{상품명}」 (디자인원칙 §1.7 — 목록 → 상세 틀 안에서는 L1 마디 「상품」을 그리지 않는다).
+ * 편집 중 고친 것이 있으면 상위로 가는 링크가 「버립니까?」 확인을 거친다.
  */
 export function ProductPath({ name }: { name: string }) {
   const { leave } = useProductEdit();
@@ -145,22 +180,36 @@ export function ProductPath({ name }: { name: string }) {
 }
 
 /**
- * 헤더 오른쪽 — 더보기(미리보기 · 상품 삭제)만. 편집 중에는 비운다: 미리보기 링크는 「버립니까?」를 거치지 않고 떠난다.
+ * 제목 줄 오른쪽 끝 — 더보기(미리보기 · 상품 삭제) · 편집 조작 (디자인원칙 §1.9, 2026-10-28 ADR-0094 — 영역마다 따로 두지 않는다).
+ * 편집 중에는 더보기를 비운다: 미리보기 링크는 「버립니까?」를 거치지 않고 떠난다.
  */
 export function ProductHeadActions({ menu }: { menu: MoreMenuItem[] }) {
   const { editing } = useProductEdit();
-  return <HeadActions>{!editing && <MoreMenu items={menu} />}</HeadActions>;
+  return (
+    <HeadActions>
+      {!editing && <MoreMenu items={menu} />}
+      <EditControls />
+    </HeadActions>
+  );
 }
 
 /**
- * 탭 첫 줄 오른쪽의 편집 조작 — 읽기: `[편집]`, 편집: `✕ [저장]` (같은 자리 · 제목 줄과 같은 규격, 디자인원칙 §1.9).
- * 편집할 것이 없는 탭(또는 템플릿 없는 보통약관)에서는 아무것도 그리지 않는다.
+ * 편집 조작만 — 읽기: `[편집]`, 편집: `✕ [저장]` (같은 자리 · 제목 줄과 같은 규격, 디자인원칙 §1.9). 상품담보 값 화면(상세2)의 제목 줄이 쓴다.
+ * 편집할 것이 없는 영역(또는 템플릿 없는 보통약관)에서는 아무것도 그리지 않는다.
  */
 export function ProductEditButtons() {
+  return (
+    <HeadActions>
+      <EditControls />
+    </HeadActions>
+  );
+}
+
+function EditControls() {
   const { editing, pending, canEdit, begin, cancel, save } = useProductEdit();
   if (!canEdit) return null;
   return (
-    <HeadActions>
+    <>
       {editing ? (
         <>
           <HeadIconButton icon={<IconClose />} label="편집 취소" disabled={pending} onClick={cancel} />
@@ -171,6 +220,6 @@ export function ProductEditButtons() {
       ) : (
         <HeadButton onClick={begin}>편집</HeadButton>
       )}
-    </HeadActions>
+    </>
   );
 }

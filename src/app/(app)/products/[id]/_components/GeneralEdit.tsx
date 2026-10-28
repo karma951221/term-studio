@@ -150,7 +150,7 @@ export function GeneralEditProvider({
   };
   // 매 렌더 등록 — 손잡이가 최신 초안을 닫아 두도록 (BasicTab 과 같은 방식)
   useEffect(() => {
-    register({ begin, cancel: clear, save, dirty: () => generalDraftDirty(saved, draft) });
+    register({ begin, cancel: clear, save, dirty: () => generalDraftDirty(saved, draft), snapshot: () => draft, restore: (kept) => dispatch({ type: "reset", draft: kept as typeof draft }) });
     return () => register(null);
   });
 

@@ -48,21 +48,28 @@ describe("ProductTabs — 편집 상태 안에서 그려진다", () => {
   });
 });
 
-describe("ProductHeadActions — 헤더에는 더보기만 (2026-10-03 사용자 QA: 머리의 편집은 모든 탭에 걸리는 것처럼 보였다)", () => {
-  it("편집이 있는 탭이어도 헤더에는 편집이 없다", () => {
-    for (const canEdit of [true, false]) {
-      const html = renderToStaticMarkup(
-        <ProductEditProvider canEdit={canEdit}>
-          <ProductHeadActions menu={[]} />
-        </ProductEditProvider>,
-      );
-      expect(html).not.toContain(">편집<");
-      expect(html).toContain("더보기");
-    }
+describe("ProductHeadActions — 제목 줄 오른쪽 끝: 더보기 · 편집 조작 (2026-10-28, ADR-0094 — 영역 세그먼트가 상품명 옆이라 편집이 지금 영역의 것으로 읽힌다)", () => {
+  const render = (canEdit: boolean, initialEditing = false) =>
+    renderToStaticMarkup(
+      <ProductEditProvider canEdit={canEdit} initialEditing={initialEditing}>
+        <ProductHeadActions menu={[]} />
+      </ProductEditProvider>,
+    );
+
+  it("편집이 있는 영역이면 ⋯ 다음 [편집] — 편집이 없는 영역은 ⋯ 만", () => {
+    expect(render(true)).toMatch(/더보기[\s\S]*>편집</);
+    expect(render(false)).toContain("더보기");
+    expect(render(false)).not.toContain(">편집<");
+  });
+
+  it("편집 중에는 더보기를 비우고 ✕ [저장] — 미리보기 링크가 「버립니까?」 없이 떠나지 않게", () => {
+    const html = render(true, true);
+    expect(html).not.toContain("더보기");
+    expect(html).toMatch(/aria-label="편집 취소"[\s\S]*>저장</);
   });
 });
 
-describe("ProductEditButtons — 탭 첫 줄 오른쪽의 편집 조작", () => {
+describe("ProductEditButtons — 편집 조작만 (상품담보 값 화면의 제목 줄)", () => {
   const render = (canEdit: boolean, initialEditing = false) =>
     renderToStaticMarkup(
       <ProductEditProvider canEdit={canEdit} initialEditing={initialEditing}>
@@ -70,8 +77,8 @@ describe("ProductEditButtons — 탭 첫 줄 오른쪽의 편집 조작", () => 
       </ProductEditProvider>,
     );
 
-  it("편집할 것이 없는 탭에는 아무것도 없다", () => {
-    expect(render(false)).toBe("");
+  it("편집할 것이 없는 영역에는 버튼이 없다", () => {
+    expect(render(false)).not.toContain("<button");
   });
 
   it("읽기는 [편집], 편집은 같은 자리에 ✕ [저장]", () => {

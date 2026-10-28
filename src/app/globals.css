@@ -6656,3 +6656,40 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
     margin-left: 0;
   }
 }
+
+/* 영역 탭 — 세그먼트(버튼 묶음). 제목 줄의 항목 이름 바로 오른쪽, 현재 영역은 채운 칸 (ADR-0094 · 기능/상품 §4.3).
+ * 위 항목 탭(밑줄)과 모양을 갈라 두 탭이 섞여 읽히지 않게. 높이 · 모서리는 제목 줄 조작(§1.9)과 같은 32 · 6 */
+.ts-segment {
+  display: inline-flex;
+  align-items: stretch;
+  height: 32px;
+  border: 1px solid var(--ts-rule-strong);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--ts-surface);
+}
+
+.ts-segment > a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  color: var(--ts-ink-2);
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ts-segment > a + a {
+  border-left: 1px solid var(--ts-rule-strong);
+}
+
+.ts-segment > a:hover {
+  background: var(--ts-surface-2);
+  color: var(--ts-ink);
+}
+
+.ts-segment > a[aria-current="page"] {
+  background: var(--ts-ink);
+  color: var(--ts-paper);
+  font-weight: 700;
+}

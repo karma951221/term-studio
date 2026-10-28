@@ -1,6 +1,6 @@
 /**
  * 상품담보 탭 — 읽기 / 편집 · 저장 하나 (기능/상품 §3.8 · §4.5, 2026-10-04).
- * 읽기는 글자만(입력 · 아이콘 없음), 편집은 탭 첫 줄 `✕ [저장]` · 행 안 입력 · 🗑 · 표 아래 「+ 담보 추가」 줄.
+ * 읽기는 글자만(입력 · 아이콘 없음), 편집은 행 안 입력 · 🗑 · 표 아래 「+ 담보 추가」 줄. 편집 · 저장 조작은 제목 줄(ProductHeadActions, ADR-0094).
  * 오른쪽에 떠 있던 탑재 폼(「…에 탑재」)은 없다. 표들 아래 「특약 그룹」 섹션(ADR-0090) — 특별약관 표의 「그룹」 열은 읽기 전용.
  */
 import { renderToStaticMarkup } from "react-dom/server";
@@ -60,8 +60,9 @@ const section = (html: string, title: string) => html.slice(html.indexOf(`aria-l
 describe("상품담보 탭 — 읽기", () => {
   const html = render(false);
 
-  it("탭 첫 줄 오른쪽에 `편집` 하나 — 저장 · 취소는 없다", () => {
-    expect(html).toMatch(/<div class="ts-tab-head">[\s\S]*?>편집<\/button>/);
+  it("본문에는 편집 · 저장 조작이 없다 — 제목 줄 오른쪽 끝의 것 (2026-10-28, ADR-0094)", () => {
+    expect(html).not.toContain("ts-tab-head");
+    expect(html).not.toContain(">편집</button>");
     expect(html).not.toContain(">저장</button>");
   });
 
@@ -116,8 +117,8 @@ describe("상품담보 탭 — 읽기", () => {
 describe("상품담보 탭 — 편집", () => {
   const html = render(true);
 
-  it("탭 첫 줄은 `✕ [저장]`", () => {
-    expect(html).toMatch(/<div class="ts-tab-head">[\s\S]*?aria-label="편집 취소"[\s\S]*?>저장<\/button>/);
+  it("본문에는 `✕ [저장]` 이 없다 — 제목 줄 오른쪽 끝의 것 (2026-10-28, ADR-0094)", () => {
+    expect(html).not.toContain('aria-label="편집 취소"');
   });
 
   it("행 안에서 상품담보명 입력(✓ 저장 버튼 없음) · 세목 부착(칩 ✕ + select ＋) · 🗑 탑재 해제", () => {
