@@ -1,7 +1,7 @@
 import { type Locator, type Page } from "@playwright/test";
 
 import { pickCombo } from "./_lib/combo";
-import { applyFrom, editForm } from "./_lib/editTab";
+import { applyFrom, editForm, insertFrom } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 import { productWithSpecial } from "./_lib/product";
 
@@ -60,10 +60,9 @@ test(
       await paragraph.fill("이 특별약관의 보험금은 ");
       await paragraph.press("End");
       await toolbar.getByRole("button", { name: "슬롯", exact: true }).click();
-      const dialog = page.getByRole("dialog", { name: "치환 슬롯 넣기", exact: true });
+      const dialog = editForm(page, "치환 슬롯 넣기");
       await pickCombo(dialog.locator("#pop-slot"), { value: "arg.보험금명" });
-      await dialog.getByRole("button", { name: "넣기", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
+      await insertFrom(page, dialog);
       await page.getByRole("button", { name: "저장", exact: true }).click();
       await page.waitForURL(/\/functions\/C\d+$/);
       const params = page.getByRole("region", { name: "인자" });
