@@ -3732,6 +3732,23 @@ label.ts-field > textarea:where(:not([data-slot])) {
   margin: 0;
 }
 
+/* 박스 화면 본문 칸 — 읽기(박스 모양)도 편집(밑줄 여러 줄 칸)도 값 열 전폭. 박스는 문서 안 들여쓰기를 떼고 라벨 줄에 맞춘다. */
+.ts-form-control > .ts-doc-box {
+  flex: 1 1 100%;
+  margin: 2px 0 0;
+}
+
+.ts-form-control > .ts-box-lines-edit {
+  flex: 1 1 100%;
+  min-height: 4.5em;
+  line-height: 1.7;
+}
+
+/* 본문의 【…】 머리 줄 — 옛 제목 줄과 같은 굵기 (기능/박스 §3.1, 2026-10-28) */
+.ts-doc-box-heading {
+  font-weight: 700;
+}
+
 /* 정적 마스터 박스 참조의 머리 띠 — 어느 박스인지(내용은 박스 화면에서 고친다) */
 .ts-doc-box-ref {
   margin: 0 0 4px;

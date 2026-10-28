@@ -9,6 +9,7 @@
  *   순서에만 쓴다: 한 무리의 박스는 붙여서 코드를 받는다.
  * - 박스 이름 칸은 없다(2026-10-21) — 제목이 같은 박스가 여럿이어도 되고 코드로 가른다.
  */
+import { headedBoxLines } from "../../src/domain/document/box";
 import type { BoxNode, DocumentNode, Node } from "../../src/domain/document/nodes";
 import type { Id } from "../../src/domain/types";
 
@@ -130,8 +131,9 @@ export function planBoxes(sites: readonly BoxSite[]): BoxPlan[] {
     else clusters.push({ variants: [d] });
   }
   // 3. 무리 → 박스 하나씩(한 무리의 박스는 붙여서). 박스 이름 칸은 없다 — 같은 제목은 코드로 가른다 (기능/박스 §3.1, 2026-10-21)
+  //    원문 머리 「【제목】」은 본문 첫 줄로 — 제목은 목록 이름이라 출력에 찍히지 않는다 (2026-10-28)
   return clusters.flatMap((c, ci) =>
-    c.variants.map((v, vi): BoxPlan => ({ key: `box-${ci + 1}-${vi + 1}`, record: { code: "", title: v.box.title, lines: [...v.box.lines] }, sites: v.sites })),
+    c.variants.map((v, vi): BoxPlan => ({ key: `box-${ci + 1}-${vi + 1}`, record: { code: "", title: v.box.title, lines: headedBoxLines(v.box.title, v.box.lines) }, sites: v.sites })),
   );
 }
 

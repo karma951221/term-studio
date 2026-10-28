@@ -61,7 +61,7 @@ export const boxes = pgTable("boxes", {
   id: uuid("id").primaryKey().defaultRandom(),
   /** 자동 채번 불변 코드 `BX000001` … */
   code: text("code").notNull().unique(),
-  /** 제목 — 괄호 없이(표시 · 출력이 【】로 감싼다). 비울 수 있고 겹쳐도 된다 — 박스 이름 칸은 없다 (기능/박스 §3.1, 2026-10-21). */
+  /** 제목 — 목록 · 고르기에서 부르는 이름(괄호 없이). 출력에 찍히지 않는다 — 【…】 머리는 줄에 (기능/박스 §3.1, 2026-10-28). 비울 수 있고 겹쳐도 된다. */
   title: text("title").notNull().default(""),
   /** 줄 — 글 한 줄씩, 하나 이상. */
   lines: jsonb("lines").$type<string[]>().notNull(),
