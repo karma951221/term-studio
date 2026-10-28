@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { EditOp } from "@/domain/document";
 
-import { alwaysSubmittable, followUpSpec, formSnapshot, panelTabsFor, pickedOf, submitLabel, tabOnEnterEdit, tabOnLeaveEdit, tabOnPick, useEditGuard } from "./editTabRules";
+import { alwaysSubmittable, clauseSideTabsFor, followUpSpec, formSnapshot, panelTabsFor, pickedOf, submitLabel, tabOnEnterEdit, tabOnLeaveEdit, tabOnPick, useEditGuard } from "./editTabRules";
 
 describe("우측 패널 탭 — 편집 탭은 편집 모드에만 맨 앞", () => {
   it("읽기 모드엔 편집 탭이 없다", () => {
@@ -25,6 +25,19 @@ describe("우측 패널 탭 — 편집 탭은 편집 모드에만 맨 앞", () =
   it("무언가 고르면 편집 탭으로 — 돌아갈 탭은 고르기 직전 탭, 이미 편집 탭이면 그대로", () => {
     expect(tabOnPick({ tab: "preview", before: "issues" })).toEqual({ tab: "edit", before: "preview" });
     expect(tabOnPick({ tab: "edit", before: "issues" })).toEqual({ tab: "edit", before: "issues" });
+  });
+});
+
+describe("함수조항 오른쪽 단 탭 — 문면과 같은 규칙", () => {
+  it("읽기 모드엔 「인자 · 옵션」 · 「시험」, 편집 모드면 맨 앞에 편집", () => {
+    expect(clauseSideTabsFor(false)).toEqual(["define", "trial"]);
+    expect(clauseSideTabsFor(true)).toEqual(["edit", "define", "trial"]);
+  });
+  it("편집에 들어가거나 고르면 편집 탭 — 끝나면 들어오기 전 탭으로", () => {
+    const s = tabOnEnterEdit({ tab: "trial", before: "define" });
+    expect(s).toEqual({ tab: "edit", before: "trial" });
+    expect(tabOnPick({ tab: "define", before: "define" })).toEqual({ tab: "edit", before: "define" });
+    expect(tabOnLeaveEdit(s)).toEqual({ tab: "trial", before: "trial" });
   });
 });
 

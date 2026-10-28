@@ -1,5 +1,5 @@
 /**
- * 우측 패널 「편집」 탭의 규칙 (2026-10-21, 기능/문면 §4.3) — 탭 전환 · 폼 주 버튼 · 고른 것 · 넣은 뒤 이어 열 폼 · 미적용 가로채기.
+ * 우측 패널 「편집」 탭의 규칙 (2026-10-21, 기능/문면 §4.3 — 함수조항 편집기도 같은 규칙, 2026-10-28) — 탭 전환 · 폼 주 버튼 · 고른 것 · 넣은 뒤 이어 열 폼 · 미적용 가로채기.
  *
  * - 편집 탭은 편집 모드에만, 탭 줄 맨 앞에 선다. 편집에 들어가거나 본문에서 무언가 고르면 편집 탭으로, 편집이 끝나면 들어오기 전 탭으로.
  * - 폼의 주 버튼은 넣기 폼이면 「넣기」, 고치기 폼이면 「적용」 — 적용은 편집본에만(저장은 바의 `저장` 한 번, ADR-0074).
@@ -15,24 +15,31 @@ import type { PopupSpec } from "./menus";
 
 export type PanelTab = "edit" | "preview" | "leaves" | "issues";
 
-export interface TabState {
-  tab: PanelTab;
+/** 함수조항 편집기 오른쪽 단의 탭 — 편집 · 인자 · 옵션 · 시험 (기능/함수조항 §4.3, 2026-10-28). 전환 규칙은 문면과 같다. */
+export type ClauseSideTab = "edit" | "define" | "trial";
+
+export interface TabState<T extends string = PanelTab> {
+  tab: T;
   /** 편집이 끝나면 돌아갈 탭 — 편집에 들어오기 직전 탭. */
-  before: PanelTab;
+  before: T;
 }
 
 export function panelTabsFor(docKind: "special" | "general", editing: boolean): PanelTab[] {
   return [...(editing ? (["edit"] as const) : []), "preview", ...(docKind === "special" ? (["leaves"] as const) : []), "issues"];
 }
 
-export function tabOnEnterEdit(s: TabState): TabState {
+export function clauseSideTabsFor(editing: boolean): ClauseSideTab[] {
+  return [...(editing ? (["edit"] as const) : []), "define", "trial"];
+}
+
+export function tabOnEnterEdit<T extends string>(s: TabState<T | "edit">): TabState<T | "edit"> {
   return { tab: "edit", before: s.tab === "edit" ? s.before : s.tab };
 }
 
 /** 본문에서 무언가 골랐다 — 편집 탭으로. */
 export const tabOnPick = tabOnEnterEdit;
 
-export function tabOnLeaveEdit(s: TabState): TabState {
+export function tabOnLeaveEdit<T extends string>(s: TabState<T | "edit">): TabState<T | "edit"> {
   return s.tab === "edit" ? { tab: s.before, before: s.before } : s;
 }
 

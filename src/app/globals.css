@@ -1641,9 +1641,24 @@ button:where(:not([data-slot])).danger:focus-visible {
   margin: 0 0 2px;
 }
 
-/* 오른쪽 단 탭 — 「인자 · 옵션」 · 「시험」 (기능/함수조항 §4.3) */
+/* 오른쪽 단 탭 — 「편집」(편집 모드) · 「인자 · 옵션」 · 「시험」 (기능/함수조항 §4.3) */
 .ts-clause-side-tabs {
   margin-bottom: 10px;
+}
+
+/* 「편집」 탭이 보이는 동안 단이 본문 스크롤을 따라 선다 — 아래쪽 칩을 골라도 폼이 화면에 (문면 우측 패널처럼). 넓은 두 단에서만 */
+.ts-clause-options:has(> #ts-side-panel-edit:not([hidden])) {
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+/* 고정 줄 — 단은 안쪽 여백이 왼쪽뿐이라 문면 패널의 음수 여백을 푼다 */
+.ts-clause-options .ts-edit-foot {
+  bottom: 0;
+  margin: 12px 0 0;
+  padding: 8px 0;
 }
 
 /* 단독 시험 — 값 칸 · 출력(본문 글꼴) · 문제 줄 (기능/함수조항 §3.7) */
@@ -2031,6 +2046,12 @@ input:where(:not([data-slot])).ts-option-title {
   .ts-clause-options {
     padding-left: 0;
     border-left: 0;
+  }
+
+  .ts-clause-options:has(> #ts-side-panel-edit:not([hidden])) {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 }
 
