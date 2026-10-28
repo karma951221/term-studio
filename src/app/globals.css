@@ -6669,7 +6669,7 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
   background: var(--ts-surface);
 }
 
-.ts-segment > a {
+.ts-segment > a:where(:not([data-slot])) {
   display: inline-flex;
   align-items: center;
   padding: 0 12px;
@@ -6679,16 +6679,16 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
   white-space: nowrap;
 }
 
-.ts-segment > a + a {
+.ts-segment > a + a:where(:not([data-slot])) {
   border-left: 1px solid var(--ts-rule-strong);
 }
 
-.ts-segment > a:hover {
+.ts-segment > a:where(:not([data-slot])):hover {
   background: var(--ts-surface-2);
   color: var(--ts-ink);
 }
 
-.ts-segment > a[aria-current="page"] {
+.ts-segment > a:where(:not([data-slot]))[aria-current="page"] {
   background: var(--ts-ink);
   color: var(--ts-paper);
   font-weight: 700;
