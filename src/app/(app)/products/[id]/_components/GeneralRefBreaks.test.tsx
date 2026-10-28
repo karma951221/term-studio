@@ -45,8 +45,8 @@ const toc: TocSection[] = [
     key: "S1",
     label: "제1관 보험금",
     articles: [
-      { id: "A1", label: "제1조(지급사유)", number: "제1조", templateTitle: "지급사유", hidden: false, templateHash: articleHash(a1) },
-      { id: "A2", label: "제2조(지급제한)", number: "제2조", templateTitle: "지급제한", hidden: false, templateHash: "x" },
+      { id: "A1", label: "제1조(지급사유)", number: "제1조", templateTitle: "지급사유", hidden: false, templateHash: articleHash(a1), templateOmitMode: "exact" },
+      { id: "A2", label: "제2조(지급제한)", number: "제2조", templateTitle: "지급제한", hidden: false, templateHash: "x", templateOmitMode: "exact" },
     ],
   },
 ];

@@ -100,18 +100,16 @@ export function CreateForm({
             </FormRow>
 
             {/* 레벨은 채번 뒤 못 고친다 — 식의 참조 규칙이 레벨에 매여 있다 (ADR-0037). */}
-            <FormRow label={FIELD_LABEL.level}>
+            <FormRow label={FIELD_LABEL.level} info="식이 평가되는 자리다. 채번 뒤에는 고칠 수 없다.">
               <RadioGroup name="level" label={FIELD_LABEL.level} options={LEVEL_OPTIONS} value={level} onChange={(value) => changeLevel(value as AttachLevel)} />
-              <p className="ts-form-hint">식이 평가되는 자리다. 채번 뒤에는 고칠 수 없다.</p>
             </FormRow>
 
-            <FormRow label={FIELD_LABEL.expression} htmlFor="new-expr">
+            <FormRow label={FIELD_LABEL.expression} htmlFor="new-expr" info="입력 항목과 다른 구분자를 부른다 — 같은 레벨은 그대로, 하위 레벨은 집계 안에서.">
               <ExpressionInput inputRef={expressionRef} id="new-expr" name="expression" required placeholder="예: exist(exemption.months) · any(waiver.applies)" value={expression} onChange={changeExpression} />
-              <p className="ts-form-hint">입력 항목과 다른 구분자를 부른다 — 같은 레벨은 그대로, 하위 레벨은 집계 안에서.</p>
             </FormRow>
 
             {/* 결과 타입은 필수 — 식의 추론 타입이 기본값, 저장 시 추론 타입과 대조돼 다르면 거부된다 (기능/구분자 §3.1). */}
-            <FormRow label={FIELD_LABEL.resultType} htmlFor="new-result-type">
+            <FormRow label={FIELD_LABEL.resultType} htmlFor="new-result-type" info={RESULT_TYPE_HINT}>
               <select id="new-result-type" name="resultTypeKind" required value={resultTypeKind} onChange={(event) => setResultTypeKind(event.target.value)}>
                 {resultTypeOptions(resultTypeKind).map((option) => <option key={option.value} value={option.value} disabled={option.value === ""}>{option.label}</option>)}
               </select>
@@ -135,7 +133,6 @@ export function CreateForm({
                   />
                 </>
               ) : null}
-              <p className="ts-form-hint">{RESULT_TYPE_HINT}</p>
             </FormRow>
 
             <NoteField id="new-note" name="description" />

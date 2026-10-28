@@ -713,6 +713,21 @@ describe("조건부 필드 (visibleWhen · singleWhen) — 상품특성 고지�
     expect(view(s, "f.rate").unit).toBe("%");
   });
 
+  it("notEquals 조건 — 조건 칸이 입력돼 있고 그 값이 아닐 때만 선다 (담보명 접사, 2026-10-29)", () => {
+    const affixMaster: MasterForm[] = [{ key: "f", label: "상품특성", level: "product", fields: [
+      { key: "kind", label: "고지유형", type: { kind: "enum", enumCode: "E0001" } },
+      { key: "affix", label: "담보명 접사", type: { kind: "string" }, visibleWhen: { field: "kind", notEquals: "V01" } },
+    ] }];
+    let s = initFormState(buildForm("product", enums, new Map(), undefined, affixMaster));
+    const affix = view(s, "f.affix");
+    expect(affix.visibleWhen).toEqual({ path: "f.kind", notEquals: "V01" });
+    expect(isViewShown(affix, draftValueOf(s))).toBe(false);
+    s = formReducer(s, { type: "edit", path: "f.kind", draft: "V01" });
+    expect(isViewShown(affix, draftValueOf(s))).toBe(false);
+    s = formReducer(s, { type: "edit", path: "f.kind", draft: "V02" });
+    expect(isViewShown(affix, draftValueOf(s))).toBe(true);
+  });
+
   it("isViewShown · isViewSingle — 편집 중 초안으로 판정한다", () => {
     let s = stateWith();
     expect(isViewShown(view(s, "f.scope"), draftValueOf(s))).toBe(false);

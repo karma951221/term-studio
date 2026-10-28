@@ -1,5 +1,5 @@
 /**
- * 상품 스키마 — 담보속성 카탈로그 · 상품 · 조 사본 · 특약 그룹 · 세목 · 상품담보(탑재 스냅샷) · 기본계약 · 옵션 오버라이드.
+ * 상품 스키마 — 담보속성 카탈로그 · 상품 · 조 생략 기준 · 조 사본 · 특약 그룹 · 세목 · 상품담보(탑재 스냅샷) · 기본계약 · 옵션 오버라이드.
  * 특약 그룹은 기본 그룹(담보의 담보분류 — `coverages.category`)과 상품의 사용자 그룹이다 (ADR-0090).
  *
  * 근거: docs/기능/상품/상품.md (§3.5 · §3.6) · docs/기능/조립산출/조립산출.md · ADR-0002 · ADR-0006 · ADR-0015.
@@ -16,7 +16,7 @@
 import { integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import type { Booklet } from "@/domain/assembly/types";
-import type { ArticleNode } from "@/domain/document/nodes";
+import type { ArticleNode, ArticleOmitMode } from "@/domain/document/nodes";
 import type { ClauseOptionSelection } from "@/domain/product/types";
 
 /** 감사 컬럼 — 상품 영역 테이블 공통. */
@@ -94,6 +94,23 @@ export const productHiddenArticles = pgTable(
     articleId: text("article_id").notNull(),
     hiddenAt: timestamp("hidden_at", { withTimezone: true }).notNull().defaultNow(),
     hiddenBy: uuid("hidden_by"),
+  },
+  (t) => [primaryKey({ columns: [t.productId, t.articleId] })],
+);
+
+/**
+ * 상품의 조 생략 기준 (ADR-0093 · 기능/상품 §3.6) — 템플릿 조의 생략 기준(`omitMode`)을 이 상품에서 바꾼 조 하나 = 행 하나.
+ * 템플릿과 다른 값만 행으로 둔다(없으면 템플릿대로). 조 id 는 문서 노드 id 라 text (숨긴 조와 같은 이유).
+ */
+export const productArticleOmitModes = pgTable(
+  "product_article_omit_modes",
+  {
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    articleId: text("article_id").notNull(),
+    mode: text("mode").$type<ArticleOmitMode>().notNull(),
+    ...audit,
   },
   (t) => [primaryKey({ columns: [t.productId, t.articleId] })],
 );

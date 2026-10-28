@@ -122,7 +122,7 @@ export async function writeProductValuesAction(productId: Id, submission: Submis
 }
 
 /** 보통약관 탭 저장 결과 — 거부면 이슈 좌표(조 · 함수조항 자리)째 돌려 화면이 그 항목 옆에 붙인다. */
-export type GeneralSaveOutcome = { ok: true } | { ok: false; message: string; issues: Issue[] };
+export type GeneralSaveOutcome = { ok: true } | { ok: "confirm"; impact: Impact } | { ok: false; message: string; issues: Issue[] };
 
 const generalSchema = z.object({
   generalDocumentId: z.string().min(1),
@@ -139,18 +139,22 @@ const generalSchema = z.object({
     )
     .optional(),
   templateVersion: z.number().int().positive().optional(),
+  // 조 생략 기준 (ADR-0093) — 템플릿과 다른 조만
+  omitModes: z.array(z.object({ articleId: z.string().min(1), mode: z.enum(["exact", "contained"]) })).optional(),
 });
 
 /**
- * 보통약관 탭 저장 한 번 (기능/상품 §3.8) — 조 노출 · 옵션 오버라이드 · 조 사본(ADR-0079)의 최종 상태를 한 트랜잭션으로.
+ * 보통약관 탭 저장 한 번 (기능/상품 §3.8) — 조 노출 · 옵션 오버라이드 · 조 사본(ADR-0079) · 조 생략 기준(ADR-0093)의 최종 상태를 한 트랜잭션으로.
  * redirect 하지 않는다 — 탭 첫 줄의 `저장`(ProductEditProvider)이 `startTransition` 으로 부르고, 성공하면 읽기로 돌아가 refresh 한다.
  */
-export async function saveProductGeneralAction(productId: Id, input: GeneralSettingsInput): Promise<GeneralSaveOutcome> {
+export async function saveProductGeneralAction(productId: Id, input: GeneralSettingsInput, confirm = false): Promise<GeneralSaveOutcome> {
   const actor = await currentActor();
   const parsed = generalSchema.safeParse(input);
   if (!parsed.success) return { ok: false, message: "저장할 내용을 읽을 수 없습니다. 새로고침한 뒤 다시 편집해 주세요.", issues: [] };
-  const r = await getServices().product.saveGeneralSettings(actor, productId, parsed.data);
+  const r = await getServices().product.saveGeneralSettings(actor, productId, parsed.data, { confirm });
   if (!r.ok) {
+    // 생략 기준을 바꿔 특약 조 판정이 바뀐다 (ADR-0093 결정 6) — 확인 모달 뒤 confirm 으로 다시
+    if (r.rejection.reason === "needsConfirmation") return { ok: "confirm", impact: r.rejection.impact };
     const issues = r.rejection.reason === "invalid" ? r.rejection.issues : [];
     return { ok: false, message: issues.length > 0 ? "저장하지 못한 항목이 있습니다. 표시된 자리를 고쳐 주세요." : msg(r.rejection), issues };
   }

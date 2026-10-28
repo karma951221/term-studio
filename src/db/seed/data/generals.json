@@ -3707,7 +3707,8 @@
                   "preset": "S01",
                   "code": "P0300"
                 }
-              ]
+              ],
+              "omitMode": "contained"
             },
             {
               "id": "g-a23",

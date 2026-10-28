@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { parse } from "../expression/parser";
 import { NOT_ENTERED, entered, type ValueSlot } from "../types";
-import { MASTER, allMasterFields, findForm, findMasterField, formRuleIssues, isFieldShown, isFieldSingle } from "./index";
+import { MASTER, NOTICE_KIND, allMasterFields, findForm, findMasterField, formRuleIssues, isFieldShown, noticeAffixOf } from "./index";
 
 /**
  * 카탈로그 불변식 — 마스터의 모든 `폼키.필드키` 가 식 파서를 지나 **정확히 그 마스터 참조**가 된다.
@@ -73,71 +73,56 @@ describe("폼 교차 규칙 — 납입면제(waiver) 「적용여부 = 예면 �
   });
 });
 
-describe("폼 교차 규칙 — 상품특성(feature) 고지유형에 딸린 칸 (2026-10-01)", () => {
+describe("상품특성(feature) — 고지는 접사만 (2026-10-29 사용자 결정, 기능/상품 §3.1)", () => {
   const feature = findForm("feature")!;
+  const field = (key: string) => findMasterField(`feature.${key}`)!.field;
   const reader = (slots: Record<string, ValueSlot>) => (path: string) => slots[path];
-  const review = (extra: Record<string, ValueSlot>) => reader({ "feature.notice_kind": entered("V02"), ...extra });
+  const keyReader = (slots: Record<string, ValueSlot>) => (key: string) => slots[key];
 
-  it("간편심사 + 간편심사구분 미입력이면 간편심사구분 자리에 오류", () => {
-    const issues = formRuleIssues(feature, review({ "feature.review_type": entered(["V01"]) }));
-    expect(issues.map((i) => i.at.refPath)).toEqual(["feature.review_scope"]);
+  it("칸은 주계약/독립특약 구분 · 갱신형여부 · 태아보장여부 · 단체계약여부 · 고지유형 · 담보명 접사 — 세부고지유형 칸은 없다", () => {
+    expect(feature.fields.map((f) => f.key)).toEqual(["contract_kind", "renewable", "fetal", "group_contract", "notice_kind", "notice_affix"]);
+    expect(field("contract_kind").label).toBe("주계약/독립특약 구분");
+    expect(field("contract_kind").display).toBe("radio");
+    expect(field("notice_affix").type).toEqual({ kind: "string" });
   });
 
-  it("단일심사면 간편심사유형 정확히 1개 — 0개 · 2개는 오류, 1개는 통과", () => {
-    const single = { "feature.review_scope": entered("V01") };
-    expect(formRuleIssues(feature, review({ ...single, "feature.review_type": entered([]) })).map((i) => i.at.refPath)).toEqual(["feature.review_type"]);
-    expect(formRuleIssues(feature, review({ ...single, "feature.review_type": entered(["V01", "V02"]) }))[0].message).toContain("1개");
-    expect(formRuleIssues(feature, review({ ...single, "feature.review_type": entered(["V03"]) }))).toEqual([]);
+  it("태아보장 · 단체계약 · 고지유형은 기본값이면 감춘다 — 「+」로 꺼낸다", () => {
+    expect(["fetal", "group_contract", "notice_kind"].map((k) => field(k).hiddenByDefault)).toEqual([true, true, true]);
+    expect(field("renewable").hiddenByDefault).toBeUndefined();
   });
 
-  it("통합간편심사면 간편심사유형 2개 이상 — 1개는 오류, 2개는 통과", () => {
-    const combined = { "feature.review_scope": entered("V02") };
-    expect(formRuleIssues(feature, review({ ...combined, "feature.review_type": entered(["V01"]) }))[0].message).toContain("2개 이상");
-    expect(formRuleIssues(feature, review({ ...combined, "feature.review_type": entered(["V01", "V02"]) }))).toEqual([]);
+  it("담보명 접사는 고지유형이 일반심사가 아닐 때만 자리가 있다 — 미입력이어도 없다", () => {
+    expect(isFieldShown(field("notice_affix"), keyReader({ notice_kind: entered(NOTICE_KIND.review) }))).toBe(true);
+    expect(isFieldShown(field("notice_affix"), keyReader({ notice_kind: entered(NOTICE_KIND.health) }))).toBe(true);
+    expect(isFieldShown(field("notice_affix"), keyReader({ notice_kind: entered(NOTICE_KIND.general) }))).toBe(false);
+    expect(isFieldShown(field("notice_affix"), keyReader({}))).toBe(false);
+    expect(isFieldShown(field("notice_affix"), keyReader({ notice_kind: NOT_ENTERED }))).toBe(false);
   });
 
-  it("건강고지면 건강고지유형 1개 이상 — 미입력 · 빈 목록은 오류", () => {
-    const health = (extra: Record<string, ValueSlot>) => reader({ "feature.notice_kind": entered("V03"), ...extra });
-    expect(formRuleIssues(feature, health({})).map((i) => i.at.refPath)).toEqual(["feature.notice_type"]);
-    expect(formRuleIssues(feature, health({ "feature.notice_type": entered([]) }))).toHaveLength(1);
-    expect(formRuleIssues(feature, health({ "feature.notice_type": entered(["V01"]) }))).toEqual([]);
+  it("갱신형여부 · 고지유형은 비울 수 없다 — 접사는 비워도 된다", () => {
+    const issues = formRuleIssues(feature, reader({ "feature.notice_kind": entered(NOTICE_KIND.review) }));
+    expect(issues.map((i) => i.at.refPath)).toEqual(["feature.renewable"]);
+    expect(formRuleIssues(feature, reader({ "feature.renewable": entered(true) })).map((i) => i.at.refPath)).toEqual(["feature.notice_kind"]);
+    expect(formRuleIssues(feature, reader({ "feature.renewable": entered(false), "feature.notice_kind": entered(NOTICE_KIND.general) }))).toEqual([]);
   });
 
-  it("일반심사 · 고지유형 미입력이면 딸린 칸 규칙이 서지 않는다", () => {
-    expect(formRuleIssues(feature, reader({ "feature.notice_kind": entered("V01") }))).toEqual([]);
-    expect(formRuleIssues(feature, reader({}))).toEqual([]);
+  it("noticeAffixOf — 일반심사가 아니면 접사(앞뒤 공백 없이), 일반심사 · 미입력이면 빈 글자", () => {
+    const slots = (kind: string | undefined, affix?: string) =>
+      new Map<string, ValueSlot>([...(kind ? [["feature.notice_kind", entered(kind)] as const] : []), ...(affix !== undefined ? [["feature.notice_affix", entered(affix)] as const] : [])]);
+    expect(noticeAffixOf(slots(NOTICE_KIND.review, " (통합간편심사형) "))).toBe("(통합간편심사형)");
+    expect(noticeAffixOf(slots(NOTICE_KIND.health))).toBe("");
+    expect(noticeAffixOf(slots(NOTICE_KIND.general, "(남은 접사)"))).toBe("");
+    expect(noticeAffixOf(slots(undefined))).toBe("");
   });
 });
 
-describe("조건부 필드 — isFieldShown · isFieldSingle (2026-10-01)", () => {
-  const field = (key: string) => findMasterField(`feature.${key}`)!.field;
-  const reader = (slots: Record<string, ValueSlot>) => (key: string) => slots[key];
-
-  it("조건이 없는 필드는 늘 자리가 있다", () => {
-    expect(isFieldShown(field("renewable"), reader({}))).toBe(true);
-    expect(isFieldShown(field("notice_kind"), reader({}))).toBe(true);
-  });
-
-  it("간편심사구분 · 간편심사유형은 고지유형 = 간편심사일 때만, 건강고지유형은 건강고지일 때만", () => {
-    const review = reader({ notice_kind: entered("V02") });
-    const health = reader({ notice_kind: entered("V03") });
-    expect(isFieldShown(field("review_scope"), review)).toBe(true);
-    expect(isFieldShown(field("review_type"), review)).toBe(true);
-    expect(isFieldShown(field("notice_type"), review)).toBe(false);
-    expect(isFieldShown(field("review_type"), health)).toBe(false);
-    expect(isFieldShown(field("notice_type"), health)).toBe(true);
-  });
-
-  it("조건 필드가 미입력이면 조건부 칸은 없다", () => {
-    expect(isFieldShown(field("review_type"), reader({}))).toBe(false);
-    expect(isFieldShown(field("review_type"), reader({ notice_kind: NOT_ENTERED }))).toBe(false);
-  });
-
-  it("간편심사유형은 간편심사구분 = 단일심사일 때만 하나만 고른다 — singleWhen 없는 필드는 늘 여럿", () => {
-    expect(isFieldSingle(field("review_type"), reader({ review_scope: entered("V01") }))).toBe(true);
-    expect(isFieldSingle(field("review_type"), reader({ review_scope: entered("V02") }))).toBe(false);
-    expect(isFieldSingle(field("review_type"), reader({}))).toBe(false);
-    expect(isFieldSingle(field("notice_type"), reader({ review_scope: entered("V01") }))).toBe(false);
+describe("조건부 필드 — notEquals 조건 (2026-10-29)", () => {
+  const read = (slots: Record<string, ValueSlot>) => (key: string) => slots[key];
+  const affix = { key: "a", label: "a", type: { kind: "string" as const }, visibleWhen: { field: "k", notEquals: "V01" } };
+  it("조건 필드가 입력돼 있고 그 값이 아닐 때만", () => {
+    expect(isFieldShown(affix, read({ k: entered("V02") }))).toBe(true);
+    expect(isFieldShown(affix, read({ k: entered("V01") }))).toBe(false);
+    expect(isFieldShown(affix, read({}))).toBe(false);
   });
 });
 

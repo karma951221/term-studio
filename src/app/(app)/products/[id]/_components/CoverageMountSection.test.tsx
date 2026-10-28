@@ -60,8 +60,8 @@ describe("CoverageMountSection — 상품담보 한 건 = 한 행", () => {
   it("행 수 = 상품담보 수 · 담보 칸(담보명 = 담보 마스터 링크 위 · 코드 작게 아래)은 같은 담보 묶음의 첫 행에만", () => {
     const rows = rowsOf(render());
     expect(rows).toHaveLength(3);
-    // 두 줄 칸 이름 먼저 (2026-10-21) — 1줄째 담보명(링크), 2줄째 코드
-    expect(rows[0]).toMatch(/<span class="ts-two-line ts-ident is-name-first"><a class="ts-ident-name"[^>]* href="\/coverages\/c-death">/);
+    // 두 줄 칸 (2026-10-21, 이름 위 · 코드 아래) — 1줄째 담보명(링크), 2줄째 코드
+    expect(rows[0]).toMatch(/<span class="ts-two-line ts-ident"><a class="ts-ident-name"[^>]* href="\/coverages\/c-death">/);
     expect(rows[0]).toMatch(/>일반상해사망보장<\/a><code class="ts-ident-code">COV000002<\/code><\/span>/);
     expect(rows[0]).toContain("부가유형=기본");
     // 같은 담보의 둘째 상품담보 — 코드 · 담보명 칸이 비었다

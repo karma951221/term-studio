@@ -1,12 +1,13 @@
 /**
- * 보통약관 탭의 편집 초안 — 조 노출 · 함수조항 옵션 오버라이드 · 조 사본 (기능/상품 §3.8 · §3.10 · §4.6, ADR-0079).
+ * 보통약관 탭의 편집 초안 — 조 노출 · 함수조항 옵션 오버라이드 · 조 사본 · 조 생략 기준 (기능/상품 §3.6 · §3.8 · §3.10 · §4.6, ADR-0079 · ADR-0093).
  *
  * 편집 중 고른 것은 이 초안에만 쌓이고 탭 첫 줄의 `저장` 한 번이 `saveGeneralSettings` 로 최종 상태를 보낸다.
  * 초안의 오버라이드는 서비스가 저장하는 모양(마스터와 **다른 키만**)으로 늘 정규화해 둔다 — 그래야 「마스터로 되돌리면
  * 변경이 아니다」 · 「키가 다 빠지면 자리 없음」을 저장 없이 판정한다. 조 사본도 같다 — 템플릿과 같은 내용으로 돌아오면 사본이 아니다.
+ * 생략 기준도 같다 — 템플릿과 같은 값은 초안에 두지 않는다.
  * 순수 함수만 둔다(React 없음).
  */
-import type { ArticleNode } from "@/domain/document";
+import type { ArticleNode, ArticleOmitMode } from "@/domain/document";
 import { articleHash, sameArticle, type ArticleCopy, type ClauseOptionOverride } from "@/domain/product";
 import type { Code, Id, Issue } from "@/domain/types";
 import type { GeneralSettingsInput } from "@/services/product";
@@ -30,6 +31,8 @@ export interface GeneralDraft {
   overrides: Readonly<Record<Id, OverrideDraft>>;
   /** 템플릿 조 id → 이 상품의 사본. 없으면 템플릿을 따른다. */
   copies: Readonly<Record<Id, CopyDraft>>;
+  /** 템플릿 조 id → 이 상품의 생략 기준 (ADR-0093). 템플릿과 다른 값만 — 없으면 템플릿대로. */
+  omitModes: Readonly<Record<Id, ArticleOmitMode>>;
 }
 
 export type GeneralDraftAction =
@@ -47,13 +50,21 @@ export type GeneralDraftAction =
   | { type: "revertArticle"; articleId: Id }
   /** 「사본 유지」 — 사본은 그대로, 지문만 지금 템플릿 조 지문으로(노랑이 사라진다). */
   | { type: "keepCopy"; articleId: Id; templateHash: string }
+  /** 목차 줄의 생략 기준 고르기 — `"template"` 이거나 `templateMode`(그 조의 템플릿 값)와 같으면 초안에서 뺀다. */
+  | { type: "setOmitMode"; articleId: Id; mode: ArticleOmitMode | "template"; templateMode: ArticleOmitMode }
   | { type: "reset"; draft: GeneralDraft };
 
-export function initGeneralDraft(hidden: readonly Id[], overrides: readonly ClauseOptionOverride[], copies: readonly ArticleCopy[] = []): GeneralDraft {
+export function initGeneralDraft(
+  hidden: readonly Id[],
+  overrides: readonly ClauseOptionOverride[],
+  copies: readonly ArticleCopy[] = [],
+  omitModes: readonly { articleId: Id; mode: ArticleOmitMode }[] = [],
+): GeneralDraft {
   return {
     hidden: [...hidden],
     overrides: Object.fromEntries(overrides.map((o) => [o.nodeId, { clauseCode: o.clauseCode, options: { ...o.options } }])),
     copies: Object.fromEntries(copies.map((c) => [c.articleId, { article: c.article, templateHash: c.templateHash }])),
+    omitModes: Object.fromEntries(omitModes.map((o) => [o.articleId, o.mode])),
   };
 }
 
@@ -91,6 +102,11 @@ export function generalDraftReducer(state: GeneralDraft, action: GeneralDraftAct
       const copy = state.copies[action.articleId];
       return copy ? { ...state, copies: { ...state.copies, [action.articleId]: { ...copy, templateHash: action.templateHash } } } : state;
     }
+    case "setOmitMode": {
+      const { articleId, mode, templateMode } = action;
+      if (mode === "template" || mode === templateMode) return state.omitModes[articleId] ? { ...state, omitModes: without(state.omitModes, articleId) } : state;
+      return { ...state, omitModes: { ...state.omitModes, [articleId]: mode } };
+    }
     case "reset":
       return action.draft;
   }
@@ -107,12 +123,13 @@ function sameCopy(a: CopyDraft | undefined, b: CopyDraft | undefined): boolean {
   return a.templateHash === b.templateHash && sameArticle(a.article, b.article);
 }
 
-/** 저장된 것과 달라진 조(노출 · 사본) · 함수조항 자리 — 화면의 「변경」 표시와 「버립니까?」 판정의 재료. */
+/** 저장된 것과 달라진 조(노출 · 사본 · 생략 기준) · 함수조항 자리 — 화면의 「변경」 표시와 「버립니까?」 판정의 재료. */
 export function generalDraftChanges(saved: GeneralDraft, draft: GeneralDraft): { articles: Set<Id>; nodes: Set<Id> } {
   const was = new Set(saved.hidden);
   const now = new Set(draft.hidden);
   const articles = new Set([...was, ...now].filter((id) => was.has(id) !== now.has(id)));
   for (const id of new Set([...Object.keys(saved.copies), ...Object.keys(draft.copies)])) if (!sameCopy(saved.copies[id], draft.copies[id])) articles.add(id);
+  for (const id of new Set([...Object.keys(saved.omitModes), ...Object.keys(draft.omitModes)])) if (saved.omitModes[id] !== draft.omitModes[id]) articles.add(id);
   const nodes = new Set([...Object.keys(saved.overrides), ...Object.keys(draft.overrides)].filter((id) => !sameOptions(saved.overrides[id], draft.overrides[id])));
   return { articles, nodes };
 }
@@ -134,6 +151,8 @@ export function toGeneralSettings(generalDocumentId: Id, draft: GeneralDraft, te
     hiddenArticles: [...draft.hidden],
     overrides: Object.entries(draft.overrides).map(([nodeId, o]) => ({ nodeId, clauseCode: o.clauseCode, options: { ...o.options } })),
     copies: draftCopies(draft),
+    // 생략 기준은 최종 상태 — 비면 싣지 않는다(서비스가 「목록에 없으면 템플릿대로」로 저장본을 지운다)
+    ...(Object.keys(draft.omitModes).length > 0 ? { omitModes: Object.entries(draft.omitModes).map(([articleId, mode]) => ({ articleId, mode })) } : {}),
     ...(templateVersion !== undefined ? { templateVersion } : {}),
   };
 }

@@ -3,7 +3,7 @@
 import { EditShell, Field, useEditField } from "@/app/_components/EditShell";
 import { ENTITY_LABEL, FIELD_LABEL, NAME_LABEL } from "@/app/_lib/labels";
 import type { AttributeKind } from "@/domain/product";
-import { displayNamingTemplate, missingTemplateKinds } from "@/domain/product";
+import { NOTICE_AFFIX_CHIP, displayNamingTemplate, missingTemplateKinds } from "@/domain/product";
 
 import { saveNamingTemplateEditAction } from "../edit-actions";
 import type { NamingTemplateEditData } from "../edit-types";
@@ -14,7 +14,7 @@ function TemplatePreview({ kinds }: { kinds: AttributeKind[] }) {
   return (
     <>
       <div className="ts-form-row"><label>{FIELD_LABEL.currentName}</label><div className="ts-form-control"><span className="ts-field-static">{displayNamingTemplate(template.value, kinds)}</span></div></div>
-      <div className="ts-form-row"><label>{FIELD_LABEL.availableTokens}</label><div className="ts-form-control ts-mono">[{NAME_LABEL.coverage}]{kinds.map((kind) => ` [${kind.code}](${kind.label})`).join("")}</div></div>
+      <div className="ts-form-row"><label>{FIELD_LABEL.availableTokens}</label><div className="ts-form-control ts-mono">[{NAME_LABEL.coverage}] [{NOTICE_AFFIX_CHIP}](상품 담보명 접사){kinds.map((kind) => ` [${kind.code}](${kind.label})`).join("")}</div></div>
       {missing.length > 0 ? <div className="ts-form-row"><label>{FIELD_LABEL.missingTypes}</label><div className="ts-form-control"><span className="ts-badge missing">{missing.map((kind) => kind.label).join(", ")}</span></div></div> : null}
     </>
   );

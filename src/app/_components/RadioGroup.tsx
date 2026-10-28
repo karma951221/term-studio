@@ -1,15 +1,16 @@
 "use client";
 
 /**
- * 라디오 2지선다 + 고른 값의 뜻풀이.
+ * 라디오 묶음 — 짧은 선택지는 가로로 한 줄 (디자인원칙 §1.10, 2026-10-29).
  *
- * 옵션 이름(「항상 노출」·「선택 노출」)만 늘어놓으면 둘이 뭐가 다른지 화면에 없다 — 고른 옵션의
- * hint 를 바로 아래 붙여 준다. 툴팁으로 숨기지 않는 이유는, 이건 고를 때 읽어야 하는 설명이라서다.
+ * 옵션의 뜻풀이(hint)는 그 옵션 이름 옆 ⓘ 툴팁 — 상시 회색 설명문은 화면을 어지럽힌다 (2026-10-29, 전에는 고른 옵션의 hint 를 아래에 붙였다).
  *
  * 제어형(EditShell 의 Field)과 비제어형(서버 액션에 formData 로 실려 가는 생성 폼)을 같이 받는다.
  * 어느 쪽이든 `name`·`value` 를 단 진짜 input 이라 폼 제출에 그대로 실린다.
  */
-import { useState } from "react";
+import { Fragment, useState } from "react";
+
+import { InfoTip } from "./InfoTip";
 
 export interface RadioOption {
   value: string | boolean;
@@ -40,13 +41,12 @@ export function RadioGroup({
 }) {
   const [inner, setInner] = useState(defaultValue);
   const current = value !== undefined ? value : inner;
-  const hint = options.find((option) => option.value === current)?.hint;
 
   return (
-    <div className="ts-radio-group">
-      <div className="ts-form-radios" role="radiogroup" aria-label={label}>
-        {options.map((option) => (
-          <label key={String(option.value)} className="ts-form-radio">
+    <div className="ts-form-radios" role="radiogroup" aria-label={label}>
+      {options.map((option) => (
+        <Fragment key={String(option.value)}>
+          <label className="ts-form-radio">
             <input
               type="radio"
               data-slot="radio-native"
@@ -62,9 +62,10 @@ export function RadioGroup({
             />
             {option.label}
           </label>
-        ))}
-      </div>
-      {hint ? <p className="ts-form-hint">{hint}</p> : null}
+          {/* 라벨 밖 — 안에 두면 라디오의 접근성 이름에 뜻풀이가 섞인다 */}
+          {option.hint ? <InfoTip text={option.hint} /> : null}
+        </Fragment>
+      ))}
     </div>
   );
 }

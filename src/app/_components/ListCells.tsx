@@ -1,9 +1,8 @@
 /**
  * L1 목록의 두 줄 칸 (디자인원칙 §2 L1, 2026-10-21) — 짝으로 다니는 두 열을 한 열 두 줄로 묶는다.
  *
- * - `IdentCell` — 조회 대상의 코드 · 이름. 1줄째 코드(mono · 옅은 색), 2줄째 이름(상세로 가는 링크).
- *   하위 항목(담보속성의 값)의 코드 · 이름도 같은 칸이다 — 링크 없이. 편집 모드면 이름 자리에 입력칸이 선다 (2026-10-21).
- *   `order="name-first"` — 상세 화면 표에서 이름이 주인공인 곳(상품 상세 › 상품담보 탭의 「담보」 칸)은 1줄째 이름 · 2줄째 코드(작게) (2026-10-21).
+ * - `IdentCell` — 조회 대상의 이름 · 코드. 1줄째 이름(상세로 가는 링크 · 굵게), 2줄째 코드(작게 · mono · 옅은 색) (2026-10-29 뒤집음 — 사람은 이름으로 찾는다).
+ *   하위 항목(담보속성의 값)의 이름 · 코드도 같은 칸이다 — 링크 없이. 편집 모드면 이름 자리에 입력칸이 선다 (2026-10-21).
  * - `AuditCell` — 최종수정. 1줄째 수정일자(mono), 2줄째 수정자.
  *
  * ListPage 의 `identCol` · `auditCol` 이 쓰고, ListPage 를 거치지 않는 표(폼 조회)도 같은 칸을 쓴다.
@@ -13,24 +12,17 @@ import type { ReactNode } from "react";
 
 import { formatDate, type AuditStamp } from "../_lib/list";
 
-export function IdentCell({ code, name, href, title, order = "code-first" }: { code: ReactNode; name: ReactNode; href?: string; title?: string; order?: "code-first" | "name-first" }) {
-  const codeLine = <code className="ts-ident-code">{code}</code>;
-  const nameLine = href ? (
-    <Link href={href} className="ts-ident-name" title={title}>
-      {name}
-    </Link>
-  ) : (
-    <span className="ts-ident-name">{name}</span>
-  );
-  return order === "name-first" ? (
-    <span className="ts-two-line ts-ident is-name-first">
-      {nameLine}
-      {codeLine}
-    </span>
-  ) : (
+export function IdentCell({ code, name, href, title }: { code: ReactNode; name: ReactNode; href?: string; title?: string }) {
+  return (
     <span className="ts-two-line ts-ident">
-      {codeLine}
-      {nameLine}
+      {href ? (
+        <Link href={href} className="ts-ident-name" title={title}>
+          {name}
+        </Link>
+      ) : (
+        <span className="ts-ident-name">{name}</span>
+      )}
+      <code className="ts-ident-code">{code}</code>
     </span>
   );
 }

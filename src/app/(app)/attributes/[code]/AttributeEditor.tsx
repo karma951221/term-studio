@@ -46,7 +46,7 @@ export function ValuesEditor() {
           onAdd={add}
           onRemove={(value) => field.setValue(field.value.filter((item) => item.code !== value.code))}
           columns={[
-            // 값 = 코드 · 이름 한 칸 두 줄 (§2 L1 두 줄 칸, 2026-10-21) — 편집 모드는 코드 줄 아래에 값 이름 입력칸
+            // 값 = 이름 · 코드 한 칸 두 줄 (§2 L1 두 줄 칸, 2026-10-21) — 편집 모드는 값 이름 입력칸 아래에 코드 줄
             { key: "value", header: FIELD_LABEL.value, className: "col-flex", cell: (value) => (
               <IdentCell
                 code={isSaved(value) ? value.code : newLabel(FIELD_LABEL.value)}
