@@ -131,7 +131,7 @@ describe("합성 표본 — 절 형태 세 상품 (PGlite)", () => {
     expect(verdicts(b)).toEqual(["보험금의 지급사유 delegate 1/1", "보험금 지급에 관한 세부규정 delegate 1/1"]);
   });
 
-  it("ⓒ 독립특약 제1절 부활 조의 암보장개시일 문구 — 납입면제 사유 값의 면책여부로: 「암(유사암제외)」 있음 · 「암(유사암제외)·무면책」 없음 (기능/상품 §3.9 · 함수조항 C0047)", async () => {
+  it("ⓒ 독립특약 제1절 부활 조의 암보장개시일 문구 — 납입면제 사유 값의 면책여부로: 「암(유사암제외)」 있음 · 「암(유사암제외)·무면책」 없음 (기능/상품 §3.9 · 함수조항 C0036)", async () => {
     const revival = (b: Booklet) => {
       const lines = renderedToLines(b.general!);
       const at = lines.findIndex((l) => l.startsWith("## ") && l.endsWith("(보험료의 납입을 연체하여 해지된 계약의 부활(효력회복))"));

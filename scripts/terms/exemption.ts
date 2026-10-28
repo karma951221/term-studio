@@ -23,7 +23,7 @@ export const AGE15_EXEMPTION_BENEFIT = "D0011";
 /** 「15세 이상만 면책 있음」 — 담보 레벨 `any(D0011)`. 담보약관 15세 단서의 문장 안 조건. */
 export const AGE15_EXEMPTION = "D0012";
 
-/** 보통약관 납입면제 부가항(C0044)의 인자 — 참이면 15세 단서. */
+/** 보통약관 납입면제 부가항(C0033)의 인자 — 참이면 15세 단서. */
 export const AGE15_WAIVER_PARAM = "보험나이_15세_이상";
 export const AGE15_PARAM: ParamDef = { name: AGE15_WAIVER_PARAM, type: { kind: "boolean" }, default: { kind: "discriminator", code: AGE15_WAIVER } };
 

@@ -54,8 +54,7 @@ const all = (n: unknown, pred: (x: Json) => boolean, out: Json[] = []): Json[] =
 };
 const clauseByLabel = (label: string) => clauses.find((c) => c.label === label)!;
 
-/** 사유별 호 함수조항 — 열거형 순서(= 템플릿 호 목록 순서). V12 · V13 은 열거형에서 지웠다 (ADR-0086 결정 1 · 5). */
-const ITEM_REASONS = ["V01", "V02", "V03", "V04", "V05", "V06", "V07", "V08", "V09", "V10", "V11", "V14"];
+/** 납입면제사유(E0001) 값 이름 — 정의 함수조항 이름에 쓴다. V12 · V13 은 열거형에서 지웠다 (ADR-0086 결정 5). */
 const REASON_LABEL: Record<string, string> = {
   V01: "암(유사암제외)·면책",
   V02: "암(유사암제외)·무면책",
@@ -70,7 +69,8 @@ const REASON_LABEL: Record<string, string> = {
   V11: "상해및질병80%이상후유장해",
   V14: "중증화상및부식",
 };
-const itemLabel = (v: string) => `납입면제 호 — ${REASON_LABEL[v]}`;
+/** 호 함수조항 하나 — 사유 필드로 문구를 짓는다 (ADR-0095). */
+const ITEM_LABEL = "납입면제 호";
 /** 정의 — 글이 상품군마다 다른 사유(암 · 뇌졸중 · 급성심근경색증)는 꼬리표, 같은 사유(말기폐질환 ~ 만성당뇨합병증 · 중증화상및부식)는 함께 (결정 3). */
 const definitionLabels = (line: string) => [
   `암(유사암제외) 정의 및 진단확정(${line})`,
@@ -89,22 +89,24 @@ const APPLIED_SOURCE = { kind: "source", source: { form: "waiver", filter: "waiv
 /** 정의 조 제목 — 사유를 나열하지 않는 일반 고정 제목 (ADR-0088 결정 7, 2026-10-17). 원문(사유 나열)과의 차이는 허용 차이(knownDifferences.ts). */
 const DEFINITION_FOLDED = "보험료 납입면제 사유의 정의 및 진단확정";
 
-/** 템플릿 [납입면제종마다] 항의 호 목록 — 함수조항 참조의 (조, P코드) → 사유 (조 참조 대상 대조용). 참조 노드 id = `<조 id>-p1-k-<사유>`. */
-function itemRefsOf(tree: Json): { outer: Json; refs: Json[]; reasonOfCode: Map<string, string> } {
+/** 템플릿 [납입면제종마다] 항 › [현재 종의 사유마다] › 호 함수조항 참조 하나 (ADR-0095). `itemKey` = 그 참조의 (조, P코드) — 조 참조 대상 대조용. */
+function itemRefsOf(tree: Json): { outer: Json; inner: Json; ref: Json; itemKey: string } {
   const outer = find(tree, (x) => x.kind === "forBlock" && (x.source as Json).kind === "planOptions")!;
-  const refs = (outer.children![0].items as Json[]) ?? [];
-  const reasonOfCode = new Map(refs.map((r) => [`${(r.id as string).split("-p1-k-")[0]}#${r.code as string}`, ITEM_REASONS[ITEM_REASONS.findIndex((v) => itemLabel(v) === labelOf(r.clauseCode))]]));
-  return { outer, refs, reasonOfCode };
+  const [inner] = (outer.children![0].items as Json[]) ?? [];
+  const ref = inner.children![0];
+  const article = find(tree, (x) => x.kind === "article" && find(x, (y) => y === ref) !== undefined)!;
+  return { outer, inner, ref, itemKey: `${article.id}#${ref.code as string}` };
 }
 
-/** 함수조항 본문의 조 참조 중 호 함수조항 참조를 가리키는 것 — 대상마다 「안쪽 코드:사유」, 연결어. */
-function itemRefShapes(label: string, reasonOfCode: Map<string, string>): string[] {
+/** 함수조항 본문의 조 참조 중 호 함수조항 참조를 가리키는 것 — 대상마다 「안쪽 코드:값 한정(+)」, 대상끼리 「,」, 연결어. */
+function itemRefShapes(label: string, itemKey: string): string[] {
   const key = (t: { articleId?: string; code?: string }) => `${t.articleId}#${t.code}`;
-  const refs = all(clauseByLabel(label).body, (x) => x.kind === "articleRef" && (x.targets as { articleId?: string; code?: string }[]).some((t) => reasonOfCode.has(key(t))));
-  return refs.map((r) => `${(r.targets as { articleId: string; code: string; innerCode?: string }[]).map((t) => `${t.innerCode ? `${t.innerCode}:` : ""}${reasonOfCode.get(key(t)) ?? key(t)}`).join(",")} ${r.connector}`);
+  type T = { articleId: string; code: string; innerCode?: string; restrict?: { values?: string[] } };
+  const refs = all(clauseByLabel(label).body, (x) => x.kind === "articleRef" && (x.targets as T[]).some((t) => key(t) === itemKey));
+  return refs.map((r) => `${(r.targets as T[]).map((t) => (key(t) === itemKey ? `${t.innerCode ? `${t.innerCode}:` : ""}${t.restrict?.values?.join("+") ?? "전부"}` : key(t))).join(",")} ${r.connector}`);
 }
 
-describe("알파Plus 납입면제 템플릿 — 사유 값으로 분기하지 않고 사유별 함수조항을 늘어놓는다 (결정 10 · 11 · 16 · ADR-0086 결정 2)", () => {
+describe("알파Plus 납입면제 템플릿 — 사유 값으로 분기하지 않고 [종마다 › 그 종의 사유마다] 호 함수조항 하나 (결정 10 · 11 · 16 · ADR-0095)", () => {
   it("납입면제 세 조는 「납입면제 있음」 조 자리 IF 하나로 감싼다", () => {
     const wrap = find(alpha, (x) => x.kind === "condBlock" && /"(?:title|text)":"보험료의 납입면제"/.test(JSON.stringify(x)))!;
     const branches = wrap.branches as { when: string; children: Json[] }[];
@@ -117,15 +119,17 @@ describe("알파Plus 납입면제 템플릿 — 사유 값으로 분기하지 �
     ]);
   });
 
-  it("제27조의1 ① = [납입면제종마다] 항(번호 · 이름 슬롯) › 호 목록 = 사유별 호 함수조항 12(열거형 순서, 종들 ← 현재 종)", () => {
-    const { outer, refs } = itemRefsOf(alpha);
+  it("제27조의1 ① = [납입면제종마다] 항(번호 · 이름 슬롯) › 호 목록 = [현재 종의 사유마다] › 호 함수조항 하나(사유 ← 현재 사유)", () => {
+    const { outer, inner, ref } = itemRefsOf(alpha);
     expect(outer.source).toEqual({ kind: "planOptions", form: "waiver", filter: "waiver.applies = true" });
     const p = outer.children![0];
     expect((p.children as Json[]).filter((c) => c.kind === "slot").map((c) => c.ref)).toEqual(["builtin.plan.number", "builtin.plan.name"]);
-    expect(refs.map((r) => [r.kind, labelOf(r.clauseCode)])).toEqual(ITEM_REASONS.map((v) => ["clauseBlockRef", itemLabel(v)]));
-    for (const r of refs) expect(r.bindings).toEqual({ 종들: { kind: "current", loop: outer.id } });
-    // 사유 반복 · 사유 합집합 반복은 없어졌고, 템플릿 어디에도 사유 값 코드 비교가 없다
-    expect(all(alpha, (x) => x.kind === "forBlock" && (x.source as Json).kind !== "planOptions")).toEqual([]);
+    expect(p.items as Json[]).toHaveLength(1);
+    expect(inner.source).toEqual({ kind: "listOfCurrent", loop: outer.id, field: "reasons" });
+    expect(inner.children).toHaveLength(1);
+    expect([ref.kind, labelOf(ref.clauseCode), ref.bindings]).toEqual(["clauseBlockRef", ITEM_LABEL, { 사유: { kind: "current", loop: inner.id } }]);
+    // 사유 반복은 호 자리 하나뿐(정의 조는 사유별 함수조항), 템플릿 어디에도 사유 값 코드 비교가 없다
+    expect(all(alpha, (x) => x.kind === "forBlock" && (x.source as Json).kind !== "planOptions")).toEqual([inner]);
     expect(all(alpha, (x) => typeof x.when === "string" && /V\d\d/.test(x.when as string))).toEqual([]);
   });
 
@@ -150,14 +154,57 @@ describe("알파Plus 납입면제 템플릿 — 사유 값으로 분기하지 �
       const ref = find(alpha, (x) => x.kind === "clauseBlockRef" && x.clauseCode === clauseByLabel(label).code)!;
       expect([ref.preset, ref.options, ref.bindings], label).toEqual(["S01", {}, undefined]);
     }
-    // 사유별 호는 반복의 현재 종을 받아 프리셋이 없다 (프리셋은 반복의 현재 원소를 담지 않는다)
-    for (const v of ITEM_REASONS) expect(clauseByLabel(itemLabel(v)).presets, v).toBeUndefined();
+    // 호는 반복의 현재 사유를 받아 프리셋이 없다 (프리셋은 반복의 현재 원소를 담지 않는다)
+    expect(clauseByLabel(ITEM_LABEL).presets).toBeUndefined();
   });
 });
 
-describe("사유별 호 · 정의 함수조항 — 인자 종들 + 내부 변수 「해당」으로 스스로 켜진다 (ADR-0086 결정 1 · 2 · 3)", () => {
+describe("납입면제 호 함수조항 하나 — 인자 사유(E0001), 문구는 사유 필드(약관표시명 · 면책여부 · 장해호)가 짓는다 (ADR-0095)", () => {
+  const item = () => clauseByLabel(ITEM_LABEL);
+  /** 인라인 → 모양 글 — 글은 그대로, 슬롯은 〔식〕, 조사는 {프리셋}, 문장 안 조건은 [식 → 글]. */
+  const shape = (list: Json[]): string =>
+    list
+      .map((n) => {
+        if (n.kind === "text") return n.text as string;
+        if (n.kind === "slot") return `〔${n.ref as string}〕`;
+        if (n.kind === "particle") return `{${n.preset as string}}`;
+        if (n.kind === "inlineCond") return (n.branches as { when?: string; children: Json[] }[]).map((b) => `[${b.when ?? "그 밖"} → ${shape(b.children)}]`).join("");
+        return `<${n.kind as string}>`;
+      })
+      .join("");
+
+  it("사유별 호 함수조항(납입면제 호 — …)은 없다 — 호 함수조항은 하나, 유형 「호」, 인자 사유 하나 · 내부 변수 · 프리셋 없음", () => {
+    expect(clauses.filter((c) => c.label.startsWith("납입면제 호 — "))).toEqual([]);
+    expect(clauses.filter((c) => c.label === ITEM_LABEL)).toHaveLength(1);
+    expect(item().mode).toBe("item");
+    expect(item().params).toEqual([{ name: "사유", type: { kind: "enum", enumCode: "E0001" } }]);
+    expect(item().locals ?? []).toEqual([]);
+  });
+
+  it("본문 = IF 장해호 → 상해 호 · 질병 호(별표 참조) / 그 밖 → 진단 호 하나(면책이면 「암보장개시일 이후」 · 약관표시명 · 으로/로) — 값 코드 비교 없음", () => {
+    const body = item().body as unknown as Json[];
+    expect(body.map((b) => b.kind)).toEqual(["condBlock"]);
+    const [disability, diagnosis] = body[0].branches as { when?: string; children: Json[] }[];
+    expect(disability.when).toBe("arg.사유.F04 = true");
+    expect(disability.children.map((i) => shape(i.children!))).toEqual([
+      "피보험자가 상해로<appendixRef>에서 정한 장해지급률이 80% 이상에 해당하는 장해상태가 되었을 경우",
+      "피보험자가 진단 확정된 질병으로<appendixRef>에서 정한 장해지급률이 80% 이상에 해당하는 장해상태가 되었을 경우",
+    ]);
+    expect(diagnosis.when).toBeUndefined();
+    expect(diagnosis.children.map((i) => shape(i.children!))).toEqual(["피보험자가[arg.사유.F02 = true →  암보장개시일 이후]「〔arg.사유.F01〕」{euro-ro} 진단확정되었을 경우"]);
+    expect(JSON.stringify(item().body)).not.toMatch(/V\d\d/);
+  });
+
+  it("열거형 E0001 의 F04 「장해호」 — 상해및질병80%이상후유장해(V11)만 예", () => {
+    const e = read<{ code: string; fields: { key: string; label: string; type: string }[]; values: { code: string; fields: Record<string, unknown> }[] }[]>("enums.json").find((x) => x.code === "E0001")!;
+    expect(e.fields.find((f) => f.key === "F04")).toMatchObject({ label: "장해호", type: "boolean" });
+    expect(e.values.filter((v) => v.fields.F04 === true).map((v) => v.code)).toEqual(["V11"]);
+    expect(e.values.every((v) => typeof v.fields.F04 === "boolean")).toBe(true);
+  });
+});
+
+describe("사유별 정의 함수조항 — 인자 종들 + 내부 변수 「해당」으로 스스로 켜진다 (ADR-0086 결정 1 · 2 · 3)", () => {
   const perReason: [string, string[]][] = [
-    ...ITEM_REASONS.map((v): [string, string[]] => [itemLabel(v), [v]]),
     ...[...definitionLabels("알파Plus"), ...definitionLabels("통합간편").slice(0, 3)].map((label): [string, string[]] => {
       const v = Object.keys(REASON_LABEL).find((k) => label.startsWith(`${REASON_LABEL[k]} `));
       return [label, v ? [v] : ["V01", "V02"]];
@@ -177,11 +224,8 @@ describe("사유별 호 · 정의 함수조항 — 인자 종들 + 내부 변수
     expect((body[0].branches as { when: string }[]).map((b) => b.when)).toEqual(["var.해당"]);
   });
 
-  it("호는 유형 「호」 · 정의는 「항」, 상해및질병80%이상후유장해 호는 호 둘(상해 · 질병) 한 세트, 정의가 없는 장해(V11) 정의 함수조항은 없다", () => {
-    for (const v of ITEM_REASONS) expect(clauseByLabel(itemLabel(v)).mode).toBe("item");
+  it("정의는 유형 「항」, 정의가 없는 장해(V11) 정의 함수조항은 없다", () => {
     for (const label of definitionLabels("알파Plus")) expect(clauseByLabel(label).mode).toBe("block");
-    const v11 = (clauseByLabel(itemLabel("V11")).body as unknown as Json[])[0];
-    expect((v11.branches as { children: Json[] }[])[0].children.map((x) => x.kind)).toEqual(["item", "item"]);
     expect(clauses.filter((c) => c.label.includes("후유장해 정의"))).toEqual([]);
   });
 
@@ -191,26 +235,25 @@ describe("사유별 호 · 정의 함수조항 — 인자 종들 + 내부 변수
     expect(all(clauses, (x) => x.kind === "switchBlock" || x.kind === "inlineSwitch")).toEqual([]);
   });
 
-  it("세부규정(알파Plus)의 「제27조의1 제1항 제1호」 = 암·면책 호 함수조항 참조, 「제10호, 제11호」 = 장해 호 함수조항 참조(값 한정 없음 · 연결어는 원문대로)", () => {
-    const { reasonOfCode } = itemRefsOf(alpha);
-    expect(itemRefShapes("납입면제 세부규정(알파Plus)", reasonOfCode)).toEqual(["V01 및", "V01 및", "V01 및", "V11 및", "V11 또는"]);
-    expect(itemRefShapes("면제 부가항(알파Plus)", reasonOfCode)).toEqual(["V01 및"]);
-    expect(JSON.stringify(clauses)).not.toContain('"restrict"');
+  it("세부규정(알파Plus)의 「제27조의1 제1항 제1호」 = 호 참조 + 값 한정 암·면책, 「제10호, 제11호」 = 값 한정 장해(연결어는 원문대로) (ADR-0095)", () => {
+    const { itemKey } = itemRefsOf(alpha);
+    expect(itemRefShapes("납입면제 세부규정(알파Plus)", itemKey)).toEqual(["V01 및", "V01 및", "V01 및", "V11 및", "V11 또는"]);
+    expect(itemRefShapes("면제 부가항(알파Plus)", itemKey)).toEqual(["V01 및"]);
   });
 });
 
 describe("통합간편 납입면제 템플릿 — 알파Plus 와 같은 모양, 호 · 상품군 사이에 같은 정의 · 부활 문구는 함께 쓴다", () => {
-  it("세 조(납입면제 · 정의 · 세부규정)를 「납입면제 있음」 IF 로, 제29조 ① ② = [납입면제종마다] 항 하나(번호 · 이름 슬롯) › 사유별 호 함수조항 12", () => {
+  it("세 조(납입면제 · 정의 · 세부규정)를 「납입면제 있음」 IF 로, 제29조 ① ② = [납입면제종마다] 항 하나(번호 · 이름 슬롯) › [현재 종의 사유마다] › 호 함수조항 하나", () => {
     const wrap = find(meritz, (x) => x.kind === "condBlock" && /"(?:title|text)":"보험료의 납입면제"/.test(JSON.stringify(x)))!;
     const [branch] = wrap.branches as { when: string; children: Json[] }[];
     expect(branch.when).toBe(WAIVER_PRESENT);
     expect(branch.children.map((a) => titleOf(a))).toEqual(["보험료의 납입면제", DEFINITION_FOLDED, "납입면제에 관한 세부규정"]);
-    const { outer, refs } = itemRefsOf(branch.children[0]);
+    const { outer, inner, ref } = itemRefsOf(branch.children[0]);
     const p = outer.children![0];
     expect((p.children as Json[]).map((c) => (c.kind === "text" ? c.text : c.ref))[4]).toMatch(/^\)을 가입한 피보험자가 보험료 납입기간 중에/);
-    expect(refs.map((r) => labelOf(r.clauseCode))).toEqual(ITEM_REASONS.map(itemLabel));
-    for (const r of refs) expect(r.bindings).toEqual({ 종들: { kind: "current", loop: outer.id } });
-    expect(all(meritz, (x) => x.kind === "forBlock" && (x.source as Json).kind !== "planOptions")).toEqual([]);
+    expect(inner.source).toEqual({ kind: "listOfCurrent", loop: outer.id, field: "reasons" });
+    expect([labelOf(ref.clauseCode), ref.bindings]).toEqual([ITEM_LABEL, { 사유: { kind: "current", loop: inner.id } }]);
+    expect(all(meritz, (x) => x.kind === "forBlock" && (x.source as Json).kind !== "planOptions")).toEqual([inner]);
     expect(all(meritz, (x) => typeof x.when === "string" && /V\d\d/.test(x.when as string))).toEqual([]);
   });
 
@@ -246,13 +289,13 @@ describe("통합간편 납입면제 템플릿 — 알파Plus 와 같은 모양, 
     }
   });
 
-  it("세부규정(통합간편) — 호 함수조항 참조: 암·면책 · 장해 · 장해 + 화상 · 상해 호(장해 호 함수조항의 첫 호 — 안쪽 코드) + 화상", () => {
-    const { reasonOfCode } = itemRefsOf(meritz);
-    const v11 = (clauseByLabel(itemLabel("V11")).body as unknown as Json[])[0];
-    const injury = (v11.branches as { children: Json[] }[])[0].children[0].code as string;
+  it("세부규정(통합간편) — 호 참조 + 값 한정: 암·면책 · 장해 · 장해 + 화상 · 상해 호(장해 가지의 첫 호 — 안쪽 코드) + 화상 (ADR-0095)", () => {
+    const { itemKey } = itemRefsOf(meritz);
+    const body = (clauseByLabel(ITEM_LABEL).body as unknown as Json[])[0];
+    const injury = (body.branches as { children: Json[] }[])[0].children[0].code as string;
     expect(injury).toMatch(/^P\d{4}$/);
-    expect(itemRefShapes("납입면제 세부규정(통합간편)", reasonOfCode)).toEqual(["V01 또는", "V01 또는", "V01 또는", "V11 또는", "V11,V14 또는", `${injury}:V11,V14 또는`]);
-    expect(itemRefShapes("면제 부가항(통합간편)", reasonOfCode)).toEqual(["V01 및"]);
+    expect(itemRefShapes("납입면제 세부규정(통합간편)", itemKey)).toEqual(["V01 또는", "V01 또는", "V01 또는", "V11 또는", "V11+V14 또는", `${injury}:V11,V14 또는`]);
+    expect(itemRefShapes("면제 부가항(통합간편)", itemKey)).toEqual(["V01 및"]);
   });
 
   it("정의 조 = 사유별 정의 함수조항(통합간편 셋 + 함께 쓰는 일곱), 제2조 표의 종 한 항 참조는 글로 굳힌다(종 한정 참조는 다음 기획)", () => {

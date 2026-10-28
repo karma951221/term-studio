@@ -24,7 +24,7 @@ test(
     test.setTimeout(120_000);
     await ev.action("칩#0", "관리자로 로그인한다", () => login(page));
 
-    await ev.action("칩#1", "16대특정암 담보약관 — 제5조(특별약관의 소멸) 안 C0146 셋째 항 참조는 「제3항」 칩, 툴팁에 코드", async () => {
+    await ev.action("칩#1", "16대특정암 담보약관 — 제5조(특별약관의 소멸) 안 C0135 셋째 항 참조는 「제3항」 칩, 툴팁에 코드", async () => {
       await page.goto(`/documents?kind=coverage&q=${encodeURIComponent("16대특정암진단비보장")}`);
       await page.getByRole("link", { name: "16대특정암진단비보장 특별약관", exact: true }).first().click();
       await page.waitForURL(/\/documents\/[0-9a-f-]+$/);
@@ -35,7 +35,7 @@ test(
       await expect(body).not.toContainText(/[항호목] P\d{4}/);
     });
 
-    await ev.action("칩#2", "같은 문서 제4조(특별약관의 무효) — C0146 옵션 자리는 고른 선택지 글만(다른 선택지 · ✓ 없음)", async () => {
+    await ev.action("칩#2", "같은 문서 제4조(특별약관의 무효) — C0135 옵션 자리는 고른 선택지 글만(다른 선택지 · ✓ 없음)", async () => {
       await page.getByRole("button", { name: "제4조(특별약관의 무효)", exact: true }).first().click();
       const opt = page.locator(".ts-clause-model-opt", { hasText: "16대특정암보장개시일" }).first();
       await expect(opt).toHaveText(/^16대특정암보장개시일의 전일 이전에「16대특정암」[^|〔]*$/);

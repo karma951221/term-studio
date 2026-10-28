@@ -71,14 +71,14 @@ describe("보통약관 템플릿 「보통약관(일반)」 — 바탕은 2607 �
 });
 
 describe("알파Plus2607 함수조항 — 더한 것은 맨 뒤 코드, 앞 상품의 코드는 그대로", () => {
-  it("2604 · 통합간편의 준용규정은 C0068 · C0069 그대로다", () => {
-    expect(codeOf("준용규정(알파Plus)")).toBe("C0068");
-    expect(codeOf("준용규정(통합간편)")).toBe("C0069");
+  it("2604 · 통합간편의 준용규정은 C0057 · C0058 그대로다", () => {
+    expect(codeOf("준용규정(알파Plus)")).toBe("C0057");
+    expect(codeOf("준용규정(통합간편)")).toBe("C0058");
   });
 
-  it("질병 특약이 함께 쓰는 둘 — 제3자 합의 세부규정 · 준용규정(알파Plus 질병)이 C0070 · C0071", () => {
-    expect(codeOf("보험금 지급에 관한 세부규정(제3자 합의)")).toBe("C0070");
-    expect(codeOf("준용규정(알파Plus 질병)")).toBe("C0071");
+  it("질병 특약이 함께 쓰는 둘 — 제3자 합의 세부규정 · 준용규정(알파Plus 질병)이 C0059 · C0060", () => {
+    expect(codeOf("보험금 지급에 관한 세부규정(제3자 합의)")).toBe("C0059");
+    expect(codeOf("준용규정(알파Plus 질병)")).toBe("C0060");
     // 그 뒤는 자동 탑재 특약에서 변환기가 찾아 묶은 함수조항뿐 — 「(알파Plus2607)」 · 「(알파Plus2607 N)」
     expect(clauses.slice(71).filter((c) => !/\(알파Plus2607( \d+)?\)$/.test(c.label)).map((c) => c.label)).toEqual([]);
   });

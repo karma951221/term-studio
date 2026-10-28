@@ -248,9 +248,9 @@ describe("시드 — 담보 면책 특성은 원문 보장개시일 정의 항�
   });
 });
 
-describe("시드 — 보통약관 납입면제 부가항(C0044)의 15세 단서", () => {
+describe("시드 — 보통약관 납입면제 부가항(C0033)의 15세 단서", () => {
   const clauses = read<(Json & { code: string; params?: { name: string; default?: unknown }[] })[]>("clauses.json");
-  const c0044 = clauses.find((c) => c.code === "C0044")!;
+  const c0044 = clauses.find((c) => c.code === "C0033")!;
 
   it("인자 「보험나이_15세_이상」(참거짓 · 기본 연결 = 15세 이상 적용 납입면제 있음 D0009)이 15세 단서 둘을 감싼다 — 면책 사유 조건 안에", () => {
     expect(c0044.params).toContainEqual({ name: AGE15_WAIVER_PARAM, type: { kind: "boolean" }, default: { kind: "discriminator", code: "D0009" } });
@@ -260,8 +260,8 @@ describe("시드 — 보통약관 납입면제 부가항(C0044)의 15세 단서"
     expect(conds.every((x) => x.branches![0].when === `arg.${AGE15_WAIVER_PARAM} = true`)).toBe(true);
   });
 
-  it("통합간편(C0051)은 원문에 15세 단서가 없어 그대로다", () => {
-    const c0051 = clauses.find((c) => c.code === "C0051")!;
+  it("통합간편(C0040)은 원문에 15세 단서가 없어 그대로다", () => {
+    const c0051 = clauses.find((c) => c.code === "C0040")!;
     expect(all(c0051.body, (x) => x.kind === "inlineCond")).toEqual([]);
   });
 });
