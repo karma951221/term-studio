@@ -64,7 +64,7 @@ async function newSpecial(error: string | undefined, preselect: string | undefin
     <div>
       <CreateHead title={title} formId={SPECIAL_FORM_ID} path={path} banner={<ErrorBanner message={error} />} />
       <form id={SPECIAL_FORM_ID} action={createSpecialAction} className="ts-create-form">
-        <FormRow label={ENTITY_LABEL.coverage} htmlFor="doc-coverage">
+        <FormRow label={ENTITY_LABEL.coverage} htmlFor="doc-coverage" info="아직 담보약관 템플릿이 없는 담보만 고를 수 있다 — 담보 하나가 한 벌을 소유한다.">
           <Combobox
             id="doc-coverage"
             name="coverageId"
@@ -73,7 +73,6 @@ async function newSpecial(error: string | undefined, preselect: string | undefin
             placeholder="담보 이름 · 코드로 찾기"
             options={candidates.map((c) => ({ value: c.id, label: c.name, hint: c.code }))}
           />
-          <p className="ts-form-hint">아직 담보약관 템플릿이 없는 담보만 고를 수 있다 — 담보 하나가 한 벌을 소유한다</p>
         </FormRow>
         <FormRow label={FIELD_LABEL.title} htmlFor="doc-title">
           <input id="doc-title" type="text" name="title" placeholder="비우면 「{담보명} 특별약관」" />

@@ -37,8 +37,8 @@ test(
     await ev.action("박스#3", "새 박스 — 제목(【】를 쳐도 벗겨 목록 이름으로) · 본문(첫 줄 【머리】)을 쓰고 만들면 상세로 가고 코드 BX 가 붙는다", async () => {
       await page.goto("/boxes/new");
       await expect(page.getByLabel("박스 이름")).toHaveCount(0);
-      await page.getByLabel("제목").fill("【보험연도】");
-      await page.getByLabel("본문").fill(`【보험연도】\n보험연도란 계약일부터 1년 단위로 끊은 기간을 말합니다. ${stamp}\n예: 2026년 3월 1일 계약이면 첫 보험연도는 2027년 2월 28일까지`);
+      await page.getByLabel("제목", { exact: true }).fill("【보험연도】");
+      await page.getByLabel("본문", { exact: true }).fill(`【보험연도】\n보험연도란 계약일부터 1년 단위로 끊은 기간을 말합니다. ${stamp}\n예: 2026년 3월 1일 계약이면 첫 보험연도는 2027년 2월 28일까지`);
       await page.getByRole("button", { name: "생성", exact: true }).click();
       await page.waitForURL(/\/boxes\/BX\d+$/);
       code = decodeURIComponent(page.url().split("/").at(-1)!);
@@ -53,8 +53,8 @@ test(
     let twin = "";
     await ev.action("박스#4", "같은 제목으로 또 만들어도 된다 — 다른 코드가 붙고, 목록에서 본문으로 찾으면 그 박스가 제목(【】 없이)으로 선다", async () => {
       await page.goto("/boxes/new");
-      await page.getByLabel("제목").fill("보험연도");
-      await page.getByLabel("본문").fill(`다른 보험연도 설명 ${stamp}`);
+      await page.getByLabel("제목", { exact: true }).fill("보험연도");
+      await page.getByLabel("본문", { exact: true }).fill(`다른 보험연도 설명 ${stamp}`);
       await page.getByRole("button", { name: "생성", exact: true }).click();
       await page.waitForURL(/\/boxes\/BX\d+$/);
       twin = decodeURIComponent(page.url().split("/").at(-1)!);
@@ -68,7 +68,7 @@ test(
 
     await ev.action("박스#5", "보통약관 템플릿을 새로 만든다", async () => {
       await page.goto("/documents/new");
-      await page.getByLabel("제목").fill(docTitle);
+      await page.getByLabel("제목", { exact: true }).fill(docTitle);
       await page.getByRole("button", { name: "생성" }).first().click();
       await page.waitForURL(/\/documents\/[0-9a-f-]+$/);
     });

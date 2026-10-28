@@ -6,10 +6,12 @@
  *
  * - 고른 것이 없으면 안내 한 줄.
  * - 탭 맨 아래 고정 줄 〔되돌리기 · 적용〕(넣기 폼이면 〔되돌리기 · 넣기〕) — 고친 것이 없으면 둘 다 꺼진다(넣기는 처음 값으로도 넣는다).
+ *   버튼은 제목 줄과 같은 글자 버튼 규격(`HeadButton`, 디자인원칙 §1.9).
  *   적용은 편집본에만(저장은 바의 `저장` 한 번, ADR-0074). 되돌리기는 폼을 처음 값으로 다시 그린다.
  */
 import type { ReactNode } from "react";
 
+import { HeadButton } from "@/app/_components/HeadActions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import type { EditOp } from "@/domain/document";
@@ -63,12 +65,12 @@ export function EditTab({
         )}
       </div>
       <div className="ts-edit-foot">
-        <button type="button" disabled={!dirty} onClick={onRevert}>
+        <HeadButton disabled={!dirty} onClick={onRevert}>
           되돌리기
-        </button>
-        <button type="submit" form={EDIT_FORM_ID} className="primary" disabled={!dirty && !alwaysSubmittable(spec)}>
+        </HeadButton>
+        <HeadButton type="submit" form={EDIT_FORM_ID} primary disabled={!dirty && !alwaysSubmittable(spec)}>
           {submitLabel(spec)}
-        </button>
+        </HeadButton>
       </div>
     </div>
   );

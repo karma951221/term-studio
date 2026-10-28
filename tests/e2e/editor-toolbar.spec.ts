@@ -215,8 +215,9 @@ test(
       await tool("조 참조").click();
       const d = editForm(page, "조 참조 넣기");
       await expect(d).toBeVisible();
-      // 연결어는 기본값 없이 시작한다 — 대상이 하나 이하면 꺼져 있다
-      await expect(d.getByRole("radio", { name: "및", exact: true })).toBeDisabled();
+      // 연결어는 기본값 없이 시작한다 — 대상이 하나 이하면 라디오 없이 「필요 없음」 한 줄 (2026-10-29)
+      await expect(d.getByRole("radio", { name: "및", exact: true })).toHaveCount(0);
+      await expect(d.locator(".ts-ref-connector-off")).toContainText("필요 없음");
       await d.getByRole("button", { name: /펴기$/ }).first().click();
       const paragraphsInTree = d.getByRole("treeitem", { level: 2 });
       await paragraphsInTree.nth(0).getByRole("checkbox").check();

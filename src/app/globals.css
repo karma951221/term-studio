@@ -2383,7 +2383,7 @@ input:where(:not([data-slot])).ts-option-title {
   width: 100%;
 }
 
-/* 편집 모드의 값 칸 — 코드 줄 아래 값 이름 입력칸 (2026-10-21). 입력칸 테두리 · 포커스 링이 잘리지 않게 */
+/* 편집 모드의 값 칸 — 값 이름 입력칸 위 · 코드 줄 아래 (2026-10-21, 순서 2026-10-29). 입력칸 테두리 · 포커스 링이 잘리지 않게 */
 .ts-attr-values .ts-ident-name:has(> input) {
   overflow: visible;
   font-weight: normal;
@@ -2737,7 +2737,7 @@ td.col-act {
   text-align: right;
 }
 
-/* 두 줄 칸 (§2 L1, 2026-10-21) — 짝으로 다니는 두 열을 한 열에. 코드 · 이름은 1줄째 코드(옅은 mono) · 2줄째 이름,
+/* 두 줄 칸 (§2 L1, 2026-10-21) — 짝으로 다니는 두 열을 한 열에. 이름 · 코드는 1줄째 이름 · 2줄째 코드(작게 · 옅은 mono, 2026-10-29),
  * 최종수정은 1줄째 날짜 · 2줄째 수정자. 줄마다 끊기지 않게 nowrap — 넘치면 말줄임. */
 .ts-two-line {
   display: flex;
@@ -2837,8 +2837,6 @@ td.col-ident {
   border: 0;
 }
 
-/* 조 참조 대상 트리 — 검색칸 아래 값 열에 (라벨 열 120px 로 떨어지면 깊은 줄의 체크박스가 가려진다) */
-.ts-form-row > .ts-ref-search + .ts-ref-tree,
 /* 인자 연결 — 콤보 아래 「상수 직접 입력」(문자 · 숫자 · 날짜 인자, 기능/함수조항 §4.4) */
 .ts-form-row > .ts-arg-const,
 .ts-preset-row > .ts-arg-const,
@@ -2906,7 +2904,36 @@ td.col-ident {
   margin: 8px 0;
 }
 
-.ts-form-radios,
+/* 라디오 묶음 — 짧은 선택지는 가로 한 줄 (디자인원칙 §1.10, 2026-10-29). 간격은 상품 기본정보 예/아니오와 같다. 옵션 뜻풀이 ⓘ 는 옵션 바로 뒤 */
+.ts-form-radios {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+
+.ts-form-radios > .ts-infotip {
+  margin-left: -9px;
+}
+
+/* 읽기 전용 값 한 줄 — 폼 행의 값 칸 */
+.ts-form-value {
+  padding-top: 4px;
+  font-size: 13px;
+}
+
+/* 라벨 + ⓘ — ⓘ 를 label 밖에 둔 자리(FormLabel) */
+.ts-form-label > label {
+  font: inherit;
+  color: inherit;
+}
+
+.ts-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
 /* 목록값(복수) — 고른 값 칩 + 「+」 (값을 다 펼치지 않는다, 2026-10-03) */
 .ts-form-chips {
   display: inline-flex;
@@ -4476,14 +4503,127 @@ button:where(:not([data-slot])).ts-doc-cond-btn:hover {
 }
 
 /* 조 참조 대상 고르기 트리 — 좌측 목차(.ts-l3-toc)와 같은 접기 문법 ▸/▾, 줄마다 체크박스 */
+/* 조 참조 고르기 — 고른 칩 · 검색칸 · 트리를 한 상자로 (2026-10-29) */
+.ts-ref-picker {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--ts-rule-strong);
+  border-radius: 6px;
+  background: var(--ts-surface);
+  overflow: hidden;
+}
+
+.ts-ref-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 6px 6px 0;
+  list-style: none;
+}
+
+.ts-ref-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 1px 2px 1px 8px;
+  border: 1px solid var(--ts-mark);
+  border-radius: 999px;
+  background: var(--ts-mark-bg);
+  color: var(--ts-ink);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ts-ref-chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button:where(:not([data-slot])).ts-ref-chip-x {
+  flex: 0 0 auto;
+  min-height: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ts-ink-3);
+  font-size: 10px;
+  line-height: 1;
+}
+
+button:where(:not([data-slot])).ts-ref-chip-x:hover {
+  background: var(--ts-surface-2);
+  color: var(--ts-ink);
+}
+
+/* 상자 안 검색칸 — 테두리 없이 아래 괘선만, 트리와 한 몸 */
+.ts-ref-picker > input:where(:not([data-slot])).ts-ref-search {
+  width: 100%;
+  min-height: 30px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--ts-rule);
+  border-radius: 0;
+  background: transparent;
+  font-size: 13px;
+}
+
+.ts-ref-picker > input:where(:not([data-slot])).ts-ref-search:focus-visible {
+  outline: none;
+  border-bottom-color: var(--ts-mark);
+}
+
 .ts-ref-tree {
-  max-height: 280px;
+  max-height: 300px;
   overflow: auto;
   padding: 4px 0;
-  border: 1px solid var(--ts-rule-strong);
-  border-radius: 3px;
-  background: var(--ts-surface);
   font-size: 13px;
+}
+
+/* 못 고르는 연결어 — 라벨과 「필요 없음」 한 줄 (편집 탭의 한 열 폼에서도) */
+.ts-form-row.ts-ref-connector-off,
+.ts-edit-form .ts-form-row.ts-ref-connector-off {
+  grid-template-columns: 120px 1fr;
+  align-items: baseline;
+}
+
+.ts-edit-form .ts-form-row.ts-ref-connector-off {
+  grid-template-columns: auto 1fr;
+}
+
+.ts-ref-connector-off .ts-form-value {
+  padding-top: 0;
+  font-size: 12px;
+}
+
+/* 찍힐 문구 — 고른 대상 · 연결어 · 한정을 바꾸면 바로 바뀐다 */
+.ts-ref-preview {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 4px 0 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--ts-surface-2);
+  font-size: 13px;
+}
+
+.ts-ref-preview-label {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--ts-ink-3);
+}
+
+.ts-ref-preview-text {
+  min-width: 0;
+  color: var(--ts-ink);
 }
 
 .ts-ref-list {
@@ -4495,16 +4635,23 @@ button:where(:not([data-slot])).ts-doc-cond-btn:hover {
 .ts-ref-row {
   display: flex;
   align-items: center;
-  min-height: 22px;
-  padding-right: 6px;
+  min-height: 26px;
+  padding-right: 8px;
+  border-radius: 4px;
+  margin: 0 4px;
 }
 
 .ts-ref-row:hover {
   background: var(--ts-surface-2);
 }
 
+.ts-ref-row[aria-selected="true"] {
+  background: var(--ts-mark-bg);
+}
+
 .ts-ref-row[aria-selected="true"] > .ts-ref-pick {
-  color: var(--ts-mark);
+  color: var(--ts-ink);
+  font-weight: 600;
 }
 
 .ts-ref-fold {
@@ -4525,6 +4672,9 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 }
 
 .ts-ref-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -4551,6 +4701,8 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 }
 
 .ts-ref-code {
+  font-size: 10px;
+  opacity: 0.7;
   /* 좁은 줄에서도 체크박스가 가려지지 않게 코드가 먼저 줄어든다 (기능/문면 §4.3 — 줄마다 체크박스) */
   flex: 0 1 auto;
   min-width: 0;
@@ -5866,7 +6018,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-basic-table input:where(:not([data-slot])).ts-basic-number { width: 64px; }
 .ts-basic-table input:where(:not([data-slot]))[aria-invalid="true"] { border-color: var(--ts-error); }
 .ts-basic-table .ts-form-error { display: block; margin-top: 2px; }
-.ts-basic-table .ts-form-radios,
 .ts-basic-table .ts-form-checks { gap: 12px; }
 .ts-basic-table tr.is-highlighted > td,
 .ts-basic-table tr.is-highlighted > th,
@@ -5959,7 +6110,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 }
 
 /* 값 열(2)에 붙이던 칸 — 한 열이면 그 열로 (안 그러면 둘째 열이 생겨 이름 열이 짓눌린다) */
-.ts-edit-form .ts-form-row > .ts-ref-search + .ts-ref-tree,
 .ts-edit-form .ts-form-row > .ts-arg-const {
   grid-column: 1;
 }

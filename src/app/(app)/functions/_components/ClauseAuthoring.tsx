@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation";
 
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { DiscardDialog } from "@/app/_components/EditShell";
+import { InfoTip } from "@/app/_components/InfoTip";
 import { IconClose, IconTrash } from "@/app/_components/icons";
 import { MoreMenu } from "@/app/_components/MoreMenu";
 import { HeadActions, HeadButton, HeadIconButton } from "@/app/_components/HeadActions";
@@ -930,10 +931,10 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
             />
 
             <section className="ts-clause-body-sec" aria-label="본문">
-              <h2 className="ts-clause-sec">본문</h2>
-              <p className="ts-muted ts-clause-sec-note">
-                {BODY_NOTE[clauseMode]}
-              </p>
+              <h2 className="ts-clause-sec">
+                본문
+                <InfoTip text={BODY_NOTE[clauseMode]} />
+              </h2>
               <div
                 className={`ts-clause-editor${editing ? " is-editing" : ""}`}
                 onContextMenu={onContextMenu}
