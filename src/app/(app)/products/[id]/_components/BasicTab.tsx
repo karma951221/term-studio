@@ -12,11 +12,14 @@
  *   추가는 카드 목록 끝 점선 타일, 삭제는 카드 머리 체크 → 「선택 삭제」(행마다 삭제 버튼을 두지 않는다).
  * - 조합도 카드다 — 종마다 한 장, 안에 형 줄. 편집은 체크만 한다. 두 세목 탭을 오가도 초안은 유지된다.
  */
-import { Fragment, useEffect, useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
+import { findForm, formRuleIssues } from "@/domain/master";
+import { entered } from "@/domain/types";
 import { PLAN_AXIS_LABEL, planCombinationKey, planOptionLabel, type PlanAxis, type PlanOption, type ProductPlan } from "@/domain/product";
 import { draftValueOf, FieldInput, FieldReadValue, formReducer, initFormState, isViewShown, isViewSingle, savedValueOf, toSubmission, type FieldView, type FormAction, type FormModel, type FormState } from "@/forms";
-import { IconPlus } from "@/app/_components/icons";
+import { IconButton, IconClose, IconPlus } from "@/app/_components/icons";
+import { MoreMenu, type MoreMenuItem } from "@/app/_components/MoreMenu";
 import { InfoTip } from "@/app/_components/InfoTip";
 import type { EditOutcome } from "@/app/_lib/edit";
 import type { ProductBasicInput } from "@/services/product";
@@ -45,6 +48,18 @@ export interface BasicTabProps {
 /** 종·형 칸 — 「제1종」. 이름은 제 열에 따로 있다. */
 const axisLabel = (o: Pick<PlanOption, "axis" | "number">) => `제${o.number}${PLAN_AXIS_LABEL[o.axis]}`;
 const combinationLabel = (items: Pick<PlanOption, "axis" | "number" | "name">[]) => items.map(planOptionLabel).join(" · ");
+/** 상품 레벨 폼 규칙(갱신형여부 · 고지유형 필수)을 초안으로 — 서버(`saveBasic`)와 같은 규칙을 칸 아래에 먼저 보인다. */
+function draftRuleIssues(state: FormState) {
+  const valueOf = draftValueOf(state);
+  const read = (path: string) => {
+    const value = valueOf(path);
+    return value === undefined ? undefined : entered(value);
+  };
+  return [...new Set(state.model.fields.map((f) => f.form.key))].flatMap((key) => {
+    const form = findForm(key);
+    return form ? formRuleIssues(form, read) : [];
+  });
+}
 /** 조합 카드 — 종 · 형이 다 있으면 종마다 한 장(안에 형 줄), 한 축뿐이면 한 장에 선택지 줄. */
 function comboGroups<T extends Pick<PlanOption, "id" | "axis">>(rows: T[][]): { head?: T; rows: T[][] }[] {
   const groups: { head?: T; rows: T[][] }[] = [];
@@ -78,6 +93,8 @@ export function BasicTab(props: BasicTabProps) {
   const [error, setError] = useState("");
   const [attempted, setAttempted] = useState(false);
   const [confirmation, setConfirmation] = useState<Confirmation>();
+  /** 편집 중 「+」로 꺼낸 감출 칸 — 기본값으로 돌려도 빼기 전까지는 선다. */
+  const [extras, setExtras] = useState<string[]>([]);
 
   // ── 편집 손잡이 — 헤더의 편집 · 취소 · 저장이 부른다 ────────────────────
   const begin = () => {
@@ -87,6 +104,7 @@ export function BasicTab(props: BasicTabProps) {
     setProductState(initFormState(productForm));
     setCombinations(initialCombinations());
     setSelected([]);
+    setExtras([]);
     setError("");
     setAttempted(false);
     setConfirmation(undefined);
@@ -107,7 +125,11 @@ export function BasicTab(props: BasicTabProps) {
       return "stay";
     }
     if (issues.length) {
-      setError("값을 해석할 수 없는 항목이 있습니다. 표시된 셀을 고쳐 주세요.");
+      setError("값을 해석할 수 없는 항목이 있습니다. 표시된 칸을 고쳐 주세요.");
+      return "stay";
+    }
+    if (draftRuleIssues(productState).length) {
+      setError("비어 있는 항목이 있습니다. 표시된 칸을 채워 주세요.");
       return "stay";
     }
     try {
@@ -202,13 +224,38 @@ export function BasicTab(props: BasicTabProps) {
     ? candidates
     : shownCombinations.map((ids) => ids.map((id) => shownOptions.find((o) => o.id === id)).filter((o): o is OptionDraft => !!o)).filter((items) => items.length > 0);
   const showPlanType = editing && planTypeForms.length > 1;
-  /** 상품 레벨 필드를 폼(공시이율 · 상품특성)별로 — 선언 순서 그대로. */
+  /** 상품 레벨 필드를 폼(공시이율 · 상품특성 · 책자)별로 — 선언 순서 그대로. */
   const productGroups = productForm.fields.reduce<{ key: string; label: string; fields: FieldView[] }[]>((groups, field) => {
     const last = groups.at(-1);
     if (last && last.key === field.form.key) last.fields.push(field);
     else groups.push({ key: field.form.key, label: field.form.label, fields: [field] });
     return groups;
   }, []);
+  /** 감출 칸(기본값이면 감추는 칸 — 태아보장 · 단체계약 · 고지유형)이 있는 폼은 제 카드 + 「+」, 나머지는 「상품」 카드에 모은다. */
+  const extraForms = productGroups.filter((g) => g.fields.some((f) => f.hiddenByDefault));
+  const plainForms = productGroups.filter((g) => !extraForms.includes(g));
+  const productValueOf = editing ? draftValueOf(productState) : savedValueOf(productForm);
+  /** 감출 칸이 지금 서나 — 기본값과 다른 값이거나, 편집 중 「+」로 꺼냈을 때 (기능/상품 §4.4 · 2026-10-29). */
+  const extraShown = (view: FieldView) => {
+    const value = productValueOf(view.path);
+    return (value !== undefined && value !== view.prefill) || (editing && extras.includes(view.path));
+  };
+  /** 꺼낸 목록값 칸(고지유형)은 행이 아니라 카드 한 장 — 그 값에 걸린 조건부 칸(담보명 접사)이 카드 몸에 선다. */
+  const isOptionOwner = (view: FieldView) => view.hiddenByDefault === true && view.type.kind === "enum";
+  const dependentsOf = (owner: FieldView) => productForm.fields.filter((f) => f.visibleWhen?.path === owner.path);
+  const ownedByOption = (view: FieldView) => productForm.fields.some((o) => isOptionOwner(o) && o.path === view.visibleWhen?.path);
+  const optionCards = productForm.fields.filter((f) => isOptionOwner(f) && extraShown(f));
+  const rowShown = (view: FieldView) => !isOptionOwner(view) && !ownedByOption(view) && (!view.hiddenByDefault || extraShown(view)) && isViewShown(view, productValueOf);
+  /** 「+」 메뉴 — 감춘 참거짓 칸은 「예」로, 감춘 목록값 칸은 기본값이 아닌 값마다 한 줄로 꺼낸다. */
+  const addItems = (fields: FieldView[]): MoreMenuItem[] =>
+    fields
+      .filter((f) => f.hiddenByDefault && !extraShown(f))
+      .flatMap((f) =>
+        f.type.kind === "boolean"
+          ? [{ label: f.label.replace(/여부$/, ""), onSelect: () => addExtra(f.path, "true") }]
+          : (f.enumOptions ?? []).filter((o) => o.code !== f.prefill).map((o) => ({ label: o.label, onSelect: () => addExtra(f.path, o.code) })),
+      );
+  const productRuleIssues = attempted && editing ? draftRuleIssues(productState) : [];
   const nameMissing = attempted && !name.trim();
 
   // ── 값 셀 ────────────────────────────────────────────────────────────────
@@ -235,6 +282,35 @@ export function BasicTab(props: BasicTabProps) {
           </span>
         )}
       </>
+    );
+  };
+  const addExtra = (path: string, draft: string) => {
+    setExtras((current) => [...new Set([...current, path])]);
+    setProductState((s) => formReducer(s, { type: "edit", path, draft }));
+  };
+  /** 빼기 — 기본값(아니오 · 일반심사)으로 되돌리고 감춘다. 딸린 칸(담보명 접사)은 조건이 꺼져 저장 때 지워진다. */
+  const removeExtra = (view: FieldView) => {
+    setExtras((current) => current.filter((p) => p !== view.path));
+    setProductState((s) => formReducer(s, { type: "edit", path: view.path, draft: String(view.prefill ?? "") }));
+  };
+  const productRow = (field: FieldView) => {
+    const issue = productRuleIssues.find((i) => i.at.refPath === field.path);
+    return (
+      <div key={field.path} className={field.path === productHighlight ? "ts-form-row is-highlighted" : "ts-form-row"} data-path={field.path}>
+        <span className="ts-form-label" aria-hidden={editing || undefined}>
+          {field.label}
+          {field.description && <InfoTip text={field.description} />}
+        </span>
+        <div className="ts-form-control">
+          {editing ? productCell(field.path, field.label) : <FieldReadValue field={field} />}
+          {editing && field.hiddenByDefault && <IconButton className="ts-basic-row-remove" icon={<IconClose />} label={`${field.label} 빼기`} onClick={() => removeExtra(field)} />}
+          {issue && (
+            <span className="ts-form-error" role="alert">
+              {issue.message}
+            </span>
+          )}
+        </div>
+      </div>
     );
   };
   const productCell = (path: string, label: string) => {
@@ -272,56 +348,63 @@ export function BasicTab(props: BasicTabProps) {
       <fieldset className="ts-basic-body" disabled={pending || !!confirmation}>
         <section className="ts-basic-product-values" id="product-values" aria-label="상품정보">
           <h3>상품정보</h3>
-          <div className="ts-basic-table-wrap">
-            <table className="ts-table ts-basic-table ts-basic-info">
-              <tbody>
-                <tr>
-                  <th scope="row">
-                    <label htmlFor={`${idBase}-name`}>상품명</label>
-                  </th>
-                  <td className="col-flex">
-                    <span className="ts-basic-name-control">
-                      <input
-                        id={`${idBase}-name`}
-                        aria-label="상품명"
-                        type="text"
-                        value={editing ? name : productName}
-                        readOnly={!editing}
-                        required
-                        aria-invalid={nameMissing || undefined}
-                        onChange={(e) => setName(e.target.value)}
-                      />
-                      {nameMissing && (
-                        <span className="ts-form-error" role="alert">
-                          상품명은 비울 수 없습니다
-                        </span>
-                      )}
-                    </span>
-                  </td>
-                </tr>
-                {/* 상품 레벨 마스터 폼마다 — 공시이율 · 상품특성 (기능/상품 §3.1 · 2026-09-28). 폼이 둘 이상이면 폼 이름 줄을 끼운다 */}
-                {productGroups.map((group) => (
-                  <Fragment key={group.key}>
-                    {productGroups.length > 1 && group.fields.length > 1 && (
-                      <tr className="ts-basic-group">
-                        <th scope="rowgroup" colSpan={2}>
-                          {group.label}
-                        </th>
-                      </tr>
+          {/* 카드 — 「상품」(상품명 + 감출 칸이 없는 폼) · 감출 칸이 있는 폼(상품특성 + 「+」) · 꺼낸 목록값마다 한 장(간편심사 · 건강고지 — 담보명 접사) (2026-10-29) */}
+          <div className="ts-basic-grid">
+            <section className="ts-basic-card" aria-label="상품">
+              <div className="ts-basic-card-head">
+                <span className="ts-basic-card-name">상품</span>
+              </div>
+              <div className="ts-basic-card-body">
+                <div className="ts-form-row">
+                  <label className="ts-form-label" htmlFor={`${idBase}-name`}>
+                    상품명
+                  </label>
+                  <div className="ts-form-control ts-basic-name-control">
+                    <input
+                      id={`${idBase}-name`}
+                      aria-label="상품명"
+                      type="text"
+                      value={editing ? name : productName}
+                      readOnly={!editing}
+                      required
+                      aria-invalid={nameMissing || undefined}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                    {nameMissing && (
+                      <span className="ts-form-error" role="alert">
+                        상품명은 비울 수 없습니다
+                      </span>
                     )}
-                    {group.fields.filter((field) => isViewShown(field, editing ? draftValueOf(productState) : savedValueOf(productForm))).map((field) => (
-                      <tr key={field.path} className={field.path === productHighlight ? "is-highlighted" : undefined} data-path={field.path}>
-                        <th scope="row">
-                          {field.label}
-                          {field.description && <InfoTip text={field.description} />}
-                        </th>
-                        <td className="col-flex">{editing ? productCell(field.path, field.label) : <FieldReadValue field={field} />}</td>
-                      </tr>
-                    ))}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
+                  </div>
+                </div>
+                {plainForms.flatMap((group) => group.fields.filter(rowShown).map(productRow))}
+              </div>
+            </section>
+            {extraForms.map((group) => {
+              const items = addItems(group.fields);
+              return (
+                <section key={group.key} className="ts-basic-card" aria-label={group.label}>
+                  <div className="ts-basic-card-head">
+                    <span className="ts-basic-card-name">{group.label}</span>
+                    {editing && items.length > 0 && <MoreMenu label={`${group.label} 항목 추가`} trigger={<IconPlus />} align="start" className="ts-basic-card-add" items={items} />}
+                  </div>
+                  <div className="ts-basic-card-body">{group.fields.filter(rowShown).map(productRow)}</div>
+                </section>
+              );
+            })}
+            {optionCards.map((owner) => {
+              const kind = owner.enumOptions?.find((o) => o.code === productValueOf(owner.path))?.label ?? owner.label;
+              return (
+                <section key={owner.path} className={owner.path === productHighlight ? "ts-basic-card is-target" : "ts-basic-card"} aria-label={kind} data-path={owner.path}>
+                  <div className="ts-basic-card-head">
+                    <span className="ts-basic-card-key">{owner.label}</span>
+                    <span className="ts-basic-card-name">{kind}</span>
+                    {editing && <IconButton className="ts-basic-card-remove" icon={<IconClose />} label={`${kind} 빼기`} onClick={() => removeExtra(owner)} />}
+                  </div>
+                  <div className="ts-basic-card-body">{dependentsOf(owner).filter((f) => isViewShown(f, productValueOf)).map(productRow)}</div>
+                </section>
+              );
+            })}
           </div>
         </section>
 
@@ -346,7 +429,7 @@ export function BasicTab(props: BasicTabProps) {
 
           <div role="tabpanel" id="definitions-panel" aria-labelledby="definitions-tab" hidden={subTab !== "definitions"}>
             {shownOptions.length === 0 && <p className="ts-basic-empty">{editing ? "보험종목 추가로 첫 카드를 만든다." : "정의된 보험종목이 없다. 편집을 눌러 추가한다."}</p>}
-            <div className="ts-plan-grid">
+            <div className="ts-basic-grid">
               {shownOptions.map((option) => {
                 const model = modelFor(option);
                 const cardHighlighted = option.id === highlightOption;
@@ -369,25 +452,25 @@ export function BasicTab(props: BasicTabProps) {
                     </div>
                   );
                 });
-                const classes = ["ts-plan-card", cardHighlighted && !highlightField ? "is-target" : "", invalid ? "is-invalid" : ""].filter(Boolean).join(" ");
+                const classes = ["ts-basic-card", cardHighlighted && !highlightField ? "is-target" : "", invalid ? "is-invalid" : ""].filter(Boolean).join(" ");
                 return (
                   <section key={option.id} id={`plan-option-${option.id}`} className={classes} data-plan-option={option.id} aria-label={shownName ? planOptionLabel(option) : `${axisLabel(option)} 새 보험종목`}>
-                    <div className="ts-plan-card-head">
+                    <div className="ts-basic-card-head">
                       {editing && (
                         <input type="checkbox" aria-label={`${shownName || `${axisLabel(option)} 카드`} 선택`} checked={selected.includes(option.id)} onChange={(e) => toggleSelected(option.id, e.target.checked)} />
                       )}
-                      <span className="ts-plan-card-key">{axisLabel(option)}</span>
-                      <span className={shownName ? "ts-plan-card-name" : "ts-plan-card-name ts-muted"}>{shownName || "이름 없음"}</span>
-                      {showPlanTypeColumn && <span className="ts-plan-card-type">{planTypeLabel(option.planTypeCode)}</span>}
+                      <span className="ts-basic-card-key">{axisLabel(option)}</span>
+                      <span className={shownName ? "ts-basic-card-name" : "ts-basic-card-name ts-muted"}>{shownName || "이름 없음"}</span>
+                      {showPlanTypeColumn && <span className="ts-basic-card-type">{planTypeLabel(option.planTypeCode)}</span>}
                     </div>
-                    <div className="ts-plan-card-body">
+                    <div className="ts-basic-card-body">
                       {editing && (
-                        <div className="ts-plan-card-ident">
+                        <div className="ts-basic-card-ident">
                           <div className="ts-form-row">
                             <label className="ts-form-label" htmlFor={`${ctl}-axis`}>
                               종·형
                             </label>
-                            <div className="ts-form-control ts-plan-card-axis">
+                            <div className="ts-form-control ts-basic-card-axis">
                               <select id={`${ctl}-axis`} aria-label="종·형 구분" value={option.axis} disabled={!option.isNew} onChange={(e) => updateOption(option.id, { axis: e.target.value as PlanAxis })}>
                                 <option value="type">종</option>
                                 <option value="form">형</option>
@@ -448,7 +531,7 @@ export function BasicTab(props: BasicTabProps) {
                 );
               })}
               {editing && (
-                <button type="button" className="ts-cov-add-tile ts-plan-add" onClick={addOption} disabled={!planTypeForms.length}>
+                <button type="button" className="ts-cov-add-tile ts-basic-add" onClick={addOption} disabled={!planTypeForms.length}>
                   <IconPlus /> 보험종목 추가
                 </button>
               )}
@@ -461,20 +544,20 @@ export function BasicTab(props: BasicTabProps) {
             ) : combinationRows.length === 0 ? (
               <p className="ts-basic-empty">사용하는 조합이 없다. 편집을 눌러 조합을 고른다.</p>
             ) : (
-              <div className="ts-plan-grid">
+              <div className="ts-basic-grid">
                 {comboGroups(combinationRows).map((group) => (
-                  <section key={group.head?.id ?? "single"} className="ts-plan-card" aria-label={group.head ? planOptionLabel(group.head) : "보험종목"}>
-                    <div className="ts-plan-card-head">
+                  <section key={group.head?.id ?? "single"} className="ts-basic-card" aria-label={group.head ? planOptionLabel(group.head) : "보험종목"}>
+                    <div className="ts-basic-card-head">
                       {group.head ? (
                         <>
-                          <span className="ts-plan-card-key">{axisLabel(group.head)}</span>
-                          <span className="ts-plan-card-name">{group.head.name}</span>
+                          <span className="ts-basic-card-key">{axisLabel(group.head)}</span>
+                          <span className="ts-basic-card-name">{group.head.name}</span>
                         </>
                       ) : (
-                        <span className="ts-plan-card-name">{comboAxes.map((axis) => PLAN_AXIS_LABEL[axis]).join(" · ")} 단독</span>
+                        <span className="ts-basic-card-name">{comboAxes.map((axis) => PLAN_AXIS_LABEL[axis]).join(" · ")} 단독</span>
                       )}
                     </div>
-                    <ul className="ts-plan-combos">
+                    <ul className="ts-basic-combos">
                       {group.rows.map((items) => {
                         const ids = items.map((o) => o.id);
                         const key = planCombinationKey(ids);
@@ -484,8 +567,8 @@ export function BasicTab(props: BasicTabProps) {
                         const text = (
                           <>
                             {rest.map((o) => (
-                              <span key={o.id} className="ts-plan-combo-item">
-                                <span className="ts-plan-card-key">{axisLabel(o)}</span> {o.name}
+                              <span key={o.id} className="ts-basic-combo-item">
+                                <span className="ts-basic-card-key">{axisLabel(o)}</span> {o.name}
                               </span>
                             ))}
                           </>

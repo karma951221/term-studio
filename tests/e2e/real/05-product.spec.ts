@@ -38,10 +38,10 @@ function describeDiff(d: UnorderedDiff): string {
   return `${show("원문에만", d.missing)}${show("조립에만", d.extra)}${d.sections ? `\n── 관 순서: ${JSON.stringify(d.sections)}` : ""}`;
 }
 
-/** 세목 · 상품정보 값 칸 — 참거짓은 예/아니오 라디오, 목록값(복수)은 체크, 목록값은 선택, 수는 입력. */
+/** 세목 · 상품정보 값 칸 — 참거짓은 예/아니오 라디오, 목록값(복수)은 체크, 목록값은 선택(라디오 칸은 라디오), 수 · 글자는 입력. */
 async function setPlanValue(row: import("@playwright/test").Locator, path: string, value: unknown): Promise<void> {
   const cell = row.locator(`[data-path="${path}"]`).last();
-  if (typeof value === "number") await cell.locator("input").fill(String(value));
+  if (typeof value === "number" || (typeof value === "string" && (await cell.locator("input[type=text]").count()) > 0)) await cell.locator("input").fill(String(value));
   else if (typeof value === "boolean") await cell.getByRole("radio", { name: value ? "예" : "아니오", exact: true }).check();
   else if (Array.isArray(value)) {
     // 목록값 — 하나만 고르는 칸은 라디오, 복수는 고른 값 칩 + 「+ 값 추가」 select 로 하나씩 (2026-10-03 · 35d16b5)
@@ -55,7 +55,24 @@ async function setPlanValue(row: import("@playwright/test").Locator, path: strin
       await cell.getByRole("combobox", { name: /값 추가$/ }).selectOption(code);
     }
   }
+  else if ((await cell.locator(`input[type=radio][value="${value}"]`).count()) > 0) await cell.locator(`input[type=radio][value="${value}"]`).check();
   else await cell.locator("select").selectOption(String(value));
+}
+
+/**
+ * 상품정보 값 — 기본값이면 감추는 칸(태아보장 · 단체계약 · 고지유형)은 기본값이면 건너뛰고, 아니면 「상품특성 +」로 꺼낸다 (2026-10-29).
+ * 고지유형을 꺼내면 그 고지 카드(담보명 접사)가 선다.
+ */
+async function setProductValue(page: import("@playwright/test").Page, info: import("@playwright/test").Locator, path: string, value: unknown): Promise<void> {
+  if ((await info.locator(`[data-path="${path}"]`).count()) === 0) {
+    if (value === false || value === "V01") return; // 기본값 — 감춘 그대로
+    await info.getByRole("button", { name: "상품특성 항목 추가" }).click();
+    const label = path === "feature.fetal" ? "태아보장" : path === "feature.group_contract" ? "단체계약" : value === "V02" ? "간편심사" : "건강고지";
+    await page.getByRole("menuitem", { name: label, exact: true }).click();
+    await expect(page.getByRole("menu")).toHaveCount(0); // 닫히는 중에 다시 누르면 메뉴가 열리지 않는다
+    if (path === "feature.notice_kind") return;
+  }
+  await setPlanValue(info, path, value);
 }
 
 for (const seeded of SEED.products) {
@@ -91,7 +108,7 @@ for (const seeded of SEED.products) {
         await page.getByRole("button", { name: "편집", exact: true }).click();
         // 상품정보 — 평균공시이율 · 상품특성 (원문이 밝힌 것만 시드에 있다)
         const info = page.getByRole("region", { name: "상품정보" });
-        for (const v of product.values) await setPlanValue(info, v.path, v.value);
+        for (const v of product.values) await setProductValue(page, info, v.path, v.value);
         for (const [i, option] of product.planOptions.entries()) {
           await page.getByRole("button", { name: "보험종목 추가" }).click();
           const row = page.locator("#definitions-panel [data-plan-option]").nth(i);
@@ -118,7 +135,7 @@ for (const seeded of SEED.products) {
         await expect(page.locator("#combinations-panel [data-plan-combination]")).toHaveCount(product.plans.length);
         // 상품정보가 저장본으로 읽힌다 — 수는 그대로, enum 은 값 이름
         // 단위가 있는 칸은 뒤에 붙는다(평균공시이율 「2.5%」 — bf2e27f)
-        for (const v of product.values.filter((x) => typeof x.value === "number")) await expect(page.locator(`tr[data-path="${v.path}"] td`)).toHaveText(new RegExp(`^${String(v.value).replace(".", "\\.")}%?$`));
+        for (const v of product.values.filter((x) => typeof x.value === "number")) await expect(page.locator(`[data-path="${v.path}"] .ts-form-control`)).toHaveText(new RegExp(`^${String(v.value).replace(".", "\\.")}%?$`));
       });
 
       // 탑재 — 상품담보 탭 편집 하나에 전부 더하고 저장 한 번 (기능/상품 §3.8 · §4.5, 2026-10-04)

@@ -58,16 +58,23 @@ test(
       // ── 편집: 이름 · 보험종목 카드 둘(카드 안 값) · 선택 삭제 · 조합 체크 → 저장 하나
       await page.getByRole("button", { name: "편집", exact: true }).click();
       await name.fill(`${originalName} 수정`);
-      // 상품정보 — 평균공시이율 · 상품특성(갱신형여부 · 고지유형 + 딸린 칸)도 같은 저장 하나에 실린다 (기능/상품 §3.1, 2026-10-01)
+      // 상품정보 — 평균공시이율 · 상품특성(갱신형여부 · 고지 + 담보명 접사)도 같은 저장 하나에 실린다 (기능/상품 §3.1, 2026-10-29)
       const info = page.getByRole("region", { name: "상품정보" });
-      // 책자 — 그룹 제목 표시(ADR-0090 결정 8)가 상품특성 뒤에 선다
-      await expect(info.locator("th[scope=row]")).toHaveText(["상품명", "평균공시이율", "계약형태", "갱신형여부", "태아보장여부", "단체계약여부", "고지유형", "그룹 제목 표시"]);
-      await info.locator('tr[data-path="disclosure.avg_rate"] input').fill("2.5");
-      await info.locator('tr[data-path="feature.renewable"]').getByRole("radio", { name: "예", exact: true }).check();
-      await info.locator('tr[data-path="feature.notice_kind"] select').selectOption({ label: "건강고지" });
-      const noticeType = info.locator('tr[data-path="feature.notice_type"]');
-      await noticeType.getByRole("button", { name: / 값 추가$/ }).click();
-      await noticeType.getByRole("combobox", { name: / 값 추가$/ }).selectOption({ label: "6년 건강고지형" });
+      // 카드 — 「상품」(평균공시이율 · 그룹 제목 표시) · 「상품특성」(태아 · 단체 · 고지는 기본값이라 감춘다 — 「+」로 꺼낸다, 2026-10-29)
+      await expect(info.getByRole("region", { name: "상품특성" }).locator("[data-path]")).toHaveCount(2);
+      await info.locator('[data-path="disclosure.avg_rate"] input').fill("2.5");
+      await info.locator('[data-path="feature.renewable"]').getByRole("radio", { name: "예", exact: true }).check();
+      await info.getByRole("button", { name: "상품특성 항목 추가" }).click();
+      await page.getByRole("menuitem", { name: "건강고지" }).click();
+      await expect(page.getByRole("menu")).toHaveCount(0); // 닫히는 중에 다시 누르면 메뉴가 열리지 않는다
+      await info.getByRole("region", { name: "건강고지" }).locator('[data-path="feature.notice_affix"] input').fill("(건강고지형)");
+      // 태아보장은 꺼냈다가 ✕ 로 다시 감춘다 — 기본값(아니오)으로 돌아간다
+      await info.getByRole("button", { name: "상품특성 항목 추가" }).click();
+      await page.getByRole("menuitem", { name: "태아보장" }).click();
+      await expect(page.getByRole("menu")).toHaveCount(0);
+      await expect(info.locator('[data-path="feature.fetal"]').getByRole("radio", { name: "예", exact: true })).toBeChecked();
+      await info.getByRole("button", { name: "태아보장여부 빼기" }).click();
+      await expect(info.locator('[data-path="feature.fetal"]')).toHaveCount(0);
       await expect(page.getByRole("button", { name: "선택 삭제" })).toHaveCount(0);
       await page.getByRole("button", { name: "보험종목 추가" }).click();
       const rows = page.locator("#definitions-panel [data-plan-option]");
@@ -110,12 +117,11 @@ test(
       await expect(definitions.getByText("제1종", { exact: true })).toBeVisible();
       await expect(definitions.getByText("보험료납입면제미적용형", { exact: true })).toBeVisible();
       await expect(definitions.locator("[data-plan-option]").nth(0).getByText("아니오", { exact: true })).toBeVisible();
-      await expect(info.locator('tr[data-path="disclosure.avg_rate"] td')).toHaveText("2.5%"); // 단위 % (기능/상품 §3.1)
-      await expect(info.locator('tr[data-path="feature.renewable"] td')).toHaveText("예");
-      await expect(info.locator('tr[data-path="feature.notice_kind"] td')).toHaveText("건강고지");
-      await expect(info.locator('tr[data-path="feature.notice_type"] td')).toContainText("6년 건강고지형");
-      // 태아보장여부 · 단체계약여부는 기본 아니오 프리필 (기능/상품 §3.1)
-      await expect(info.locator('tr[data-path="feature.fetal"] td')).toHaveText("아니오");
+      await expect(info.locator('[data-path="disclosure.avg_rate"] .ts-form-control')).toHaveText("2.5%"); // 단위 % (기능/상품 §3.1)
+      await expect(info.locator('[data-path="feature.renewable"] .ts-form-control')).toHaveText("예");
+      await expect(info.getByRole("region", { name: "건강고지" }).locator('[data-path="feature.notice_affix"] .ts-form-control')).toHaveText("(건강고지형)");
+      // 태아보장여부 · 단체계약여부는 기본 아니오 프리필 — 기본값이라 읽기에도 서지 않는다 (기능/상품 §3.1)
+      await expect(info.locator('[data-path="feature.fetal"]')).toHaveCount(0);
       await page.reload();
       await expect(name).toHaveValue(`${originalName} 수정`);
       await expect(page.getByRole("heading", { level: 1 })).toContainText(`${originalName} 수정`);
