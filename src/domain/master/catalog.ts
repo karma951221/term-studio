@@ -4,11 +4,11 @@
  * 여기 있는 것이 전부다 — 시드가 실제로 쓰는 폼만 옮겼다. 폼을 더하는 것은 배포 + 마이그레이션이다.
  *
  * 레벨 배치의 근거:
- * - 공시이율{평균공시이율} · 상품특성{갱신형여부 · 태아보장여부 · 단체계약여부 · 간편심사유형 · 건강고지유형} · 책자{그룹 제목 표시}는 **상품(product)** —
+ * - 공시이율{평균공시이율} · 상품특성{주계약/독립특약 구분 · 갱신형여부 · 태아보장여부 · 단체계약여부 · 고지유형 · 담보명 접사} · 책자{그룹 제목 표시}는 **상품(product)** —
  *   상품 한 권에 하나인 사실이라 세목 축을 타지 않는다. 기본정보 탭의 상품정보에서 상품명과 함께 편집 한 번 · 저장 한 번 (2026-09-28).
- *   고지유형을 상품 레벨 enum 으로 둔 결정(ADR-0006)의 구현이다. 계약은 일반심사 · 간편심사 · 건강고지 중 하나라
- *   고지유형 E0005 하나를 고르고, 그에 딸린 칸만 연다 (2026-10-01): 간편심사 → 간편심사구분 E0006(단일 · 통합) + 간편심사유형 E0003
- *   (단일이면 하나 · 통합이면 둘 이상), 건강고지 → 건강고지유형 E0004 (하나 이상). 조건 값은 열거형 값 코드다 — 코드는 불변이다.
+ *   고지유형을 상품 레벨 enum 으로 둔 결정(ADR-0006)의 구현이다. 계약은 일반심사 · 간편심사 · 건강고지 중 하나이고,
+ *   간편심사 · 건강고지면 담보명 접사(상품담보명 규칙의 「[고지 접사]」 칩)만 받는다 — 세부 고지유형(간편심사구분 · 간편심사유형 ·
+ *   건강고지유형)은 2026-10-29 뺐다: 약관만 다루므로 PV 연동용 세부 유형까지 모델링하지 않는다 (마이그레이션 0036 이 값 행을 지운다).
  * - 납입면제 · 무저해지 · 계약전환 · 영위업종적용은 **세목(plan)** — 값을 갖는 것이 세목 선택지라
  *   상품 레벨로 올리면 종 · 형 축이 성립하지 않는다. 필드마다 코드 `defaultValue` 를 두어 새 선택지는 그 값으로 프리필된다
  *   (기능/상품 §3.2 「선택지는 기본값으로 태어난다」 — 저장해야 값이 된다).
@@ -41,17 +41,22 @@ export function showsGroupTitles(slot: ValueSlot | undefined): boolean {
 }
 /** 해약환급금유형 E0002 값 코드 — 무저해지 유형의 기본값은 표준형(해약환급금지급형, 기능/상품 §3.2). */
 export const NO_SURRENDER_TYPE = { standard: "V01" } as const;
-/** 간편심사구분 E0006 값 코드. */
-export const REVIEW_SCOPE = { single: "V01", combined: "V02" } as const;
+/** 고지유형 · 담보명 접사 값 자리 — 상품담보명 규칙의 「[고지 접사]」 칩 재료 (기능/상품 §3.1 · 2026-10-29). */
+export const NOTICE_KIND_PATH = "feature.notice_kind";
+export const NOTICE_AFFIX_PATH = "feature.notice_affix";
+/** 상품의 담보명 접사 — 간편심사 · 건강고지일 때만, 앞뒤 공백 없이. 일반심사 · 미입력이면 빈 글자. */
+export function noticeAffixOf(slots: ReadonlyMap<string, ValueSlot>): string {
+  const kind = slots.get(NOTICE_KIND_PATH);
+  if (kind?.entered !== true || kind.value === NOTICE_KIND.general) return "";
+  const affix = slots.get(NOTICE_AFFIX_PATH);
+  return affix?.entered === true && typeof affix.value === "string" ? affix.value.trim() : "";
+}
 
-const is = (read: FormFieldReader, key: string, code: string) => {
-  const slot = read(key);
-  return slot?.entered === true && slot.value === code;
-};
-const countOf = (read: FormFieldReader, key: string) => {
-  const slot = read(key);
-  return slot?.entered && Array.isArray(slot.value) ? slot.value.length : 0;
-};
+/** 비울 수 없는 칸 — 미입력이면 그 칸에 오류 (갱신형여부 · 고지유형, 2026-10-29 사용자 결정). */
+const required = (key: string, label: string) => ({
+  description: `${label}는 비울 수 없다`,
+  check: (read: FormFieldReader) => (read(key)?.entered ? undefined : { field: key, message: `${label}를 고르세요` }),
+});
 
 export const MASTER: readonly MasterForm[] = [
   {
@@ -65,57 +70,21 @@ export const MASTER: readonly MasterForm[] = [
     label: "상품특성",
     level: "product",
     fields: [
-      { key: "contract_kind", label: "계약형태", type: { kind: "enum", enumCode: "E0007" }, defaultValue: CONTRACT_KIND.main },
+      { key: "contract_kind", label: "주계약/독립특약 구분", type: { kind: "enum", enumCode: "E0007" }, defaultValue: CONTRACT_KIND.main, display: "radio" },
       { key: "renewable", label: "갱신형여부", type: { kind: "boolean" } },
-      { key: "fetal", label: "태아보장여부", type: { kind: "boolean" }, defaultValue: false },
-      { key: "group_contract", label: "단체계약여부", type: { kind: "boolean" }, defaultValue: false },
-      { key: "notice_kind", label: "고지유형", type: { kind: "enum", enumCode: "E0005" }, defaultValue: NOTICE_KIND.general },
+      // 일반 상품은 아니오 · 일반심사 — 기본값이면 감추고 기본정보 탭 「상품특성 +」로 꺼낸다 (2026-10-29 사용자 결정)
+      { key: "fetal", label: "태아보장여부", type: { kind: "boolean" }, defaultValue: false, hiddenByDefault: true },
+      { key: "group_contract", label: "단체계약여부", type: { kind: "boolean" }, defaultValue: false, hiddenByDefault: true },
+      { key: "notice_kind", label: "고지유형", type: { kind: "enum", enumCode: "E0005" }, defaultValue: NOTICE_KIND.general, hiddenByDefault: true },
       {
-        key: "review_scope",
-        label: "간편심사구분",
-        type: { kind: "enum", enumCode: "E0006" },
-        visibleWhen: { field: "notice_kind", equals: NOTICE_KIND.review },
-      },
-      {
-        key: "review_type",
-        label: "간편심사유형",
-        type: { kind: "list<enum>", enumCode: "E0003" },
-        visibleWhen: { field: "notice_kind", equals: NOTICE_KIND.review },
-        singleWhen: { field: "review_scope", equals: REVIEW_SCOPE.single },
-      },
-      {
-        key: "notice_type",
-        label: "건강고지유형",
-        type: { kind: "list<enum>", enumCode: "E0004" },
-        visibleWhen: { field: "notice_kind", equals: NOTICE_KIND.health },
+        key: "notice_affix",
+        label: "담보명 접사",
+        type: { kind: "string" },
+        description: "상품담보명 규칙의 [고지 접사] 칩 자리에 붙는다 — 예) (통합간편심사형). 비워도 된다",
+        visibleWhen: { field: "notice_kind", notEquals: NOTICE_KIND.general },
       },
     ],
-    rules: [
-      {
-        description: "고지유형 = 간편심사면 간편심사구분을 고른다",
-        check: (read) => {
-          if (!is(read, "notice_kind", NOTICE_KIND.review)) return undefined;
-          return read("review_scope")?.entered ? undefined : { field: "review_scope", message: "간편심사면 단일심사인지 통합간편심사인지 고르세요" };
-        },
-      },
-      {
-        description: "간편심사유형 — 단일심사면 1개, 통합간편심사면 2개 이상",
-        check: (read) => {
-          if (!is(read, "notice_kind", NOTICE_KIND.review)) return undefined;
-          const count = countOf(read, "review_type");
-          if (is(read, "review_scope", REVIEW_SCOPE.single) && count !== 1) return { field: "review_type", message: "단일심사면 간편심사유형을 1개 고르세요" };
-          if (is(read, "review_scope", REVIEW_SCOPE.combined) && count < 2) return { field: "review_type", message: "통합간편심사면 간편심사유형을 2개 이상 고르세요" };
-          return undefined;
-        },
-      },
-      {
-        description: "고지유형 = 건강고지면 건강고지유형을 1개 이상 고른다",
-        check: (read) => {
-          if (!is(read, "notice_kind", NOTICE_KIND.health)) return undefined;
-          return countOf(read, "notice_type") > 0 ? undefined : { field: "notice_type", message: "건강고지면 건강고지유형을 1개 이상 고르세요" };
-        },
-      },
-    ],
+    rules: [required("renewable", "갱신형여부"), required("notice_kind", "고지유형")],
   },
   {
     // 책자 모양 — 절 형태(독립특약 · 기본계약 2+)의 제2절에만 작용한다. 켜면 그룹 제목 줄 + 「Ⅰ-1.」, 끄면 「1.」 (ADR-0090 결정 8)

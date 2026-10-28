@@ -176,7 +176,7 @@ export function countedSlotsOf(level: AttachLevel, read: SlotReader, master?: Ma
       const path = masterPath(form.key, f.key);
       // 선택 필드는 더했을 때(값이 있을 때)만 자리다 — 안 더한 것은 「없음」이지 미입력이 아니다
       if (f.optional && read(path)?.entered !== true) continue;
-      // 조건부 필드는 조건이 맞을 때만 자리다 — 고지유형 = 일반심사면 간편심사유형은 없는 칸이다
+      // 조건부 필드는 조건이 맞을 때만 자리다 — 고지유형 = 일반심사면 담보명 접사는 없는 칸이다
       if (!isFieldShown(f, (key) => read(masterPath(form.key, key)))) continue;
       out.push(path);
     }

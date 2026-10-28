@@ -3,6 +3,7 @@ import { type Locator, type Page } from "@playwright/test";
 import { pickCombo } from "./_lib/combo";
 import { editFoot, editForm, insertFrom } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
+import { chooseRequiredFeature } from "./_lib/product";
 
 /**
  * 문장 안 반복 — 원천 · 연결어 · 「비었을 때」 칸 (ADR-0088 결정 1 · 2 · 3 · 수용 기준 3, 기능/문면 §3.12).
@@ -31,6 +32,7 @@ async function product(page: Page, name: string, docTitle: string, plan: { appli
   await page.waitForURL(/\/products\/[0-9a-f-]{36}(?:\?tab=basic)?$/);
   const url = page.url().split("?")[0];
   await page.getByRole("button", { name: "편집", exact: true }).click();
+  await chooseRequiredFeature(page);
   await page.getByRole("button", { name: "보험종목 추가" }).click();
   const row = page.locator("#definitions-panel [data-plan-option]").first();
   await row.getByRole("textbox", { name: "보험종목명" }).fill("면제형");

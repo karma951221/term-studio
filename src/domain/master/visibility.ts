@@ -6,7 +6,8 @@ import type { MasterField, FormFieldReader, FieldCondition } from "./types";
 
 function holds(condition: FieldCondition, read: FormFieldReader): boolean {
   const slot = read(condition.field);
-  return slot?.entered === true && slot.value === condition.equals;
+  if (slot?.entered !== true) return false;
+  return "equals" in condition ? slot.value === condition.equals : slot.value !== condition.notEquals;
 }
 
 /** 이 필드의 자리가 지금 있나 — 조건이 없으면 늘 있다. */

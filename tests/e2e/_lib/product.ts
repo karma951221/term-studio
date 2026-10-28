@@ -41,3 +41,11 @@ export async function productWithGeneral(page: Page, name: string, generalTitle:
   await page.waitForLoadState("networkidle");
   return url;
 }
+
+/**
+ * 기본정보 편집 중 — 필수 상품특성 「갱신형여부」를 아니오로 고른다 (기능/상품 §3.1, 2026-10-29).
+ * 새 상품은 갱신형여부가 비어 있어 기본정보 저장이 막힌다. 고지유형은 일반심사로 프리필된다.
+ */
+export async function chooseRequiredFeature(page: Page): Promise<void> {
+  await page.getByRole("region", { name: "상품정보" }).locator('[data-path="feature.renewable"]').getByRole("radio", { name: "아니오", exact: true }).check();
+}

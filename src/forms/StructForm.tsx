@@ -228,6 +228,21 @@ export function FieldReadValue({ field, empty = "—" }: { field: FieldView; emp
 function EnumInput({ id, field, onEdit, className, name }: InputProps) {
   const draft = textDraft(field);
   const missing = missingCodes(field, [draft]);
+  // 선택지가 둘 · 셋인 칸은 라디오로 늘어놓는다 — 마스터가 `display: "radio"` 로 정한다 (「주계약/독립특약 구분」, 2026-10-29)
+  if (field.view.display === "radio")
+    return (
+      <span className="ts-form-radios" role="radiogroup" aria-labelledby={`${id}-label`}>
+        {(field.view.enumOptions ?? []).map((o) => (
+          <label key={o.code} className="ts-form-radio">
+            <input type="radio" name={name ?? field.view.path} value={o.code} checked={draft === o.code} onChange={() => onEdit(o.code)} />
+            {o.label}
+          </label>
+        ))}
+        {missing.map((code) => (
+          <MissingChip key={code} code={code} />
+        ))}
+      </span>
+    );
   return (
     <>
       <select

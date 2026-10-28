@@ -73,6 +73,7 @@ import {
   type PlanOption,
   type Product,
   type ProductCoverage,
+  type ProductNamingFacts,
   type ProductCoverageSnapshot,
   type ProductPlan,
   type SnapshotNode,
@@ -85,7 +86,7 @@ import {
   type JudgmentSnapshot,
   type VerdictResult,
 } from "@/domain/product";
-import { CONTRACT_KIND_PATH, describeTraitDetachment, findForm, findMasterField, formRuleIssues, formsOfLevel, isStandaloneContract, traitDetachments, type MasterForm } from "@/domain/master";
+import { CONTRACT_KIND_PATH, describeTraitDetachment, noticeAffixOf, findForm, findMasterField, formRuleIssues, formsOfLevel, isStandaloneContract, traitDetachments, type MasterForm } from "@/domain/master";
 import type { Actor, AttachLevel, Code, Coordinate, Id, Impact, Issue, Result, Value, ValueSlot } from "@/domain/types";
 import { entered, mergeImpacts, ok, reject } from "@/domain/types";
 
@@ -667,6 +668,10 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
     );
   }
 
+  /** 작명 재료 중 상품 사실 — 「[고지 접사]」 칩의 값 (기능/상품 §3.1 · 2026-10-29). */
+  async function namingFactsOf(tx: Db, productId: Id): Promise<ProductNamingFacts> {
+    return { noticeAffix: noticeAffixOf(await readSlots(tx, { kind: "product", id: productId })) };
+  }
   async function withCoverage<T>(tx: Db, id: Id, fn: (pc: ProductCoverage) => Promise<Result<T>>): Promise<Result<T>> {
     const pc = await repo.loadProductCoverage(tx, id);
     return pc ? fn(pc) : notFound(`상품담보 ${id}`);
@@ -827,6 +832,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
       const taken = new Map(current.filter((pc) => !removed.has(pc.id)).map((pc) => [combinationKey(pc.coverageId, normalizeSelections(pc.attributes, kinds)), pc.name]));
       const standalone = await isStandalone(tx, productId);
       const template = await repo.loadNamingTemplate(tx);
+      const facts = await namingFactsOf(tx, productId);
       const adds: { key: string; tree: CoverageTree; attributes: AttributeSelection[]; combination: string; section: CoverageSection; name: string; plans: Id[] }[] = [];
       for (const a of input.added) {
         const before = issues.length;
@@ -847,7 +853,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
           issues.push(rowIssue("typeMismatch", `이미 탑재한 조합입니다 — ${tree.name}${label ? ` (${label})` : " (담보속성 없음)"} = 「${clash}」`, a.key, "attributes"));
           continue;
         }
-        const finalName = name ?? defaultCoverageName(tree.name, attributes, kinds, template);
+        const finalName = name ?? defaultCoverageName(tree.name, attributes, kinds, template, facts);
         taken.set(combination, finalName);
         if (issues.length === before) adds.push({ key: a.key, tree, attributes, combination, section: a.section, name: finalName, plans: [...new Set(a.plans)] });
       }
@@ -971,7 +977,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
         }
       }
       for (const entry of input.values) issues.push(...await checkSlot(tx, { kind: "product", id }, entry.path, entry.value));
-      // 상품 레벨 폼 교차 규칙 — 상품특성의 고지유형 조건 (「건강고지면 건강고지유형 1개 이상」 등, 2026-10-01)
+      // 상품 레벨 폼 교차 규칙 — 상품특성의 필수 칸(갱신형여부 · 고지유형, 2026-10-29)
       for (const form of formsOfLevel("product")) issues.push(...await formRulesOf(tx, { kind: "product", id }, form.key, input.values.filter((e) => findMasterField(e.path)?.form.key === form.key)));
       const nextPlans: ProductPlan[] = [];
       for (const optionIds of input.combinations) {
@@ -1535,7 +1541,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
           const attributes = normalizeSelections(selections, kinds);
           const key = combinationKey(coverageId, attributes);
           if (await repo.findByCombination(tx, productId, key)) return reject({ reason: "duplicate", what: `상품담보 조합 ${tree.name} × ${attributes.map((a) => `${a.kindCode}=${a.valueCode}`).join(",") || "(속성 없음)"}` });
-          return ok(await mountIn(tx, actor, productId, tree, attributes, key, section, defaultCoverageName(tree.name, attributes, kinds, await repo.loadNamingTemplate(tx))));
+          return ok(await mountIn(tx, actor, productId, tree, attributes, key, section, defaultCoverageName(tree.name, attributes, kinds, await repo.loadNamingTemplate(tx), await namingFactsOf(tx, productId))));
         }),
       ),
     getProductCoverage: (id) => repo.loadProductCoverage(db, id),
@@ -1562,7 +1568,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
     regenerateName: (actor, id) =>
       db.transaction((tx) =>
         withCoverage(tx, id, async (pc) => {
-          const name = defaultCoverageName((await repo.coverageNameOf(tx, id)) ?? "", pc.attributes, await repo.listAttributeKinds(tx), await repo.loadNamingTemplate(tx));
+          const name = defaultCoverageName((await repo.coverageNameOf(tx, id)) ?? "", pc.attributes, await repo.listAttributeKinds(tx), await repo.loadNamingTemplate(tx), await namingFactsOf(tx, pc.productId));
           await repo.updateProductCoverage(tx, id, { name }, actor.userId);
           return ok({ ...pc, name });
         }),
@@ -1577,7 +1583,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
           const key = combinationKey(pc.coverageId, attributes);
           const dup = await repo.findByCombination(tx, pc.productId, key);
           if (dup && dup !== id) return reject({ reason: "duplicate", what: `상품담보 조합 ${key}` });
-          const name = opts.regenerateName ? defaultCoverageName((await repo.coverageNameOf(tx, id)) ?? "", attributes, kinds, await repo.loadNamingTemplate(tx)) : pc.name;
+          const name = opts.regenerateName ? defaultCoverageName((await repo.coverageNameOf(tx, id)) ?? "", attributes, kinds, await repo.loadNamingTemplate(tx), await namingFactsOf(tx, pc.productId)) : pc.name;
           await repo.updateProductCoverage(tx, id, { attributes, combinationKey: key, name }, actor.userId);
           return ok({ ...pc, attributes, name });
         }),

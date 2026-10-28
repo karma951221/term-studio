@@ -253,6 +253,13 @@
       "when": 1792580000268,
       "tag": "0035_drop_dyn_table_column_basis",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793202054035,
+      "tag": "0036_drop_notice_subtypes",
+      "breakpoints": true
     }
   ]
 }

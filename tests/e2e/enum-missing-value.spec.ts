@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import { expect, test } from "./_lib/fixtures";
+import { chooseRequiredFeature } from "./_lib/product";
 
 /**
  * 열거값 삭제 = 「없는 값」 오류 · 열거값 추가 = 재검사 목록 (기능/열거형 §3.2 · §3.3, ADR-0078 결정 4 · 5).
@@ -76,6 +77,7 @@ test(
       await page.waitForURL(/\/products\/[0-9a-f-]{36}(?:\?tab=basic)?$/);
       productUrl = page.url().split("?")[0];
       await page.getByRole("button", { name: "편집", exact: true }).click();
+      await chooseRequiredFeature(page);
       await page.getByRole("button", { name: "보험종목 추가" }).click();
       const row = page.locator("#definitions-panel [data-plan-option]").nth(0);
       await row.getByRole("textbox", { name: "보험종목명" }).fill("납입면제형");
