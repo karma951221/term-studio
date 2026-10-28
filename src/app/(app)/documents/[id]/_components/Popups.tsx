@@ -16,6 +16,7 @@ import { createContext, useContext, useEffect, useRef, useState, type FocusEvent
 import { Combobox, type ComboOption } from "@/app/_components/Combobox";
 import { IconButton, IconTrash } from "@/app/_components/icons";
 import { blockRefChipText, blockRefValue, parseBlockRefValue, type BlockRefChoice } from "@/app/_lib/blockRef";
+import { FormLabel } from "@/app/_components/FormRow";
 import { InfoTip } from "@/app/_components/InfoTip";
 import { DOC_KIND_LABEL, JOIN_MODE_INFO, REPEAT_DEPTH_LABEL, STRUCT_KEY_CHIP, SWITCH_WORD } from "@/app/_lib/labels";
 import { bindingLabel, bindingOptions, constBindingOfText, planFormChoices, staleBindingOption, type LoopChoice, type NodeTree } from "@/app/(app)/functions/_components/params";
@@ -304,7 +305,9 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
     <>
       {choices && (
         <div className="ts-form-row">
-          <label htmlFor={`${idBase}-scope`}>범위</label>
+          <FormLabel htmlFor={`${idBase}-scope`} {...(choices.some((c) => c.value === "param" && (c.params ?? []).length === 0) ? { info: `「인자」 범위 — ${PARAM_SCOPE_LOCKED}` } : {})}>
+            범위
+          </FormLabel>
           <div>
             <select
               id={`${idBase}-scope`}
@@ -325,7 +328,6 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
                 );
               })}
             </select>
-            {choices.some((c) => c.value === "param" && (c.params ?? []).length === 0) && <p className="ts-form-hint">「인자」 범위 — {PARAM_SCOPE_LOCKED}</p>}
           </div>
         </div>
       )}
@@ -341,15 +343,14 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
       {picked?.value === "param" ? (
         // 조 참조 인자 하나 — 대상 · 연결어는 사용처가 연결로 고른다 (ADR-0083 결정 3)
         <div className="ts-form-row ts-form-full">
-          <span className="ts-form-label">조 참조 인자</span>
-          <div className="ts-radio-group" role="radiogroup" aria-label="조 참조 인자">
+          <FormLabel info="사용처가 함수조항을 넣을 때 제 문서의 조 · 항 · 호 · 목을 이 인자에 연결한다 — 번호는 펼친 자리의 계산 번호로 찍힌다.">조 참조 인자</FormLabel>
+          <div className="ts-form-radios" role="radiogroup" aria-label="조 참조 인자">
             {(picked.params ?? []).map((name) => (
               <label key={name} className="ts-form-radio">
                 <input type="radio" name={field("param")} value={name} defaultChecked={savedParam === name} />⟨{name}⟩
               </label>
             ))}
           </div>
-          <p className="ts-form-hint">사용처가 함수조항을 넣을 때 제 문서의 조 · 항 · 호 · 목을 이 인자에 연결한다 — 번호는 펼친 자리의 계산 번호로 찍힌다.</p>
         </div>
       ) : (
         <>
@@ -357,13 +358,15 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
             <div className="ts-form-row ts-form-full">
               <label className="ts-form-radio" htmlFor={`${idBase}-whole`}>
                 <input type="checkbox" id={`${idBase}-whole`} name={field("wholeDocument")} defaultChecked={node !== undefined && isDocumentWideRef(node)} />
-                문서 전체 — 대상 없이 보통약관 전체를 가리킨다
+                문서 전체
               </label>
-              <p className="ts-form-hint">준용규정 「… 보통약관을 따릅니다」 자리. 조립이 출력 위치의 호칭을 찍는다 — 특약 「보통약관」 · 기본계약 2+ 의 특약 「보통약관 제1절 일반조항」 · 블록 「제1절 일반조항」(위치 호칭). 범위는 대응 보통약관이다.</p>
+              <InfoTip text="대상 없이 보통약관 전체를 가리킨다. 준용규정 「… 보통약관을 따릅니다」 자리. 조립이 출력 위치의 호칭을 찍는다 — 특약 「보통약관」 · 기본계약 2+ 의 특약 「보통약관 제1절 일반조항」 · 블록 「제1절 일반조항」(위치 호칭). 범위는 대응 보통약관이다." />
             </div>
           )}
           <div className="ts-form-row ts-form-full">
-            <label htmlFor={`${idBase}-targets`}>참조 대상 (여럿 고를 수 있다)</label>
+            <FormLabel htmlFor={`${idBase}-targets`} info="여럿 고를 수 있다.">
+              참조 대상
+            </FormLabel>
             <RefTargetTree
               key={choice}
               id={`${idBase}-targets`}
@@ -384,7 +387,9 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
           </div>
           {restrict && (restrict.values.length > 0 || treeLevel !== undefined) && (
             <div className="ts-form-row">
-              <label htmlFor={`${idBase}-restrict`}>{restrict.values.length > 0 ? "값 한정" : "키 한정"}</label>
+              <FormLabel htmlFor={`${idBase}-restrict`} info={restrictHint(mode, new Set(restrict.treeLoops.map((l) => l.id)), restrict.values.length > 0)}>
+                {restrict.values.length > 0 ? "값 한정" : "키 한정"}
+              </FormLabel>
               <div>
                 <select id={`${idBase}-restrict`} name={field("restrictMode")} value={mode} onChange={(e) => setMode(e.target.value)}>
                   <option value="">없음 — 펼친 것 전부</option>
@@ -404,7 +409,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
                     ))}
                 </select>
                 {mode === "keys" && treeLevel !== undefined && (
-                  <div className="ts-radio-group" role="group" aria-label="한정할 키">
+                  <div className="ts-form-checks" role="group" aria-label="한정할 키">
                     {keyChoicesFor(restrict.keys, treeLevel).map((k) => (
                       <label key={k.path} className="ts-form-radio">
                         <input type="checkbox" name={field("restrictKey")} value={k.path} defaultChecked={savedKeys.includes(k.path)} />
@@ -414,7 +419,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
                   </div>
                 )}
                 {mode === "values" && (
-                  <div className="ts-radio-group" role="group" aria-label="한정할 값">
+                  <div className="ts-form-checks" role="group" aria-label="한정할 값">
                     {restrict.values.map((v) => (
                       <label key={v.code} className="ts-form-radio">
                         <input type="checkbox" name={field("restrictValue")} value={v.code} defaultChecked={savedValues.includes(v.code)} />
@@ -423,26 +428,26 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
                     ))}
                   </div>
                 )}
-                <p className="ts-form-hint">{restrictHint(mode, new Set(restrict.treeLoops.map((l) => l.id)), restrict.values.length > 0)}</p>
               </div>
             </div>
           )}
           <div className="ts-form-row">
-            <span className="ts-form-label">연결어</span>
-            <div>
-              <div className="ts-radio-group" role="radiogroup" aria-label="연결어" aria-disabled={!joins}>
-                {REFERENCE_CONNECTORS.map((c) => (
-                  <label key={c} className="ts-form-radio">
-                    <input type="radio" name={field("connector")} value={c} disabled={!joins} checked={joins && connector === c} onChange={() => setConnector(c)} />
-                    {c}
-                  </label>
-                ))}
-              </div>
-              <p className="ts-form-hint">
-                {joins
+            <FormLabel
+              info={
+                joins
                   ? `골라야 적용된다 — 기본값이 없다.${count < 2 ? " 반복 · 함수조항으로 펼치면 여러 번호가 될 수 있다." : ""} 마지막 대상 앞에 붙는다. 번호가 잇달아 셋 이상이면 「제3조부터 제5조까지」로 묶이고, 분기로 빠진 대상은 산출 때 제외된다.`
-                  : "대상을 둘 이상(또는 반복 블록 · 함수조항 참조 · 그 안 대상을) 고르거나 값 한정을 걸면 고를 수 있다."}
-              </p>
+                  : "대상을 둘 이상(또는 반복 블록 · 함수조항 참조 · 그 안 대상을) 고르거나 값 한정을 걸면 고를 수 있다."
+              }
+            >
+              연결어
+            </FormLabel>
+            <div className="ts-form-radios" role="radiogroup" aria-label="연결어" aria-disabled={!joins}>
+              {REFERENCE_CONNECTORS.map((c) => (
+                <label key={c} className="ts-form-radio">
+                  <input type="radio" name={field("connector")} value={c} disabled={!joins} checked={joins && connector === c} onChange={() => setConnector(c)} />
+                  {c}
+                </label>
+              ))}
             </div>
           </div>
         </>
@@ -608,6 +613,8 @@ function ClauseFields({ clauses, code, options, bindings, preset, condition, loo
   );
 }
 
+const DYN_TABLE_INFO = "조립이 이 상품담보의 급부 전부를 급부명 · 지급률 · 감액 구간으로 펼친다 — 표 모양은 동적표 정의에서 고친다.";
+
 /**
  * 동적표 칸 (기능/동적표 §3.5) — 정의를 고르면 그 인자마다 연결(함수조항 인자 칸과 같은 `ScalarArgField` — 구분자 · 상수). 동적표 인자는 값 인자뿐이라
  * 조 참조 칸 · 프리셋 · 옵션이 없다. 「기본 연결」(비움)이 처음 값, 기본 연결이 없으면 골라야 저장된다(연결 누락 = 저장 오류).
@@ -624,7 +631,9 @@ function DynTableFields({ tables, code, bindings, condition, loops = [], tree, e
     <>
       {code === undefined ? (
         <div className="ts-form-row">
-          <label htmlFor="pop-dyntable">동적표</label>
+          <FormLabel htmlFor="pop-dyntable" info={DYN_TABLE_INFO}>
+            동적표
+          </FormLabel>
           <Combobox
             id="pop-dyntable"
             name="tableCode"
@@ -636,7 +645,14 @@ function DynTableFields({ tables, code, bindings, condition, loops = [], tree, e
           />
         </div>
       ) : (
-        !table && <p className="ts-error-banner">동적표 {code} 이(가) 없다 — 깨진 참조다.</p>
+        table ? (
+          <div className="ts-form-row">
+            <FormLabel info={DYN_TABLE_INFO}>동적표</FormLabel>
+            <span className="ts-form-value">{table.label}</span>
+          </div>
+        ) : (
+          <p className="ts-error-banner">동적표 {code} 이(가) 없다 — 깨진 참조다.</p>
+        )
       )}
       {table && table.params.length === 0 && <p className="ts-muted">연결할 인자가 없는 동적표다 — 급부 · 감액 값으로만 펼친다.</p>}
       <div key={picked} className="ts-clause-fields">
@@ -654,7 +670,6 @@ function DynTableFields({ tables, code, bindings, condition, loops = [], tree, e
           );
         })}
       </div>
-      {table && <p className="ts-form-hint">조립이 이 상품담보의 급부 전부를 급부명 · 지급률 · 감액 구간으로 펼친다 — 표 모양은 동적표 정의에서 고친다.</p>}
     </>
   );
 }
@@ -1054,9 +1069,11 @@ const INLINE_REPEAT_CONNECTOR_LABEL: Record<InlineRepeatConnector, string> = { �
 function RepeatConnectorField({ value, onPick, idBase = "pop-repeat" }: { value?: InlineRepeatConnector; onPick?: (c: InlineRepeatConnector) => void; idBase?: string }) {
   return (
     <div className="ts-form-row">
-      <span className="ts-form-label" id={`${idBase}-connector`}>연결어</span>
+      <FormLabel id={`${idBase}-connector`} info="골라야 적용된다 — 기본값이 없다. 원소를 쉼표로 잇고 마지막 원소 앞에만 붙는다(「A, B 및 C」) — 쉼표만이면 「A, B, C」. 원소가 하나면 그 원소만.">
+        연결어
+      </FormLabel>
       <div>
-        <div className="ts-radio-group" role="radiogroup" aria-labelledby={`${idBase}-connector`}>
+        <div className="ts-form-radios" role="radiogroup" aria-label="연결어">
           {INLINE_REPEAT_CONNECTORS.map((c) => (
             <label key={c} className="ts-form-radio">
               <input type="radio" name="connector" value={c} {...(onPick ? { checked: value === c, onChange: () => onPick(c) } : { defaultChecked: value === c })} />
@@ -1064,7 +1081,6 @@ function RepeatConnectorField({ value, onPick, idBase = "pop-repeat" }: { value?
             </label>
           ))}
         </div>
-        <p className="ts-form-hint">골라야 적용된다 — 기본값이 없다. 원소를 쉼표로 잇고 마지막 원소 앞에만 붙는다(「A, B 및 C」) — 쉼표만이면 「A, B, C」. 원소가 하나면 그 원소만.</p>
       </div>
     </div>
   );
@@ -1423,12 +1439,17 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
             )}
             {node.kind === "articleRef" && <ArticleRefFields ctx={ctx} node={node} restrict={restrictAt(node.id)} />}
             {node.kind === "appendixRef" && <AppendixSelect appendices={env.appendices} value={node.appendixCode} />}
-            {node.kind === "blockRef" && <p className="ts-form-hint">{blockRefChipText(ctx.blockChoices, node)} — 대상을 바꾸려면 이 칩을 지우고 다시 넣는다.</p>}
+            {node.kind === "blockRef" && (
+              <div className="ts-form-row">
+                <FormLabel info="대상을 바꾸려면 이 칩을 지우고 다시 넣는다.">대상</FormLabel>
+                <span className="ts-form-value">{blockRefChipText(ctx.blockChoices, node)}</span>
+              </div>
+            )}
             {node.kind === "particle" && (
               <div className="ts-form-row">
-                <span className="ts-form-label">조사</span>
+                <FormLabel info="조립 때 앞 글자 받침에 따라 한쪽을 고른다 — 판정할 수 없으면 「을(를)」처럼 둘 다 쓰고 경고.">조사</FormLabel>
                 <div>
-                  <div className="ts-radio-group" role="radiogroup" aria-label="조사">
+                  <div className="ts-form-radios" role="radiogroup" aria-label="조사">
                     {PARTICLE_PRESETS.map((p) => (
                       <label key={p.key} className="ts-form-radio">
                         <input type="radio" name="preset" value={p.key} defaultChecked={p.key === node.preset} />
@@ -1436,7 +1457,6 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
                       </label>
                     ))}
                   </div>
-                  <p className="ts-form-hint">조립 때 앞 글자 받침에 따라 한쪽을 고른다 — 판정할 수 없으면 「을(를)」처럼 둘 다 쓰고 경고.</p>
                 </div>
               </div>
             )}

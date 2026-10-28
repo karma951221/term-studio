@@ -15,11 +15,10 @@ export default async function NewAppendixPage({ searchParams }: { searchParams: 
     <div>
       <CreateHead title={newLabel(ENTITY_LABEL.appendix)} formId={FORM_ID} path={[{ label: ENTITY_LABEL.appendix, href: "/appendices" }]} banner={<ErrorBanner message={error} />} />
       <form id={FORM_ID} action={createAppendixAction} className="ts-create-form">
-        <FormRow label={NAME_LABEL.appendix} htmlFor="appx-name">
+        <FormRow label={NAME_LABEL.appendix} htmlFor="appx-name" info="코드는 시스템이 AX000001 부터 붙이고, 등록 뒤에는 바뀌지 않는다.">
           <input id="appx-name" type="text" name="name" required autoFocus placeholder="예: 장해분류표" />
         </FormRow>
       </form>
-      <p className="ts-form-hint">코드는 시스템이 AX000001 부터 붙이고, 등록 뒤에는 바뀌지 않는다.</p>
     </div>
   );
 }

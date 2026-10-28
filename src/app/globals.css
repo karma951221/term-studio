@@ -2906,7 +2906,36 @@ td.col-ident {
   margin: 8px 0;
 }
 
-.ts-form-radios,
+/* 라디오 묶음 — 짧은 선택지는 가로 한 줄 (디자인원칙 §1.10, 2026-10-29). 간격은 상품 기본정보 예/아니오와 같다. 옵션 뜻풀이 ⓘ 는 옵션 바로 뒤 */
+.ts-form-radios {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+
+.ts-form-radios > .ts-infotip {
+  margin-left: -9px;
+}
+
+/* 읽기 전용 값 한 줄 — 폼 행의 값 칸 */
+.ts-form-value {
+  padding-top: 4px;
+  font-size: 13px;
+}
+
+/* 라벨 + ⓘ — ⓘ 를 label 밖에 둔 자리(FormLabel) */
+.ts-form-label > label {
+  font: inherit;
+  color: inherit;
+}
+
+.ts-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
 /* 목록값(복수) — 고른 값 칩 + 「+」 (값을 다 펼치지 않는다, 2026-10-03) */
 .ts-form-chips {
   display: inline-flex;
@@ -5859,7 +5888,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-basic-table input:where(:not([data-slot])).ts-basic-number { width: 64px; }
 .ts-basic-table input:where(:not([data-slot]))[aria-invalid="true"] { border-color: var(--ts-error); }
 .ts-basic-table .ts-form-error { display: block; margin-top: 2px; }
-.ts-basic-table .ts-form-radios,
 .ts-basic-table .ts-form-checks { gap: 12px; }
 .ts-basic-table tr.is-highlighted > td,
 .ts-basic-table tr.is-highlighted > th,
