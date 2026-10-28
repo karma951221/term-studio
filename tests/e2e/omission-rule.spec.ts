@@ -3,7 +3,7 @@ import { expect, test } from "./_lib/fixtures";
 
 /**
  * 생략 기준 옵션 (ADR-0093 결정 1 · 6 · 7 · 기능/상품 §3.6 · §3.8 · 기능/문면 §3.10) — 템플릿 조 폼의 「포함하면 생략」과 상품 보통약관 탭 목차 줄의 조 단위 변경.
- * 템플릿(무배당 알파Plus보장보험2604 보통약관) 제2조를 「포함하면 생략」으로 저장하고, 상품 「표본 — 기본계약 2개(주계약)」의 목차 줄 고르기가
+ * 템플릿(보통약관(일반)) 제2조를 「포함하면 생략」으로 저장하고, 상품 「표본 — 기본계약 2개(주계약)」의 목차 줄 고르기가
  * 「템플릿대로(포함하면)」인 것을 본 뒤 다른 조(제6조)를 「포함하면 생략」으로 저장한다(시드에 그 조를 가리키는 연결이 없어 판정 변화 확인 모달 없음).
  * 끝에 상품 · 템플릿 둘 다 되돌린다 — 다른 spec 이 보는 시드를 바꾸지 않는다.
  */
@@ -23,7 +23,7 @@ test(
 
     // ── 템플릿 조 폼 — 제2조 「포함하면 생략」 · 저장 한 번 → 조 위 평문
     await page.goto("/documents");
-    await page.getByRole("link", { name: "무배당 알파Plus보장보험2604 보통약관", exact: true }).click();
+    await page.getByRole("link", { name: "보통약관(일반)", exact: true }).click();
     await page.waitForURL(/\/documents\/[0-9a-f-]{36}$/);
     const templateUrl = page.url();
     const body = page.locator(".ts-l3-body");
