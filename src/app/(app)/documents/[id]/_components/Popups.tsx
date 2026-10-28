@@ -4,10 +4,10 @@
  * 고치기 · 넣기 폼들 (기능/문면 §4.3) — 칩 · 함수조항 머리 띠 · 조건 머리 줄을 누르거나 툴바 · 오른쪽 클릭 메뉴에서 고르면 연다.
  *
  * 폼은 두 껍데기 중 하나에 든다 (2026-10-21):
- * - **편집 탭**(`panel` — 문면 편집기) — 우측 패널 「편집」 탭에 그린다. 고친 것은 폼 안에 모였다가 탭 아래 고정 줄의
+ * - **편집 탭**(`panel` — 문면 편집기 · 함수조항 편집기, 2026-10-28) — 우측 패널(함수조항은 오른쪽 단) 「편집」 탭에 그린다. 고친 것은 폼 안에 모였다가 탭 아래 고정 줄의
  *   「적용」(넣기 폼은 「넣기」)으로 편집본에 들어간다. 「되돌리기」는 폼을 처음 값으로 다시 그린다. 문장 안 조건 · 값별 분기 · 블록 조건식도
  *   고칠 때마다 적용하지 않고 적용 때 명령 묶음으로 (`branchForm`).
- * - **그 자리 팝업**(`Popover` — 함수조항 · 동적표 템플릿 · 상품 조 사본 편집기) — 누른 자리 바로 아래. 확인 = 적용.
+ * - **그 자리 팝업**(`Popover` — 동적표 템플릿 · 상품 조 사본 편집기) — 누른 자리 바로 아래. 확인 = 적용.
  *
  * 어느 쪽이든 적용은 편집본에만 명령을 넣는다(서버로 가지 않는다 — ADR-0074). 원본 반영은 바의 `저장` 한 번.
  */
@@ -117,8 +117,13 @@ export interface PanelShell {
 
 const ShellContext = createContext<PanelShell | undefined>(undefined);
 
+/** 편집기 고유 폼(함수조항 옵션 자리)을 편집 탭 껍데기에 — 안의 `Frame` · `PopForm` 이 탭 고정 줄 · 고친 것 표시를 쓴다. */
+export function ShellHost({ panel, children }: { panel: PanelShell; children: ReactNode }) {
+  return <ShellContext.Provider value={panel}>{children}</ShellContext.Provider>;
+}
+
 /** 폼 머리 — 편집 탭이면 탭 안 제목 줄, 아니면 누른 자리 아래 팝업. 편집 탭에서 `aria-label` 은 영역 이름(테스트 · 스크린 리더). */
-function Frame({ anchor, label, onClose, wide, children }: { anchor: Anchor; label: string; onClose: () => void; wide?: boolean; children: ReactNode }) {
+export function Frame({ anchor, label, onClose, wide, children }: { anchor: Anchor; label: string; onClose: () => void; wide?: boolean; children: ReactNode }) {
   const shell = useContext(ShellContext);
   if (!shell) {
     return (
@@ -161,7 +166,7 @@ function useShellDirty(shell: PanelShell | undefined) {
 }
 
 /** 확인이면 FormData → 명령, 적용되면 닫는다(편집 탭이면 `onApplied`). 명령을 못 만들면(빈 칸) 그 사유를 폼 안에 보인다. */
-function PopForm({ env, onClose, build, children, after }: { env: PopupEnv; onClose: () => void; build: (fd: FormData) => EditOp[] | string; children: ReactNode; after?: (ops: readonly EditOp[]) => void }) {
+export function PopForm({ env, onClose, build, children, after }: { env: PopupEnv; onClose: () => void; build: (fd: FormData) => EditOp[] | string; children: ReactNode; after?: (ops: readonly EditOp[]) => void }) {
   const shell = useContext(ShellContext);
   const { ref, handlers } = useShellDirty(shell);
   const [message, setMessage] = useState<string>();
