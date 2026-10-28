@@ -40,9 +40,11 @@ export async function renderedLines(doc: Locator): Promise<string[]> {
       if (el.matches("aside.ts-doc-box")) {
         const title = el.querySelector(":scope > .ts-doc-box-title")?.textContent ?? "";
         const lines = [...el.querySelectorAll(":scope > .ts-doc-box-line")].map((l) => l.textContent ?? "");
-        // 파싱양식 대칭 — 그림은 ```그림 + 「설명: 」 (renderedToLines 와 같다)
-        if (title === "【그림】") return ["```그림", ...lines.map((l) => `설명: ${l}`), "```"];
-        return ["```용어풀이", ...(title !== "【】" && title !== "" ? [title] : []), ...lines, "```"];
+        // 파싱양식 대칭 — 그림은 ```그림 + 「설명: 」 (renderedToLines 와 같다).
+        // 박스 참조의 머리는 본문 첫 줄이다(제목은 목록 이름, 기능/박스 §3.1 2026-10-28) — 머리 띠(.ts-doc-box-title)는 옛 문면 박스 노드뿐
+        const all = [...(title !== "【】" && title !== "" ? [title] : []), ...lines];
+        if (all[0] === "【그림】") return ["```그림", ...all.slice(1).map((l) => `설명: ${l}`), "```"];
+        return ["```용어풀이", ...all, "```"];
       }
       const figure = el.matches("figure") ? el : el.querySelector("figure.ts-doc-table-wrap");
       if (!figure) return [`⟦알 수 없는 블록 ${el.className}⟧`];

@@ -448,15 +448,17 @@ export type IconButtonProps = {
   danger?: boolean;
   /** md = 32×32(기본), sm = 표 행 안 24×24. */
   size?: "md" | "sm";
+  /** 테두리를 두른다 — 제목 줄 조작 줄에서 글자 버튼과 한 조작군일 때 (`HeadIconButton`, 디자인원칙 §1.9). */
+  framed?: boolean;
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "title" | "children">;
 
-export function IconButton({ label, icon, danger, className, type, size = "md", ...rest }: IconButtonProps) {
+export function IconButton({ label, icon, danger, framed, className, type, size = "md", ...rest }: IconButtonProps) {
   return (
     <Button
       type={type ?? "button"}
-      variant={danger ? "ghost-destructive" : "ghost"}
+      variant={framed ? (danger ? "destructive" : "default") : danger ? "ghost-destructive" : "ghost"}
       size={size === "sm" ? "icon-sm" : "icon"}
-      className={cn("ts-iconbtn", danger ? "danger" : null, className)}
+      className={cn("ts-iconbtn", danger ? "danger" : null, framed ? "is-framed" : null, className)}
       title={label}
       aria-label={label}
       {...rest}

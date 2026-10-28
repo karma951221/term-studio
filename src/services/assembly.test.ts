@@ -367,6 +367,15 @@ describe("assembly 서비스 (PGlite) — 관통 1 통합", () => {
     expect([...unwrap(await svc.loadAssemblyInput(productId)).product.hiddenArticleIds]).toEqual([]);
   });
 
+  it("상품 조 생략 기준이 조립 재료의 articleOmitModes 로 실린다 — 저장한 적 없으면 싣지 않는다 (ADR-0093)", async () => {
+    const p = (await product.getProduct(productId))!;
+    expect(unwrap(await svc.loadAssemblyInput(productId)).product.articleOmitModes).toBeUndefined();
+    unwrap(await product.saveGeneralSettings(editor, productId, { generalDocumentId: p.generalDocumentId!, hiddenArticles: [], overrides: [], copies: [], omitModes: [{ articleId: "g-art-def", mode: "contained" }] }));
+    expect(unwrap(await svc.loadAssemblyInput(productId)).product.articleOmitModes).toEqual(new Map([["g-art-def", "contained"]]));
+    unwrap(await product.saveGeneralSettings(editor, productId, { generalDocumentId: p.generalDocumentId!, hiddenArticles: [], overrides: [], copies: [], omitModes: [] }));
+    expect(unwrap(await svc.loadAssemblyInput(productId)).product.articleOmitModes).toBeUndefined();
+  });
+
   it("조 사본이 조립 재료의 articleCopies 로 실리고 preview 의 보통약관이 사본 본문을 쓴다 (ADR-0079)", async () => {
     const p = (await product.getProduct(productId))!;
     const template = (await documents.get(p.generalDocumentId!))!.tree;

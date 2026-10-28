@@ -20,9 +20,10 @@ import { useRouter } from "next/navigation";
 
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { DiscardDialog } from "@/app/_components/EditShell";
-import { IconButton, IconClose } from "@/app/_components/icons";
+import { IconClose } from "@/app/_components/icons";
 import { InfoTip } from "@/app/_components/InfoTip";
 import { MoreMenu } from "@/app/_components/MoreMenu";
+import { HeadActions, HeadButton, HeadIconButton } from "@/app/_components/HeadActions";
 import { ENTITY_LABEL, NAME_LABEL, newLabel } from "@/app/_lib/labels";
 import { enumDefsOf } from "@/app/(app)/functions/_components/locals";
 import { paramEntries } from "@/app/(app)/functions/_components/params";
@@ -228,21 +229,21 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
       <div className="ts-l3-bar">
         <Breadcrumb items={[{ label: ENTITY_LABEL.dynTable, href: "/dyntables" }, { label: name }]} guard={editing ? leave : undefined} />
         {editing && <span className="ts-l3-dirty">{isNew ? "새 동적표 — 저장하면 만들어진다" : dirty ? "편집 중 · 저장해야 반영" : "편집 중"}</span>}
-        <span className="ts-l3-bar-actions">
+        <HeadActions>
           {!isNew && <MoreMenu items={[{ label: "동적표 삭제", danger: true, onSelect: () => (editing ? setBanner({ message: "저장하거나 취소한 뒤 삭제한다" }) : remove(false)) }]} />}
           {editing ? (
             <>
-              <IconButton icon={<IconClose />} label={isNew ? "만들기 취소 — 동적표 목록으로" : "편집 취소 — 고친 내용을 버리고 읽기 모드로"} disabled={pending} onClick={() => leave(isNew ? () => router.push("/dyntables") : endEdit)} />
-              <button type="button" className="primary" disabled={pending || (!isNew && !dirty)} onClick={save}>
+              <HeadIconButton icon={<IconClose />} label={isNew ? "만들기 취소 — 동적표 목록으로" : "편집 취소 — 고친 내용을 버리고 읽기 모드로"} disabled={pending} onClick={() => leave(isNew ? () => router.push("/dyntables") : endEdit)} />
+              <HeadButton primary disabled={pending || (!isNew && !dirty)} onClick={save}>
                 {pending ? "저장 중…" : "저장"}
-              </button>
+              </HeadButton>
             </>
           ) : (
-            <button type="button" onClick={startEdit} disabled={pending}>
+            <HeadButton onClick={startEdit} disabled={pending}>
               편집
-            </button>
+            </HeadButton>
           )}
-        </span>
+        </HeadActions>
       </div>
 
       <div className="ts-l3-body ts-clause-page">

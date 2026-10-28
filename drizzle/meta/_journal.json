@@ -253,6 +253,20 @@
       "when": 1792580000268,
       "tag": "0035_drop_dyn_table_column_basis",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792580001268,
+      "tag": "0036_box_heading_in_body",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793201908736,
+      "tag": "0037_product_article_omit_modes",
+      "breakpoints": true
     }
   ]
 }

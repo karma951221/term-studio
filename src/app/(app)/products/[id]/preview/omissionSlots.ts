@@ -15,7 +15,7 @@ export interface OmissionSlot {
   title: string;
   /** 바로 앞 결과 조 id — 없으면 문서 맨 앞. */
   afterId?: Id;
-  /** 「보통약관 제12조와 같음」 · 절 형태 「제1절 제7조와 같음」. */
+  /** 「보통약관 제12조와 같음」 · 절 형태 「제1절 제7조와 같음」 · 포함 생략은 「…에 포함됨」(ADR-0093 결정 6). */
   note: string;
 }
 
@@ -57,13 +57,13 @@ export function omissionSlots(
   for (const g of [...(booklet.blocks ?? []), ...booklet.specials]) for (const d of g.docs) if (d.document === "special" && !docs.has(d.ownerId)) docs.set(d.ownerId, d);
 
   // 상품담보 → (조 id → 제목 · 연결한 보통약관 조)
-  const wanted = new Map<Id, Map<Id, { title?: string; linked: Id }>>();
-  const want = (pc: Id, article: Id, linked: Id, title?: string) => {
+  const wanted = new Map<Id, Map<Id, { title?: string; linked: Id; contained?: true }>>();
+  const want = (pc: Id, article: Id, linked: Id, title?: string, contained?: boolean) => {
     const m = wanted.get(pc) ?? new Map();
-    if (!m.has(article)) m.set(article, { ...(title !== undefined ? { title } : {}), linked });
+    if (!m.has(article)) m.set(article, { ...(title !== undefined ? { title } : {}), linked, ...(contained ? { contained: true as const } : {}) });
     wanted.set(pc, m);
   };
-  for (const o of booklet.omitted ?? []) if (o.disposition === "omitted") want(o.productCoverageId, o.articleId, o.linkedArticleId, o.articleTitle);
+  for (const o of booklet.omitted ?? []) if (o.disposition === "omitted") want(o.productCoverageId, o.articleId, o.linkedArticleId, o.articleTitle, o.basis === "contained");
   for (const fs of booklet.firstSection ?? []) {
     for (const b of fs.blocks) {
       if (b.treatment !== "omitted" && b.treatment !== "split") continue;
@@ -90,7 +90,7 @@ export function omissionSlots(
       const w = articles.get(a.id);
       if (!w) continue;
       const g = generalArticle(booklet, w.linked);
-      slots.push({ productCoverageId: pc, articleId: a.id, title: w.title ?? foldTitle(a.title), ...(after !== undefined ? { afterId: after } : {}), note: `${head} ${g ? g.label : "조"}와 같음` });
+      slots.push({ productCoverageId: pc, articleId: a.id, title: w.title ?? foldTitle(a.title), ...(after !== undefined ? { afterId: after } : {}), note: `${head} ${g ? g.label : "조"}${w.contained ? "에 포함됨" : "와 같음"}` });
     }
     if (slots.length > 0) out.set(pc, slots);
   }

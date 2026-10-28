@@ -8,7 +8,7 @@
  *               · dynTableRef(동적표 참조 — 기능/동적표 §3.5, 담보약관 문맥에서만)
  *   - 인라인  : text · slot · inlineCond · inlineFor(인라인 반복 — ADR-0088) · articleRef · appendixRef · 조사(particle) · clauseInlineRef
  *
- * - 조의 메타는 조 명 · 조연결(`linkedArticleId`) 뿐. 번호는 저장하지 않는다 (계산값 — numbering.ts).
+ * - 조의 메타는 조 명 · 조연결(`linkedArticleId`) · 템플릿 조 옵션(준용하기 `joinMode` · 생략 기준 `omitMode`) 뿐. 번호는 저장하지 않는다 (계산값 — numbering.ts).
  * - 식이 들어가는 자리(`when` · `slot.ref`)는 코드 기반 소스 문자열 — 파싱·검사는 expression 모듈.
  * - 노드 id 는 트리 안에서 유일 (조건 가지 id 포함).
  * - 항 · 호 · 목 · 함수조항 블록 참조는 P코드(`code`)를 가진다 — 참조의 정체성, 조 안에서 공존하는 노드끼리 유일 (ADR-0072 · pcode.ts).
@@ -410,6 +410,11 @@ export interface ArticleNode {
    * `common` 공통항 모으기 · `all` 전체항 모으기 — 절 형태에서 모든 블록이 이 조에 조연결했을 때만(k = N ≥ 2) 작동한다.
    */
   joinMode?: JoinMode;
+  /**
+   * 생략 기준 옵션 — 보통약관 템플릿 조에만 (ADR-0093 · 기능/문면 §3.10). 「같을 때만」(기본)이면 속성이 없다.
+   * `contained` 포함하면 생략 — 담보약관 조가 이 조를 다 담고 있으면 그 조를 생략한다(판정은 assembly). 상품은 조 단위로 바꿀 수 있다.
+   */
+  omitMode?: OmitMode;
   children: BlockNode[];
 }
 
@@ -418,6 +423,15 @@ export type JoinMode = "common" | "all";
 export const JOIN_MODES: readonly JoinMode[] = ["common", "all"];
 export function isJoinMode(v: unknown): v is JoinMode {
   return v === "common" || v === "all";
+}
+
+/** 생략 기준 옵션의 저장 값 — 「같을 때만」은 속성 없음 (ADR-0093). */
+export type OmitMode = "contained";
+/** 생략 기준 옵션의 값 — 「같을 때만」(`exact`) · 「포함하면 생략」(`contained`). 상품 조 생략 기준 · 명령이 쓴다. */
+export type ArticleOmitMode = "exact" | OmitMode;
+export const ARTICLE_OMIT_MODES: readonly ArticleOmitMode[] = ["exact", "contained"];
+export function isArticleOmitMode(v: unknown): v is ArticleOmitMode {
+  return v === "exact" || v === "contained";
 }
 
 export type BlockNode =
@@ -982,17 +996,25 @@ export function checkNodeRefs(e: NodeEntry, ix: TreeIndex, env: TreeEnv, atSave:
   const gate = env.clauseGate ?? PERMISSIVE_GATE;
   const one = (kind: Issue["kind"], message: string): Issue[] => [{ kind, message, at }];
   switch (n.kind) {
-    case "article":
+    case "article": {
+      // 템플릿 조의 메타(준용하기 · 생략 기준)는 둘 다 본 뒤 조연결로 — 앞의 오류가 뒤의 검사를 가리지 않게
+      const meta: Issue[] = [];
       if (n.joinMode !== undefined) {
-        if (!isJoinMode(n.joinMode)) return one("structure", `준용하기 옵션은 「공통항 모으기」 · 「전체항 모으기」 중 하나여야 합니다: ${String(n.joinMode)}`);
-        if (env.kind === "special") return one("structure", "준용하기 옵션은 보통약관 템플릿의 조에만 둘 수 있습니다");
+        if (!isJoinMode(n.joinMode)) meta.push(...one("structure", `준용하기 옵션은 「공통항 모으기」 · 「전체항 모으기」 중 하나여야 합니다: ${String(n.joinMode)}`));
+        else if (env.kind === "special") meta.push(...one("structure", "준용하기 옵션은 보통약관 템플릿의 조에만 둘 수 있습니다"));
       }
+      if (n.omitMode !== undefined) {
+        if (n.omitMode !== "contained") meta.push(...one("structure", "생략 기준은 「포함하면 생략」만 저장합니다 — 「같을 때만」은 속성 없음"));
+        else if (env.kind === "special") meta.push(...one("structure", "생략 기준은 보통약관 템플릿의 조에만 둘 수 있습니다"));
+      }
+      if (meta.length > 0) return meta;
       if (n.linkedArticleId === undefined) return [];
       if (env.kind === "general") return one("structure", "보통약관 문서의 조에는 조연결을 둘 수 없습니다");
       if (env.generalArticleIds && !env.generalArticleIds.has(n.linkedArticleId)) {
         return one("brokenRef", `조연결 대상 조 ${n.linkedArticleId} 가 대응 보통약관에 없습니다`);
       }
       return [];
+    }
     case "articleRef":
       return articleRefIssues(n, e, ix, env, at);
     case "blockRef":

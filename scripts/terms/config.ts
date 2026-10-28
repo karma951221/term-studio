@@ -221,6 +221,11 @@ export interface GeneralSpec {
    * (실물 제8조 → 제4조 제4항) 편집기가 고를 id 가 있어야 하고, 조립은 순번 별칭으로 기본계약 항에 잇는다.
    */
   emptyArticles: string[];
+  /**
+   * 생략 기준 「포함하면 생략」인 조 — 원문 조 번호 (ADR-0093 결정 8). 변환기가 그 조 노드에 `omitMode: "contained"` 를 단다.
+   * 나머지 조는 기본(「같을 때만」 = 속성 없음).
+   */
+  omitContained?: string[];
   /** 상품 범위 조건 오버레이 — 참조 변환 전에 얹는다 (형 축 문장 · 어구, 최종 결정 24). */
   inlineConds?: InlineCondOverlay[];
   /** 상품 범위 조건 오버레이 — 박스 자리 on/off (박스 마스터를 만들기 전). */
@@ -520,6 +525,8 @@ const ALPHA_GENERAL: GeneralSpec = {
   file: "보통약관.md",
   idPrefix: "g",
   emptyArticles: [],
+  // 제22조(계약의 무효) — 특약 무효 조가 보통약관 무효 사유에 포함되면 생략 (ADR-0093 결정 8)
+  omitContained: ["22"],
   clauses: GENERAL_ARTICLES.map(([key, article, , paragraph]) => at(article, paragraph, key)),
   ...formAxisConds(
     { savings: "9", maturity: "10", withdrawal: "38" },
@@ -669,6 +676,8 @@ const MERITZ_GENERAL: GeneralSpec = {
   file: "보통약관.md",
   idPrefix: "m",
   emptyArticles: [],
+  // 제22조(계약의 무효) — 특약 무효 조가 보통약관 무효 사유에 포함되면 생략 (ADR-0093 결정 8)
+  omitContained: ["22"],
   clauses: GENERAL_ARTICLES.map(([key, , article, paragraph]) => at(article, paragraph, key)),
   // 메리츠는 2형 단서가 셋 — 제2조 표 해약환급금 정의 · 제23조 ① · 제40조(해약환급금) ①
   ...formAxisConds(

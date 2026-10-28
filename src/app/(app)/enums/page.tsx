@@ -10,25 +10,14 @@ import { ENUMS_MENU } from "@/app/_lib/menu";
 import type { EnumDef } from "@/domain/catalog";
 import { getServices } from "@/lib/services";
 
+import { ValueChips } from "./ValueChips";
+
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
 // 사용처 열 · 거르기는 두지 않는다 — 사용처는 관계정보 메뉴 (디자인원칙 §11.2, 2026-10-01).
 interface Row {
   item: EnumDef;
-}
-
-const VALUE_PREVIEW = 5;
-
-/** 값은 칩으로 앞 5개만, 나머지는 「+N」 — 목록은 훑는 자리다. 전체는 title 로. (현행 약관시스템 조회 화면과 같은 모양, 2026-09-12) */
-function ValueChips({ item }: { item: EnumDef }) {
-  const values = [...item.values].sort((a, b) => a.order - b.order);
-  if (values.length === 0) return <span className="ts-muted">—</span>;
-  const rest = values.length - VALUE_PREVIEW;
-  return <span className="ts-chips" title={values.map((value) => value.label).join(", ")}>
-    {values.slice(0, VALUE_PREVIEW).map((value) => <span key={value.code} className="ts-chip">{value.label}</span>)}
-    {rest > 0 ? <span className="ts-chip-more">+{rest}</span> : null}
-  </span>;
 }
 
 export default async function EnumListPage({ searchParams }: { searchParams: Promise<{ error?: string; q?: string; page?: string }> }) {
@@ -41,8 +30,9 @@ export default async function EnumListPage({ searchParams }: { searchParams: Pro
   const { rows, total, page } = paginate(filtered, sp.page, PAGE_SIZE);
 
   const columns: readonly ListColumn<Row>[] = [
-    identCol(ENTITY_LABEL.enum, (r) => ({ code: r.item.code, name: r.item.label }), (r) => `/enums/${r.item.code}`),
-    { header: FIELD_LABEL.values, width: "values", cell: (r) => <ValueChips item={r.item} /> },
+    // 남는 폭은 값 열이 먹는다 — 이름은 짧고 값은 길다 (담보속성 목록과 같은 배분, §4.1)
+    identCol(ENTITY_LABEL.enum, (r) => ({ code: r.item.code, name: r.item.label }), (r) => `/enums/${r.item.code}`, { width: "ident" }),
+    { header: FIELD_LABEL.values, cell: (r) => (r.item.values.length === 0 ? <span className="ts-muted">—</span> : <ValueChips labels={[...r.item.values].sort((a, b) => a.order - b.order).map((value) => value.label)} />) },
     auditCol((r) => audits.get(r.item.code), userName),
   ];
 

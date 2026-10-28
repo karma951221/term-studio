@@ -27,8 +27,9 @@ import { useRouter } from "next/navigation";
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { coordinateHref } from "@/app/_components/coordinateHref";
 import { DiscardDialog } from "@/app/_components/EditShell";
-import { IconButton, IconClose, IconPanel } from "@/app/_components/icons";
+import { IconClose, IconPanel } from "@/app/_components/icons";
 import { MoreMenu, type MoreMenuItem } from "@/app/_components/MoreMenu";
+import { HeadActions, HeadButton, HeadIconButton } from "@/app/_components/HeadActions";
 import { DOC_TEMPLATE_LABEL } from "@/app/_lib/labels";
 import { describeRejection } from "@/app/_lib/rejection";
 import type { Discriminator, EnumDef } from "@/domain/catalog";
@@ -987,8 +988,8 @@ export function DocumentEditor(props: EditorProps) {
             </span>
           </>
         )}
-        <span className="ts-l3-bar-actions">
-          <IconButton
+        <HeadActions>
+          <HeadIconButton
             className="ts-l3-side-toggle"
             icon={<IconPanel />}
             label={sideOpen ? "우측 패널 닫기 — 미리보기 · 검증" : "우측 패널 열기 — 미리보기 · 검증"}
@@ -999,7 +1000,7 @@ export function DocumentEditor(props: EditorProps) {
           <MoreMenu items={moreItems} />
           {mode === "edit" ? (
             <>
-              <IconButton
+              <HeadIconButton
                 icon={<IconClose />}
                 label="편집 취소 — 고친 내용을 버리고 읽기 모드로"
                 disabled={pending}
@@ -1011,16 +1012,16 @@ export function DocumentEditor(props: EditorProps) {
                   })
                 }
               />
-              <button type="button" className="primary" disabled={(!dirty && !formDirty) || pending} onClick={() => formGuard.guard(() => save())}>
+              <HeadButton primary disabled={(!dirty && !formDirty) || pending} onClick={() => formGuard.guard(() => save())}>
                 {pending ? "저장 중…" : "저장"}
-              </button>
+              </HeadButton>
             </>
           ) : (
-            <button type="button" onClick={startEdit} disabled={pending}>
+            <HeadButton onClick={startEdit} disabled={pending}>
               편집
-            </button>
+            </HeadButton>
           )}
-        </span>
+        </HeadActions>
       </div>
 
       <Toc

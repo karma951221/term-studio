@@ -44,7 +44,7 @@ export type PopupSpec =
   | { kind: "code"; nodeId: Id; suggest?: boolean }
   | { kind: "repeat"; tableId: Id }
   | { kind: "link"; articleId: Id }
-  /** 준용하기 옵션 — 보통약관 템플릿 조만(없음 · 공통항 모으기 · 전체항 모으기, ADR-0082 결정 5 · 기능/문면 §4 노드별 폼). */
+  /** 준용하기 · 생략 기준 옵션 — 보통약관 템플릿 조만(준용하기 없음 · 공통항 · 전체항 모으기, ADR-0082 결정 5 / 생략 기준 같을 때만 · 포함하면, ADR-0093 · 기능/문면 §4 노드별 폼). 라벨 「준용하기」는 그대로. */
   | { kind: "joinMode"; articleId: Id }
   | { kind: "docTitle" }
   | { kind: "general" }

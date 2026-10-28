@@ -47,4 +47,15 @@ describe("SaveConfirmDialog", () => {
     expect(html).toContain("깨지는 참조");
     expect(html).toContain("<li>제25조(계약의 소멸) — 블록 「갑」이 이 상품의 블록이 아닙니다</li>");
   });
+  it("특약 조 판정이 바뀌는 조 묶음", () => {
+    const html = render({
+      valueRowsLost: 0,
+      brokenRefs: [],
+      cascade: [],
+      judgment: { verdicts: [], grayed: [], revived: [], brokenRefs: [], specials: [{ productCoverageId: "pc1", articleId: "b1", label: "암진단 › 제1조(보험금의 지급사유)", before: "통째", after: "생략" }] },
+    });
+    expect(html).toContain("특약 조 판정이 바뀌는 조");
+    expect(html).toContain("<li>암진단 › 제1조(보험금의 지급사유) — 통째 → 생략</li>");
+    expect(html).not.toContain(">판정이 바뀌는 조</span>");
+  });
 });

@@ -1849,7 +1849,8 @@
               "preset": "S01",
               "code": "P0300"
             }
-          ]
+          ],
+          "omitMode": "contained"
         }
       },
       {

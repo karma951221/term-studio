@@ -10,20 +10,26 @@
  *   「문구」 유형은 문장 한 줄(항 · 호 · 목 없음), 「항」 유형은 빈 항 하나에서 시작한다 — 어디에 쓰는지가 처음부터 보인다.
  * - 유형은 생성 화면에서만 고른다(본문이 비어 있을 때) — 목록 `+` 메뉴의 고름은 처음 값일 뿐이다.
  * - 옵션 목록: 본문 옆에 늘 보이는 단(`OptionsPane`).
+ * - 고치기 · 넣기 폼은 오른쪽 단 「편집」 탭에 선다 (2026-10-28, 문면 편집기와 같은 `EditTab` · 규칙 `editTabRules`) — 본문에서 조 참조 · 슬롯 ·
+ *   조건식 · 옵션 자리를 고르거나 툴바로 넣으면 그 폼. 적용은 편집본에만, 원본 반영은 `저장` 한 번. 블록 조건 머리 줄도 읽기용 한 줄 + 편집 탭.
  *
  * 저장 한 번: 상세는 읽기로 시작 → `편집` → 가운데 · 인스펙터 · 옵션 목록을 함께 고치고 → `저장` 한 번이 한 트랜잭션(`saveClauseEditAction`).
  * 생성은 처음부터 편집 중이고, 저장하는 순간 검사 ① 을 통과해야 만들어진다(`createClauseAction`) — 실패면 아무것도 만들지 않고 오류 배너.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type MouseEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { DiscardDialog } from "@/app/_components/EditShell";
-import { IconButton, IconClose, IconTrash } from "@/app/_components/icons";
+import { InfoTip } from "@/app/_components/InfoTip";
+import { IconClose, IconTrash } from "@/app/_components/icons";
 import { MoreMenu } from "@/app/_components/MoreMenu";
+import { HeadActions, HeadButton, HeadIconButton } from "@/app/_components/HeadActions";
 import { ENTITY_LABEL, newLabel } from "@/app/_lib/labels";
 import { refLabelOf } from "@/app/(app)/documents/[id]/_components/condition/display";
-import { anchorOf, type Anchor, type ArticleRefChoice, type DocCtx, type EditHandlers } from "@/app/(app)/documents/[id]/_components/ctx";
+import { anchorOf, type ArticleRefChoice, type DocCtx, type EditHandlers } from "@/app/(app)/documents/[id]/_components/ctx";
+import { EDIT_FORM_ID, EditTab, PendingCard } from "@/app/(app)/documents/[id]/_components/EditTab";
+import { followUpSpec, isInsertSpec, pickedOf, tabOnLeaveEdit, tabOnPick, useEditGuard, type ClauseSideTab, type TabState } from "@/app/(app)/documents/[id]/_components/editTabRules";
 import { Block } from "@/app/(app)/documents/[id]/_components/DocBody";
 import { EditorToolbar } from "@/app/(app)/documents/[id]/_components/EditorToolbar";
 import { marksMenuItem, markSelectionOps, useMarksShown } from "@/app/(app)/documents/[id]/_components/workMarks";
@@ -33,8 +39,8 @@ import { identityRuns, runsFromTokens, runsReplacing, sameRuns, type Token } fro
 import { boxPickItems, condInsertItem, inlineCondItem, placeBlockId, placeExists, type MenuItem, type MenuSections, type Place, type PopupSpec } from "@/app/(app)/documents/[id]/_components/menus";
 import { condInput, placeOf, readInline } from "@/app/(app)/documents/[id]/_components/place";
 import { usePlaceGate } from "@/app/(app)/documents/[id]/_components/placeGate";
-import { PopupHost, type PopupEnv } from "@/app/(app)/documents/[id]/_components/Popups";
-import { ContextMenu, PopActions, Popover } from "@/app/(app)/documents/[id]/_components/Popover";
+import { Frame, PopForm, type PopupEnv } from "@/app/(app)/documents/[id]/_components/Popups";
+import { ContextMenu } from "@/app/(app)/documents/[id]/_components/Popover";
 import { DraftIssues } from "@/app/(app)/documents/[id]/_components/SidePanel";
 import { CLAUSE_LINE_TOOLS, CLAUSE_TOOLS, allTools, itemsFor, type ToolId } from "@/app/(app)/documents/[id]/_components/tools";
 import { switchSubjectsOf } from "@/app/(app)/documents/[id]/_components/switchCases";
@@ -131,6 +137,9 @@ const EMPTY_EXAMPLE: Record<ClauseMode, string> = {
   item: "1. 암으로 진단확정된 경우",
   subitem: "가. 상해",
 };
+
+/** 「편집」 탭 빈 상태 — 함수조항 본문에서 고를 수 있는 것. */
+const CLAUSE_EDIT_TAB_EMPTY = "본문에서 조 참조 · 슬롯 · 조건식 · 옵션 자리를 고르면 여기서 고칩니다.";
 
 /** 편집 트리의 대응 보통약관 자리 — 보통약관 범위 조 참조는 보통약관 마스터 전체가 대상이다(조 참조 인자 슬롯도 이 자리로 운반한다, §3.5 · ADR-0083 · 기능/문면 `scope: "general"`). */
 const GENERALS = "clause-generals";
@@ -269,13 +278,22 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
   const [place, setPlace] = useState<Place>();
   const placeAt = usePlaceGate<Place | undefined>(setPlace);
   const [menu, setMenu] = useState<{ x: number; y: number; sections: MenuSections }>();
-  const [pop, setPop] = useState<{ spec: PopupSpec; anchor: Anchor }>();
+  /** 편집 탭이 지금 보이는 폼 — `n` 이 바뀌면 폼을 처음 값으로 다시 그린다(되돌리기 · 적용 뒤 · 새로 고름). */
+  const [pop, setPopState] = useState<{ spec: PopupSpec; n: number }>();
+  /** 편집 탭 폼에 적용하지 않은 변경이 있다. */
+  const [formDirty, setFormDirty] = useState(false);
+  const setPop = (spec: PopupSpec | undefined) => {
+    setPopState((prev) => (spec ? { spec, n: (prev?.n ?? 0) + 1 } : undefined));
+    setFormDirty(false);
+  };
+  const formGuard = useEditGuard(formDirty);
+  /** 오른쪽 단 탭 — 본문에서 고르면 「편집」, 편집이 끝나면 고르기 전 탭. */
+  const [sideTab, setSideTab] = useState<TabState<ClauseSideTab>>({ tab: "define", before: "define" });
   const [focusRequest, setFocusRequest] = useState<Id>();
   const [flashId, setFlashId] = useState<Id | undefined>(props.initialNode);
   const [banner, setBanner] = useState<Banner>();
   const [discard, setDiscard] = useState<{ go: () => void }>();
   const [removal, setRemoval] = useState<Impact>();
-  const menuAt = useRef<Anchor>({ x: 0, y: 0 });
   const bodyRef = useRef<HTMLDivElement>(null);
 
   const tree = editing ? draft.state.tree : originalTree;
@@ -444,7 +462,6 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     const sections = clausePlaceMenu(env, at, tokens);
     if (sections.length === 0) return;
     setPlace(at);
-    menuAt.current = { x: event.clientX, y: event.clientY + 4, top: event.clientY };
     setMenu({ x: event.clientX, y: event.clientY, sections });
   };
 
@@ -464,14 +481,13 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     }
     const sections = clausePlaceMenu(env, at, tokens);
     const anchor = anchorOf(button);
-    menuAt.current = anchor;
     if (toolId === "cond" || toolId === "inlineCond") {
       const inline = at.kind === "inline" ? { at: at.at, tokens, ...(cut !== undefined ? { cut } : {}) } : undefined;
       const item =
         toolId === "inlineCond" ? inline && inlineCondItem(inline.at, inline.tokens, randomIds, inline.cut) : condInsertItem(env, sections, condInput(bodyRef.current, at, inline), clauseCanHold(env.ix, clauseMode));
       if (!item) return;
       if (item.label !== "문장 안 조건") (document.activeElement as HTMLElement | null)?.blur?.();
-      runMenu(item, anchor);
+      runMenu(item);
       return;
     }
     const tool = allTools(CLAUSE_TOOLS).find((t) => t.id === toolId);
@@ -489,7 +505,7 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     }
     // 바로 적용하는 조작은 쓰던 문장을 먼저 편집본에 넣는다(초점이 떠나며 적용) — 복제 · 이동이 쓰던 글을 두고 가지 않게
     if (items[0].action.do !== "popup") (document.activeElement as HTMLElement | null)?.blur?.();
-    runMenu(items[0], anchor);
+    runMenu(items[0]);
   };
 
   /** 오른쪽 클릭 메뉴에서 고른 항목 — 여러 항을 골랐으면 위로 · 아래로는 고른 것 전부를 한 칸(툴바에서 내려온 규칙, 2026-10-01). */
@@ -511,10 +527,40 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     if (chip) setFocusRequest(chip);
   };
 
-  const runMenu = (item: MenuItem, anchor: Anchor = menuAt.current) => {
+  // ── 편집 탭 — 고른 것의 폼 (문면 편집기와 같다) ──
+  /** 폼을 편집 탭에 연다 — 적용하지 않은 변경이 있으면 확인 카드 뒤에. 좁은 폭(단이 본문 아래)이면 탭까지 내려 보인다. */
+  const openSpec = (spec: PopupSpec) =>
+    formGuard.guard(() => {
+      setPop(spec);
+      setSideTab(tabOnPick);
+      requestAnimationFrame(() => {
+        const side = document.getElementById("ts-side-panel-edit");
+        const grid = side?.closest(".ts-clause-grid");
+        if (side && grid && getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length === 1) side.scrollIntoView({ block: "nearest" });
+      });
+    });
+  /** 고른 것을 푼다 — 편집 탭은 그대로, 빈 상태. */
+  const clearPick = () => formGuard.guard(() => setPop(undefined));
+  /** 편집 탭 폼이 편집본에 들어갔다 — 넣은 것이면 그것이 고른 것(그 속성 폼), 고치기면 같은 폼을 새 값으로. */
+  const applied = useRef(false);
+  const onApplied = (ops: readonly EditOp[]) => {
+    applied.current = true;
+    const cur = pop?.spec;
+    const next = followUpSpec(ops) ?? (cur && !isInsertSpec(cur) ? cur : undefined);
+    setPop(next && "focus" in next ? { ...next, focus: false } : next);
+  };
+  /** 확인 카드의 「적용」 — 편집 탭 폼을 낸다. 거부되면(빈 칸 · 명령 거부) 폼에 남는다. */
+  const submitEditForm = (): boolean => {
+    const form = document.getElementById(EDIT_FORM_ID) as HTMLFormElement | null;
+    applied.current = false;
+    form?.requestSubmit();
+    return applied.current;
+  };
+
+  const runMenu = (item: MenuItem) => {
     const a = item.action;
     if (a.do === "popup") {
-      setPop({ spec: a.popup, anchor });
+      openSpec(a.popup);
       return;
     }
     if (a.do === "remove") {
@@ -525,8 +571,10 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     if (ops.length === 0) return;
     if (!apply(ops)) return;
     if (a.focus) setFocusRequest(a.focus);
-    if (a.openChip) setPop({ spec: { kind: "editChip", nodeId: a.openChip }, anchor });
-    else if (!a.focus) focusInserted(ops);
+    // 넣은 칩 · 블록은 고른 것이 되어 편집 탭에 그 속성 폼 (문장에 넣은 칩은 커서가 칩 뒤로 — 이어 쓴다)
+    const follow = a.openChip ? ({ kind: "editChip", nodeId: a.openChip } as const) : followUpSpec(ops.filter((op) => op.type === "insert"));
+    if (follow) openSpec(follow);
+    if (!a.openChip && !a.focus) focusInserted(ops);
   };
 
   // 작업용 글자색 — 문면 편집기와 같은 모델 · 같은 도구 (기능/문면 §3.2 작업 표시)
@@ -565,14 +613,16 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     setTitle: () => undefined,
     // 함수조항 본문에는 옛 문면 박스 노드가 없다 — 박스는 정적 마스터 박스 참조(기능/박스)
     setBox: () => undefined,
-    popup: (spec, anchor) => setPop({ spec, anchor }),
+    popup: (spec) => openSpec(spec),
+    // 블록 조건 머리 줄은 읽기용 한 줄 — 누르면 편집 탭에서 고친다(문면 편집기와 같다)
+    headsInPanel: true,
     focusInline: () => undefined,
     setActiveCell: () => undefined,
     ...(focusRequest ? { focusRequest } : {}),
     focusDone: () => setFocusRequest(undefined),
     contextMenu: onContextMenu,
     headItems: (branchId) => clauseCondMenu(menuEnv(), branchId).flat(),
-    run: (item, anchor) => runMenu(item, anchor),
+    run: (item) => runMenu(item),
     ...(draggable ? { blockSel: drag.blockSel, selectBlock: drag.selectBlock } : {}),
     // 블록 오른쪽 위의 복제 · 삭제 — 툴바가 쓰던 길(runTool)을 그 블록 자리로 (「문구」 유형은 블록이 없다)
     ...(clauseMode !== "inline"
@@ -636,6 +686,8 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     paramOrigins.current = originsOf(props.params);
     localOrigins.current = originsOf(props.locals);
     setPresets(savedPresets);
+    setPop(undefined);
+    // 편집에 들어가도 탭은 그대로 — 「인자 · 옵션」도 고치는 자리다(문면 우측 패널의 미리보기 · 검증과 다르다). 본문에서 고르면 「편집」 탭으로
     setEditing(true);
     setBanner(undefined);
   };
@@ -646,6 +698,7 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     setPlace(undefined);
     setMenu(undefined);
     setPop(undefined);
+    setSideTab(tabOnLeaveEdit);
     setBanner(undefined);
   };
 
@@ -709,8 +762,15 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     });
   };
 
-  /** 고친 것이 있으면 「고친 내용을 버립니까?」 뒤에 (디자인원칙 §1.7). */
-  const leave = (go: () => void) => (dirty ? setDiscard({ go }) : go());
+  /** 고친 것이 있으면 「고친 내용을 버립니까?」 뒤에 (디자인원칙 §1.7). 편집 탭에 적용하지 않은 변경이 있으면 그 확인 카드가 먼저. */
+  const leave = (go: () => void) => formGuard.guard(() => (dirty ? setDiscard({ go }) : go()));
+
+  const dirtyRef = useRef(dirty);
+  const guardRef = useRef(formGuard.guard);
+  useLayoutEffect(() => {
+    dirtyRef.current = dirty;
+    guardRef.current = formGuard.guard;
+  });
 
   useEffect(() => {
     if (!dirty) return;
@@ -722,9 +782,9 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
-  // 화면을 떠나는 링크(내비 등)는 고친 것이 있으면 확인을 거친다 — 문면 저작 화면과 같다
+  // 화면을 떠나는 링크(내비 등)는 고친 것이 있으면 확인을 거친다 — 문면 저작 화면과 같다(편집 탭에 적용하지 않은 변경만 있어도)
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty && !formDirty) return;
     const onClick = (event: globalThis.MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
@@ -734,11 +794,30 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
       event.preventDefault();
       event.stopPropagation();
       const href = url.origin === window.location.origin ? `${url.pathname}${url.search}${url.hash}` : url.href;
-      setDiscard({ go: () => (url.origin === window.location.origin ? router.push(href) : window.location.assign(href)) });
+      const go = () => (url.origin === window.location.origin ? router.push(href) : window.location.assign(href));
+      guardRef.current(() => (dirtyRef.current ? setDiscard({ go }) : go()));
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
-  }, [dirty, router]);
+  }, [dirty, formDirty, router]);
+
+  // Esc — 고른 것을 푼다(입력칸 · 문장 칸 · 메뉴 · 확인 카드 안의 Esc 는 그쪽 몫) — 문면 편집기와 같다
+  const clearRef = useRef(clearPick);
+  useLayoutEffect(() => {
+    clearRef.current = clearPick;
+  });
+  useEffect(() => {
+    if (!editing) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest?.("input, select, textarea, [contenteditable=true], [contenteditable=plaintext-only], dialog, [role=menu], [role=listbox]")) return;
+      if (document.querySelector("dialog[open], [role=dialog], [role=alertdialog]")) return;
+      clearRef.current();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [editing]);
 
   // ── 유형 고르기 (생성 화면만) — 본문이 비어 있을 때만. 바꾸면 그 유형의 빈 본문에서 다시 시작한다 ──
   const draftBody = editing ? treeToClauseBody(clauseMode, tree) : undefined;
@@ -747,9 +826,17 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     if (next === clauseMode || modeLocked) return;
     setClauseMode(next);
     setPlace(undefined);
+    setPop(undefined);
     setBanner(undefined);
     setDraft({ state: { tree: clauseBodyToTree(next, startBody(next), label), generalDocumentId: GENERALS }, ops: 0 });
   };
+
+  // 편집 탭의 폼 — 고른 것이 편집본에서 사라졌으면(삭제 · 풀기) 빈 상태
+  const pickedRaw = editing && pop ? pickedOf(pop.spec) : undefined;
+  const pickedGone = pickedRaw !== undefined && !index.nodes.has(pickedRaw.id) && !index.branches.has(pickedRaw.id);
+  const pickedSpec = editing && pop && !pickedGone ? pop.spec : undefined;
+  const picked = pickedSpec ? pickedRaw : undefined;
+  const optionSlot = pickedSpec ? optionChip(pickedSpec, index) : undefined;
 
   const toolbarPlace = placeIn(index);
   const toolbarEnv = envOf(tree, options);
@@ -787,27 +874,11 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
       <div className="ts-l3-bar">
         <Breadcrumb items={[{ label: ENTITY_LABEL.clause, href: "/functions" }, { label: clauseName }]} guard={editing ? leave : undefined} />
         {editing && <span className="ts-l3-dirty">{isNew ? "새 함수조항 — 저장하면 만들어진다" : dirty ? "편집 중 · 저장해야 반영" : "편집 중"}</span>}
-        <span className="ts-l3-bar-actions">
+        <HeadActions>
           {/* 「수정 흔적 보기」 — 문면 편집기와 같이 더보기의 체크 항목 (2026-10-10) */}
           <MoreMenu items={[marksMenuItem(marksShown, setMarksShown)]} />
-          {editing ? (
-            <>
-              {isNew ? (
-                <IconButton icon={<IconClose />} label="만들기 취소 — 함수조항 목록으로" disabled={pending} onClick={() => leave(() => router.push("/functions"))} />
-              ) : (
-                <IconButton icon={<IconClose />} label="편집 취소 — 고친 내용을 버리고 읽기 모드로" disabled={pending} onClick={() => leave(endEdit)} />
-              )}
-              <button type="button" className="primary" disabled={pending || (!isNew && !dirty)} onClick={save}>
-                {pending ? "저장 중…" : "저장"}
-              </button>
-            </>
-          ) : (
-            <button type="button" onClick={startEdit} disabled={pending}>
-              편집
-            </button>
-          )}
           {!isNew && (
-            <IconButton
+            <HeadIconButton
               icon={<IconTrash />}
               danger
               label={editing ? "저장하거나 취소한 뒤 실행" : `함수조항 ${props.label}(${code}) 삭제`}
@@ -815,7 +886,23 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
               onClick={() => remove(false)}
             />
           )}
-        </span>
+          {editing ? (
+            <>
+              {isNew ? (
+                <HeadIconButton icon={<IconClose />} label="만들기 취소 — 함수조항 목록으로" disabled={pending} onClick={() => leave(() => router.push("/functions"))} />
+              ) : (
+                <HeadIconButton icon={<IconClose />} label="편집 취소 — 고친 내용을 버리고 읽기 모드로" disabled={pending} onClick={() => leave(endEdit)} />
+              )}
+              <HeadButton primary disabled={pending || (!isNew && !dirty && !formDirty)} onClick={() => formGuard.guard(save)}>
+                {pending ? "저장 중…" : "저장"}
+              </HeadButton>
+            </>
+          ) : (
+            <HeadButton onClick={startEdit} disabled={pending}>
+              편집
+            </HeadButton>
+          )}
+        </HeadActions>
       </div>
 
       <div className="ts-l3-body ts-clause-page" ref={bodyRef}>
@@ -844,10 +931,10 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
             />
 
             <section className="ts-clause-body-sec" aria-label="본문">
-              <h2 className="ts-clause-sec">본문</h2>
-              <p className="ts-muted ts-clause-sec-note">
-                {BODY_NOTE[clauseMode]}
-              </p>
+              <h2 className="ts-clause-sec">
+                본문
+                <InfoTip text={BODY_NOTE[clauseMode]} />
+              </h2>
               <div
                 className={`ts-clause-editor${editing ? " is-editing" : ""}`}
                 onContextMenu={onContextMenu}
@@ -860,6 +947,8 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
                   if (target.closest(".ts-doc-toolbar")) return placeAt.hold();
                   // 자리는 뗄 때 바꾼다 — 누르는 순간 툴바 묶음이 서며 본문이 밀려 누른 것이 빗나가지 않게 (placeGate)
                   placeAt.press(placeOf(target));
+                  // 빈 곳(글 · 칩 · 버튼 · 입력칸 밖)을 누르면 고른 것을 푼다 — 문면 편집기와 같다
+                  if (pop && e.button === 0 && !target.closest("[contenteditable], button, input, select, textarea, a, label, [role=button], [data-chip]")) clearPick();
                 }}
                 onFocus={(e) => {
                   if (!editing) return;
@@ -926,12 +1015,41 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
             used={used}
             onChange={setOptions}
             newCode={newCode}
+            tabs={{
+              tab: sideTab.tab,
+              onTab: (tab) => setSideTab((s) => ({ ...s, tab })),
+              ...(editing
+                ? {
+                    edit: {
+                      dirty: formDirty,
+                      content: (
+                        <EditTab
+                          env={popupEnv}
+                          {...(pickedSpec ? { spec: pickedSpec } : {})}
+                          {...(optionSlot ? { form: <OptionSlotForm env={popupEnv} nodeId={optionSlot} options={options} onClose={() => setPop(undefined)} /> } : {})}
+                          empty={CLAUSE_EDIT_TAB_EMPTY}
+                          formKey={pop?.n ?? 0}
+                          dirty={formDirty}
+                          onDirty={setFormDirty}
+                          onApplied={onApplied}
+                          onRevert={() => pop && setPop(pop.spec)}
+                          onClear={() => setPop(undefined)}
+                        />
+                      ),
+                    },
+                  }
+                : {}),
+            }}
           />
         </div>
       </div>
 
       {menu && <ContextMenu x={menu.x} y={menu.y} sections={menu.sections} onPick={pickMenu} onClose={() => setMenu(undefined)} />}
-      {pop && editing && (optionChip(pop.spec, index) ? <OptionSlotPopup env={popupEnv} nodeId={optionChip(pop.spec, index)!} options={options} anchor={pop.anchor} onClose={() => setPop(undefined)} /> : <PopupHost env={popupEnv} spec={pop.spec} anchor={pop.anchor} onClose={() => setPop(undefined)} />)}
+      {picked && (
+        // 고른 것 — 본문에 테두리 (편집 탭 폼이 고치는 자리)
+        <style>{`.ts-clause-editor [${picked.head ? "data-cond-head" : "data-node"}="${CSS.escape(picked.id)}"]{outline:2px solid var(--ts-ink-2);outline-offset:2px;border-radius:2px}`}</style>
+      )}
+      {formGuard.pending && <PendingCard onChoose={(choice) => formGuard.resolve(choice, submitEditForm)} />}
 
       {discard ? (
         <DiscardDialog
@@ -978,21 +1096,22 @@ function optionChip(spec: PopupSpec, index: ReturnType<typeof indexTree>): Id | 
   return node && node.kind === "clauseInlineRef" && optionCodeOf(node) !== undefined ? node.id : undefined;
 }
 
-/** 옵션 자리 고치기 — 어느 옵션의 자리인가를 바꾼다. */
-function OptionSlotPopup({ env, nodeId, options, anchor, onClose }: { env: PopupEnv; nodeId: Id; options: readonly ClauseEditOption[]; anchor: Anchor; onClose: () => void }) {
+/** 옵션 자리 고치기 — 어느 옵션의 자리인가를 바꾼다. 편집 탭 폼(고정 줄 「적용」이 낸다). */
+function OptionSlotForm({ env, nodeId, options, onClose }: { env: PopupEnv; nodeId: Id; options: readonly ClauseEditOption[]; onClose: () => void }) {
   const tree = env.latest();
   const node = indexTree(tree).nodes.get(nodeId)?.node;
   const current = node && node.kind === "clauseInlineRef" ? optionCodeOf(node) : undefined;
   return (
-    <Popover anchor={anchor} label="옵션 자리" onClose={onClose}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const picked = String(new FormData(e.currentTarget).get("option") ?? "");
+    <Frame anchor={{ x: 0, y: 0 }} label="옵션 자리" onClose={onClose}>
+      <PopForm
+        env={env}
+        onClose={onClose}
+        build={(fd) => {
+          const picked = String(fd.get("option") ?? "");
           const t = env.latest();
           const loc = inlineAtOf(t, indexTree(t), nodeId);
-          if (!picked || !loc) return onClose();
-          if (env.apply([{ type: "setInlines", at: loc.at, runs: runsReplacing(loc.list, nodeId, [optionCarrier(nodeId, picked)]) }])) onClose();
+          if (!picked || !loc || picked === current) return [];
+          return [{ type: "setInlines", at: loc.at, runs: runsReplacing(loc.list, nodeId, [optionCarrier(nodeId, picked)]) }];
         }}
       >
         <div className="ts-form-row">
@@ -1005,10 +1124,9 @@ function OptionSlotPopup({ env, nodeId, options, anchor, onClose }: { env: Popup
             ))}
           </select>
         </div>
-        <p className="ts-muted">사용처가 고른 선택지의 문구가 이 자리에 들어간다. 선택지는 옵션 목록에서 고친다.</p>
-        <PopActions onCancel={onClose} />
-      </form>
-    </Popover>
+        <p className="ts-muted">사용처가 고른 선택지의 문구가 이 자리에 들어간다. 선택지는 「인자 · 옵션」 탭의 옵션 목록에서 고친다.</p>
+      </PopForm>
+    </Frame>
   );
 }
 

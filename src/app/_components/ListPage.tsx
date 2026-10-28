@@ -12,6 +12,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
 import { ErrorBanner } from "./ErrorBanner";
 import { ColumnFilter, ListFilterBar, type ColumnFilterSpec } from "./ListFilters";
 import { ListShell } from "./ListShell";
@@ -116,7 +119,8 @@ export function ListPage<T>({
       {create && "menu" in create ? (
         <MoreMenu label={create.label} items={create.menu} trigger={<IconPlus />} buttonClassName="ts-iconbtn" />
       ) : create ? (
-        <Link href={create.href} className="ts-iconbtn" title={create.label} aria-label={create.label}>
+        // 제목 줄 `+` — 더보기 ⋯ 과 같은 32×32 테두리 아이콘 (디자인원칙 §1.9)
+        <Link href={create.href} className={cn(buttonVariants({ variant: "default", size: "icon" }), "ts-iconbtn")} title={create.label} aria-label={create.label}>
           <IconPlus />
         </Link>
       ) : null}
@@ -198,7 +202,7 @@ export function ListPage<T>({
 /* ── 되풀이되는 컬럼 ──────────────────────────────────────────────────────── */
 
 /**
- * 조회 대상의 코드 · 이름을 한 열 두 줄로 (§2 L1, 2026-10-21) — 1줄째 코드(mono · 옅은 색), 2줄째 이름(상세로).
+ * 조회 대상의 이름 · 코드를 한 열 두 줄로 (§2 L1, 2026-10-21) — 1줄째 이름(상세로), 2줄째 코드(작게 · mono · 옅은 색, 2026-10-29).
  * 머리글은 대상 이름 하나(「담보속성」). 기본은 남는 폭을 먹는 가변 열이다.
  */
 export function identCol<T>(

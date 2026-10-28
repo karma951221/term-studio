@@ -83,3 +83,28 @@ describe("judgmentImpact — 저장 전후 견주기", () => {
     expect(judgmentImpact(before, after, label)?.brokenRefs).toEqual([{ articleId: "a25", label: "제25조", message: "블록 「갑」이 이 상품에 없습니다" }]);
   });
 });
+
+describe("특약 조 판정 (ADR-0093 결정 6) — 생략 기준이 바꾸는 생략 · 준용 · 통째", () => {
+  const label = (id: string) => `제${id.slice(1)}조`;
+  const rec = (disposition: "omitted" | "applied" | "full", articleId = "b1") => ({ productCoverageId: "pc1", productCoverageName: "암진단", articleId, articleTitle: "제1조(보험금의 지급사유)", disposition });
+
+  it("특약 조 판정 — 통째 → 생략인 조를 specials 로 · 같으면 줄 없음 · 대치 형태에서도 낸다(절 형태 여부와 무관)", () => {
+    const before = judgmentSnapshot({ locks: new Map(), copyIds: [], blockRefIssues: [], omitted: [rec("full"), rec("applied", "b2")] });
+    const after = judgmentSnapshot({ locks: new Map(), copyIds: [], blockRefIssues: [], omitted: [rec("omitted"), rec("applied", "b2")] });
+    expect(before.specials.get("pc1/b1")).toEqual({ label: "암진단 › 제1조(보험금의 지급사유)", word: "통째" });
+    expect(after.specials.get("pc1/b2")?.word).toBe("준용");
+    expect(judgmentImpact(before, after, label)).toEqual({
+      verdicts: [],
+      grayed: [],
+      revived: [],
+      brokenRefs: [],
+      specials: [{ productCoverageId: "pc1", articleId: "b1", label: "암진단 › 제1조(보험금의 지급사유)", before: "통째", after: "생략" }],
+    });
+    expect(judgmentImpact(after, after, label)).toBeUndefined();
+    // 절 형태 판정 기록이 있어도 같은 줄 — 다른 판정이 없으면 specials 만
+    const sectioned = (o: ReturnType<typeof rec>[]) => judgmentSnapshot({ records: [{ articleId: "a3", result: "special", k: 1, n: 2 }], locks: new Map(), copyIds: [], blockRefIssues: [], omitted: o });
+    expect(judgmentImpact(sectioned([rec("full")]), sectioned([rec("omitted")]), label)?.specials).toHaveLength(1);
+    // 판정 줄이 없으면 specials 키가 없다 — 상품담보 탭 카드 모양 그대로
+    expect(judgmentImpact(before, before, label)).toBeUndefined();
+  });
+});

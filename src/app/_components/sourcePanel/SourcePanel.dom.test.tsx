@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { assemble, buildSourceView, explainArticle, type ExplainTarget } from "@/domain/assembly";
 import { alphaPlusFixture } from "@/domain/assembly/fixture";
+import type { ArticleNode } from "@/domain/document";
 
 import { SourcePanel } from "./SourcePanel";
 
@@ -88,6 +89,23 @@ describe("본문 — 덧칠", () => {
     render(<SourcePanel content={{ state: "ok", view: view({ document: "special", productCoverageId: o.productCoverageId, articleId: o.articleId }) }} onClose={() => {}} />);
     expect(screen.getByText(/^이 상품 결과에서 생략 — 보통약관 제\d+조\(.+\)와 같음/)).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "보통약관 항" })).toBeTruthy();
+  });
+
+  it("포함 생략 조 — 「…에 포함됨」 + 「생략 기준 「포함하면 생략」(이 상품)」", () => {
+    const fx = alphaPlusFixture();
+    const special = structuredClone(fx.specialDocuments.get("cov-death")!);
+    const reduce = special.children.find((c) => c.id === "s-art-reduce") as ArticleNode;
+    reduce.children = reduce.children.filter((c) => c.id === "s-par-refund-1");
+    const contained = { ...fx, product: { ...fx.product, articleOmitModes: new Map([["g-art-refund", "contained" as const]]) }, specialDocuments: new Map([...fx.specialDocuments, ["cov-death", special]]) };
+    const b = assemble(contained, contained);
+    const o = b.omitted.find((x) => x.articleId === "s-art-reduce" && x.disposition === "omitted")!;
+    const target: ExplainTarget = { document: "special", productCoverageId: o.productCoverageId, articleId: o.articleId };
+    render(<SourcePanel content={{ state: "ok", view: buildSourceView(contained, contained, explainArticle(contained, contained, target), b) }} onClose={() => {}} />);
+    expect(screen.getByText(/^이 상품 결과에서 생략 — 보통약관 제\d+조\(.+\)에 포함됨/)).toBeTruthy();
+    expect(screen.getByText("보통약관 조에 포함 — 생략 기준 「포함하면 생략」(이 상품)")).toBeTruthy();
+    // 보통약관에만 있는 항은 불일치가 아니라 중립 표기
+    expect(screen.getByText("보통약관에만")).toBeTruthy();
+    expect(screen.queryByText("불일치")).toBeNull();
   });
 });
 

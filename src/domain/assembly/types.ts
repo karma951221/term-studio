@@ -34,7 +34,7 @@ import type { Appendix } from "../document/appendix";
 import type { Box } from "../document/box";
 import type { DynTable } from "../dyntable/types";
 import type { ParticlePresetKey } from "../document/particles";
-import type { ArticleNode, DocumentNode, TableColumn } from "../document/nodes";
+import type { ArticleNode, ArticleOmitMode, DocumentNode, TableColumn } from "../document/nodes";
 import type { AttributeKind, ClauseOptionOverride, PlanAxis, ProductCoverageSnapshot, ProductPlan } from "../product/types";
 import type { MasterTree } from "../master";
 import type { ProductGroupSetting } from "../product/groups";
@@ -91,6 +91,11 @@ export interface AssemblyProduct {
    * 템플릿에 없는 조의 사본은 쓰이지 않는다.
    */
   articleCopies?: ReadonlyMap<Id, ArticleNode>;
+  /**
+   * 이 상품이 정한 조 생략 기준 — 템플릿 조 id → 기준 (ADR-0093 결정 3). 템플릿과 다른 값만 싣는다. 없으면 템플릿 원본 그대로.
+   * 실효 기준은 이 표 → 템플릿 **원본** 조(`omitMode`)에서만 읽는다 — 조 사본의 `omitMode` 는 읽지 않는다.
+   */
+  articleOmitModes?: ReadonlyMap<Id, ArticleOmitMode>;
   /**
    * 이 상품의 특약 그룹 설정 — 그룹 목록(순서) + 사용자 그룹 소속 (ADR-0090 결정 4 · 5). 없으면 기본 그룹(담보분류)만 열거값 순서.
    * 사용자 그룹에 넣지 않은 담보는 담보분류의 기본 그룹이다.
@@ -506,6 +511,9 @@ export interface OmissionPair {
   generalKind?: OmissionPairKind;
 }
 
+/** 생략 기준 「포함하면 생략」을 정한 곳 — 템플릿 조 옵션 · 상품 조 단위 변경 (ADR-0093). */
+export type OmitRuleSource = "template" | "product";
+
 /**
  * 생략 판정 기록 — 조연결된 조를 보통약관 조와 항 단위 위치 대조해 생략 · 준용 · 통째로 갈랐다 (기능/조립산출 §3.5 · D-P6-8).
  * 미리보기의 판정 근거 패널이 `pairs` · `excludedClauseNodeIds` · `reason` 을 그린다.
@@ -525,6 +533,10 @@ export interface OmissionRecord {
   reason?: string;
   /** 기본계약 2+ 의 제1절에서 위임된 템플릿 조에 연결한 조 — 판정 없이 통째(`full`, 대조 없음 · ADR-0082 결정 4). */
   delegated?: true;
+  /** 유효 생략 기준이 「포함하면 생략」인 조 — 판정 결과와 무관하게 싣는다(「왜 통째인가」 근거 · ADR-0093). 「같을 때만」이면 없음. */
+  omitRule?: { mode: "contained"; source: OmitRuleSource };
+  /** 생략 사유 「포함」 — 담보 항이 보통약관 조 안에 다 있고 보통약관에 항이 더 있어 지웠다 (`omitted` 와 함께만 · ADR-0093). */
+  basis?: "contained";
 }
 
 /** 문면 없는 담보의 탑재분 — 문서를 내지 않았다 (오류 아님 · D-P6-9). */

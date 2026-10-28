@@ -101,4 +101,27 @@ describe("열거형 상세 — 필드 · 값 × 필드 표", () => {
     expect(html).not.toContain("면책여부");
     expect(html).not.toMatch(/입력률|\d+ 중 \d+ 입력/);
   });
+
+  it("섹션이 갈린다 — 「필드」 · 「값」 제목, 필드 섹션은 「값 표의 열」이 된다고 말한다 (2026-10-29)", () => {
+    for (const mode of ["read", "edit"] as const) {
+      const html = render(mode);
+      expect(html).toMatch(/<section[^>]*aria-label="필드"[^>]*>\s*<h3 class="ts-section-title">필드/);
+      expect(html).toMatch(/<section[^>]*aria-label="값"[^>]*>\s*<h3 class="ts-section-title">값/);
+      expect(html).toContain("값 표의 열");
+    }
+  });
+
+  it("값 표 머리 — 필드 열들 위에 「필드」 묶음 머리가 필드 수만큼 걸친다, 순서 · 값 이름은 두 줄을 차지", () => {
+    const html = render("read");
+    expect(html).toMatch(/<th colSpan="2" class="ts-vrows-group">필드<\/th>/);
+    expect(html).toMatch(/<th[^>]*rowSpan="2"[^>]*>값 이름<\/th>/);
+    const none = render("read", { ...data, fields: [], values: [{ code: "V01", label: "암" }] });
+    expect(none).not.toContain("ts-vrows-group");
+    expect(none).not.toContain("rowSpan");
+  });
+
+  it("읽기: 표 칸은 평문 — 잠긴 칸(옅은 바탕)은 이름 칸만", () => {
+    const html = render("read");
+    expect(html).not.toContain("ts-field-locked");
+  });
 });

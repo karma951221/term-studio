@@ -12,6 +12,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 
 import type { ConditionDecision, OmissionPair, SourceView } from "@/domain/assembly";
+import { containedReason } from "@/app/_lib/labels";
 import { foldTitle } from "@/domain/document/title";
 
 import { IconButton, IconClose, IconLink, IconPanel } from "../icons";
@@ -33,7 +34,8 @@ export interface SourcePanelProps {
 const PAIR_KIND: Record<string, string> = { table: "표", box: "박스", bulletList: "글머리 목록", error: "오류" };
 const pairLabel = (n: number | null, kind?: string) => (n === null ? "—" : kind ? `${PAIR_KIND[kind] ?? kind} ${n}` : `제${n}항`);
 
-function PairsTable({ pairs }: { pairs: readonly OmissionPair[] }) {
+/** `contained` — 포함 생략의 대조: 보통약관에만 있는 항(`special: null`)은 불일치가 아니라 중립 「보통약관에만」 (ADR-0093). */
+function PairsTable({ pairs, contained }: { pairs: readonly OmissionPair[]; contained?: boolean }) {
   if (pairs.length === 0) return <p className="ts-muted">항 대조 없음.</p>;
   return (
     <table className="ts-table ts-src-pairs">
@@ -49,7 +51,7 @@ function PairsTable({ pairs }: { pairs: readonly OmissionPair[] }) {
           <tr key={i}>
             <td>{pairLabel(p.special, p.specialKind)}</td>
             <td>{pairLabel(p.general, p.generalKind)}</td>
-            <td>{p.matched ? "일치" : <span className="ts-badge warning">불일치</span>}</td>
+            <td>{p.matched ? "일치" : contained && p.special === null ? <span className="ts-badge">보통약관에만</span> : <span className="ts-badge warning">불일치</span>}</td>
           </tr>
         ))}
       </tbody>
@@ -86,6 +88,8 @@ function Loaded({ view, focus, close }: { view: SourceView; focus?: string; clos
   const index = useMemo(() => indexDecisions([...(source?.enclosing ?? []), ...(source?.decisions ?? [])]), [source]);
   const ctx = rootCtx(view, index, focus, sv?.nodeLabels ? { nodeLabels: sv.nodeLabels } : undefined);
   const title = sv?.article ? foldTitle(sv.article.title) : "";
+  // 포함 생략 (ADR-0093 결정 6) — 옛 기록(사유 없음)은 「와 같음」 그대로
+  const contained = e.omission?.disposition === "omitted" && e.omission.basis === "contained";
 
   return (
     <aside className="ts-src-panel" aria-label="출처">
@@ -120,12 +124,13 @@ function Loaded({ view, focus, close }: { view: SourceView; focus?: string; clos
       {e.status === "omitted" && (
         <section className="ts-src-note">
           <p>
-            이 상품 결과에서 생략 — {view.linkedLabel ? `${e.firstSection ? "제1절" : "보통약관"} ${view.linkedLabel}와 같음` : "보통약관 조와 같음"}
+            이 상품 결과에서 생략 — {view.linkedLabel ? `${e.firstSection ? "제1절" : "보통약관"} ${view.linkedLabel}${contained ? "에 포함됨" : "와 같음"}` : contained ? "보통약관 조에 포함됨" : "보통약관 조와 같음"}
             {source?.treatment && source.treatment !== "listed" && <> (블록 조 {source.treatment === "omitted" ? "생략" : source.treatment === "split" ? "분리" : "통째"})</>}
           </p>
           {e.omission && (
             <>
-              <PairsTable pairs={e.omission.pairs ?? []} />
+              {contained && e.omission.omitRule && <p className="ts-muted">{containedReason(e.omission.omitRule.source)}</p>}
+              <PairsTable pairs={e.omission.pairs ?? []} contained={contained} />
               {e.omission.reason && <p className="ts-muted">{e.omission.reason}</p>}
             </>
           )}

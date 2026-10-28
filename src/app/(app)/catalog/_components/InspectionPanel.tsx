@@ -12,7 +12,9 @@
 import Link from "next/link";
 import { useTransition } from "react";
 
+import { InfoTip } from "@/app/_components/InfoTip";
 import { coordinateHref } from "@/app/_components/coordinateHref";
+import { HeadButton } from "@/app/_components/HeadActions";
 import { SeverityGlyph } from "@/app/_components/IssueList";
 import { formatCoordinate } from "@/domain/coordinate";
 import type { EnumDef } from "@/domain/catalog/types";
@@ -36,14 +38,13 @@ export function InspectButton({ input, onResult, disabled }: { input: InspectInp
     }
   };
   return (
-    <button
-      type="button"
+    <HeadButton
       disabled={disabled || pending || input.expression.length === 0}
       title="저장하지 않고 식 · 결과 타입 · 사용처를 검사한다"
       onClick={() => startTransition(run)}
     >
       {pending ? "검사 중…" : "검사"}
-    </button>
+    </HeadButton>
   );
 }
 
@@ -75,6 +76,7 @@ export function InspectionResult({ inspection, input, enums }: { inspection: Ins
     <div className="ts-inspection" aria-live="polite">
       <p className="ts-l2-side-title">
         검사 결과 <span className="ts-count">오류 <b>{result.errors.length}</b> · 경고 {result.warnings.length}</span>
+        <InfoTip text="오류가 있으면 저장이 거부된다. 경고는 저장되고 배지로 남는다." />
       </p>
       {stale ? <p className="ts-form-hint ts-inspection-stale">검사 결과가 오래되었습니다 — 다시 검사</p> : null}
       <p className="ts-form-hint">추론 타입: {inferredLabel(result.inferred, enumLabel)}</p>
@@ -85,7 +87,6 @@ export function InspectionResult({ inspection, input, enums }: { inspection: Ins
         <ul className="ts-issues">{result.warnings.map((issue, i) => <IssueRow key={`w${i}`} issue={issue} severity="warning" selfCode={input.code} />)}</ul>
       ) : null}
       {result.errors.length === 0 && result.warnings.length === 0 ? <p className="ts-form-hint">오류 · 경고 없음 — 저장할 수 있다.</p> : null}
-      {result.errors.length > 0 ? <p className="ts-form-hint">오류가 있으면 저장이 거부된다. 경고는 저장되고 배지로 남는다.</p> : null}
     </div>
   );
 }

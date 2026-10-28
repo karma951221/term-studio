@@ -172,6 +172,19 @@ describe("합성 표본 — 절 형태 세 상품 (PGlite)", () => {
     expect(again.ok && again.value.firstSection?.map((x) => `${x.result} ${x.k}/${x.n}`)).toEqual(["delegate 2/2", "delegate 2/2"]);
   });
 
+  it("시드 — 보통약관 템플릿(「보통약관(일반)」 하나 — 2026-10-28)의 「계약의 무효」 조만 생략 기준 「포함하면 생략」, 나머지 조(부지급사유 포함)는 기본 (ADR-0093 결정 8)", async () => {
+    const articles = (nodes: readonly BlockNode[]): BlockNode[] => nodes.flatMap((c) => (c.kind === "section" ? articles(c.children) : c.kind === "article" ? [c] : []));
+    const generals = await services.document.list("general");
+    expect(generals).toHaveLength(1);
+    for (const g of generals) {
+      const record = (await services.document.get(g.id))!;
+      const contained = articles(record.tree.children).flatMap((a) =>
+        a.kind === "article" && a.omitMode !== undefined ? [[a.title.map((n) => (n.kind === "text" ? n.text : "")).join(""), a.omitMode]] : [],
+      );
+      expect(contained, g.title).toEqual([["계약의 무효", "contained"]]);
+    }
+  });
+
   it("템플릿 세부규정 조에 준용하기 옵션 「공통항 모으기」 저장 — ⓐ 일부 연결이라 옵션 미적용 경고(partialLinkOption) · ⓑ 공통 항 없음 = 위임 · ⓒ 블록 하나 = 위임(경고 없음)", async () => {
     const general = (await services.document.list("general")).find((d) => d.title === "보통약관(일반)")!;
     const record = (await services.document.get(general.id))!;

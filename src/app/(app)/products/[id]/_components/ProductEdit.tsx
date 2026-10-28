@@ -18,6 +18,8 @@ import { useRouter } from "next/navigation";
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { DiscardDialog } from "@/app/_components/EditShell";
 import { MoreMenu, type MoreMenuItem } from "@/app/_components/MoreMenu";
+import { HeadActions, HeadButton, HeadIconButton } from "@/app/_components/HeadActions";
+import { IconClose } from "@/app/_components/icons";
 import { ENTITY_LABEL } from "@/app/_lib/labels";
 
 /**
@@ -147,32 +149,28 @@ export function ProductPath({ name }: { name: string }) {
  */
 export function ProductHeadActions({ menu }: { menu: MoreMenuItem[] }) {
   const { editing } = useProductEdit();
-  return <div className="ts-product-actions">{!editing && <MoreMenu items={menu} />}</div>;
+  return <HeadActions>{!editing && <MoreMenu items={menu} />}</HeadActions>;
 }
 
 /**
- * 탭 첫 줄 오른쪽의 편집 조작 — 읽기: `[편집]`, 편집: `[취소] [저장]` (같은 자리 · 같은 규격, 높이 32 · 모서리 4).
+ * 탭 첫 줄 오른쪽의 편집 조작 — 읽기: `[편집]`, 편집: `✕ [저장]` (같은 자리 · 제목 줄과 같은 규격, 디자인원칙 §1.9).
  * 편집할 것이 없는 탭(또는 템플릿 없는 보통약관)에서는 아무것도 그리지 않는다.
  */
 export function ProductEditButtons() {
   const { editing, pending, canEdit, begin, cancel, save } = useProductEdit();
   if (!canEdit) return null;
   return (
-    <div className="ts-product-actions">
+    <HeadActions>
       {editing ? (
         <>
-          <button type="button" disabled={pending} onClick={cancel}>
-            취소
-          </button>
-          <button type="button" className="primary" disabled={pending} onClick={() => save()}>
+          <HeadIconButton icon={<IconClose />} label="편집 취소" disabled={pending} onClick={cancel} />
+          <HeadButton primary disabled={pending} onClick={() => save()}>
             {pending ? "저장 중…" : "저장"}
-          </button>
+          </HeadButton>
         </>
       ) : (
-        <button type="button" onClick={begin}>
-          편집
-        </button>
+        <HeadButton onClick={begin}>편집</HeadButton>
       )}
-    </div>
+    </HeadActions>
   );
 }

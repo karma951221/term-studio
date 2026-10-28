@@ -1,5 +1,5 @@
 /** 상품 화면·서버 액션이 함께 쓰는 순수 함수 — 탭 좌표 · 보통약관의 관 묶기 · 조 수. `*.test.ts` 로 검증. */
-import type { Booklet, FirstSectionRecord, OmissionPairKind, OmissionRecord, RenderedDoc } from "@/domain/assembly";
+import type { Booklet, FirstSectionRecord, OmissionPair, OmissionPairKind, OmissionRecord, RenderedDoc } from "@/domain/assembly";
 import { indexTree, type ArticleNode, type CondBlockNode, type DocumentNode, type Node, type NodeNumber } from "@/domain/document";
 import { findAttributeValue, normalizeSelections, planCombinationKey, verdictText, type AttributeKind, type AttributeSelection, type ProductCoverage } from "@/domain/product";
 import type { Code, Id, Issue } from "@/domain/types";
@@ -359,6 +359,15 @@ export function omissionPairLabel(n: number, kind?: OmissionPairKind): string {
     default:
       return `제${n}항`;
   }
+}
+
+/**
+ * 항 대조 한 줄의 판정 — 일치 · 불일치, 포함 생략(`basis: "contained"`)의 보통약관에만 있는 항(`special: null`)은
+ * 생략을 막은 차이가 아니므로 중립 「보통약관에만」 (ADR-0093).
+ */
+export function omissionPairVerdict(pair: OmissionPair, record: Pick<OmissionRecord, "basis">): "일치" | "불일치" | "보통약관에만" {
+  if (pair.matched) return "일치";
+  return record.basis === "contained" && pair.special === null ? "보통약관에만" : "불일치";
 }
 
 /**

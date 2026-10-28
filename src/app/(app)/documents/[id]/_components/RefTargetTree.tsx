@@ -8,6 +8,7 @@
  * - 관은 묶음 머리(좌측 목차와 같은 「제N관 이름」)일 뿐 고를 수 없다.
  * - 키보드: ↑ ↓ 줄 이동 · → 펴기(펴져 있으면 첫 하위) · ← 접기(접혀 있으면 상위) · Space 고르기(체크박스 기본).
  * - 항 · 호 · 목 줄 끝에 흐린 글씨로 코드 「P0200 · 호」 (ADR-0072 — 본문에는 코드를 넣지 않는다, 기능/문면 §6.2). 검색은 번호 · 제목만 본다.
+ * - 맨 위에 고른 대상 칩(✕ 로 빼기) — 접힌 줄 아래 고른 것도 한눈에 (2026-10-29). 칩 · 검색칸 · 트리는 한 상자.
  * - 위 검색칸에 치면 번호 · 제목이 맞는 줄과 그 조상만 남고 조상은 펴진다. 맞은 글자는 검색 입력(콤보박스)과 같이 강조한다
  *   (디자인원칙 §1.8 — 여럿을 고르는 트리라 콤보박스 대신 같은 거르기 · 강조를 트리에 붙인다). 검색칸에서 ↓ 는 첫 줄로.
  */
@@ -16,7 +17,7 @@ import { useMemo, useState, type KeyboardEvent } from "react";
 import { COMBO_EMPTY_TEXT, Highlight } from "@/app/_components/Combobox";
 import { matchOption, tokensOf } from "@/app/_components/comboModel";
 
-import { codeTag, referenceAncestorIds, referenceOutline, refKey, refTargetOf, type ReferenceOutlineNode, type ReferenceTarget } from "@/domain/document";
+import { codeTag, referenceAncestorIds, referenceChunkLabel, referenceOutline, refKey, refTargetOf, type ReferenceOutlineNode, type ReferenceTarget } from "@/domain/document";
 import type { Id } from "@/domain/types";
 
 export interface RefTargetScope {
@@ -46,7 +47,7 @@ export function RefTargetTree({
   name?: string;
   scopes: readonly RefTargetScope[];
   defaultSelected: readonly Id[];
-  /** 고른 개수가 바뀔 때 — 연결어 라디오를 켜고 끈다. `ids` = 고른 줄(노드 id) — 반복 블록 안 대상이면 하나여도 연결어가 켜진다. */
+  /** 고른 개수가 바뀔 때 — 연결어 라디오를 켜고 끈다. `ids` = 고른 줄(노드 id, 트리 순서) — 반복 블록 안 대상이면 하나여도 연결어가 켜진다. */
   onCountChange?: (count: number, ids: readonly Id[]) => void;
 }) {
   const [selected, setSelected] = useState<ReadonlySet<Id>>(() => new Set(defaultSelected));
@@ -96,12 +97,22 @@ export function RefTargetTree({
       else out.delete(nodeId);
       return out;
     });
+  /** 고른 줄을 트리(문서) 순서로 — 미리보기 덩어리 표기가 문서 순서를 전제한다. */
+  const inOrder = (set: ReadonlySet<Id>): Id[] => {
+    const out: Id[] = [];
+    const walk = (n: ReferenceOutlineNode) => {
+      if (set.has(n.id)) out.push(n.id);
+      n.children.forEach(walk);
+    };
+    for (const s of outlines) for (const g of s.groups) g.rows.forEach(walk);
+    return out;
+  };
   const toggleSelected = (nodeId: Id) => {
     const out = new Set(selected);
     if (out.has(nodeId)) out.delete(nodeId);
     else out.add(nodeId);
     setSelected(out);
-    onCountChange?.(out.size, [...out]);
+    onCountChange?.(out.size, inOrder(out));
   };
 
   /** 접힌 줄 아래에 고른 것이 몇 개 숨어 있나 — 접어도 고른 사실이 보이게. */
@@ -178,10 +189,27 @@ export function RefTargetTree({
     );
   };
 
+  const pickedRows = inOrder(selected).flatMap((nodeId) => byId.get(nodeId) ?? []);
+
   const empty = outlines.every((s) => s.groups.length === 0);
   const scopeShown = (s: (typeof outlines)[number]) => s.groups.some((g) => g.rows.some(shown));
   return (
-    <>
+    <div className="ts-ref-picker">
+      {pickedRows.length > 0 && (
+        <ul className="ts-ref-chips" aria-label="고른 대상">
+          {pickedRows.map((n) => {
+            const label = referenceChunkLabel([n.target], undefined) || n.label;
+            return (
+              <li key={n.id} className="ts-ref-chip">
+                <span className="ts-ref-chip-text">{label}</span>
+                <button type="button" className="ts-ref-chip-x" aria-label={`${label} 빼기`} title="빼기" onClick={() => toggleSelected(n.id)}>
+                  ✕
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
       {!empty && (
         <input
           type="search"
@@ -223,6 +251,6 @@ export function RefTargetTree({
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 }
