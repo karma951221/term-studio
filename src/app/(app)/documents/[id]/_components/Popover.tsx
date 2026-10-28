@@ -11,6 +11,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
+import { HeadButton } from "@/app/_components/HeadActions";
+
 import type { Anchor } from "./ctx";
 import { forContextMenu, type MenuItem, type MenuSections } from "./menus";
 
@@ -69,12 +71,10 @@ export function Popover({ anchor, label, onClose, children, wide }: { anchor: An
 export function PopActions({ onCancel, confirmLabel = "확인", disabled }: { onCancel: () => void; confirmLabel?: string; disabled?: boolean }) {
   return (
     <div className="ts-form-actions">
-      <button type="button" onClick={onCancel}>
-        취소
-      </button>
-      <button type="submit" className="primary" disabled={disabled}>
+      <HeadButton onClick={onCancel}>취소</HeadButton>
+      <HeadButton type="submit" primary disabled={disabled}>
         {confirmLabel}
-      </button>
+      </HeadButton>
     </div>
   );
 }
