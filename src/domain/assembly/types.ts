@@ -695,14 +695,29 @@ export interface RepeatDecision extends DecisionAt {
   issue?: Issue;
 }
 
-/** 동적표 — 원천 급부(행 재료) · 펼친 행마다 셀의 결정 노드 · 머리글. 펼치지 못했으면 `issue`. */
+/**
+ * 동적표 — 원천 급부(행 재료) · 펼친 행마다 셀의 결정 노드 · 머리글. 펼치지 못했으면 `issue`.
+ * 정액형 표(`fixed`)는 행 대신 표 블록(급부 × 가입금액)마다 한 줄 — 그 블록의 급부 머리글 · 캡션 · 머리글 행 · 칸의 결정 노드를 함께 싣는다(`header` 는 비운다).
+ */
 export interface DynTableDecision extends DecisionAt {
   kind: "dynTable";
   tableCode: Code;
+  fixed?: true;
   benefits: DynBenefit[];
   header: DecisionRecord[];
-  rows: { name: string; benefitKeys: string[]; decisions: DecisionRecord[] }[];
+  rows: DynTableRowRecord[];
   issue?: Issue;
+}
+
+export interface DynTableRowRecord {
+  /** 감액 표 = 급부명, 정액형 표 = 「급부명 · 가입금액」. */
+  name: string;
+  benefitKeys: string[];
+  decisions: DecisionRecord[];
+  /** 정액형 표 — 운영 가입금액(원). */
+  amount?: number;
+  /** 정액형 표 — 이 표에 딸린 블록 번호(노드 id 의 `@k{블록}` — 급부 머리글 · 캡션 · 표). */
+  blocks?: number[];
 }
 
 /**

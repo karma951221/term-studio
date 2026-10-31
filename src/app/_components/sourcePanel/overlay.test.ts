@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { ConditionDecision, DecisionRecord, RepeatDecision, SourceView } from "@/domain/assembly";
+import type { ConditionDecision, DecisionRecord, DynTableDecision, RepeatDecision, SourceView } from "@/domain/assembly";
 import { entered, NOT_ENTERED } from "@/domain/types";
 
-import { argText, BRANCH_OUTCOME_LABEL, clauseScope, elementScope, elementForNode, exprText, indexDecisions, keyOf, links, readsText, ROOT_SCOPE, slotText } from "./overlay";
+import { argText, BRANCH_OUTCOME_LABEL, clauseScope, dynRowForNode, elementScope, elementForNode, exprText, indexDecisions, keyOf, links, readsText, ROOT_SCOPE, slotText } from "./overlay";
 
 const cond = (nodeId: string, inner: DecisionRecord[] = []): ConditionDecision => ({
   kind: "condition",
@@ -47,6 +47,25 @@ describe("반복 원소 탭 — 결과에서 누른 원소가 처음부터 골�
   it("없으면 첫 원소 · 원소 0개면 없음", () => {
     expect(elementForNode(rec, "slot")).toBe("opt-1");
     expect(elementForNode({ ...rec, elements: [] }, undefined)).toBeUndefined();
+  });
+});
+
+describe("동적표 행 · 표 탭 — 결과에서 누른 칸의 행(감액) · 표 블록(정액형)이 처음부터 골라진다", () => {
+  const row = (name: string, extra: Partial<DynTableDecision["rows"][number]> = {}) => ({ name, benefitKeys: [name], decisions: [], ...extra });
+  const rate: DynTableDecision = { kind: "dynTable", nodeId: "ref", tableCode: "DT000001", benefits: [], header: [], rows: [row("급부1"), row("급부2")] };
+  const fixed: DynTableDecision = { kind: "dynTable", nodeId: "ref", tableCode: "DT000003", fixed: true, benefits: [], header: [], rows: [row("상해 · 3,000만원", { amount: 30_000_000, blocks: [0, 1, 2] }), row("상해 · 5,000만원", { amount: 50_000_000, blocks: [3, 4] })] };
+  it("감액 표 — 칸 id 의 `@r{행}` (1부터)", () => {
+    expect(dynRowForNode(rate, "ref/cell@r2c1")).toBe(1);
+    expect(dynRowForNode(rate, "ref/row@r1c0")).toBe(0);
+  });
+  it("정액형 표 — 칸 id 의 `@k{블록}` 이 속한 표 (머리글 · 캡션 · 표)", () => {
+    expect(dynRowForNode(fixed, "ref/txt@k4r1c1")).toBe(1);
+    expect(dynRowForNode(fixed, "ref/cap@k1")).toBe(0);
+  });
+  it("표 밖 · 머리글 행 · 없는 번호면 첫 탭", () => {
+    expect(dynRowForNode(rate, "ref/cell@rhc1")).toBe(0);
+    expect(dynRowForNode(rate, "ref/cell@r9c1")).toBe(0);
+    expect(dynRowForNode(fixed, undefined)).toBe(0);
   });
 });
 
