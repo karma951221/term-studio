@@ -23,6 +23,8 @@
 import type { ValueSlot } from "../types";
 import type { FormFieldReader, MasterForm } from "./types";
 
+/** 열거형 「감액기간」 코드 — 감액 구간표의 경계 열이 이 열거형의 값 하나를 고른다 (기능/담보 §3.4 · 기능/열거형 §3.1, 2026-10-31). 시드가 만든다. */
+export const REDUCTION_PERIOD_ENUM = "E0010";
 /** 고지유형 E0005 값 코드 — 상품특성 조건부 칸의 조건. */
 export const NOTICE_KIND = { general: "V01", review: "V02", health: "V03" } as const;
 /** 계약형태 E0007 값 코드 — 독립특약이면 기본계약을 두지 않는다 (기능/상품 §3.1 · 2026-10-01). */
@@ -138,6 +140,25 @@ export const MASTER: readonly MasterForm[] = [
     fields: [{ key: "applies", label: "적용여부", type: { kind: "boolean" }, defaultValue: false }],
   },
   {
+    // 담보 「가입금액」 — 통합치료비 전용이 아닌 담보 일반 사실. 마스터 값 = 가능한 가입금액 전체, 탑재 때 복사돼 상품이 운영하지 않는 금액을 지운다 = 운영 가입금액
+    // (상품 소유 — ADR-0097). 정액형 동적표가 운영 가입금액마다 캡션 + 표를 찍는다 (기능/담보 §3.3 · 기능/동적표 §3.7, 2026-10-31)
+    key: "insured_amount",
+    label: "가입금액",
+    level: "coverage",
+    optional: true,
+    system: true,
+    description: "이 담보로 가입할 수 있는 보험가입금액 — 금액 여러 개(원). 상품담보에서는 운영하는 금액만 남긴다. 정액형 지급금액 표가 금액마다 표를 찍는다",
+    fields: [
+      {
+        key: "amounts",
+        label: "금액",
+        system: true,
+        type: { kind: "table", columns: [{ key: "amount", label: "금액(원)", type: "number" }] },
+        description: "한 행 = 가입금액 하나(원 단위 정수). 같은 금액 두 번은 거부. 표는 오름차순으로 찍는다",
+      },
+    ],
+  },
+  {
     key: "pay",
     label: "보험금지급",
     level: "benefit",
@@ -153,7 +174,7 @@ export const MASTER: readonly MasterForm[] = [
     level: "benefit",
     optional: true,
     system: true,
-    description: "급부의 감액 구간 — 보장개시 후 n개월 미만은 지급률을 낮춘다. 폼을 열지 않으면 감액 없음",
+    description: "급부의 감액 구간 — 보장개시 후 그 기간 미만은 지급률을 낮춘다. 폼을 열지 않으면 감액 없음",
     fields: [
       {
         key: "periods",
@@ -162,11 +183,12 @@ export const MASTER: readonly MasterForm[] = [
         type: {
           kind: "table",
           columns: [
-            { key: "end", label: "기간", type: "period" },
+            // 경계는 열거형 「감액기간」(E0010 — 90일 · 180일 · 1년 · 2년 …)의 값 하나 — 엄격 오름차순은 열거 순서 (2026-10-31)
+            { key: "end", label: "기간", type: "enum", enumCode: REDUCTION_PERIOD_ENUM },
             { key: "rate", label: "지급률", type: "percent" },
           ],
         },
-        description: "행 = 「직전 경계 ~ 이 경계 미만」. 기간은 3M · 1Y, 지급률은 % 정수. 엄격 오름차순",
+        description: "행 = 「직전 경계 ~ 이 경계 미만」. 기간은 열거형 「감액기간」 값(90일 · 1년 …), 지급률은 % 정수. 열거 순서로 엄격 오름차순",
       },
       {
         key: "after_rate",
@@ -193,7 +215,25 @@ export const MASTER: readonly MasterForm[] = [
       { key: "new_only", label: "신규계약만 적용", system: true, type: { kind: "boolean" }, defaultValue: true },
     ],
   },
+  {
+    // 급부 「정액표」 — 통합치료비의 치료항목별 정액. 유형 특성이라 마스터 소유(탑재 때 복사하지 않고 상품에서 읽기 전용 — ADR-0097).
+    // 격자 하나: 글자 열(사용자 정의, 기본 분류 · 치료항목 · 지급횟수) + 행 + 가입금액별 정액. 표로 펼치는 일은 정액형 동적표 몫 (기능/담보 §3.4 · 기능/동적표 §3.7)
+    key: "fixed_table",
+    label: "정액표",
+    level: "benefit",
+    optional: true,
+    system: true,
+    owner: "master",
+    description: "급부의 치료항목별 정액 — 글자 열 + 행 + 가입금액별 정액(원). 폼을 열지 않으면 정액표 없음. 정액형 지급금액 표가 이 격자로 표를 찍는다",
+    fields: [{ key: "grid", label: "격자", system: true, type: { kind: "grid" }, description: "글자 열의 개수 · 머리 이름은 사용자가 정한다. 가입금액 열마다 정액을 다 채운다(공란 거부)" }],
+  },
 ];
+
+/** 가입금액 값 자리 · 정액표 값 자리 — 정액형 동적표의 읽는 창구(`insuredAmounts` · `fixedGrid`, coverage/traits.ts). */
+export const INSURED_AMOUNT_FORM = "insured_amount";
+export const FIXED_TABLE_FORM = "fixed_table";
+/** 새 정액표의 글자 열 기본 머리 (기능/담보 §3.4). */
+export const FIXED_GRID_DEFAULT_COLUMNS: readonly string[] = ["분류", "치료항목", "지급횟수"];
 
 /** 지급률 값 자리 — 급부 카드 머리 줄의 「지급률 ⊕」 (기능/담보 §3.6). 안 적으면 100% (동적표 `DEFAULT_PAY_RATE`). */
 export const PAY_RATE_PATH = "pay.rate";

@@ -25,7 +25,8 @@ function staticLines(n: RenderedStatic, indent = ""): string[] {
     return ["```용어풀이", ...lines, "```"];
   }
   const separator = `|${n.columns.map(() => "---").join("|")}|`;
-  const out = ["```표", `제목: ${n.title ?? "(없음)"}`];
+  // 정액형 동적표의 급부 머리글 · 캡션 — 표 앞 줄 · 제목 자리 (기능/동적표 §3.7)
+  const out = [...(n.heading ? [inlineText(n.heading)] : []), "```표", `제목: ${n.caption ? inlineText(n.caption) : (n.title ?? "(없음)")}`];
   let separated = false;
   for (const row of n.rows) {
     out.push(`|${row.cells.map(inlineText).join("|")}|`);

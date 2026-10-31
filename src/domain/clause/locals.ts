@@ -394,6 +394,7 @@ export function localScope(params: readonly ParamDef[], locals: readonly LocalDe
     if (v.kind === "options") return fail("typeMismatch", "세목 선택지 목록은 조건 · 슬롯에 그대로 쓸 수 없습니다 — 합치기로 가공한다");
     const x = v.value;
     if (Array.isArray(x)) return fail("typeMismatch", `목록 값은 조건 · 슬롯에 그대로 쓸 수 없습니다 — 있음 · 비었음으로 가공한다 (${where.kind})`);
+    if (typeof x === "object") return fail("typeMismatch", `정액표 격자는 조건 · 슬롯에 쓸 수 없습니다 (${where.kind})`);
     const lit: Literal = typeof x === "boolean" ? { type: "boolean", value: x } : typeof x === "number" ? { type: "number", value: x } : v.type.kind === "date" ? { type: "date", value: x } : { type: "string", value: x };
     return okv({ kind: "literal", literal: lit });
   };

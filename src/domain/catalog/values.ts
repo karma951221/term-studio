@@ -9,8 +9,8 @@
  *   세지 않고(`countedSlotsOf`), 직접 읽으면 자리 없음. 값 행이 하나라도 있으면 나머지 필드는 보통 자리다.
  * - **선택 필드(`MasterField.optional`)** — 값이 없으면 `missingSlots` 가 세지 않는다. 식이 읽는 뜻은 그대로(미입력)다.
  */
-import { fieldsOfLevel, findMasterField, formsOfLevel, isFieldShown, masterPath, type MasterForm, type MasterTree } from "../master";
-import type { AttachLevel, Coordinate, FieldType, Issue, TableColumn, Value, ValueSlot } from "../types";
+import { fieldsOfLevel, findMasterField, formsOfLevel, isFieldShown, isMasterOwnedPath, MASTER, masterPath, type MasterForm, type MasterTree } from "../master";
+import { isFixedGrid, type AttachLevel, type Coordinate, type FieldType, type Issue, type TableColumn, type Value, type ValueSlot } from "../types";
 import type { EnumDef, EnumLookup, SlotPath } from "./types";
 
 // ───────────────────────────── 값 검증 ─────────────────────────────
@@ -101,31 +101,56 @@ export function validateValue(
         for (const col of type.columns) {
           keys.delete(col.key);
           const cell = (row as Record<string, unknown>)[col.key];
-          const bad = cellIssue(col, cell);
-          if (bad) issues.push(mismatch(`${i + 1}행 ${col.label}: ${bad}`, at));
+          const bad = cellIssue(col, cell, enums);
+          if (bad) issues.push((bad.kind === "brokenRef" ? broken : mismatch)(`${i + 1}행 ${col.label}: ${bad.message}`, at));
         }
         for (const extra of keys) issues.push(mismatch(`${i + 1}행: 정의에 없는 열 ${extra}`, at));
+      });
+      return issues;
+    }
+    case "grid": {
+      // 모양만 — 글자 열 · 행 · 가입금액별 정액의 뜻(공란 거부 · 열 수 맞춤)은 `validateSlotValue`(coverage/traits.ts `checkFixedGrid`) 가 본다
+      if (!isFixedGrid(value)) return [mismatch("정액표는 { columns, rows } 격자여야 합니다", at)];
+      if (!value.columns.every((c) => typeof c === "string")) return [mismatch("정액표의 글자 열 머리는 문자열이어야 합니다", at)];
+      const issues: Issue[] = [];
+      value.rows.forEach((row, i) => {
+        if (typeof row !== "object" || row === null || !Array.isArray(row.cells) || !row.cells.every((c) => typeof c === "string")) {
+          issues.push(mismatch(`${i + 1}행: 글자 칸은 문자열 배열이어야 합니다`, at));
+          return;
+        }
+        if (typeof row.amounts !== "object" || row.amounts === null || Array.isArray(row.amounts) || !Object.values(row.amounts).every((v) => typeof v === "number" && Number.isFinite(v))) {
+          issues.push(mismatch(`${i + 1}행: 가입금액별 정액은 금액 → 숫자여야 합니다`, at));
+        }
       });
       return issues;
     }
   }
 }
 
-/** 열 하나의 값 검사 — 통과면 undefined, 아니면 이유. */
-function cellIssue(col: TableColumn, cell: unknown): string | undefined {
+type CellIssue = { kind: "typeMismatch" | "brokenRef"; message: string };
+const cellMismatch = (message: string): CellIssue => ({ kind: "typeMismatch", message });
+
+/** 열 하나의 값 검사 — 통과면 undefined, 아니면 이유. `enum` 열은 그 열거형의 값 코드 — 없는 열거형 · 없는 값은 brokenRef (enum 필드와 같은 규칙). */
+function cellIssue(col: TableColumn, cell: unknown, enums: EnumLookup): CellIssue | undefined {
   switch (col.type) {
     case "string":
-      return typeof cell === "string" ? undefined : "문자열이어야 합니다";
+      return typeof cell === "string" ? undefined : cellMismatch("문자열이어야 합니다");
     case "boolean":
-      return typeof cell === "boolean" ? undefined : "참/거짓이어야 합니다";
+      return typeof cell === "boolean" ? undefined : cellMismatch("참/거짓이어야 합니다");
     case "number":
-      return typeof cell === "number" && Number.isFinite(cell) ? undefined : "숫자여야 합니다";
+      return typeof cell === "number" && Number.isFinite(cell) ? undefined : cellMismatch("숫자여야 합니다");
     case "percent":
-      if (typeof cell !== "number" || !Number.isInteger(cell)) return "0~100 정수여야 합니다";
-      return cell >= 0 && cell <= 100 ? undefined : "0~100 정수여야 합니다";
+      if (typeof cell !== "number" || !Number.isInteger(cell)) return cellMismatch("0~100 정수여야 합니다");
+      return cell >= 0 && cell <= 100 ? undefined : cellMismatch("0~100 정수여야 합니다");
     case "period":
-      if (typeof cell !== "number" || !Number.isInteger(cell)) return "개월 수는 정수여야 합니다";
-      return cell >= 0 ? undefined : "개월 수는 0 이상이어야 합니다";
+      if (typeof cell !== "number" || !Number.isInteger(cell)) return cellMismatch("개월 수는 정수여야 합니다");
+      return cell >= 0 ? undefined : cellMismatch("개월 수는 0 이상이어야 합니다");
+    case "enum": {
+      const def = col.enumCode ? enums(col.enumCode) : undefined;
+      if (!def) return { kind: "brokenRef", message: `enum ${col.enumCode ?? "(없음)"} 이(가) 없습니다` };
+      if (typeof cell !== "string") return cellMismatch("enum 값 코드여야 합니다");
+      return def.values.some((v) => v.code === cell) ? undefined : { kind: "brokenRef", message: missingValueMessage(def, [cell]) };
+    }
   }
 }
 
@@ -158,6 +183,21 @@ export function prefill(level: AttachLevel, master?: MasterTree): Record<SlotPat
 
 /** 저장소 조회 — 자리를 모르면 undefined (= 미입력). */
 export type SlotReader = (path: SlotPath) => ValueSlot | undefined;
+
+/**
+ * 스냅샷 노드가 읽는 값 — 상품 소유 자리는 스냅샷 값, 마스터 소유 자리는 지금 마스터 값 (ADR-0097 · 기능/상품 §3.4).
+ * 스냅샷에 남은 마스터 소유 값 행(옛 복사본)은 버린다 — 주인이 하나다. `masterSlots` 가 없으면(마스터 노드가 없음) 상품 소유 값만.
+ */
+export function mergeMasterOwned(level: AttachLevel, snapshot: ReadonlyMap<SlotPath, ValueSlot>, masterSlots: ReadonlyMap<SlotPath, ValueSlot> | undefined, master: MasterTree = MASTER): Map<SlotPath, ValueSlot> {
+  const out = new Map<SlotPath, ValueSlot>();
+  for (const [path, slot] of snapshot) if (!isMasterOwnedPath(path, master)) out.set(path, slot);
+  for (const ref of fieldsOfLevel(level, master)) {
+    if (ref.form.owner !== "master") continue;
+    const slot = masterSlots?.get(ref.path);
+    if (slot?.entered) out.set(ref.path, slot);
+  }
+  return out;
+}
 
 /** 여는 폼이 열려 있는가 — 그 폼의 필드 중 하나라도 입력됨. */
 export function isFormOpened(form: MasterForm, read: SlotReader): boolean {

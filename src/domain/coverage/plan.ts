@@ -110,7 +110,8 @@ export const STRUCTURE_ROOT_KEY = "coverage";
  */
 export function structureIssues(draft: readonly StructureDraftSub[]): StructureIssue[] {
   const issues: StructureIssue[] = [];
-  const check = (rows: readonly { key: string; name: string }[], what: string) => {
+  // 급부명은 선택 값 — 비워도 되고(읽을 때 세부보장명), 형제 유일은 적힌 이름끼리만 (기능/담보 §3.1, 2026-10-31)
+  const check = (rows: readonly { key: string; name: string }[], what: string, optional = false) => {
     const counts = new Map<string, number>();
     for (const row of rows) {
       const name = row.name.trim();
@@ -118,15 +119,16 @@ export function structureIssues(draft: readonly StructureDraftSub[]): StructureI
     }
     for (const row of rows) {
       const name = row.name.trim();
-      if (!name) issues.push({ key: row.key, message: `${what}을(를) 비울 수 없습니다.` });
-      else if ((counts.get(name) ?? 0) > 1) issues.push({ key: row.key, message: `형제와 ${what}이(가) 겹칩니다.` });
+      if (!name) {
+        if (!optional) issues.push({ key: row.key, message: `${what}을(를) 비울 수 없습니다.` });
+      } else if ((counts.get(name) ?? 0) > 1) issues.push({ key: row.key, message: `형제와 ${what}이(가) 겹칩니다.` });
     }
   };
   if (draft.length === 0) issues.push({ key: STRUCTURE_ROOT_KEY, message: "세부보장이 하나는 있어야 합니다 (최소 구조)." });
   check(draft, "세부보장명");
   for (const sub of draft) {
     if (sub.benefits.length === 0) issues.push({ key: sub.key, message: "급부가 하나는 있어야 합니다 (최소 구조)." });
-    check(sub.benefits, "급부명");
+    check(sub.benefits, "급부명", true);
   }
   return issues;
 }
@@ -229,9 +231,18 @@ export function hasStructuralChange(plan: StructurePlan): boolean {
   return plan.newSubCoverages.length > 0 || plan.newBenefits.length > 0 || plan.removes.length > 0 || plan.reorders.length > 0;
 }
 
-/** 순서 항목 → id. 새 노드는 형제 중 이름으로 (형제 중복은 도메인이 막아 유일하다). */
+/**
+ * 순서 항목 → id. 새 노드는 형제 중 이름으로 — 같은 이름(빈 급부명 포함)의 새 노드가 여럿이면 아직 쓰지 않은 것을 초안 순서대로 하나씩 잇는다
+ * (새 노드는 만든 순서로 뒤에 붙으므로 초안 순서와 같다).
+ */
 export function resolveOrder(siblings: readonly { id: Id; name: string }[], order: readonly StructureOrderRef[]): Id[] | undefined {
-  const ids = order.map((ref) => ref.id ?? siblings.find((s) => s.name === ref.name)?.id);
+  const used = new Set<Id>(order.flatMap((ref) => (ref.id ? [ref.id] : [])));
+  const ids = order.map((ref) => {
+    if (ref.id) return ref.id;
+    const hit = siblings.find((s) => s.name === ref.name && !used.has(s.id));
+    if (hit) used.add(hit.id);
+    return hit?.id;
+  });
   return ids.every((v): v is Id => v !== undefined) ? ids : undefined;
 }
 

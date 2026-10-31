@@ -6,11 +6,13 @@
  *                    마지막 「〔기준일〕부터 {경계}경과시점 이후」 · 단일 「지급금액」 · 셀 「〔세부보장 수 ≥ 2 이면 「해당보장의 」〕보험가입금액의 {비율}%」.
  * - A′ (주요치료비) : A + 글 인자 `단서` — 첫 · 마지막 열 끝에 ` {arg.단서}`.
  * - R  ((갱신) 표)  : 첫 · 가운데 · 마지막을 비운 단일형 · 단일 「지급금액」 · 셀은 A 와 같다.
+ * - F  (정액 표)    : 정액형(§3.7, 통합치료비) — 머리글은 A 와 같고(인자 `갱신형`), 셀 「{금액}」 · 캡션 「<보험가입금액 {가입금액}>」 · 급부 머리글 「{번호}. {급부명}」.
+ * - FR ((갱신) 정액 표): F 의 단일형 — 첫 · 가운데 · 마지막을 비우고 인자 없음.
  *
  * 노드 id 는 고정이라 시드 · 테스트가 같은 정의를 본다. 테스트 전용이 아니다 — 시드(뒷 단계)가 그대로 쓴다.
  */
 import type { Inline } from "../clause/nodes";
-import { DEFAULT_ROW_HEADER, DYN_TABLE_SLOTS, type NewDynTable } from "./types";
+import { DEFAULT_ROW_HEADER, DYN_TABLE_SLOTS, defaultAmountCellTemplate, defaultBenefitHeaderTemplate, defaultCaptionTemplate, type NewDynTable } from "./types";
 
 /** 「해당보장의」 조건식 — 그 담보의 세부보장 수 ≥ 2 (기능/동적표 §3.3; 조립이 담보 문맥에서 평가한다). */
 export const SUB_COVERAGE_COUNT_COND = "count(builtin.subCoverage.name) >= 2";
@@ -99,5 +101,29 @@ export function dynTableFixtureR(): NewDynTable {
     rowHeader: DEFAULT_ROW_HEADER,
     headers: { first: [], middle: [], last: [], single: singleHeader() },
     cell: cellTemplate(),
+  };
+}
+
+/** 정의 F — 정액 지급금액 표(통합치료비): 머리글 · 인자는 A 와 같고, 셀 「{금액}」 · 캡션 · 급부 머리글 (§3.7). */
+export function dynTableFixtureF(): NewDynTable {
+  return {
+    label: "정액 지급금액 표",
+    params: [{ name: "갱신형", type: { kind: "boolean" } }],
+    rowHeader: DEFAULT_ROW_HEADER,
+    headers: { first: firstHeader(), middle: middleHeader(), last: lastHeader(), single: singleHeader() },
+    cell: defaultAmountCellTemplate(),
+    fixed: { caption: defaultCaptionTemplate(), benefitHeader: defaultBenefitHeaderTemplate() },
+  };
+}
+
+/** 정의 FR — (갱신) 정액 지급금액 표: F 의 단일형(첫 · 가운데 · 마지막 비움 · 인자 없음). 문면의 갱신형 조건 블록에 넣는다 (§3.7). */
+export function dynTableFixtureFR(): NewDynTable {
+  return {
+    label: "(갱신) 정액 지급금액 표",
+    params: [],
+    rowHeader: DEFAULT_ROW_HEADER,
+    headers: { first: [], middle: [], last: [], single: singleHeader() },
+    cell: defaultAmountCellTemplate(),
+    fixed: { caption: defaultCaptionTemplate(), benefitHeader: defaultBenefitHeaderTemplate() },
   };
 }

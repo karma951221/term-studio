@@ -19,6 +19,7 @@ import {
   reorderBenefits,
   reorderSubCoverages,
 } from "./tree";
+import { benefitDisplayName } from "./tree";
 import type { Coverage } from "./types";
 
 /** 테스트용 id 발급 — 순번 문자열. */
@@ -351,5 +352,40 @@ describe("노드 키 — 편집이 매긴다 (ADR-0087 결정 2)", () => {
   it("nodesOf 는 세부보장 · 급부에 키 경로를 싣는다", () => {
     const t = base();
     expect(nodesOf(t).map((n) => n.keyPath)).toEqual([undefined, "01", "01.1"]);
+  });
+});
+
+describe("급부명은 선택 — 비면 세부보장명으로 읽는다 (기능/담보 §3.1, 2026-10-31)", () => {
+  it("빈 급부명으로 추가 · 개명할 수 있고 저장 이름은 빈 글자다 — 세부보장명 · 담보명은 그대로 필수", () => {
+    const newId = ids();
+    let tree = unwrap(createCoverageTree({ name: "암진단비", subCoverageName: "암진단", benefitName: "" }, newId, []));
+    expect(tree.subCoverages[0].benefits[0].name).toBe("");
+    tree = unwrap(addBenefit(tree, tree.subCoverages[0].id, "  ", newId));
+    expect(tree.subCoverages[0].benefits.map((b) => b.name)).toEqual(["", ""]);
+    tree = unwrap(renameBenefit(tree, tree.subCoverages[0].id, tree.subCoverages[0].benefits[0].id, "유사암진단급부"));
+    tree = unwrap(renameBenefit(tree, tree.subCoverages[0].id, tree.subCoverages[0].benefits[0].id, ""));
+    expect(tree.subCoverages[0].benefits[0].name).toBe("");
+    expect(rejection(addSubCoverage(tree, { name: " " }, newId)).reason).toBe("invalid");
+    expect(rejection(renameSubCoverage(tree, tree.subCoverages[0].id, "")).reason).toBe("invalid");
+  });
+
+  it("형제 유일 검사는 적힌 급부명끼리만 — 빈 급부명 둘은 중복이 아니다", () => {
+    const newId = ids();
+    let tree = unwrap(createCoverageTree({ name: "암진단비", subCoverageName: "암진단", benefitName: "" }, newId, []));
+    tree = unwrap(addBenefit(tree, tree.subCoverages[0].id, "", newId));
+    tree = unwrap(addBenefit(tree, tree.subCoverages[0].id, "소액암", newId));
+    expect(rejection(addBenefit(tree, tree.subCoverages[0].id, "소액암", newId)).reason).toBe("duplicate");
+  });
+
+  it("읽을 때는 세부보장명 — benefitDisplayName · nodesOf 의 이름이 세부보장명을 따라간다(복사가 아니라 읽을 때 대신)", () => {
+    const newId = ids();
+    let tree = unwrap(createCoverageTree({ name: "암진단비", subCoverageName: "암진단", benefitName: "" }, newId, []));
+    const sub = tree.subCoverages[0];
+    expect(benefitDisplayName(sub.benefits[0], sub)).toBe("암진단");
+    expect(benefitDisplayName({ ...sub.benefits[0], name: "  유사암 " }, sub)).toBe("유사암");
+    expect(nodesOf(tree).find((n) => n.level === "benefit")?.name).toBe("암진단");
+    tree = unwrap(renameSubCoverage(tree, sub.id, "암(유사암제외)진단"));
+    expect(nodesOf(tree).find((n) => n.level === "benefit")?.name).toBe("암(유사암제외)진단");
+    expect(nodeName(tree, { level: "benefit", id: sub.benefits[0].id })).toBe("암진단비 > 암(유사암제외)진단 > 암(유사암제외)진단");
   });
 });

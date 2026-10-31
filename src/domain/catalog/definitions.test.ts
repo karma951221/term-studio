@@ -510,8 +510,12 @@ describe("enumRemovalBlock — 열거형변수 정의 삭제를 막는 곳 (ADR-
     expect(enumRemovalBlock("E0008")).toBeUndefined();
   });
 
+  it("감액기간(E0010)은 감액 구간표의 enum 열이 코드로 가리키므로 거부 (2026-10-31)", () => {
+    expect(enumRemovalBlock("E0010")).toMatch(/급부 · 감액 › 구간/);
+  });
+
   it("그 밖(구분자 결과 타입 · 함수조항 인자 타입이 쓰는 열거형 포함)은 지울 수 있다 — 남은 참조는 깨진 참조로 드러난다", () => {
-    expect(enumRemovalBlock("E0010")).toBeUndefined();
+    expect(enumRemovalBlock("E0011")).toBeUndefined();
     expect(enumRemovalBlock("E0123")).toBeUndefined();
   });
 });

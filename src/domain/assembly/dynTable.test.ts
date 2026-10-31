@@ -4,7 +4,8 @@ import type { Bindings } from "../clause/params";
 import type { DocumentNode } from "../document/nodes";
 import { nodeBuilders, sequentialIds } from "../document/builders";
 import { titleNodes } from "../document/title";
-import { dynTableFixtureA, type DynTable } from "../dyntable";
+import { reductionPeriodEnumSeed } from "../coverage/traits";
+import { dynTableFixtureA, dynTableFixtureF, type DynTable } from "../dyntable";
 import { findForm } from "../master";
 import type { Id } from "../types";
 import { assembleSpecial } from "./booklet";
@@ -21,13 +22,16 @@ import type { AssemblyInput, RenderedArticle, RenderedStatic } from "./types";
 const TABLE_CODE = "DT000001";
 const tableA: DynTable = { id: "dt-a", code: TABLE_CODE, ...dynTableFixtureA() };
 
-const master = [...alphaMaster, findForm("reduction")!];
+const master = [...alphaMaster, findForm("reduction")!, findForm("insured_amount")!, findForm("fixed_table")!];
+const FIXED_CODE = "DT000003";
+const tableF: DynTable = { id: "dt-f", code: FIXED_CODE, ...dynTableFixtureF() };
 
-type Benefit = { id: Id; name: string; payRate?: number; reduction?: { periods: { end: number; rate: number }[]; afterRate?: number } };
+/** 감액 구간의 `end` 는 「감액기간」 값 코드 (V03 = 1년). `fixedGrid` 는 급부 정액표(마스터 소유 — 조립 입력엔 이미 섞여 온다). */
+type Benefit = { id: Id; name: string; payRate?: number; reduction?: { periods: { end: string; rate: number }[]; afterRate?: number }; fixedGrid?: { columns: string[]; rows: { cells: string[]; amounts: Record<string, number> }[] } };
 type Sub = { id: Id; name: string; benefits: Benefit[] };
 
-function spec(subs: Sub[], renewal = false): CoverageSpec {
-  const values: CoverageSpec["values"] = { "pc-dyn": { "coverage_basic.renewal": renewal } };
+function spec(subs: Sub[], renewal = false, insuredAmounts?: number[]): CoverageSpec {
+  const values: CoverageSpec["values"] = { "pc-dyn": { "coverage_basic.renewal": renewal, ...(insuredAmounts ? { "insured_amount.amounts": insuredAmounts.map((amount) => ({ amount })) } : {}) } as CoverageSpec["values"][string] };
   for (const s of subs) {
     for (const b of s.benefits) {
       const v: Record<string, unknown> = {};
@@ -36,6 +40,7 @@ function spec(subs: Sub[], renewal = false): CoverageSpec {
         v["reduction.periods"] = b.reduction.periods;
         if (b.reduction.afterRate !== undefined) v["reduction.after_rate"] = b.reduction.afterRate;
       }
+      if (b.fixedGrid) v["fixed_table.grid"] = b.fixedGrid;
       values[b.id] = v as CoverageSpec["values"][string];
     }
   }
@@ -60,15 +65,21 @@ function document(tableCode = TABLE_CODE, bindings: Bindings = { 갱신형: { ki
   };
 }
 
-function input(subs: Sub[], opts: { renewal?: boolean; doc?: DocumentNode; tables?: DynTable[] } = {}): AssemblyInput {
+function input(subs: Sub[], opts: { renewal?: boolean; doc?: DocumentNode; tables?: DynTable[]; insuredAmounts?: number[] } = {}): AssemblyInput {
   const base = alphaPlusFixture();
   return {
     ...base,
     master,
-    coverages: [...base.coverages, coverageEntry(spec(subs, opts.renewal))],
+    coverages: [...base.coverages, coverageEntry(spec(subs, opts.renewal, opts.insuredAmounts))],
     specialDocuments: new Map([...base.specialDocuments, ["cov-dyn", opts.doc ?? document()]]),
-    dynTables: opts.tables ?? [tableA],
+    enums: [...base.enums, reductionPeriodEnumSeed()],
+    dynTables: opts.tables ?? [tableA, tableF],
   };
+}
+
+function tablesOf(doc: { children: unknown[] }): RenderedStatic[] {
+  const art = doc.children.find((c) => (c as RenderedArticle).kind === "article" && (c as RenderedArticle).id === "dyn-art") as RenderedArticle | undefined;
+  return (art?.children.filter((c) => c.kind === "table") ?? []) as RenderedStatic[];
 }
 
 function tableOf(doc: { children: unknown[] }): RenderedStatic | undefined {
@@ -86,10 +97,10 @@ function rowsOf(inp: AssemblyInput): { rows: string[][]; issues: { kind: string;
   return { rows: t.rows.map((row) => row.cells.map(cellText)), issues: r.value.issues, complete: r.value.complete };
 }
 
-const 후유장해 = (id: Id, reduction = true): Sub => ({ id, name: "질병후유장해", benefits: [{ id: `${id}-b`, name: "질병80%이상후유장해", payRate: 100, ...(reduction ? { reduction: { periods: [{ end: 12, rate: 50 }] } } : {}) }] });
+const 후유장해 = (id: Id, reduction = true): Sub => ({ id, name: "질병후유장해", benefits: [{ id: `${id}-b`, name: "질병80%이상후유장해", payRate: 100, ...(reduction ? { reduction: { periods: [{ end: "V03", rate: 50 }] } } : {}) }] });
 
 describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
-  it("(a) 인수 케이스 1 — 세부보장 1 · 급부 1 · 감액 12개월 50% → 열 둘 · 셀 50% / 100%", () => {
+  it("(a) 인수 케이스 1 — 세부보장 1 · 급부 1 · 감액 1년(V03) 50% → 열 둘 · 셀 50% / 100%", () => {
     const r = rowsOf(input([후유장해("s1")]));
     expect(r.rows).toEqual([
       ["구 분", "계약일부터 1년경과시점 전일 이전", "계약일부터 1년경과시점 이후"],
@@ -100,7 +111,7 @@ describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
   });
 
   it("(b) 인수 케이스 4 — 세부보장 넷(급부 하나씩) → 셀에 「해당보장의 」, 머리글은 그대로", () => {
-    const subs: Sub[] = ["s1", "s2", "s3", "s4"].map((id, i) => ({ id, name: `세부${i + 1}`, benefits: [{ id: `${id}-b`, name: `급부${i + 1}`, payRate: 100, reduction: { periods: [{ end: 12, rate: 50 }] } }] }));
+    const subs: Sub[] = ["s1", "s2", "s3", "s4"].map((id, i) => ({ id, name: `세부${i + 1}`, benefits: [{ id: `${id}-b`, name: `급부${i + 1}`, payRate: 100, reduction: { periods: [{ end: "V03", rate: 50 }] } }] }));
     const r = rowsOf(input(subs));
     expect(r.rows[0]).toEqual(["구 분", "계약일부터 1년경과시점 전일 이전", "계약일부터 1년경과시점 이후"]);
     expect(r.rows.slice(1)).toEqual([1, 2, 3, 4].map((i) => [`급부${i}`, "해당보장의 보험가입금액의 50%", "해당보장의 보험가입금액의 100%"]));
@@ -113,8 +124,8 @@ describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
 
   it("(d) 같은 급부명 · 비율 다름 → 따로 찍고 경고 dynTableMergeConflict, 완성본은 깨지지 않는다", () => {
     const subs: Sub[] = [
-      { id: "s1", name: "1종수술", benefits: [{ id: "s1-b", name: "수술보험금", payRate: 100, reduction: { periods: [{ end: 12, rate: 50 }] } }] },
-      { id: "s2", name: "2종수술", benefits: [{ id: "s2-b", name: "수술보험금", payRate: 50, reduction: { periods: [{ end: 12, rate: 50 }] } }] },
+      { id: "s1", name: "1종수술", benefits: [{ id: "s1-b", name: "수술보험금", payRate: 100, reduction: { periods: [{ end: "V03", rate: 50 }] } }] },
+      { id: "s2", name: "2종수술", benefits: [{ id: "s2-b", name: "수술보험금", payRate: 50, reduction: { periods: [{ end: "V03", rate: 50 }] } }] },
     ];
     const r = rowsOf(input(subs));
     expect(r.rows).toHaveLength(3);
@@ -142,6 +153,61 @@ describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
     const issue = r.value.issues.find((i) => i.kind === "brokenRef");
     expect(issue?.message).toBe("동적표 DT999999 이(가) 없습니다");
     expect(issue?.at.nodePath).toContain("dyn-ref");
+    expect(r.value.complete).toBe(false);
+  });
+
+  it("(h) 급부명이 비면 행 머리는 세부보장명 — 식의 builtin.benefit.name 도 같다 (기능/담보 §3.1 · 기능/동적표 §3.2, 2026-10-31)", () => {
+    const subs: Sub[] = [{ id: "s1", name: "질병후유장해", benefits: [{ id: "s1-b", name: "", payRate: 100, reduction: { periods: [{ end: "V03", rate: 50 }] } }] }];
+    const r = rowsOf(input(subs));
+    expect(r.rows[1]).toEqual(["질병후유장해", "보험가입금액의 50%", "보험가입금액의 100%"]);
+    expect(r.complete).toBe(true);
+  });
+
+  it("(i) 정액형 표 — 급부 정액표(마스터 소유) · 상품담보 운영 가입금액으로 급부 머리글 · 캡션 · 표 블록 여럿을 낸다 (기능/동적표 §3.7)", () => {
+    const subs: Sub[] = [
+      {
+        id: "s1",
+        name: "통합치료비",
+        benefits: [
+          { id: "s1-a", name: "상해로 인한 경우", payRate: 100, fixedGrid: { columns: ["분류", "치료항목"], rows: [{ cells: ["상해", "입원"], amounts: { "30000000": 50_000, "50000000": 80_000 } }] } },
+          { id: "s1-b", name: "상해 이외의 사유로 인한 경우", payRate: 100, reduction: { periods: [{ end: "V03", rate: 50 }] }, fixedGrid: { columns: ["분류", "치료항목"], rows: [{ cells: ["질병", "입원"], amounts: { "30000000": 50_000, "50000000": 80_000 } }, { cells: ["질병", "통원"], amounts: { "30000000": 25_000, "50000000": 40_000 } }] } },
+        ],
+      },
+    ];
+    const inp = input(subs, { doc: document(FIXED_CODE), insuredAmounts: [50_000_000, 30_000_000] });
+    const r = assembleSpecial(inp, inp, "pc-dyn");
+    if (!r.ok) throw new Error(JSON.stringify(r.rejection));
+    const tables = tablesOf(r.value.doc).filter((t): t is Extract<RenderedStatic, { kind: "table" }> => t.kind === "table");
+    expect(r.value.issues.filter((i) => i.message.includes("동적표"))).toEqual([]);
+    expect(r.value.complete).toBe(true);
+    expect(tables).toHaveLength(4);
+    const text = (cell: { kind: string; text?: string }[] | undefined) => (cell ?? []).map((n) => (n.kind === "text" ? n.text : `<${n.kind}>`)).join("");
+    expect(tables.map((t) => [text(t.heading), text(t.caption)])).toEqual([
+      ["1. 상해로 인한 경우", "<보험가입금액 3,000만원>"],
+      ["", "<보험가입금액 5,000만원>"],
+      ["2. 상해 이외의 사유로 인한 경우", "<보험가입금액 3,000만원>"],
+      ["", "<보험가입금액 5,000만원>"],
+    ]);
+    expect(tables[0].rows.map((row) => row.cells.map(cellText))).toEqual([
+      ["분류", "치료항목", "지급금액"],
+      ["상해", "입원", "5만원"],
+    ]);
+    expect(tables[2].rows.map((row) => row.cells.map(cellText))).toEqual([
+      ["분류", "치료항목", "계약일부터 1년경과시점 전일 이전", "계약일부터 1년경과시점 이후"],
+      ["질병", "입원", "2만 5천원", "5만원"],
+      ["질병", "통원", "12,500원", "2만 5천원"],
+    ]);
+    expect(tables[2].rows[1].spans).toEqual([2, 1, 1, 1]);
+    expect(tables[2].rows[0].header).toBe(true);
+  });
+
+  it("(j) 정액형 표 — 운영 가입금액이 없으면 표 대신 오류 마커(notEntered)", () => {
+    const subs: Sub[] = [{ id: "s1", name: "통합치료비", benefits: [{ id: "s1-a", name: "상해", payRate: 100, fixedGrid: { columns: ["분류"], rows: [{ cells: ["상해"], amounts: { "30000000": 50_000 } }] } }] }];
+    const inp = input(subs, { doc: document(FIXED_CODE) });
+    const r = assembleSpecial(inp, inp, "pc-dyn");
+    if (!r.ok) throw new Error(JSON.stringify(r.rejection));
+    expect(tablesOf(r.value.doc)).toHaveLength(0);
+    expect(r.value.issues.find((i) => i.kind === "notEntered")?.message).toContain("가입금액");
     expect(r.value.complete).toBe(false);
   });
 

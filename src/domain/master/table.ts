@@ -3,9 +3,11 @@
  *
  * - period: 사람은 `3M` / `1Y` / `1Y6M` / `12` 로 적고 저장은 개월 정수, 표시는 `n년 n개월`.
  * - percent: `50%` / `50` → 0~100 정수. 소수 · 범위 밖은 해석 실패 (기능/담보 §3.4 정수 규칙).
+ * - enum: 셀 원문은 값 코드(`V03` — 입력 칸은 열거값 고르기). 붙여넣기의 표시 글자(「1년」)도 그 열거형에서 코드로 푼다 (감액기간, 2026-10-31).
  * - 초안(`TableDraft`)은 머리글을 뺀 셀 원문 2차원 배열 — 폼 편집 상태가 든다.
  * - 붙여넣기: 줄 = 행, 탭 = 열. 첫 행이 열 라벨과 같으면 머리글로 보고 버린다.
  */
+import type { EnumDef, EnumLookup } from "../catalog/types";
 import type { Issue, ScalarValue, TableColumn, TableColumnType, TableRow } from "../types";
 
 const PERIOD_RE = /^(?:(\d+)\s*[yY])?\s*(?:(\d+)\s*[mM])?$/;
@@ -41,9 +43,24 @@ export function parsePercent(text: string): number | undefined {
   return n >= 0 && n <= 100 ? n : undefined;
 }
 
-export function parseCell(type: TableColumnType, text: string): ScalarValue | undefined {
+const VALUE_CODE_RE = /^V\d{2,}$/;
+
+/**
+ * enum 셀 — 코드가 맞으면 코드, 표시 글자가 맞으면 그 코드. 값 코드 모양(`V09`)은 열거형에 없어도 그대로 둔다 —
+ * 지워진 값이 저장돼 있던 자리라 저장 검사가 brokenRef 「없는 값」으로 드러낸다(해석 실패로 삼키지 않는다). 열거형을 모르면 비지 않은 글자를 코드로 본다.
+ */
+function parseEnumCell(s: string, def: EnumDef | undefined): string | undefined {
+  if (s === "") return undefined;
+  if (!def) return s;
+  const hit = def.values.find((v) => v.code === s) ?? def.values.find((v) => v.label === s);
+  return hit?.code ?? (VALUE_CODE_RE.test(s) ? s : undefined);
+}
+
+export function parseCell(type: TableColumnType, text: string, enumDef?: EnumDef): ScalarValue | undefined {
   const s = text.trim();
   switch (type) {
+    case "enum":
+      return parseEnumCell(s, enumDef);
     case "string":
       return s;
     case "number": {
@@ -80,6 +97,7 @@ export function parseTableDraft(
   columns: readonly TableColumn[],
   draft: TableDraft,
   at: Issue["at"] = {},
+  enums: EnumLookup = () => undefined,
 ): { value: TableRow[] } | { issue: Issue } {
   const rows: TableRow[] = [];
   if (draft.length === 0) return { issue: { kind: "typeMismatch", message: "표에 행이 하나 이상 있어야 합니다", at } };
@@ -89,7 +107,7 @@ export function parseTableDraft(
     for (let c = 0; c < columns.length; c += 1) {
       const col = columns[c];
       const text = cells[c] ?? "";
-      const v = parseCell(col.type, text);
+      const v = parseCell(col.type, text, col.type === "enum" && col.enumCode ? enums(col.enumCode) : undefined);
       if (v === undefined) {
         return { issue: { kind: "typeMismatch", message: `${i + 1}행 ${col.label}: '${text}' 를 해석할 수 없습니다`, at } };
       }

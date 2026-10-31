@@ -20,7 +20,8 @@ import { isParticlePreset, PARTICLE_PRESET_MESSAGE } from "../document/particles
 import { extractRefs, parse, refPath, type Expr } from "../expression";
 import type { Coordinate, Id, Issue } from "../types";
 import { tableShapeIssues } from "./shape";
-import { DYN_TABLE_ALLOWED_SLOTS, DYN_TABLE_SLOT_LABEL, isDynTableSlotRef, type DynTable, type DynTableTemplateKey, type NewDynTable } from "./types";
+import { allowedCellSlots, DYN_TABLE_ALLOWED_SLOTS, DYN_TABLE_SLOT_LABEL, isDynTableSlotRef, type DynTable, type DynTableTemplateKey, type NewDynTable } from "./types";
+import { isBlankTemplate } from "./shape";
 
 export const DYN_TABLE_READS_MESSAGE = "동적표 템플릿은 인자와 표 슬롯만 읽는다";
 
@@ -42,8 +43,9 @@ export function checkDynTable(def: NewDynTable | DynTable, env: BindingEnv = {},
   // 3. 템플릿
   const seen = new Set<Id>();
   const checkTemplate = (key: DynTableTemplateKey, inlines: readonly Inline[] | undefined) => {
-    const where = key === "cell" ? "cell" : `headers.${key}`;
-    const allowed = DYN_TABLE_ALLOWED_SLOTS[key];
+    const where = key === "cell" ? "cell" : key === "caption" || key === "benefitHeader" ? `fixed.${key}` : `headers.${key}`;
+    // 셀은 정의 종류별 — 감액 표 {비율} · 정액형 {금액} (§3.7)
+    const allowed = key === "cell" ? allowedCellSlots(def) : DYN_TABLE_ALLOWED_SLOTS[key];
     const here = (message: string, kind: Issue["kind"], path: Id[], refPathOverride?: string) => report(kind, message, refPathOverride ?? where, path);
 
     /** 식 하나 — 문법 · 읽는 참조(인자 선언 · 허용 종류). 파싱 결과를 돌려준다(값별 분기 대상 검사용). */
@@ -132,6 +134,11 @@ export function checkDynTable(def: NewDynTable | DynTable, env: BindingEnv = {},
   checkTemplate("last", def.headers?.last);
   checkTemplate("single", def.headers?.single);
   checkTemplate("cell", def.cell);
+  if (def.fixed) {
+    checkTemplate("caption", def.fixed.caption);
+    checkTemplate("benefitHeader", def.fixed.benefitHeader);
+    if (isBlankTemplate(def.fixed.caption)) report("structure", "캡션 템플릿이 비어 있습니다 — 가입금액마다 표 위에 찍는 글(기본 「<보험가입금액 {가입금액}>」)", "fixed.caption");
+  }
 
   // 4. 표 모양 — 머리글 구조가 정한다
   if (def.headers) for (const i of tableShapeIssues(def.headers)) issues.push({ ...i, at: { ...at, ...i.at } });

@@ -72,3 +72,26 @@ describe("pasteToDraft — 엑셀 붙여넣기 (기능/담보 §3.4)", () => {
     expect(pasteToDraft(구간, "1Y\t50%")).toEqual([["1Y", "50%"]]);
   });
 });
+
+describe("enum 열 — 열거값 고르기 (감액기간, 기능/담보 §3.4 · 2026-10-31)", () => {
+  const 감액기간 = { code: "E0010", label: "감액기간", values: [{ code: "V01", label: "90일", order: 0 }, { code: "V03", label: "1년", order: 1 }] };
+  const enums = (code: string) => (code === "E0010" ? 감액기간 : undefined);
+  const 열거구간: TableColumn[] = [
+    { key: "end", label: "기간", type: "enum", enumCode: "E0010" },
+    { key: "rate", label: "지급률", type: "percent" },
+  ];
+  it("셀 원문은 값 코드 — 표시 글자(붙여넣기)로 적어도 코드로 푼다, 모르는 글자는 해석 실패", () => {
+    expect(parseTableDraft(열거구간, [["V03", "50"], ["90일", "10"]], {}, enums)).toEqual({ value: [{ end: "V03", rate: 50 }, { end: "V01", rate: 10 }] });
+    expect(parseTableDraft(열거구간, [["3M", "50"]], {}, enums)).toMatchObject({ issue: { message: expect.stringContaining("1행 기간") } });
+    expect(parseTableDraft(열거구간, [["", "50"]], {}, enums)).toMatchObject({ issue: { message: expect.stringContaining("1행 기간") } });
+  });
+  it("열거형을 모르면 코드 모양만 받는다", () => {
+    expect(parseTableDraft(열거구간, [["V03", "50"]])).toEqual({ value: [{ end: "V03", rate: 50 }] });
+  });
+  it("저장값 → 원문은 코드 그대로", () => {
+    expect(tableRowsToDraft(열거구간, [{ end: "V03", rate: 50 }])).toEqual([["V03", "50"]]);
+  });
+  it("붙여넣기 머리글 판정은 그대로", () => {
+    expect(pasteToDraft(열거구간, "기간\t지급률\n1년\t50%")).toEqual([["1년", "50%"]]);
+  });
+});

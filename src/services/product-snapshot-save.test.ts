@@ -3,6 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { CoverageMasterSource, CoverageTree } from "@/domain/product";
 import type { Actor, Id, Impact, Issue } from "@/domain/types";
 
+import { reductionPeriodEnumSeed } from "@/domain/coverage";
+
+import { insertEnum } from "@/db/repo/catalog";
 import { readSlots, writeSlot } from "@/db/repo/values";
 import { createTestDb, type TestDb } from "@/db/test-utils";
 import { createProductService, type ProductService } from "./product";
@@ -67,6 +70,8 @@ describe("saveSnapshot — 상품담보 값 화면 저장 한 번 (PGlite)", () 
 
   beforeAll(async () => {
     t = await createTestDb();
+    // 감액 구간의 경계는 열거형 「감액기간」(E0010) 값이다 — 시드 그대로 넣는다 (2026-10-31)
+    await insertEnum(t.db, reductionPeriodEnumSeed(), editor.userId);
     // 마스터 — 암진단급부엔 면책 특성(90일 · 신규만), 지급률 100
     await writeSlot(t.db, { kind: "benefit", id: CANCER_BEN }, "exemption.months", 3);
     await writeSlot(t.db, { kind: "benefit", id: CANCER_BEN }, "exemption.new_only", true);
@@ -82,7 +87,7 @@ describe("saveSnapshot — 상품담보 값 화면 저장 한 번 (PGlite)", () 
     unwrap(
       await svc.saveSnapshot(editor, pcId, [
         { owner: { kind: "productBenefit", id: ben }, entries: [{ path: "pay.rate", value: 80 }] },
-        { owner: { kind: "productBenefit", id: ben2 }, entries: [{ path: "reduction.periods", value: [{ end: 12, rate: 50 }] }, { path: "reduction.new_only", value: true }] },
+        { owner: { kind: "productBenefit", id: ben2 }, entries: [{ path: "reduction.periods", value: [{ end: "V03", rate: 50 }] }, { path: "reduction.new_only", value: true }] },
       ]),
     );
     expect((await readSlots(t.db, { kind: "productBenefit", id: ben })).get("pay.rate")).toEqual({ entered: true, value: 80 });
@@ -95,7 +100,7 @@ describe("saveSnapshot — 상품담보 값 화면 저장 한 번 (PGlite)", () 
     const r = rejected(
       await svc.saveSnapshot(editor, pcId, [
         { owner: { kind: "productBenefit", id: ben }, entries: [{ path: "pay.rate", value: 70 }] },
-        { owner: { kind: "productBenefit", id: ben2 }, entries: [{ path: "reduction.periods", value: [{ end: 12, rate: 50 }, { end: 3, rate: 10 }] }] },
+        { owner: { kind: "productBenefit", id: ben2 }, entries: [{ path: "reduction.periods", value: [{ end: "V03", rate: 50 }, { end: "V01", rate: 10 }] }] },
       ]),
     );
     expect(r.reason).toBe("invalid");

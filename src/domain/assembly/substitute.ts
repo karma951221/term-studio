@@ -62,6 +62,7 @@ export function formatValue(value: Value, type: FieldType | undefined, enums: Re
   if (Array.isArray(value)) return { ok: true, text: value.join(", ") };
   if (typeof value === "number") return { ok: true, text: value.toLocaleString("ko-KR") };
   if (typeof value === "boolean") return { ok: true, text: value ? "예" : "아니오" };
+  if (typeof value !== "string") return { ok: true, text: `정액표 ${value.rows.length}행` }; // 격자는 슬롯에 찍을 글이 없다 — 정액형 동적표가 표로 편다
   return { ok: true, text: value };
 }
 
@@ -181,7 +182,13 @@ class Substituter {
   static(n: RStatic<RInline>): RStatic<SInline> {
     if (n.kind === "box") return { ...n, lines: n.lines.map((line) => this.inlines(line)) };
     if (n.kind === "bulletList") return this.bullets(n);
-    return { ...n, rows: n.rows.map((row) => ({ ...row, cells: row.cells.map((cell) => this.inlines(cell)) })) };
+    const { heading, caption, ...rest } = n;
+    return {
+      ...rest,
+      ...(heading ? { heading: this.inlines(heading) } : {}),
+      ...(caption ? { caption: this.inlines(caption) } : {}),
+      rows: n.rows.map((row) => ({ ...row, cells: row.cells.map((cell) => this.inlines(cell)) })),
+    };
   }
 
   paragraph(n: RParagraph<RInline>): RParagraph<SInline> {

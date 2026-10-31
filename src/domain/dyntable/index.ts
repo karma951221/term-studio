@@ -5,6 +5,8 @@
  * - codes.ts      : DT000001 코드 규칙 (formatDynTableCode)
  * - check.ts      : checkDynTable — 저장 검사(인자 표 · 템플릿이 읽는 것 · 표 슬롯 자리 · 값별 분기)
  * - expand.ts     : expandDynTable — 경계 합집합 · 행 묶기 · 셀 계산 · 템플릿 바꿔 쓰기
+ * - expandFixed.ts: expandFixedDynTable — 정액형 표(§3.7): 급부 → 가입금액 → 캡션 + 표(글자 열 + 지급금액 열) · 세로 병합
+ * - amount.ts     : formatWon — 금액 표기(5만원 · 2만 5천원 · 1,000만원)
  * - shape.ts      : tableShape · tableShapeIssues — 표 모양(감액 구간형 / 단일형)은 머리글 구조가 정한다
  * - regions.ts    : 칸의 영역(corner · first · middle · last · single · cell · row) · 자리표시자 노드 — 상세 화면 칸 ↔ 필드
  * - fixture.ts    : 표본 정의 A · A′ · R (인수기준 · 시드)
@@ -13,7 +15,10 @@
  */
 export * from "./check";
 export * from "./codes";
+export * from "./amount";
 export * from "./expand";
+export * from "./expandFixed";
+export * from "./fixedSample";
 export * from "./fixture";
 export * from "./regions";
 export * from "./samples";

@@ -63,8 +63,12 @@ function Static({ node }: { node: RenderedStatic }) {
         }))}
       />
     );
+  const line = (list: RenderedInline[] | undefined) => (list ? list.map((c, j) => <Inline key={j} node={c} />) : undefined);
+  const { heading, caption, ...rest } = node;
   const shape = {
-    ...node,
+    ...rest,
+    ...(heading ? { heading: line(heading) } : {}),
+    ...(caption ? { caption: line(caption) } : {}),
     rows: node.rows.map((row) => ({
       ...row,
       cells: row.cells.map((cell, i) => (

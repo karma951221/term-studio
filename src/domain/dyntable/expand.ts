@@ -5,9 +5,11 @@
  * 돌려주는 표는 인라인 노드 그대로다 — 셀 템플릿의 「해당보장의」 조건(`count(builtin.subCoverage.name) >= 2`)처럼 담보 문맥이 필요한 조건은
  * 남겨 두고, 조립(Walker)이 담보 문맥에서 평가해 `RTable` 로 낸다. 표 슬롯(`builtin.table.*`)은 여기서 전부 글로 바꾸므로 뒤쪽이 볼 일이 없다.
  *
- * - 열: 표 모양(`tableShape` — 머리글 구조, §3.2)이 감액 구간형이면 모든 급부의 감액 경계(`end`) 합집합(오름차순 · 중복 없음), k 개 → 열 k + 1.
+ * - 열: 표 모양(`tableShape` — 머리글 구조, §3.2)이 감액 구간형이면 모든 급부의 감액 경계(`end`) 합집합, k 개 → 열 k + 1.
+ *   경계는 열거형 「감액기간」 값(`ReductionBoundary`) — 같은 열거값 = 같은 경계, 정렬은 열거 순서, 머리글 `{경계}` · `{앞경계}` 는 값 이름(「90일」 · 「1년」) (2026-10-31).
+ *   열거형에서 지워진 값은 열 맨 뒤 · 「없는 값 V09」 + brokenRef(행 좌표).
  *   단일형(첫 · 가운데 · 마지막 머리글이 모두 빔)이거나 합집합이 비면 열 하나(단일 열 템플릿).
- * - 열 j 의 감액비율: 구간 [b(j−1), b(j)) 에서 `end ≥ b(j)` 인 첫 구간의 `rate`, 없으면 `afterRate`. 마지막 열 = `afterRate`. 감액 없음 = 100.
+ * - 열 j 의 감액비율: 구간 [b(j−1), b(j)) 에서 `end ≥ b(j)`(열거 순서) 인 첫 구간의 `rate`, 없으면 `afterRate`. 마지막 열 = `afterRate`. 감액 없음 = 100.
  *   단일형이면 감액을 보지 않는다(비율 = 지급률 — (갱신) 표).
  * - 셀 비율 = 지급률 × 감액비율 / 100. 정수가 아니면 소수 한 자리까지 자른다(반올림 없음).
  *   지급률 미입력은 100% 로 읽는다 — 지급률은 선택 필드이고 안 적으면 100 이다 (기능/담보 §3.4, 2026-10-21).
@@ -18,7 +20,7 @@
 import { rewriteInlines, type ConstFormatter } from "../clause/bind";
 import type { Inline, InlineBranch, SwitchCase } from "../clause/nodes";
 import { effectiveBindings, type Bindings } from "../clause/params";
-import { formatPeriod } from "../master/table";
+import type { ReductionBoundary } from "../coverage/traits";
 import type { Coordinate, Id, Issue } from "../types";
 import { headerRegion } from "./regions";
 import { tableShape } from "./shape";
@@ -41,13 +43,20 @@ export interface DynTableDeps {
 /** 지급률을 안 적은 급부의 지급률(%) — `pay.rate` 는 선택 필드이고 비어 있으면 100 이다 (기능/담보 §3.4). */
 export const DEFAULT_PAY_RATE = 100;
 
-/** 열 j (0 부터, 마지막 열 = boundaries.length) 의 감액비율 (§3.4). */
-export function reductionRateAt(reduction: DynBenefit["reduction"], boundaries: readonly number[], j: number): number {
+/** 열 j (0 부터, 마지막 열 = boundaries.length) 의 감액비율 (§3.4) — 「≥」는 열거 순서로 견준다. */
+export function reductionRateAt(reduction: DynBenefit["reduction"], boundaries: readonly ReductionBoundary[], j: number): number {
   if (!reduction) return 100;
   if (j >= boundaries.length) return reduction.afterRate;
   const end = boundaries[j];
-  const period = reduction.periods.find((p) => p.end >= end);
+  const period = reduction.periods.find((p) => p.end.order >= end.order);
   return period ? period.rate : reduction.afterRate;
+}
+
+/** 경계 합집합 — 같은 열거값(코드)은 하나, 열거 순서로 정렬(지워진 값은 맨 뒤 · 코드 순). */
+export function boundaryUnion(benefits: readonly DynBenefit[]): ReductionBoundary[] {
+  const byCode = new Map<string, ReductionBoundary>();
+  for (const b of benefits) for (const p of b.reduction?.periods ?? []) if (!byCode.has(p.end.code)) byCode.set(p.end.code, p.end);
+  return [...byCode.values()].sort((a, b) => a.order - b.order || a.code.localeCompare(b.code));
 }
 
 /** 셀 비율 글 — 정수면 그대로, 아니면 소수 한 자리까지 자른다(반올림 없음). */
@@ -60,8 +69,8 @@ export function formatRatio(payRate: number, reductionRate: number): string {
 
 // ───────────────────────────── 노드 복제 ─────────────────────────────
 
-/** 템플릿을 자리마다 복제한다 — id 를 유일화하고 표 슬롯을 글로 바꾼다. 나머지(조건 · 값별 분기 · 조사)는 그대로. */
-function instantiate(template: readonly Inline[], tag: (id: Id) => Id, slotText: (ref: DynTableSlotRef) => string): Inline[] {
+/** 템플릿을 자리마다 복제한다 — id 를 유일화하고 표 슬롯을 글로 바꾼다. 나머지(조건 · 값별 분기 · 조사)는 그대로. 정액형 펼침(`expandFixed.ts`)도 쓴다. */
+export function instantiate(template: readonly Inline[], tag: (id: Id) => Id, slotText: (ref: DynTableSlotRef) => string): Inline[] {
   const node = (n: Inline): Inline => {
     switch (n.kind) {
       case "slot":
@@ -105,20 +114,31 @@ export function expandDynTable(def: DynTable, input: DynTableInput, bindings: Bi
     cell: rewrite(def.cell),
   };
 
-  // 2. 경계 합집합 → 열
+  // 2. 경계 합집합 → 열. 열거형에서 지워진 경계는 brokenRef(그 급부의 행 좌표) — 표는 「없는 값」 글자로 그대로 찍는다
   const split = tableShape(def.headers) === "split";
-  const boundaries = split ? [...new Set(input.benefits.flatMap((b) => b.reduction?.periods.map((p) => p.end) ?? []))].sort((a, b) => a - b) : [];
+  const boundaries = split ? boundaryUnion(input.benefits) : [];
   const columns = boundaries.length + 1;
+  if (split) {
+    for (const b of input.benefits) {
+      const gone = (b.reduction?.periods ?? []).filter((p) => p.end.missing).map((p) => p.end.code);
+      if (gone.length === 0) continue;
+      issues.push({
+        kind: "brokenRef",
+        message: `${owner} — 급부 「${b.name}」 의 감액 경계 ${gone.join(", ")} 은(는) 열거형 「감액기간」에서 지워진 값입니다 — 급부의 감액 구간에서 다른 값을 고른다`,
+        at: here(`${owner} › 행 ${b.name}`),
+      });
+    }
+  }
 
   // 3. 머리글 — 열 하나 = 단일, 둘 = 첫 + 마지막, 셋 이상 = 첫 + 가운데(열마다) + 마지막
   const tagOf = (row: string, col: number) => (id: Id) => `${deps.refId}/${id}@r${row}c${col}`;
   const headerText = (j: number) => (ref: DynTableSlotRef): string => {
     switch (ref) {
       case DYN_TABLE_SLOTS.boundary:
-        return formatPeriod(boundaries[Math.min(j, boundaries.length - 1)]);
+        return boundaries[Math.min(j, boundaries.length - 1)].label;
       case DYN_TABLE_SLOTS.prevBoundary:
-        return formatPeriod(boundaries[j - 1]);
-      case DYN_TABLE_SLOTS.rate:
+        return boundaries[j - 1].label;
+      default:
         return "";
     }
   };

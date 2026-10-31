@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { MasterForm } from "../master";
 import { entered, NOT_ENTERED, type FieldType, type ValueSlot } from "../types";
 import type { EnumDef, EnumLookup } from "./types";
-import { countedSlotsOf, isFormOpened, missingSlots, prefill, slotType, validateValue, valueSlotsOf, type SlotReader } from "./values";
+import { countedSlotsOf, isFormOpened, mergeMasterOwned, missingSlots, prefill, slotType, validateValue, valueSlotsOf, type SlotReader } from "./values";
 
 const 고지유형: EnumDef = {
   code: "E0001",
@@ -80,7 +80,7 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
       "conversion.converts",
       "business_type.applies",
     ]);
-    expect(valueSlotsOf("coverage")).toEqual([]); // 담보 레벨 폼은 없다 — 보험금명(coverage_basic.claim_name)은 2026-10-21 뺐다
+    expect(valueSlotsOf("coverage")).toEqual(["insured_amount.amounts"]); // 담보 레벨은 특성 「가입금액」 하나 (2026-10-31) — 보험금명은 2026-10-21 뺐다
   });
 
   it("마스터가 비어 있는 레벨은 값 자리가 없다", () => {
@@ -94,6 +94,7 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
       "exemption.months",
       "exemption.age15_only",
       "exemption.new_only",
+      "fixed_table.grid",
     ]);
   });
 
@@ -174,6 +175,19 @@ describe("validateValue — table", () => {
     expect(validateValue(구간표, ["a"], enums)).toHaveLength(1);
     expect(validateValue(구간표, "x", enums)).toHaveLength(1);
   });
+  it("enum 열은 그 열거형의 값 코드 — 없는 값은 brokenRef 「없는 값」, 없는 열거형은 brokenRef", () => {
+    const lookup: EnumLookup = (c) => (c === "E0001" ? 고지유형 : undefined);
+    const 열거표: FieldType = { kind: "table", columns: [{ key: "end", label: "기간", type: "enum", enumCode: "E0001" }] };
+    expect(validateValue(열거표, [{ end: "V02" }], lookup)).toEqual([]);
+    const missing = validateValue(열거표, [{ end: "V09" }], lookup);
+    expect(missing).toHaveLength(1);
+    expect(missing[0].kind).toBe("brokenRef");
+    expect(missing[0].message).toContain("1행 기간");
+    expect(missing[0].message).toContain("없는 값 V09");
+    expect(validateValue(열거표, [{ end: 12 }], lookup)[0].kind).toBe("typeMismatch");
+    const noEnum: FieldType = { kind: "table", columns: [{ key: "end", label: "기간", type: "enum", enumCode: "E0099" }] };
+    expect(validateValue(noEnum, [{ end: "V01" }], lookup)[0].kind).toBe("brokenRef");
+  });
 });
 
 describe("여는 폼(optional) — 값 행이 없으면 자리 없음 (ADR-0065 §4)", () => {
@@ -227,5 +241,33 @@ describe("선택 필드(MasterField.optional) — 값이 없으면 세지 않는
   it("정본 마스터 — 보험금지급의 지급률이 선택 필드다 · 면책여부 자리는 없다(면책 특성으로만, 2026-10-21)", () => {
     expect(slotType("benefit", "pay.exempt")).toBeUndefined();
     expect(countedSlotsOf("benefit", () => undefined).filter((p) => p.startsWith("pay."))).not.toContain("pay.rate");
+  });
+});
+
+describe("mergeMasterOwned — 조립 · 화면이 읽는 노드 값 = 상품 소유는 스냅샷, 마스터 소유는 지금 마스터 (ADR-0097, 2026-10-31)", () => {
+  const master: MasterForm[] = [
+    { key: "pay", label: "보험금지급", level: "benefit", fields: [{ key: "rate", label: "지급률", type: { kind: "number" } }] },
+    { key: "fixed", label: "정액표", level: "benefit", optional: true, owner: "master", fields: [{ key: "grid", label: "격자", type: { kind: "string" } }] },
+  ];
+  it("마스터 소유 자리는 스냅샷에 남아 있어도(옛 복사본) 마스터 값으로 바꾸고, 마스터에 없으면 뺀다", () => {
+    const snapshot = new Map<string, ValueSlot>([["pay.rate", entered(80)], ["fixed.grid", entered("옛 사본")]]);
+    const out = mergeMasterOwned("benefit", snapshot, new Map([["pay.rate", entered(100)], ["fixed.grid", entered("지금 마스터")]]), master);
+    expect([...out]).toEqual([["pay.rate", entered(80)], ["fixed.grid", entered("지금 마스터")]]);
+    const gone = mergeMasterOwned("benefit", snapshot, new Map([["pay.rate", entered(100)]]), master);
+    expect([...gone]).toEqual([["pay.rate", entered(80)]]);
+  });
+  it("마스터 값이 없으면(없는 노드) 상품 소유 값만", () => {
+    expect([...mergeMasterOwned("benefit", new Map([["pay.rate", entered(80)]]), undefined, master)]).toEqual([["pay.rate", entered(80)]]);
+  });
+});
+
+describe("validateValue — grid(정액표 격자) (기능/담보 §3.4, 2026-10-31)", () => {
+  const enums: EnumLookup = () => undefined;
+  it("모양 — columns 문자열 배열 · rows 배열(cells 문자열 배열 · amounts 금액 → 숫자)", () => {
+    expect(validateValue({ kind: "grid" }, { columns: ["분류"], rows: [{ cells: ["상해"], amounts: { "30000000": 50000 } }] }, enums)).toEqual([]);
+    expect(validateValue({ kind: "grid" }, [], enums)[0].kind).toBe("typeMismatch");
+    expect(validateValue({ kind: "grid" }, { columns: "x", rows: [] }, enums)[0].kind).toBe("typeMismatch");
+    expect(validateValue({ kind: "grid" }, { columns: ["분류"], rows: [{ cells: "상해", amounts: {} }] }, enums)[0].kind).toBe("typeMismatch");
+    expect(validateValue({ kind: "grid" }, { columns: ["분류"], rows: [{ cells: ["상해"], amounts: { "30000000": "5만" } }] }, enums)[0].kind).toBe("typeMismatch");
   });
 });

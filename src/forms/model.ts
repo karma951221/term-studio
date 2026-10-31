@@ -17,8 +17,8 @@ import { z } from "zod";
 
 import type { EnumLookup, SlotPath } from "@/domain/catalog/types";
 import { validateSlotValue } from "@/domain/coverage";
-import { fieldsOfForm, fieldsOfLevel, formsOfLevel, masterPath, parseTableDraft, tableRowsToDraft, type MasterField, type MasterTree, type TableDraft } from "@/domain/master";
-import { ATTACH_LEVEL_LABEL, type AttachLevel, type Code, type FieldType, type Issue, type TableRow, type Value, type ValueSlot } from "@/domain/types";
+import { fieldsOfForm, fieldsOfLevel, FIXED_GRID_DEFAULT_COLUMNS, formsOfLevel, masterPath, parseTableDraft, tableRowsToDraft, type MasterField, type MasterTree, type TableDraft } from "@/domain/master";
+import { ATTACH_LEVEL_LABEL, isFixedGrid, type AttachLevel, type Code, type FieldType, type FixedGrid, type Issue, type TableRow, type Value, type ValueSlot } from "@/domain/types";
 
 // ───────────────────────────── 폼 모델 ─────────────────────────────
 
@@ -51,6 +51,8 @@ export interface FieldView {
   enumOptions?: EnumOption[];
   /** enum · list<enum> 만 — 열거형변수 이름. 「없는 값」 오류 문구에 쓴다 (ADR-0078 결정 5). */
   enumLabel?: string;
+  /** table 만 — `enum` 열(열 키)마다 그 열거형의 이름 · 선택지(열거 순서). 셀은 고르기 칸이 된다 (감액기간, 2026-10-31). */
+  columnEnums?: Record<Code, { label: string; options: EnumOption[] }>;
   /** 저장소 기준 — 기본값과 무관하다. */
   state: "entered" | "notEntered";
   /** state 가 entered 일 때만. */
@@ -79,6 +81,11 @@ export interface FieldView {
   optional?: true;
   /** 입력 모양 — `radio` 면 enum 을 라디오로 (마스터 `display`). */
   display?: "radio";
+  /**
+   * 마스터 소유 칸(ADR-0097) — 스냅샷 문맥에서만 선다: 값은 지금 마스터 것이고 읽기 전용이다(편집 · 비우기 · 가져오기 · 제출 없음).
+   * 마스터 문맥(담보 화면)에서는 보통 칸이다.
+   */
+  masterOwned?: true;
 }
 
 /**
@@ -98,6 +105,8 @@ export interface FormRef {
   label: string;
   /** 여는 폼 — 값 행이 하나도 없으면 카드가 닫힌 채 태어난다 (ADR-0065 §4). */
   optional?: boolean;
+  /** 마스터 소유 폼이 스냅샷 문맥에 선 것 — 카드째 읽기 전용(⊖ · 특성 ⊕ · 가져오기 없음) (ADR-0097). */
+  masterOwned?: true;
 }
 
 /** 카드 하나 = 마스터 폼 하나 (기능/마스터 §3.5). 필드는 폼 선언 순. */
@@ -155,6 +164,15 @@ function fieldView(
     const enumLabel = enums(type.enumCode)?.label;
     if (enumLabel !== undefined) view.enumLabel = enumLabel;
   }
+  if (type.kind === "table") {
+    const columnEnums: NonNullable<FieldView["columnEnums"]> = {};
+    for (const col of type.columns) {
+      if (col.type !== "enum" || !col.enumCode) continue;
+      const def = enums(col.enumCode);
+      columnEnums[col.key] = { label: def?.label ?? "", options: enumOptionsOf({ kind: "enum", enumCode: col.enumCode }, enums) ?? [] };
+    }
+    if (Object.keys(columnEnums).length > 0) view.columnEnums = columnEnums;
+  }
   if (slot?.entered) {
     view.state = "entered";
     view.value = slot.value;
@@ -196,11 +214,16 @@ export function buildForm(
   const cards: FormCard[] = formsOfLevel(level, master).map((form) => {
     const ref: FormRef = { key: form.key, label: form.label };
     if (form.optional === true) ref.optional = true;
+    // 마스터 소유 폼 + 스냅샷 문맥 — 값은 지금 마스터 것, 읽기 전용. 스냅샷에 남은 옛 복사본은 보지 않는다 (ADR-0097)
+    const masterOwned = snapshot !== undefined && form.owner === "master";
+    if (masterOwned) ref.masterOwned = true;
     const card: FormCard = {
       ...ref,
-      fields: fieldsOfForm(form).map((r) =>
-        fieldView(r.path, r.field.label, r.field.type, r.field.defaultValue, r.field.hiddenByDefault === true, r.field.optional === true, r.field, ref, enums, current, snapshot),
-      ),
+      fields: fieldsOfForm(form).map((r) => {
+        const view = fieldView(r.path, r.field.label, r.field.type, r.field.defaultValue, r.field.hiddenByDefault === true, r.field.optional === true, r.field, ref, enums, masterOwned ? snapshot.masterValues : current, masterOwned ? undefined : snapshot);
+        if (masterOwned) view.masterOwned = true;
+        return view;
+      }),
     };
     if (form.description !== undefined) card.description = form.description;
     return card;
@@ -257,6 +280,8 @@ export function formatValue(field: FieldView): string | undefined {
       return Array.isArray(v) ? (v as string[]).map(labelOf).join(", ") : String(v);
     case "table":
       return Array.isArray(v) ? `${v.length}행` : String(v);
+    case "grid":
+      return isFixedGrid(v) ? `${v.rows.length}행 · 가입금액 ${[...new Set(v.rows.flatMap((r) => Object.keys(r.amounts)))].length}개` : String(v);
     default:
       return field.unit === undefined ? String(v) : `${String(v)}${field.unit}`;
   }
@@ -264,8 +289,8 @@ export function formatValue(field: FieldView): string | undefined {
 
 // ───────────────────────────── 편집 상태 ─────────────────────────────
 
-/** 입력 원문. list<enum> 은 코드 배열, table 은 셀 원문 2차원 배열, 나머지는 문자열. */
-export type Draft = string | string[] | TableDraft;
+/** 입력 원문. list<enum> 은 코드 배열, table 은 셀 원문 2차원 배열, grid 는 격자 그대로(셀이 곧 값 — `GridInput`), 나머지는 문자열. */
+export type Draft = string | string[] | TableDraft | FixedGrid;
 
 export interface FieldState {
   /** 폼 모델의 원본 (저장소 기준 상태·프리필·선택지). */
@@ -321,19 +346,28 @@ export type FormAction =
   /** 선택 필드를 뺀다 (「⊖」) — 칸을 감추고 값을 비운다. 저장돼 있던 값은 지우기로 제출된다. */
   | { type: "removeField"; path: SlotPath };
 
+/** 새 정액표 격자 — 글자 열 기본 머리(분류 · 치료항목 · 지급횟수), 행 없음 (기능/담보 §3.4). 행 · 가입금액 열은 `GridInput` 에서 더한다. */
+export function emptyGrid(): FixedGrid {
+  return { columns: [...FIXED_GRID_DEFAULT_COLUMNS], rows: [] };
+}
+
 function emptyDraft(type: FieldType): Draft {
   if (type.kind === "table") return [];
+  if (type.kind === "grid") return emptyGrid();
   return type.kind === "list<enum>" ? [] : "";
 }
 
 /** 값 → 입력 원문. */
 function draftOf(type: FieldType, value: Value): Draft {
   if (type.kind === "table") return tableRowsToDraft(type.columns, value as TableRow[]);
+  if (type.kind === "grid") return isFixedGrid(value) ? value : emptyGrid();
   if (type.kind === "list<enum>") return Array.isArray(value) ? [...(value as string[])] : [String(value)];
-  return Array.isArray(value) ? value.join(",") : String(value);
+  return Array.isArray(value) ? value.join(",") : typeof value === "object" ? "" : String(value);
 }
 
+/** 빈 초안 — 격자는 행이 하나도 없으면 빈 것(열 머리만 있는 격자는 「아직 안 적음」). */
 function isEmptyDraft(draft: Draft): boolean {
+  if (isFixedGrid(draft)) return draft.rows.length === 0;
   return Array.isArray(draft) ? draft.length === 0 : draft.trim() === "";
 }
 
@@ -353,6 +387,12 @@ export function toggleEnumCode(options: readonly string[], selected: readonly st
 function lookupFromView(view: FieldView): EnumLookup {
   return (code) => {
     const t = view.type;
+    if (t.kind === "table") {
+      // enum 열 — 뷰에 실린 열별 선택지로 그 열거형을 되살린다 (열거 순서 = 선택지 순서)
+      const col = t.columns.find((c) => c.type === "enum" && c.enumCode === code);
+      const e = col ? view.columnEnums?.[col.key] : undefined;
+      return e ? { code, label: e.label, values: e.options.map((o, i) => ({ ...o, order: i })) } : undefined;
+    }
     if ((t.kind !== "enum" && t.kind !== "list<enum>") || t.enumCode !== code) return undefined;
     return {
       code,
@@ -366,33 +406,38 @@ function lookupFromView(view: FieldView): EnumLookup {
 function parseDraft(view: FieldView, draft: Draft): { value: Value } | { issue: Issue } {
   const t = view.type;
   let candidate: unknown;
+  // 격자 초안은 grid 타입에만 온다 — 다른 타입에 들어오면 빈 글로 본다
+  if (isFixedGrid(draft) && t.kind !== "grid") draft = "";
   switch (t.kind) {
     case "string":
       candidate = Array.isArray(draft) ? draft.join(",") : draft;
       break;
     case "number": {
-      const s = Array.isArray(draft) ? draft.join(",") : draft.trim();
+      const s = Array.isArray(draft) ? draft.join(",") : (draft as string).trim();
       candidate = s === "" ? Number.NaN : Number(s);
       break;
     }
     case "boolean": {
-      const s = Array.isArray(draft) ? "" : draft.trim();
+      const s = Array.isArray(draft) ? "" : (draft as string).trim();
       candidate = s === "true" ? true : s === "false" ? false : s;
       break;
     }
     case "date":
     case "enum":
-      candidate = Array.isArray(draft) ? draft.join(",") : draft.trim();
+      candidate = Array.isArray(draft) ? draft.join(",") : (draft as string).trim();
       break;
     case "list<enum>":
       candidate = Array.isArray(draft) ? draft : [draft];
       break;
     case "table": {
-      const r = parseTableDraft(t.columns, draft as TableDraft, { refPath: view.path });
+      const r = parseTableDraft(t.columns, draft as TableDraft, { refPath: view.path }, lookupFromView(view));
       if ("issue" in r) return r;
       candidate = r.value;
       break;
     }
+    case "grid":
+      candidate = draft;
+      break;
   }
   const issues = validateSlotValue(view.path, t, candidate, lookupFromView(view), { refPath: view.path });
   return issues.length === 0 ? { value: candidate as Value } : { issue: issues[0] };
@@ -455,6 +500,9 @@ function fieldPresent(view: FieldView, added: boolean): boolean {
 
 export function formReducer(state: FormState, action: FormAction): FormState {
   if (action.type === "reset") return initFormState(action.model);
+  // 마스터 소유 칸 · 카드는 스냅샷 문맥에서 손대지 않는다 — 값은 담보 마스터에서 고친다 (ADR-0097)
+  if ("path" in action && state.fields[action.path]?.view.masterOwned) return state;
+  if ("form" in action && state.model.cards.find((c) => c.key === action.form)?.masterOwned) return state;
   if (action.type === "reveal") return { ...state, revealed: { ...state.revealed, [action.path]: true } };
   if (action.type === "addField" || action.type === "removeField") {
     const f = state.fields[action.path];
@@ -489,7 +537,7 @@ export function formReducer(state: FormState, action: FormAction): FormState {
     for (const view of state.model.fields) {
       const f = state.fields[view.path];
       if (!f) continue;
-      fields[view.path] = fieldStateOf(view, emptyDraft(view.type), true);
+      fields[view.path] = view.masterOwned ? f : fieldStateOf(view, emptyDraft(view.type), true);
     }
     return { ...state, fields };
   }
@@ -524,7 +572,7 @@ export function differsFromMaster(field: FieldState): boolean {
 
 /** 마스터에 그 특성(여는 폼)이 있나 — 그 폼 자리에 마스터 값이 하나라도 있으면 (기능/상품 §4.8 「마스터에는 면책 있음」). */
 export function masterHasForm(card: FormCard): boolean {
-  return card.optional === true && card.fields.some((f) => f.masterValue !== undefined);
+  return card.optional === true && card.masterOwned !== true && card.fields.some((f) => f.masterValue !== undefined);
 }
 
 /** 하나만 고르게 된 list<enum> 칸에 여럿이 들어 있으면 첫 것만 남긴다 — 통합 → 단일로 바꿀 때. */
@@ -617,6 +665,8 @@ export function toSubmission(state: FormState): Submission {
   for (const view of state.model.fields) {
     const f = state.fields[view.path];
     if (!f) continue;
+    // 마스터 소유 칸은 상품담보 저장에 실리지 않는다 — 주인이 마스터다 (ADR-0097)
+    if (view.masterOwned) continue;
     // 조건이 맞지 않는 조건부 칸 — 자리가 없다. 저장된 값이 있으면 지운다 (고지유형을 바꾸면 딸린 칸 값이 남지 않게)
     if (!isViewShown(view, valueOf)) {
       if (view.state === "entered") values.push({ path: view.path, value: undefined });
@@ -684,6 +734,8 @@ export function zodValueSchema(type: FieldType, enums: EnumLookup): z.ZodType<Va
     case "table":
       // 정밀 검사(구간 규칙 등)는 서버 액션이 validateSlotValue 로 다시 한다 — 제출 스키마는 모양만 본다.
       return z.array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))).min(1) as unknown as z.ZodType<Value>;
+    case "grid":
+      return z.object({ columns: z.array(z.string()), rows: z.array(z.object({ cells: z.array(z.string()), amounts: z.record(z.string(), z.number()) })) }) as unknown as z.ZodType<Value>;
   }
 }
 

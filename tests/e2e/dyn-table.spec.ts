@@ -42,7 +42,7 @@ test(
       await expect(page.getByRole("columnheader", { name: "열 기준" })).toHaveCount(0);
     });
 
-    await ev.action("동적표#3", "새 담보 — 세부보장 1 · 급부 「질병80%이상후유장해」 · 지급률 100 · 감액 1Y 50%", async () => {
+    await ev.action("동적표#3", "새 담보 — 세부보장 1 · 급부 「질병80%이상후유장해」 · 지급률 100 · 감액 1년 50%", async () => {
       await page.goto("/coverages/new");
       await page.locator("#cov-name").fill(coverageName);
       await page.locator("#cov-sub").fill("질병80%이상후유장해");
@@ -57,13 +57,13 @@ test(
       // 선택 필드 지급률 — 급부 이름 줄의 「지급률 ⊕」 로 칸을 만들고 100
       await benefit.getByTitle("지급률 추가").click();
       await benefit.locator('input[name="pay.rate"]').fill("100");
-      // 특성 감액 — 「특성 ⊕」 메뉴에서 감액을 골라 열고 구간 표에 행 하나 (1Y · 50)
+      // 특성 감액 — 「특성 ⊕」 메뉴에서 감액을 골라 열고 구간 표에 행 하나 (기간은 열거형 「감액기간」 고르기 — 1년 · 50)
       await benefit.getByRole("button", { name: "특성 추가", exact: true }).click();
       await benefit.getByRole("menuitem", { name: "감액", exact: true }).click();
       const reduction = benefit.getByRole("group", { name: "감액" });
       await expect(reduction).toBeVisible();
       await reduction.getByRole("button", { name: "+ 행", exact: true }).click();
-      await reduction.getByRole("textbox", { name: "1행 기간", exact: true }).fill("1Y");
+      await reduction.getByRole("combobox", { name: "1행 기간", exact: true }).selectOption({ label: "1년" });
       await reduction.getByRole("textbox", { name: "1행 지급률", exact: true }).fill("50");
       await submit(page, page.getByRole("button", { name: "저장", exact: true }));
       await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible();

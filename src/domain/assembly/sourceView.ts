@@ -120,7 +120,11 @@ export function renderedValues(article: RenderedArticle): Record<Id, string> {
     for (const n of list) if (n.kind === "text") out[n.id] = n.text;
   };
   const statics = (n: RenderedStatic | ErrorNode) => {
-    if (n.kind === "table") for (const row of n.rows) for (const cell of row.cells) inlines(cell as RenderedInline[]);
+    if (n.kind === "table") {
+      if (n.heading) inlines(n.heading as RenderedInline[]);
+      if (n.caption) inlines(n.caption as RenderedInline[]);
+      for (const row of n.rows) for (const cell of row.cells) inlines(cell as RenderedInline[]);
+    }
     if (n.kind === "bulletList") for (const b of n.items) inlines(b.children);
   };
   for (const p of article.children) {

@@ -276,5 +276,36 @@
         }
       }
     ]
+  },
+  {
+    "code": "E0010",
+    "label": "감액기간",
+    "fields": [],
+    "values": [
+      {
+        "code": "V01",
+        "label": "90일",
+        "order": 0,
+        "fields": {}
+      },
+      {
+        "code": "V02",
+        "label": "180일",
+        "order": 1,
+        "fields": {}
+      },
+      {
+        "code": "V03",
+        "label": "1년",
+        "order": 2,
+        "fields": {}
+      },
+      {
+        "code": "V04",
+        "label": "2년",
+        "order": 3,
+        "fields": {}
+      }
+    ]
   }
 ]

@@ -40,11 +40,11 @@ describe("DYN_TABLE_SAMPLES — 견본 다섯", () => {
     expect(out.rows.map((r) => r.map(cellText))).toEqual([["골절진단비", "보험가입금액의 100%"]]);
   });
 
-  it("④ 급부 여럿 — 경계 합집합(6개월 · 1년)으로 열 셋, 급부마다 한 행 · 세부보장이 둘이라 「해당보장의」", () => {
+  it("④ 급부 여럿 — 경계 합집합(180일 · 1년)으로 열 셋, 급부마다 한 행 · 세부보장이 둘이라 「해당보장의」", () => {
     const out = view("multiBenefit");
     expect(out.issues).toEqual([]);
     expect(out.header.map((c) => c.region)).toEqual(["corner", "first", "middle", "last"]);
-    expect(cellText(out.header[1])).toBe("계약일부터 6개월경과시점 전일 이전");
+    expect(cellText(out.header[1])).toBe("계약일부터 180일경과시점 전일 이전");
     expect(out.rows.map((r) => r.map(cellText))).toEqual([
       ["뇌졸중진단비", "해당보장의 보험가입금액의 50%", "해당보장의 보험가입금액의 50%", "해당보장의 보험가입금액의 100%"],
       ["급성심근경색진단비", "해당보장의 보험가입금액의 6%", "해당보장의 보험가입금액의 12%", "해당보장의 보험가입금액의 20%"],

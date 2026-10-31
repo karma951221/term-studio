@@ -1466,6 +1466,11 @@ button:where(:not([data-slot])).danger:focus-visible {
 [data-region="single"] { --rc: var(--ts-region-single); }
 [data-region="cell"] { --rc: var(--ts-region-cell); }
 [data-region="row"] { --rc: var(--ts-region-row); }
+/* 정액형 영역 (기능/동적표 §3.7) — 급부 머리글 · 캡션은 제 색, 글자 열 머리 · 글자 칸은 시스템(행 머리 색) */
+[data-region="benefitHeader"] { --rc: var(--ts-region-first); }
+[data-region="caption"] { --rc: var(--ts-region-corner); }
+[data-region="textHeader"] { --rc: var(--ts-region-row); }
+[data-region="textCell"] { --rc: var(--ts-region-row); }
 
 .ts-dyn-sample-pick {
   display: flex;
@@ -1502,6 +1507,31 @@ button:where(:not([data-slot])).danger:focus-visible {
   border: 1px solid var(--ts-rule);
   border-radius: 3px;
   background: var(--ts-surface);
+}
+
+/* 정액형 견본 — 급부 머리글 · 캡션 줄 + 표 블록 여럿 (기능/동적표 §3.7) */
+.ts-dyn-fixed-wrap {
+  padding: 6px;
+}
+.ts-dyn-fixed-wrap .ts-dyn-table {
+  margin-bottom: 10px;
+}
+.ts-dyn-line {
+  margin: 6px 0 2px;
+}
+.ts-dyn-line.is-benefitHeader {
+  font-weight: 600;
+  margin-top: 12px;
+}
+.ts-dyn-line .ts-dyn-cellbtn {
+  display: inline-block;
+}
+.ts-dyn-kind-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 13px;
 }
 
 .ts-dyn-table {
@@ -3737,6 +3767,15 @@ label.ts-field > textarea:where(:not([data-slot])) {
   margin-bottom: 4px;
 }
 
+/* 정액형 동적표 — 급부 머리글(표 위 한 줄) · 캡션(표 바로 위) (기능/동적표 §3.7) */
+.ts-doc-table-heading {
+  font-weight: 600;
+  margin: 8px 0 4px;
+}
+.ts-doc-table-caption {
+  margin-bottom: 2px;
+}
+
 .ts-doc-table {
   border-collapse: collapse;
   width: 100%;
@@ -5010,6 +5049,12 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   font-size: 13px;
 }
 
+/* 급부명이 비어 세부보장명으로 읽는 급부 — 흐리게 (기능/담보 §3.1) */
+.ts-cov-card-name.ts-cov-name-inherited {
+  font-weight: 400;
+  color: var(--ts-muted, #6b7280);
+}
+
 .ts-cov-card-input {
   min-width: 0;
   flex: 0 1 240px;
@@ -6047,6 +6092,14 @@ button:where(:not([data-slot])).ts-basic-remove:focus-visible { border-color: va
 .ts-table-input th { border: 1px solid var(--ts-rule); padding: 2px 6px; }
 .ts-table-input input:where(:not([data-slot])) { width: 6em; }
 .ts-table-hint { margin-left: 4px; font-size: 0.85em; }
+
+/* 정액표 격자 입력 (기능/담보 §3.4) */
+.ts-grid-input table { border-collapse: collapse; }
+.ts-grid-input td,
+.ts-grid-input th { border: 1px solid var(--ts-rule); padding: 2px 6px; white-space: nowrap; }
+.ts-grid-input input:where(:not([data-slot])) { width: 7em; }
+.ts-grid-input-actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+.ts-grid-amount-add { display: inline-flex; gap: 4px; align-items: center; }
 
 
 /* 기본 숨김 필드를 펴는 작은 링크 (기능/담보 §3.4 — 감액 「이후 지급률 바꾸기」) */

@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { plainConst } from "../clause/bind";
+import { reductionBoundary, reductionPeriodEnumSeed } from "../coverage/traits";
 import { expandDynTable } from "./expand";
 import { dynTableFixtureA, dynTableFixtureAPrime, dynTableFixtureR } from "./fixture";
 import { headerRegion, paramUsage, placeholderIds, regionsOf, templateNodeId } from "./regions";
@@ -13,8 +14,11 @@ const deps = { formatConst: plainConst, refId: "ref1" };
 const A: DynTable = { id: "a", code: "DT000001", ...dynTableFixtureA() };
 const R: DynTable = { id: "r", code: "DT000002", ...dynTableFixtureR() };
 
-function benefit(name: string, periods: [number, number][]): DynBenefit {
-  return { subCoverageKey: name, subCoverageName: name, key: name, name, payRate: 100, ...(periods.length > 0 ? { reduction: { periods: periods.map(([end, rate]) => ({ end, rate })), afterRate: 100 } } : {}) };
+const 감액기간 = reductionPeriodEnumSeed();
+const boundary = (label: string) => reductionBoundary(감액기간, 감액기간.values.find((v) => v.label === label)?.code ?? label);
+
+function benefit(name: string, periods: [string, number][]): DynBenefit {
+  return { subCoverageKey: name, subCoverageName: name, key: name, name, payRate: 100, ...(periods.length > 0 ? { reduction: { periods: periods.map(([end, rate]) => ({ end: boundary(end), rate })), afterRate: 100 } } : {}) };
 }
 
 describe("headerRegion — 열 머리글을 만든 템플릿", () => {
@@ -27,12 +31,12 @@ describe("headerRegion — 열 머리글을 만든 템플릿", () => {
 
 describe("regionsOf — 펼친 표의 칸마다 영역", () => {
   it("경계 둘(열 셋) — 머리글 행 = 구분 칸 · 첫 · 가운데 · 마지막, 본문 행 = 행 머리 + 셀", () => {
-    const out = expandDynTable(A, { benefits: [benefit("사망보험금", [[12, 25], [24, 50]])] }, { 갱신형: { kind: "const", value: false } }, deps);
+    const out = expandDynTable(A, { benefits: [benefit("사망보험금", [["1년", 25], ["2년", 50]])] }, { 갱신형: { kind: "const", value: false } }, deps);
     expect(regionsOf(out)).toEqual({ header: ["corner", "first", "middle", "last"], rows: [["row", "cell", "cell", "cell"]] });
   });
 
   it("단일형(첫 · 가운데 · 마지막 비움) — 감액이 있어도 구분 칸 + 단일 열", () => {
-    const out = expandDynTable(R, { benefits: [benefit("골절진단비", [[12, 50]])] }, undefined, deps);
+    const out = expandDynTable(R, { benefits: [benefit("골절진단비", [["1년", 50]])] }, undefined, deps);
     expect(regionsOf(out)).toEqual({ header: ["corner", "single"], rows: [["row", "cell"]] });
   });
 });

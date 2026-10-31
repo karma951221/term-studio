@@ -59,7 +59,7 @@ function serializer(refInsensitive: boolean) {
    * 표는 **열 수·너비까지** 포함한다 — 같은 글자라도 서식이 다르면 다른 조다 (2026-09-08 리뷰 6). 글머리 목록은 항목 문장 순서대로.
    */
   function stat(n: RStatic<SInline>): string {
-    if (n.kind === "table") return `표[${n.title ?? ""}|${n.columns.map((c) => c.width ?? "-").join("·")}|${n.rows.map((r) => `${r.header ? "h" : ""}${r.cells.map(inlines).join("¦")}`).join("‖")}]`;
+    if (n.kind === "table") return `표[${n.title ?? ""}|${n.heading ? inlines(n.heading) : ""}|${n.caption ? inlines(n.caption) : ""}|${n.columns.map((c) => c.width ?? "-").join("·")}|${n.rows.map((r) => `${r.header ? "h" : ""}${r.cells.map(inlines).join("¦")}`).join("‖")}]`;
     if (n.kind === "bulletList") return `글머리[${n.items.map((b) => inlines(b.children)).join("‖")}]`;
     return `박스[${n.title}|${n.lines.map(inlines).join("‖")}]`;
   }

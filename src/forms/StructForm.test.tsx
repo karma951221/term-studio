@@ -310,6 +310,35 @@ describe("StructForm — 폼 하나가 카드 하나 · 코드 ⓘ · 필드 강
   });
 });
 
+describe("StructForm — 마스터 소유 폼은 상품담보 화면에서 읽기 전용 (ADR-0097, 2026-10-31)", () => {
+  const master: MasterForm[] = [
+    { key: "pay", label: "보험금지급", level: "benefit", fields: [{ key: "rate", label: "지급률", type: { kind: "number" } }] },
+    { key: "fixed", label: "정액표", level: "benefit", optional: true, owner: "master", fields: [{ key: "note", label: "메모", type: { kind: "string" } }] },
+  ];
+  it("편집 모드라도 마스터 소유 칸은 잠기고(inert) 값 비우기 · 가져오기 · 특성 ⊖ 가 없다, 상품 소유 칸은 그대로 편집", () => {
+    const model = buildForm("benefit", enums, new Map([["pay.rate", entered(80)]]), { masterLabel: "급부 (마스터)", masterValues: new Map([["pay.rate", entered(100)], ["fixed.note", entered("지금 마스터")]]) }, master);
+    const html = renderToStaticMarkup(<StructForm model={model} onSubmit={() => {}} valueCommands />);
+    const noteRow = tagsWith(html, 'data-path="fixed.note"')[0];
+    expect(noteRow).toContain("is-master-owned");
+    expect(html).toContain('value="지금 마스터"');
+    const start = html.indexOf('data-path="fixed.note"');
+    const section = html.slice(start, html.indexOf("</div></div>", start));
+    expect(section).toContain("inert");
+    expect(section).not.toContain("ts-import");
+    expect(section).not.toContain("ts-clear");
+    expect(html).not.toContain('aria-label="정액표 없음으로 — 값을 지운다"');
+    expect(html).toContain("마스터 소유 — 담보 마스터에서 고친다");
+    // 상품 소유 지급률은 편집 가능 · 마스터와 달라 가져오기 아이콘
+    expect(tagsWith(html, 'name="pay.rate"')[0]).toContain('value="80"');
+    expect(html).toContain("ts-import");
+  });
+  it("마스터에 없는 마스터 소유 특성은 「특성 ⊕」 메뉴에도 「가져오기」 줄에도 없다", () => {
+    const model = buildForm("benefit", enums, new Map(), { masterLabel: "급부 (마스터)", masterValues: new Map() }, master);
+    const html = renderToStaticMarkup(<StructForm model={model} onSubmit={() => {}} valueCommands />);
+    expect(html).not.toContain("정액표");
+  });
+});
+
 describe("StructForm — 여는 폼 카드 (ADR-0065 §4)", () => {
   /** 감액 하나 — table 필드 하나뿐인 여는 폼. */
   const openableMaster: MasterForm[] = [
@@ -355,6 +384,27 @@ describe("StructForm — 여는 폼 카드 (ADR-0065 §4)", () => {
     expect(html).toContain('aria-label="감액 없음으로 — 값을 지운다"');
     // 특성이 모두 붙었다 — 「특성 ⊕」는 잠긴다
     expect(tagsWith(html, 'aria-label="특성 추가"')[0]).toContain('disabled=""');
+  });
+
+  it("enum 열(감액기간)은 셀이 열거값 고르기 — 선택지는 열거 순서, 고른 값이 선택돼 있다 (2026-10-31)", () => {
+    const 감액기간: EnumDef = { code: "E0010", label: "감액기간", values: [{ code: "V01", label: "90일", order: 0 }, { code: "V03", label: "1년", order: 1 }] };
+    const lookup: EnumLookup = (c) => (c === "E0010" ? 감액기간 : undefined);
+    const master: MasterForm[] = [
+      {
+        key: "reduction",
+        label: "감액",
+        level: "benefit",
+        optional: true,
+        fields: [{ key: "periods", label: "구간", type: { kind: "table", columns: [{ key: "end", label: "기간", type: "enum", enumCode: "E0010" }, { key: "rate", label: "지급률", type: "percent" }] } }],
+      },
+    ];
+    const model = buildForm("benefit", lookup, new Map<string, ValueSlot>([["reduction.periods", entered([{ end: "V03", rate: 50 }])]]), undefined, master);
+    const html = renderToStaticMarkup(<StructForm model={model} onSubmit={() => {}} />);
+    const select = tagsWith(html, 'aria-label="1행 기간"')[0];
+    expect(select).toContain("<select");
+    expect(html).toContain('<option value="V01">90일</option>');
+    expect(html).toContain('<option value="V03" selected="">1년</option>');
+    expect(html).not.toContain("기간은 3M · 1Y");
   });
 
   it("연 특성 박스의 ⊖ 는 박스 왼쪽 위 — 제목보다 앞 (2026-10-21)", () => {

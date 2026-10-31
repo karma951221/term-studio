@@ -101,6 +101,16 @@ describe("coverage 서비스 (PGlite)", () => {
       expect(surgery.subCoverages[1].benefits.map((b) => b.name)).toEqual(["통원보험금", "수술보험금"]);
     });
 
+    it("급부명은 선택 — 빈 급부명 둘이 한 세부보장 아래 함께 저장되고(형제 유일 인덱스는 적힌 이름만), 조회 트리는 빈 글자 그대로", async () => {
+      let cancer = unwrap(await svc.create(editor, { name: "암진단비", subCoverageName: "암진단", benefitName: "" }));
+      const sub = cancer.subCoverages[0];
+      cancer = unwrap(await svc.addBenefit(editor, sub.id, ""));
+      expect(cancer.subCoverages[0].benefits.map((b) => b.name)).toEqual(["", ""]);
+      expect((await svc.get(cancer.id))?.subCoverages[0].benefits.map((b) => b.name)).toEqual(["", ""]);
+      cancer = unwrap(await svc.addBenefit(editor, sub.id, "소액암"));
+      expect(rejection(await svc.addBenefit(editor, sub.id, "소액암")).reason).toBe("duplicate");
+    });
+
     it("설명·문서 연결 자리 · 없는 id 는 notFound", async () => {
       const desc = unwrap(await svc.setDescription(editor, surgery.id, "수술 담보"));
       expect(desc.description).toBe("수술 담보");
@@ -121,20 +131,21 @@ describe("coverage 서비스 (PGlite)", () => {
   });
 
   describe("담보값입력 S1 — 값 자리는 마스터가 정한다 (ADR-0037)", () => {
-    it("그 레벨 마스터 필드가 두 담보 모두의 폼에 그대로 뜬다 — 부착 조작이 없다 (담보 레벨은 폼이 없어 빈 목록)", async () => {
+    it("그 레벨 마스터 필드가 두 담보 모두의 폼에 그대로 뜬다 — 부착 조작이 없다 (담보 레벨은 특성 「가입금액」 한 자리, 2026-10-31)", async () => {
       for (const c of [accident, surgery]) {
         const form = unwrap(await svc.form(cov(c)));
-        expect(form.fields.map((f) => f.path)).toEqual([]); // 보험금명(coverage_basic.claim_name)은 2026-10-21 뺐다
+        expect(form.fields.map((f) => f.path)).toEqual(["insured_amount.amounts"]); // 보험금명(coverage_basic.claim_name)은 2026-10-21 뺐다
         expect(form.slots).toEqual({});
       }
     });
 
-    it("급부 레벨은 보험금지급 한 자리 + 여는 폼(감액·면책) 여섯 자리 — 폼 정의는 열림 여부와 무관하게 전부 뜬다", async () => {
+    it("급부 레벨은 보험금지급 한 자리 + 여는 폼(감액·면책) 여섯 자리 + 정액표 한 자리 — 폼 정의는 열림 여부와 무관하게 전부 뜬다", async () => {
       const b: CoverageNodeRef = { level: "benefit", id: accident.subCoverages[0].benefits[0].id };
       expect(unwrap(await svc.form(b)).fields.map((f) => f.path)).toEqual([
         "pay.rate",
         "reduction.periods", "reduction.after_rate", "reduction.new_only",
         "exemption.months", "exemption.age15_only", "exemption.new_only",
+        "fixed_table.grid",
       ]);
     });
 

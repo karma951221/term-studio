@@ -3,6 +3,7 @@
 /**
  * `table` 필드 입력 — 첫 행 머리글 · 셀 타이핑 · 엑셀 붙여넣기(줄 → 행 · 탭 → 열) · 행 추가/삭제 (기능/담보 §3.4).
  * 초안은 셀 원문(`TableDraft`)이고 파싱 · 검사는 `formReducer`(parseTableDraft · validateSlotValue) 몫이다.
+ * `enum` 열(감액기간)은 셀이 열거값 고르기(`<select>`) — 초안은 값 코드, 붙여넣은 표시 글자는 파서가 코드로 푼다 (2026-10-31).
  */
 import type { ClipboardEvent } from "react";
 
@@ -70,16 +71,23 @@ export function TableInput({ id, field, onEdit, name }: InputProps) {
               {columns.map((col, c) => {
                 const text = row[c] ?? "";
                 const h = hint(col, text);
+                const options = col.type === "enum" ? (field.view.columnEnums?.[col.key]?.options ?? []) : undefined;
+                const inputName = `${name ?? field.view.path}[${r}][${col.key}]`;
                 return (
                   <td key={col.key}>
-                    <input
-                      type="text"
-                      name={`${name ?? field.view.path}[${r}][${col.key}]`}
-                      value={text}
-                      onChange={(e) => edit(r, c, e.target.value)}
-                      onPaste={onPaste(r, c)}
-                      aria-label={`${r + 1}행 ${col.label}`}
-                    />
+                    {options ? (
+                      <select name={inputName} value={text} onChange={(e) => edit(r, c, e.target.value)} aria-label={`${r + 1}행 ${col.label}`}>
+                        <option value="">— 고르세요 —</option>
+                        {options.map((o) => (
+                          <option key={o.code} value={o.code}>
+                            {o.label}
+                          </option>
+                        ))}
+                        {text !== "" && !options.some((o) => o.code === text) && <option value={text}>{`없는 값 ${text}`}</option>}
+                      </select>
+                    ) : (
+                      <input type="text" name={inputName} value={text} onChange={(e) => edit(r, c, e.target.value)} onPaste={onPaste(r, c)} aria-label={`${r + 1}행 ${col.label}`} />
+                    )}
                     {h && <span className="ts-muted ts-table-hint">{h}</span>}
                   </td>
                 );
@@ -96,7 +104,7 @@ export function TableInput({ id, field, onEdit, name }: InputProps) {
       <button type="button" onClick={addRow}>
         + 행
       </button>
-      <p className="ts-muted">셀에 포커스를 두고 붙여넣으면 줄은 행, 탭은 열로 들어간다. 기간은 3M · 1Y.</p>
+      <p className="ts-muted">{columns.some((c) => c.type === "period") ? "셀에 포커스를 두고 붙여넣으면 줄은 행, 탭은 열로 들어간다. 기간은 3M · 1Y." : "셀에 포커스를 두고 붙여넣으면 줄은 행, 탭은 열로 들어간다. 고르는 칸은 표시 글자(1년)로 맞춘다."}</p>
     </div>
   );
 }

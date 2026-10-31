@@ -15,6 +15,7 @@
  */
 import type { EnumDef } from "../catalog";
 import type { ParamDef } from "../clause/params";
+import { reductionBoundary, reductionPeriodEnumSeed, type ReductionBoundary } from "../coverage/traits";
 import type { Code, Value } from "../types";
 import type { DynTableArgValues } from "./sampleView";
 import { tableShape } from "./shape";
@@ -34,21 +35,29 @@ export interface DynTableSample {
   args: Record<string, Value>;
 }
 
-/** 급부 하나 — 세부보장명 = 급부명, 감액 [[끝 개월, 비율] …] · 이후 100. */
-function benefit(name: string, payRate: number, periods: [number, number][]): DynBenefit {
+/** 견본의 경계는 시드 「감액기간」 값(90일 · 180일 · 1년 · 2년) — 표시 글자로 고른다. */
+const 감액기간 = reductionPeriodEnumSeed();
+function boundary(label: string): ReductionBoundary {
+  const v = 감액기간.values.find((x) => x.label === label);
+  if (!v) throw new Error(`견본 경계 ${label} 은(는) 시드 감액기간에 없다`);
+  return reductionBoundary(감액기간, v.code);
+}
+
+/** 급부 하나 — 세부보장명 = 급부명, 감액 [[끝 경계 글자, 비율] …] · 이후 100. */
+function benefit(name: string, payRate: number, periods: [string, number][]): DynBenefit {
   return {
     subCoverageKey: name,
     subCoverageName: name,
     key: name,
     name,
     payRate,
-    ...(periods.length > 0 ? { reduction: { periods: periods.map(([end, rate]) => ({ end, rate })), afterRate: 100 } } : {}),
+    ...(periods.length > 0 ? { reduction: { periods: periods.map(([end, rate]) => ({ end: boundary(end), rate })), afterRate: 100 } } : {}),
   };
 }
 
-const THREE: [number, number][] = [
-  [12, 25],
-  [24, 50],
+const THREE: [string, number][] = [
+  ["1년", 25],
+  ["2년", 50],
 ];
 
 export const DYN_TABLE_SAMPLES: readonly DynTableSample[] = [
@@ -63,7 +72,7 @@ export const DYN_TABLE_SAMPLES: readonly DynTableSample[] = [
     id: "reduction1",
     label: "감액 1구간 — 1년 50% · 이후 100%",
     description: "경계 하나 → 가운데 열 없이 첫 · 마지막 열만.",
-    benefits: [benefit("암진단비", 100, [[12, 50]])],
+    benefits: [benefit("암진단비", 100, [["1년", 50]])],
     args: { 갱신형: false },
   },
   {
@@ -76,12 +85,12 @@ export const DYN_TABLE_SAMPLES: readonly DynTableSample[] = [
   {
     id: "multiBenefit",
     label: "급부 여럿 — 구간이 서로 다름",
-    description: "급부마다 경계가 달라도 경계를 합쳐 열을 나눈다(6개월 · 1년). 급부마다 한 행, 세부보장이 둘이라 셀 앞에 「해당보장의」.",
+    description: "급부마다 경계가 달라도 경계를 합쳐 열을 나눈다(180일 · 1년). 급부마다 한 행, 세부보장이 둘이라 셀 앞에 「해당보장의」.",
     benefits: [
-      benefit("뇌졸중진단비", 100, [[12, 50]]),
+      benefit("뇌졸중진단비", 100, [["1년", 50]]),
       benefit("급성심근경색진단비", 20, [
-        [6, 30],
-        [12, 60],
+        ["180일", 30],
+        ["1년", 60],
       ]),
     ],
     args: { 갱신형: false },
@@ -100,11 +109,6 @@ export function dynTableSample(id: string): DynTableSample {
   return DYN_TABLE_SAMPLES.find((s) => s.id === id) ?? DYN_TABLE_SAMPLES[0];
 }
 
-/** 개월 → 「6개월」 · 「1년」. */
-function months(m: number): string {
-  return m % 12 === 0 ? `${m / 12}년` : `${m}개월`;
-}
-
 /** 이 정의가 견본의 인자 `갱신형`을 받는가 — 참거짓 인자일 때만 견본 값이 들어간다(`sampleArgValues`). */
 function readsRenewal(params: readonly ParamDef[]): boolean {
   return params.some((p) => p.name === "갱신형" && p.type.kind === "boolean");
@@ -118,7 +122,7 @@ export function sampleDescription(sample: DynTableSample, def: Pick<NewDynTable,
   switch (sample.id) {
     case "reduction3":
     case "reduction1": {
-      const periods = (sample.benefits[0].reduction?.periods ?? []).map((p) => `${months(p.end)} ${p.rate}%`).join(" · ");
+      const periods = (sample.benefits[0].reduction?.periods ?? []).map((p) => `${p.end.label} ${p.rate}%`).join(" · ");
       return `이 정의는 감액이 있어도 열 하나 — 감액 구간(${periods})은 표에 나오지 않고 비율은 지급률(${rates}).`;
     }
     case "noReduction":

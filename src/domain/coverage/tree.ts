@@ -37,16 +37,28 @@ function checkName(name: unknown, what: string): Result<string> {
   return ok(name.trim());
 }
 
-/** 형제 이름 중복 — `selfId` 는 제외 (이름 변경 시 자기 자신). */
+/** 급부명은 선택 값 — 비면 빈 글자로 저장하고 읽을 때 세부보장명으로 대신한다 (기능/담보 §3.1, 2026-10-31). */
+function checkBenefitName(name: unknown): Result<string> {
+  if (typeof name !== "string") return invalid("급부명은 글자여야 합니다");
+  return ok(name.trim());
+}
+
+/** 형제 이름 중복 — `selfId` 는 제외 (이름 변경 시 자기 자신). 빈 이름(선택인 급부명)은 견주지 않는다. */
 function siblingDuplicate<T>(
   siblings: readonly { id: Id; name: string }[],
   name: string,
   what: string,
   selfId?: Id,
 ): Result<T> | undefined {
-  return siblings.some((s) => s.id !== selfId && s.name === name)
+  return name !== "" && siblings.some((s) => s.id !== selfId && s.name === name)
     ? reject({ reason: "duplicate", what: `${what} 「${name}」` })
     : undefined;
+}
+
+/** 급부의 읽는 이름 — 급부명이 비면 그 세부보장명 (기능/담보 §3.1). 동적표 행 머리 · `builtin.benefit.name` · 화면이 같은 규칙을 쓴다. */
+export function benefitDisplayName(benefit: Pick<Benefit, "name">, sub: Pick<SubCoverage, "name">): string {
+  const own = benefit.name.trim();
+  return own === "" ? sub.name : own;
 }
 
 function renumber<T extends { order: number }>(items: readonly T[]): T[] {
@@ -70,7 +82,7 @@ export function findBenefit(
   return undefined;
 }
 
-/** 담보·세부보장·급부 전 노드 — 깊이 우선, 형제 순서대로. */
+/** 담보·세부보장·급부 전 노드 — 깊이 우선, 형제 순서대로. 급부 이름은 읽는 이름(비면 세부보장명 — `benefitDisplayName`). */
 export function nodesOf(tree: Coverage): CoverageNode[] {
   const root: CoverageNodeRef = { level: "coverage", id: tree.id };
   const out: CoverageNode[] = [{ ...root, name: tree.name, ancestors: [] }];
@@ -78,7 +90,7 @@ export function nodesOf(tree: Coverage): CoverageNode[] {
     const subRef: CoverageNodeRef = { level: "subCoverage", id: s.id };
     out.push({ ...subRef, name: s.name, ancestors: [root], keyPath: s.key });
     for (const b of s.benefits) {
-      out.push({ level: "benefit", id: b.id, name: b.name, ancestors: [root, subRef], keyPath: keyPathOf(s, b) });
+      out.push({ level: "benefit", id: b.id, name: benefitDisplayName(b, s), ancestors: [root, subRef], keyPath: keyPathOf(s, b) });
     }
   }
   return out;
@@ -155,7 +167,8 @@ export function createCoverageTree(
 
   const subName = checkName(input.subCoverageName ?? name.value, "세부보장명");
   if (!subName.ok) return subName as Result<Coverage>;
-  const benefitName = checkName(input.benefitName ?? name.value, "급부명");
+  // 급부명을 안 주면 담보명을 쓴다(D-P2-1). 빈 글자를 주면 빈 채로 둔다 — 읽을 때 세부보장명이다
+  const benefitName = checkBenefitName(input.benefitName ?? name.value);
   if (!benefitName.ok) return benefitName as Result<Coverage>;
 
   return ok({
@@ -172,7 +185,7 @@ export function addSubCoverage(tree: Coverage, input: NewSubCoverage, newId: New
   if (!name.ok) return name as Result<Coverage>;
   const dup = siblingDuplicate<Coverage>(tree.subCoverages, name.value, "세부보장명");
   if (dup) return dup;
-  const benefitName = checkName(input.benefitName ?? name.value, "급부명");
+  const benefitName = checkBenefitName(input.benefitName ?? name.value);
   if (!benefitName.ok) return benefitName as Result<Coverage>;
   const sub = newSubCoverage({ name: name.value, benefitName: benefitName.value }, tree.subCoverages.length, smallestFreeKey("subCoverage", tree.subCoverages.map((s) => s.key)), newId);
   return ok({ ...tree, subCoverages: [...tree.subCoverages, sub] });
@@ -182,7 +195,7 @@ export function addSubCoverage(tree: Coverage, input: NewSubCoverage, newId: New
 export function addBenefit(tree: Coverage, subCoverageId: Id, benefitName: string, newId: NewId): Result<Coverage> {
   const sub = findSubCoverage(tree, subCoverageId);
   if (!sub) return notFound(`세부보장 ${subCoverageId}`);
-  const name = checkName(benefitName, "급부명");
+  const name = checkBenefitName(benefitName);
   if (!name.ok) return name as Result<Coverage>;
   const dup = siblingDuplicate<Coverage>(sub.benefits, name.value, "급부명");
   if (dup) return dup;
@@ -232,7 +245,7 @@ export function renameBenefit(tree: Coverage, subCoverageId: Id, benefitId: Id, 
   if (!sub) return notFound(`세부보장 ${subCoverageId}`);
   const benefit = sub.benefits.find((b) => b.id === benefitId);
   if (!benefit) return notFound(`급부 ${benefitId}`);
-  const checked = checkName(name, "급부명");
+  const checked = checkBenefitName(name);
   if (!checked.ok) return checked as Result<Coverage>;
   const dup = siblingDuplicate<Coverage>(sub.benefits, checked.value, "급부명", benefit.id);
   if (dup) return dup;

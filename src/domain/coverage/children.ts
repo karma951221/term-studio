@@ -5,6 +5,7 @@
  * 행 문맥(값 평가)은 쓰는 쪽이 댄다 — 조립 문맥(`assembly/context.ts`).
  */
 import type { ChildrenProviders, StructNode, StructNodeRef } from "../structure";
+import { benefitDisplayName } from "./tree";
 import type { Coverage } from "./types";
 
 /** 담보 트리의 뿌리 구조 노드. */
@@ -26,7 +27,8 @@ export function coverageChildrenProviders(tree: Coverage): ChildrenProviders {
     subCoverage: {
       children: (node: StructNodeRef) => {
         const sub = tree.subCoverages.find((s) => s.id === node.id);
-        return sub ? byOrder(sub.benefits).map((b) => ({ level: "benefit" as const, id: b.id, key: b.key, name: b.name, order: b.order })) : [];
+        // 급부 이름은 읽는 이름 — 급부명이 비면 세부보장명 (기능/담보 §3.1)
+        return sub ? byOrder(sub.benefits).map((b) => ({ level: "benefit" as const, id: b.id, key: b.key, name: benefitDisplayName(b, sub), order: b.order })) : [];
       },
     },
   };

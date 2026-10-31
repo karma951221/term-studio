@@ -22,7 +22,7 @@ import { planFormScope, type PlanFormScope } from "../catalog/expression";
 import type { Discriminator, EnumDef, SlotPath } from "../catalog/types";
 import { isFormOpened, missingEnumCodes, missingValueMessage } from "../catalog/values";
 import { coverageChildrenProviders, coverageStructNode } from "../coverage/children";
-import { descendants, findNode, findNodeById, nodeName, nodesOf } from "../coverage/tree";
+import { benefitDisplayName, descendants, findNode, findNodeById, nodeName, nodesOf } from "../coverage/tree";
 import type { Coverage, CoverageNode, CoverageNodeLevel } from "../coverage/types";
 import type { DocumentNode } from "../document/nodes";
 import { applyArticleCopies } from "../product/articleCopies";
@@ -382,7 +382,8 @@ export function snapshotTree(c: AssemblyCoverage): Coverage {
         key: sub.key,
         name: sub.name,
         order: sub.order,
-        benefits: [...sub.benefits].sort((a, b) => a.order - b.order).map((b) => ({ id: b.id, key: b.key, name: b.name, order: b.order })),
+        // 급부명이 비면 세부보장명 — `builtin.benefit.name` · 동적표 행 머리가 이 이름을 읽는다 (기능/담보 §3.1, 2026-10-31)
+        benefits: [...sub.benefits].sort((a, b) => a.order - b.order).map((b) => ({ id: b.id, key: b.key, name: benefitDisplayName(b, sub), order: b.order })),
       })),
   };
 }

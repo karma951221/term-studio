@@ -11,6 +11,7 @@
  *
  * 표준 Postgres 만 쓴다 (PGlite 전용 기능 금지).
  */
+import { sql } from "drizzle-orm";
 import { integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 /** 감사 컬럼 — 카탈로그와 같은 모양. */
@@ -69,5 +70,6 @@ export const benefits = pgTable(
     order: integer("order").notNull(),
     ...audit,
   },
-  (t) => [uniqueIndex("benefits_sibling_name").on(t.subCoverageId, t.name), uniqueIndex("benefits_sibling_key").on(t.subCoverageId, t.key)],
+  // 급부명은 선택 — 형제 유일은 적힌 이름끼리만, 빈 이름은 여럿이어도 된다 (기능/담보 §3.1 · 마이그레이션 0040, 2026-10-31)
+  (t) => [uniqueIndex("benefits_sibling_name").on(t.subCoverageId, t.name).where(sql`${t.name} <> ''`), uniqueIndex("benefits_sibling_key").on(t.subCoverageId, t.key)],
 );

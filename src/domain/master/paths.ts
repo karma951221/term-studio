@@ -50,6 +50,16 @@ export function allMasterFields(master: MasterTree = MASTER): MasterFieldRef[] {
   return master.flatMap(fieldsOfForm);
 }
 
+/** 마스터 소유 자리인가 (ADR-0097) — 그 폼에 `owner: "master"` 표식. 없는 경로는 아니다. */
+export function isMasterOwnedPath(path: MasterPath, master: MasterTree = MASTER): boolean {
+  return findMasterField(path, master)?.form.owner === "master";
+}
+
+/** 상품 소유 폼만 남긴 마스터 — 스냅샷(상품담보)의 값 자리 · 완결성 · 복사가 이것을 본다 (ADR-0097). */
+export function productOwnedMaster(master: MasterTree = MASTER): MasterTree {
+  return master.filter((f) => f.owner !== "master");
+}
+
 /** 경로가 가리키는 자리. 없는 경로면 undefined (brokenRef 의 재료). */
 export function findMasterField(path: MasterPath, master: MasterTree = MASTER): MasterFieldRef | undefined {
   const segments = path.split(".");

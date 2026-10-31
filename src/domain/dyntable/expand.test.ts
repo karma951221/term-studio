@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import { plainConst } from "../clause/bind";
 import type { Inline } from "../clause/nodes";
+import { reductionBoundary, reductionPeriodEnumSeed, type ReductionBoundary } from "../coverage/traits";
 import { evaluate, parse, type EvalContext } from "../expression";
 import { entered } from "../types";
 import { expandDynTable } from "./expand";
@@ -26,14 +27,22 @@ const R = def(dynTableFixtureR(), "T0003");
 
 const deps = { formatConst: plainConst, refId: "ref1" };
 
+/** 시드 「감액기간」(E0010) — 경계는 열거값(코드 · 순서 · 표시 글자)이다 (기능/동적표 §3.2 · 2026-10-31). */
+const 감액기간 = reductionPeriodEnumSeed();
+/** 표시 글자(「90일」 · 「1년」)로 경계 하나 — 열거형에 없는 글자는 코드로 보고 「없는 값」. */
+function boundary(label: string): ReductionBoundary {
+  const v = 감액기간.values.find((x) => x.label === label);
+  return reductionBoundary(감액기간, v ? v.code : label);
+}
+
 interface B {
   sub: string;
   name: string;
   rate?: number;
-  reduction?: { periods: [number, number][]; afterRate?: number };
+  reduction?: { periods: [string, number][]; afterRate?: number };
 }
 
-/** 급부 줄 — `sub` 세부보장명 · `name` 급부명 · `rate` 지급률 · `reduction` [[끝 개월, 비율] …]. */
+/** 급부 줄 — `sub` 세부보장명 · `name` 급부명 · `rate` 지급률 · `reduction` [[끝 경계 글자, 비율] …]. */
 function benefits(list: B[]): DynBenefit[] {
   const subKeys = new Map<string, string>();
   return list.map((b, i) => {
@@ -44,7 +53,7 @@ function benefits(list: B[]): DynBenefit[] {
       key: `G${i + 1}`,
       name: b.name,
       ...(b.rate !== undefined ? { payRate: b.rate } : {}),
-      ...(b.reduction ? { reduction: { periods: b.reduction.periods.map(([end, rate]) => ({ end, rate })), afterRate: b.reduction.afterRate ?? 100 } } : {}),
+      ...(b.reduction ? { reduction: { periods: b.reduction.periods.map(([end, rate]) => ({ end: boundary(end), rate })), afterRate: b.reduction.afterRate ?? 100 } } : {}),
     };
   });
 }
@@ -116,7 +125,7 @@ const 갱신 = { 갱신형: { kind: "const" as const, value: true } };
 
 describe("동적표 펼침 — 인수 케이스", () => {
   it("케이스 1 세부보장 1 · 급부 1 — 경계 1개 → 열 2개(첫 + 마지막), 100% × 50% = 50%, 「해당보장의」 없음", () => {
-    const list = benefits([{ sub: "질병80%이상후유장해", name: "질병80%이상후유장해", rate: 100, reduction: { periods: [[12, 50]] } }]);
+    const list = benefits([{ sub: "질병80%이상후유장해", name: "질병80%이상후유장해", rate: 100, reduction: { periods: [["1년", 50]] } }]);
     const t = expand(A, list, 비갱신);
     expect(t.issues).toEqual([]);
     expect(lines(t, list)).toEqual([
@@ -146,23 +155,23 @@ describe("동적표 펼침 — 인수 케이스", () => {
     expect(lines(r, list)).toEqual(expected);
   });
 
-  it("케이스 3 급부마다 감액이 다름 — 경계 합집합 {3개월, 1년} → 열 3개, 가운데 열은 기준일을 되풀이, B 는 3개월 경계가 없어 첫 열도 1년 구간 비율", () => {
-    // 일 단위 경계(90일)는 아직 적을 수 없어 3개월로 넣는다 (기능/동적표 §5)
+  it("케이스 3 급부마다 감액이 다름 — 경계 합집합 {90일, 1년} → 열 3개, 가운데 열은 기준일을 되풀이, B 는 90일 경계가 없어 첫 열도 1년 구간 비율", () => {
+    // 경계는 열거형 「감액기간」 값이라 90일을 그대로 적는다 (2026-10-31 — 인수기준 케이스 3 의 열린 자리를 닫는다)
     const list = benefits([
-      { sub: "○○진단비", name: "○○진단비(A질환)", rate: 100, reduction: { periods: [[3, 10], [12, 50]] } },
-      { sub: "○○진단비", name: "○○진단비(B질환)", rate: 100, reduction: { periods: [[12, 50]] } },
+      { sub: "○○진단비", name: "○○진단비(A질환)", rate: 100, reduction: { periods: [["90일", 10], ["1년", 50]] } },
+      { sub: "○○진단비", name: "○○진단비(B질환)", rate: 100, reduction: { periods: [["1년", 50]] } },
     ]);
     const t = expand(A, list, 갱신);
     expect(t.issues).toEqual([]);
     expect(lines(t, list)).toEqual([
-      "[구 분 │ 최초계약일부터 3개월경과시점 전일 이전 │ 최초계약일부터 3개월경과시점 이후 최초계약일부터 1년경과시점 전일 이전 │ 최초계약일부터 1년경과시점 이후]",
+      "[구 분 │ 최초계약일부터 90일경과시점 전일 이전 │ 최초계약일부터 90일경과시점 이후 최초계약일부터 1년경과시점 전일 이전 │ 최초계약일부터 1년경과시점 이후]",
       "[○○진단비(A질환) │ 보험가입금액의 10% │ 보험가입금액의 50% │ 보험가입금액의 100%]",
       "[○○진단비(B질환) │ 보험가입금액의 50% │ 보험가입금액의 50% │ 보험가입금액의 100%]",
     ]);
   });
 
   it("케이스 4 세부보장 여러 개 · 각 급부 1 — 세부보장 2개 이상 → 셀 앞 「해당보장의」, 구분은 1칸", () => {
-    const red = { periods: [[12, 50]] as [number, number][] };
+    const red = { periods: [["1년", 50]] as [string, number][] };
     const list = benefits([
       { sub: "대장", name: "대장 양성종양및특정폴립진단비", rate: 100, reduction: red },
       { sub: "위", name: "위,십이지장,소화계통 양성종양및특정폴립진단비", rate: 100, reduction: red },
@@ -181,7 +190,7 @@ describe("동적표 펼침 — 인수 케이스", () => {
   });
 
   it("케이스 5 세부보장 여러 개 · 급부 여러 개 — 감액 없는 급부는 두 열 모두 100%, 행 순서 = 트리 순서", () => {
-    const red = { periods: [[12, 50]] as [number, number][] };
+    const red = { periods: [["1년", 50]] as [string, number][] };
     const list = benefits([
       { sub: "암진단비(유사암제외)", name: "암진단비(암(유사암 및 소액암 제외))", rate: 100 },
       { sub: "암진단비(유사암제외)", name: "암진단비(소액암)", rate: 100, reduction: red },
@@ -219,7 +228,7 @@ describe("동적표 펼침 — 인수 케이스", () => {
     const list = benefits([
       { sub: "항암방사선약물치료비", name: "항암방사선약물치료비(암(유사암제외))", rate: 100 },
       { sub: "항암방사선약물치료비", name: "항암방사선약물치료비(기타피부암 및 갑상선암)", rate: 20 },
-      { sub: "항암방사선약물치료비", name: "항암방사선약물치료비(기타피부암 및 갑상선암)", rate: 20, reduction: { periods: [[12, 50]] } },
+      { sub: "항암방사선약물치료비", name: "항암방사선약물치료비(기타피부암 및 갑상선암)", rate: 20, reduction: { periods: [["1년", 50]] } },
     ]);
     const t = expand(A, list, 갱신);
     expect(lines(t, list)).toEqual([
@@ -243,7 +252,7 @@ describe("동적표 펼침 — 인수 케이스", () => {
 
   it("케이스 6 주요치료비 — 단서문구 글 인자가 첫 · 마지막 열 기간 문구 뒤에 붙는다 (정의 A′)", () => {
     const list = benefits([
-      { sub: "2대질환 주요치료비", name: "보험금 지급기간 동안 「2대질환 주요치료」를 받은 경우 (연간1회한, 10년간) (보험금 지급기간 동안 적용)", rate: 100, reduction: { periods: [[12, 50]] } },
+      { sub: "2대질환 주요치료비", name: "보험금 지급기간 동안 「2대질환 주요치료」를 받은 경우 (연간1회한, 10년간) (보험금 지급기간 동안 적용)", rate: 100, reduction: { periods: [["1년", 50]] } },
     ]);
     const t = expand(A2, list, { ...갱신, 단서: { kind: "const", value: "「2대질환」으로 진단확정 시" } });
     expect(t.issues).toEqual([]);
@@ -259,9 +268,9 @@ describe("동적표 펼침 — 인수 케이스", () => {
 describe("동적표 펼침 — 규칙", () => {
   it("셀 비율 = 지급률 × 감액비율 / 100 — 정수가 아니면 소수 한 자리까지 그대로(반올림 없음)", () => {
     const list = benefits([
-      { sub: "S", name: "a", rate: 33, reduction: { periods: [[12, 50]] } }, // 16.5
-      { sub: "S", name: "b", rate: 100, reduction: { periods: [[12, 33.33]] } }, // 33.33 → 33.3
-      { sub: "S", name: "c", rate: 20, reduction: { periods: [[12, 50]] } }, // 10
+      { sub: "S", name: "a", rate: 33, reduction: { periods: [["1년", 50]] } }, // 16.5
+      { sub: "S", name: "b", rate: 100, reduction: { periods: [["1년", 33.33]] } }, // 33.33 → 33.3
+      { sub: "S", name: "c", rate: 20, reduction: { periods: [["1년", 50]] } }, // 10
     ]);
     const t = expand(A, list, 비갱신);
     expect(lines(t, list).slice(1)).toEqual(["[a │ 보험가입금액의 16.5% │ 보험가입금액의 33%]", "[b │ 보험가입금액의 33.3% │ 보험가입금액의 100%]", "[c │ 보험가입금액의 10% │ 보험가입금액의 20%]"]);
@@ -269,20 +278,20 @@ describe("동적표 펼침 — 규칙", () => {
 
   it("이후 지급률 — 마지막 구간 뒤는 afterRate, 제 경계가 없는 열은 그 열을 덮는 자기 구간의 비율", () => {
     const list = benefits([
-      { sub: "S", name: "a", rate: 100, reduction: { periods: [[6, 20], [24, 50]], afterRate: 80 } },
-      { sub: "S", name: "b", rate: 100, reduction: { periods: [[12, 30]] } },
+      { sub: "S", name: "a", rate: 100, reduction: { periods: [["180일", 20], ["2년", 50]], afterRate: 80 } },
+      { sub: "S", name: "b", rate: 100, reduction: { periods: [["1년", 30]] } },
     ]);
     const t = expand(A, list, 비갱신);
-    // 경계 {6, 12, 24} → 열 4개: [0,6) [6,12) [12,24) [24,∞)
+    // 경계 {180일, 1년, 2년}(열거 순서) → 열 4개: [0,180일) [180일,1년) [1년,2년) [2년,∞)
     expect(lines(t, list)).toEqual([
-      "[구 분 │ 계약일부터 6개월경과시점 전일 이전 │ 계약일부터 6개월경과시점 이후 계약일부터 1년경과시점 전일 이전 │ 계약일부터 1년경과시점 이후 계약일부터 2년경과시점 전일 이전 │ 계약일부터 2년경과시점 이후]",
+      "[구 분 │ 계약일부터 180일경과시점 전일 이전 │ 계약일부터 180일경과시점 이후 계약일부터 1년경과시점 전일 이전 │ 계약일부터 1년경과시점 이후 계약일부터 2년경과시점 전일 이전 │ 계약일부터 2년경과시점 이후]",
       "[a │ 보험가입금액의 20% │ 보험가입금액의 50% │ 보험가입금액의 50% │ 보험가입금액의 80%]",
       "[b │ 보험가입금액의 30% │ 보험가입금액의 30% │ 보험가입금액의 100% │ 보험가입금액의 100%]",
     ]);
   });
 
   it("지급률 미입력 = 100% — 미입력 사유 없이 감액비율 그대로 찍는다 (기능/담보 §3.4, 2026-10-21)", () => {
-    const list = benefits([{ sub: "S", name: "a", reduction: { periods: [[12, 50]] } }, { sub: "S", name: "b", rate: 100 }]);
+    const list = benefits([{ sub: "S", name: "a", reduction: { periods: [["1년", 50]] } }, { sub: "S", name: "b", rate: 100 }]);
     const t = expand(A, list, 비갱신);
     expect(t.rows).toHaveLength(2);
     expect(lines(t, list)[1]).toBe("[a │ 보험가입금액의 50% │ 보험가입금액의 100%]");
@@ -290,7 +299,7 @@ describe("동적표 펼침 — 규칙", () => {
   });
 
   it("구분자 연결 — arg.갱신형 이 구분자 코드로 바뀌어 조건에 남는다(사용처 문맥에서 늦게 평가)", () => {
-    const list = benefits([{ sub: "S", name: "a", rate: 100, reduction: { periods: [[12, 50]] } }]);
+    const list = benefits([{ sub: "S", name: "a", rate: 100, reduction: { periods: [["1년", 50]] } }]);
     const t = expand(A, list, { 갱신형: { kind: "discriminator", code: "D0001" } });
     expect(t.issues).toEqual([]);
     const first = t.header[1][0];
@@ -301,7 +310,7 @@ describe("동적표 펼침 — 규칙", () => {
   });
 
   it("연결도 기본 연결도 없으면 argUnbound(동적표 코드로), 기본 연결이 있으면 그것을 쓴다", () => {
-    const list = benefits([{ sub: "S", name: "a", rate: 100, reduction: { periods: [[12, 50]] } }]);
+    const list = benefits([{ sub: "S", name: "a", rate: 100, reduction: { periods: [["1년", 50]] } }]);
     const t = expand(A, list, undefined);
     expect(t.issues).toEqual([expect.objectContaining({ kind: "argUnbound", at: expect.objectContaining({ refPath: "arg.갱신형" }) })]);
     expect(t.issues[0].message).toContain("동적표 T0001");
@@ -314,7 +323,7 @@ describe("동적표 펼침 — 규칙", () => {
   });
 
   it("노드 id — 참조 id / 템플릿 노드 id @ 행 · 열, 머리글 행은 h; 표 슬롯은 같은 id 의 글 노드가 된다", () => {
-    const list = benefits([{ sub: "S", name: "a", rate: 100, reduction: { periods: [[12, 50]] } }]);
+    const list = benefits([{ sub: "S", name: "a", rate: 100, reduction: { periods: [["1년", 50]] } }]);
     const t = expand(A, list, 비갱신);
     expect(t.header[0]).toEqual([{ id: "ref1/rowHeader@rhc0", kind: "text", text: "구 분" }]);
     expect(t.header[1].map((n) => n.id)).toEqual(["ref1/first-base@rhc1", "ref1/first-t1@rhc1", "ref1/first-boundary@rhc1", "ref1/first-t2@rhc1"]);
@@ -331,9 +340,27 @@ describe("동적표 펼침 — 규칙", () => {
   });
 
   it("첫 · 가운데 · 마지막 머리글이 모두 빈 정의(단일형)는 감액이 있어도 열 하나 · 비율 = 지급률", () => {
-    const list = benefits([{ sub: "S", name: "a", rate: 60, reduction: { periods: [[12, 50]] } }]);
+    const list = benefits([{ sub: "S", name: "a", rate: 60, reduction: { periods: [["1년", 50]] } }]);
     const t = expand(R, list, undefined);
     expect(lines(t, list)).toEqual(["[구 분 │ 지급금액]", "[a │ 보험가입금액의 60%]"]);
+  });
+
+  it("경계 합집합은 같은 열거값 = 같은 경계, 정렬은 열거 순서 — 급부마다 적은 순서가 달라도 열은 하나로 선다", () => {
+    const list = benefits([
+      { sub: "S", name: "a", rate: 100, reduction: { periods: [["1년", 50]] } },
+      { sub: "S", name: "b", rate: 100, reduction: { periods: [["90일", 10], ["1년", 40]] } },
+    ]);
+    const t = expand(A, list, 비갱신);
+    expect(t.header).toHaveLength(4);
+    expect(lines(t, list)[0]).toBe("[구 분 │ 계약일부터 90일경과시점 전일 이전 │ 계약일부터 90일경과시점 이후 계약일부터 1년경과시점 전일 이전 │ 계약일부터 1년경과시점 이후]");
+  });
+
+  it("열거형에서 지워진 경계는 brokenRef(행 좌표) — 머리글엔 「없는 값」 글자, 열은 맨 뒤", () => {
+    const list = benefits([{ sub: "S", name: "a", rate: 100, reduction: { periods: [["1년", 50], ["V09", 70]] } }]);
+    const t = expand(A, list, 비갱신);
+    expect(t.issues).toEqual([expect.objectContaining({ kind: "brokenRef", at: expect.objectContaining({ refPath: "동적표 T0001 › 행 a" }) })]);
+    expect(t.issues[0].message).toContain("V09");
+    expect(lines(t, list)[0]).toBe("[구 분 │ 계약일부터 1년경과시점 전일 이전 │ 계약일부터 1년경과시점 이후 계약일부터 없는 값 V09경과시점 전일 이전 │ 계약일부터 없는 값 V09경과시점 이후]");
   });
 
   it("급부가 없으면 머리글만 (단일 열) · 행 없음", () => {

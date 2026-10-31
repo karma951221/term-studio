@@ -280,3 +280,26 @@ describe("CoverageCards — 레벨 라벨은 노드 키 (ADR-0087 · 기능/담�
     expect(html).toContain("급부 1");
   });
 });
+
+describe("CoverageCards — 급부명은 선택: 비면 세부보장명으로 보인다 (기능/담보 §3.1, 2026-10-31)", () => {
+  function renderBlank(mode: "read" | "edit") {
+    const structure = subs(1);
+    structure[0]!.benefits[0]!.name = "";
+    return renderToStaticMarkup(
+      <EditShell initial={{ label: "암진단비", structure, values: {} }} title="암진단비" path={[{ label: "담보", href: "/coverages" }]} saveAction={async () => ({ ok: true })} initialMode={mode}>
+        <CoverageCards coverageKey={COVERAGE_KEY} formByNode={{}} original={savedOf(structure)} attributeValueLabels={[]} />
+      </EditShell>,
+    );
+  }
+  it("읽기 — 급부 카드 이름 자리에 세부보장명이 흐리게 선다 · aria 이름도 세부보장명", () => {
+    const html = renderBlank("read");
+    expect(html).toContain('class="ts-cov-card-name ts-cov-name-inherited"');
+    expect(html).toContain('title="급부명이 비어 세부보장명으로 읽는다"');
+    expect(html).toContain('aria-label="급부 세부보장1"');
+  });
+  it("편집 — 빈 급부명 입력칸의 placeholder 가 「세부보장명을 따른다」, 빈 이름 오류가 없다", () => {
+    const html = renderBlank("edit");
+    expect(html).toContain('placeholder="비우면 세부보장명 (세부보장1)"');
+    expect(html).not.toContain("비울 수 없습니다");
+  });
+});

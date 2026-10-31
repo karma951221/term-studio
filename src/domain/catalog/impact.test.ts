@@ -42,6 +42,8 @@ describe("구분자정의 S6 · 역할권한 S3 — 영향(Impact) 계산", () =
       { refPath: "no_surrender.type", ownerName: "세목 · 무저해지 › 유형" },
     ]);
     expect(enumReferences("E0009")).toEqual([]);
+    // 표 필드의 enum 열(감액 구간의 「감액기간」)도 코드 참조다 (2026-10-31)
+    expect(enumReferences("E0010")).toEqual([{ refPath: "reduction.periods", ownerName: "급부 · 감액 › 구간" }]);
   });
 
   it("추가 cascade·참조를 합쳐 Impact 를 만든다", async () => {

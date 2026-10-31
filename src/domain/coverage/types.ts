@@ -12,6 +12,7 @@ export interface Benefit {
   id: Id;
   /** 노드 키 `1` · `2` … — 그 세부보장 안 유일 · 불변 · 순서와 무관 (ADR-0087 결정 2, `keys.ts`). */
   key: string;
+  /** 급부명 — 선택 값. 비면(`""`) 어디서나 세부보장명으로 읽는다 (`benefitDisplayName`, 기능/담보 §3.1 · 2026-10-31). 형제 유일은 적힌 이름끼리만. */
   name: string;
   order: number;
 }

@@ -178,7 +178,7 @@ export function PcValues({ productId, productName, productHref, coverageId, cove
                       <div className="ts-cov-benefits">
                         {s.benefits.map((b) => {
                           const card = (body: ReactNode, headExtra?: ReactNode) => (
-                            <Card key={b.id} editing={false} level="benefit" nodeKey={`benefit:${b.id}`} treeKey={b.key} name={b.name} onName={noop} isTarget={false} scrollToCard={false} body={body} headExtra={headExtra} />
+                            <Card key={b.id} editing={false} level="benefit" nodeKey={`benefit:${b.id}`} treeKey={b.key} name={b.name} fallbackName={s.name} onName={noop} isTarget={false} scrollToCard={false} body={body} headExtra={headExtra} />
                           );
                           // 급부 값 폼은 카드 틀째 그린다 — 지급률이 이름 줄 오른쪽(머리 줄)에 선다 (담보 상세와 같다)
                           const framed = form(b.id, ({ head, body }) => card(<div id={`own-${b.id}-values`}>{body}</div>, head));
