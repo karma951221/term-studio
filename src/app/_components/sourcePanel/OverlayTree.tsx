@@ -7,7 +7,7 @@
  * - 값별 분기: 판단 값 + 칸(값 이름), 고른 칸만 진하게. 칸 없는 값 · 막힘도 표시.
  * - 값 자리(슬롯): 〔슬롯〕 옆에 결과에 들어간 값.
  * - 함수조항: 접힌 호출 줄(인자 ← 구분자 = 값 · 고른 옵션 · 상품 옵션) → 펼치면 본문을 같은 방식으로(안의 호출도 한 단계씩).
- * - 반복 · 동적표: 원소(행) 탭 — 결과에서 누른 원소가 처음부터 골라진다. 원소 0개는 회색 문구 + 「비었을 때」 칸.
+ * - 반복 · 동적표: 원소(행 · 정액형은 표) 탭 — 결과에서 누른 원소 · 칸이 처음부터 골라진다. 원소 0개는 회색 문구 + 「비었을 때」 칸.
  * 회색(`is-dim`)은 안 탄 가지 · 평가하지 않은 자리의 안쪽 전부다. 원본 자리 id 는 `overlay.ts` 규칙(§3.4 와 같은 체계).
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -17,7 +17,7 @@ import { optionCodeOf, repeatLabel, type BlockNode, type InlineNode } from "@/do
 import { particlePreset } from "@/domain/document/particles";
 
 import { IconFx, IconLink } from "../icons";
-import { argText, BRANCH_OUTCOME_LABEL, clauseScope, elementForNode, elementScope, exprText, keyOf, links, readsText, ROOT_SCOPE, slotText, type ExprAt, type Scope } from "./overlay";
+import { argText, BRANCH_OUTCOME_LABEL, clauseScope, dynRowForNode, elementForNode, elementScope, exprText, keyOf, links, readsText, ROOT_SCOPE, slotText, type ExprAt, type Scope } from "./overlay";
 
 export interface OverlayCtx {
   view: SourceView;
@@ -397,16 +397,17 @@ export function ClauseCall({ node, ctx, inline = false }: { node: CallNode; ctx:
 function DynTableView({ node, ctx }: { node: Extract<BlockNode, { kind: "dynTableRef" }>; ctx: OverlayCtx }) {
   const rec = ctx.dim ? undefined : ctx.index.get(keyOf(ctx.scope, node.id));
   const table = rec?.kind === "dynTable" ? (rec as DynTableDecision) : undefined;
-  const [selected, setSelected] = useState(0);
+  const [selected, setSelected] = useState(() => (table ? dynRowForNode(table, ctx.focus) : 0));
   const row = table?.rows[selected];
+  const unit = table?.fixed ? "표" : "행";
   return (
     <Spot ctx={ctx} id={node.id} as="div" className={table ? "ts-src-repeat" : "ts-src-repeat is-dim"}>
       <div className="ts-src-branch-head">
         동적표 {node.tableCode}
-        {table && table.rows.length > 0 && <Tabs label={`동적표 ${node.tableCode} 행`} items={table.rows.map((r, i) => ({ id: String(i), label: r.name }))} selected={String(selected)} onSelect={(id) => setSelected(Number(id))} />}
+        {table && table.rows.length > 0 && <Tabs label={`동적표 ${node.tableCode} ${unit}`} items={table.rows.map((r, i) => ({ id: String(i), label: r.name }))} selected={String(selected)} onSelect={(id) => setSelected(Number(id))} />}
         {table?.issue && <span className="ts-src-mark is-blocked"> {table.issue.message}</span>}
       </div>
-      {table && table.rows.length === 0 && <div className="ts-src-empty">행 없음 — 원천 급부 0개</div>}
+      {table && table.rows.length === 0 && <div className="ts-src-empty">{table.fixed ? "표 없음 — 정액표 급부 또는 운영 가입금액 0개" : "행 없음 — 원천 급부 0개"}</div>}
       {row && <DecisionList decisions={row.decisions} ctx={ctx} />}
     </Spot>
   );
@@ -440,7 +441,7 @@ export function DecisionList({ decisions, ctx }: { decisions: readonly DecisionR
           )}
           {d.kind === "clause" && <span>함수조항 {ctx.view.clauses[d.clauseCode]?.label ?? d.clauseCode}</span>}
           {d.kind === "repeat" && <span>반복 — 원소 {d.elements.length}개</span>}
-          {d.kind === "dynTable" && <span>동적표 {d.tableCode} — 행 {d.rows.length}</span>}
+          {d.kind === "dynTable" && <span>동적표 {d.tableCode} — {d.fixed ? "표" : "행"} {d.rows.length}</span>}
         </li>
       ))}
     </ul>

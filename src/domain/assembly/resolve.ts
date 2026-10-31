@@ -68,7 +68,7 @@ import { expandClause, resolveOptions } from "../clause/reference";
 import type { Clause, ClauseMode, OptionSelection } from "../clause/types";
 import type { EnumDef } from "../catalog/types";
 import type { Box } from "../document/box";
-import { expandDynTable, expandFixedDynTable, type DynBenefit, type DynTable } from "../dyntable";
+import { expandDynTable, expandFixedDynTable, formatWon, type DynBenefit, type DynTable } from "../dyntable";
 import { fixedGrid, insuredAmounts, reductionPeriods } from "../coverage/traits";
 import type { SlotReader } from "../catalog";
 import type { MasterTree } from "../master";
@@ -931,6 +931,7 @@ class Walker {
     const isFatal = (i: Issue) => i.severity !== "warning" && (i.kind === "argUnbound" || i.kind === "brokenRef" || i.kind === "structure" || i.kind === "notEntered");
 
     if (def.fixed) {
+      if (rec) rec.fixed = true;
       // 정액형 표(기능/동적표 §3.7) — 운영 가입금액은 담보(상품담보) 문맥의 「가입금액」. 급부 → 가입금액 → 캡션 + 표 블록 여럿
       const amounts = insuredAmounts(readerOf(this.ctx.eval)) ?? [];
       const expanded = expandFixedDynTable(def, { benefits, insuredAmounts: amounts }, n.bindings, deps, at);
@@ -943,18 +944,21 @@ class Walker {
       const out: RTable<RInline>[] = [];
       let heading: RInline[] | undefined;
       let caption: RInline[] | undefined;
+      // 출처 패널 — 표 하나(와 그 앞 급부 머리글 · 캡션)의 결정 노드를 한 줄에 모은다
+      let pending: { blocks: number[]; decisions: DecisionRecord[] } = { blocks: [], decisions: [] };
       expanded.blocks.forEach((b, k) => {
-        if (b.kind === "benefitHeader") heading = this.inlines(b.inlines, inner);
-        else if (b.kind === "caption") caption = this.inlines(b.inlines, inner);
+        pending.blocks.push(k);
+        if (b.kind === "benefitHeader") heading = this.into(rec && pending.decisions, () => this.inlines(b.inlines, inner));
+        else if (b.kind === "caption") caption = this.into(rec && pending.decisions, () => this.inlines(b.inlines, inner));
         else {
-          out.push({
-            kind: "table",
-            id: `${n.id}#${k}`,
-            ...(heading ? { heading } : {}),
-            ...(caption ? { caption } : {}),
-            columns: b.header.map(() => ({})),
-            rows: [{ header: true, cells: b.header.map((cell) => this.inlines(cell, inner)) }, ...b.rows.map((row) => ({ cells: row.cells.map((cell) => this.inlines(cell, inner)), ...(row.spans ? { spans: row.spans } : {}) }))],
-          });
+          const rows = this.into(rec && pending.decisions, () => [
+            { header: true, cells: b.header.map((cell) => this.inlines(cell, inner)) },
+            ...b.rows.map((row) => ({ cells: row.cells.map((cell) => this.inlines(cell, inner)), ...(row.spans ? { spans: row.spans } : {}) })),
+          ]);
+          out.push({ kind: "table", id: `${n.id}#${k}`, ...(heading ? { heading } : {}), ...(caption ? { caption } : {}), columns: b.header.map(() => ({})), rows });
+          const benefit = benefits.find((x) => x.key === b.benefitKey);
+          rec?.rows.push({ name: `${benefit?.name || benefit?.subCoverageName || b.benefitKey} · ${formatWon(b.amount)}`, benefitKeys: [b.benefitKey], amount: b.amount, blocks: pending.blocks, decisions: pending.decisions });
+          pending = { blocks: [], decisions: [] };
           heading = undefined;
           caption = undefined;
         }

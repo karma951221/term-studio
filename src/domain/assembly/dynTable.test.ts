@@ -11,8 +11,9 @@ import type { Id } from "../types";
 import { assembleSpecial } from "./booklet";
 import { buildContexts } from "./context";
 import { alphaMaster, alphaPlusFixture, coverageEntry, type CoverageSpec } from "./fixture";
+import { explainArticle } from "./explain";
 import { resolveDocument } from "./resolve";
-import type { AssemblyInput, RenderedArticle, RenderedStatic } from "./types";
+import type { AssemblyInput, DynTableDecision, RenderedArticle, RenderedStatic } from "./types";
 
 /*
  * 동적표 조립 — 기능/동적표 §3.2 · §3.4 · §3.6, QA/인수기준 「동적표(감액 지급금액 표) 인수 케이스」.
@@ -199,6 +200,36 @@ describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
     ]);
     expect(tables[2].rows[1].spans).toEqual([2, 1, 1, 1]);
     expect(tables[2].rows[0].header).toBe(true);
+  });
+
+  it("(k) 정액형 표의 결정 노드 기록 — 표 블록(급부 × 가입금액)마다 한 줄 · 그 블록 번호 · 금액 (출처 패널, 기능/동적표 §5)", () => {
+    const subs: Sub[] = [
+      {
+        id: "s1",
+        name: "통합치료비",
+        benefits: [
+          { id: "s1-a", name: "상해로 인한 경우", payRate: 100, fixedGrid: { columns: ["분류"], rows: [{ cells: ["상해"], amounts: { "30000000": 50_000, "50000000": 80_000 } }] } },
+          { id: "s1-b", name: "상해 이외의 사유로 인한 경우", payRate: 100, fixedGrid: { columns: ["분류"], rows: [{ cells: ["질병"], amounts: { "30000000": 50_000, "50000000": 80_000 } }] } },
+        ],
+      },
+    ];
+    const inp = input(subs, { doc: document(FIXED_CODE), insuredAmounts: [50_000_000, 30_000_000] });
+    const rec = explainArticle(inp, inp, { document: "special", productCoverageId: "pc-dyn", articleId: "dyn-art" }).sources[0].decisions[0] as DynTableDecision;
+    expect(rec).toMatchObject({ kind: "dynTable", nodeId: "dyn-ref", tableCode: FIXED_CODE, fixed: true });
+    expect(rec.issue).toBeUndefined();
+    expect(rec.rows.map((r) => [r.name, r.amount, r.blocks, r.benefitKeys])).toEqual([
+      ["상해로 인한 경우 · 3,000만원", 30_000_000, [0, 1, 2], ["1"]],
+      ["상해로 인한 경우 · 5,000만원", 50_000_000, [3, 4], ["1"]],
+      ["상해 이외의 사유로 인한 경우 · 3,000만원", 30_000_000, [5, 6, 7], ["2"]],
+      ["상해 이외의 사유로 인한 경우 · 5,000만원", 50_000_000, [8, 9], ["2"]],
+    ]);
+  });
+
+  it("(l) 정액형 표가 펼쳐지지 못하면 기록에 그 오류 · 표 0개", () => {
+    const subs: Sub[] = [{ id: "s1", name: "통합치료비", benefits: [{ id: "s1-a", name: "상해", payRate: 100, fixedGrid: { columns: ["분류"], rows: [{ cells: ["상해"], amounts: { "30000000": 50_000 } }] } }] }];
+    const inp = input(subs, { doc: document(FIXED_CODE) });
+    const rec = explainArticle(inp, inp, { document: "special", productCoverageId: "pc-dyn", articleId: "dyn-art" }).sources[0].decisions[0] as DynTableDecision;
+    expect(rec).toMatchObject({ fixed: true, rows: [], issue: { kind: "notEntered" } });
   });
 
   it("(j) 정액형 표 — 운영 가입금액이 없으면 표 대신 오류 마커(notEntered)", () => {

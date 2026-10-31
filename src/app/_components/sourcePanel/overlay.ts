@@ -5,7 +5,7 @@
  *   결정 노드 기록(`DecisionRecord.nodeId`) · 결과 글 조각(슬롯 값)의 id 가 이 규칙이라, 원본을 걸으며 지은 id 로 바로 찾는다.
  * - 이동 주소는 「고치러 가기」 표(§3.4)와 같은 목적지다.
  */
-import type { ArgRecord, ConditionEval, DecisionRecord, ReadRecord, RepeatDecision, SourceView } from "@/domain/assembly";
+import type { ArgRecord, ConditionEval, DecisionRecord, DynTableDecision, ReadRecord, RepeatDecision, SourceView } from "@/domain/assembly";
 import { koreanExpr, OUTPUT_DISPLAY, refPath, SCOPE_WORD_CHIP, type Expr, type KoreanLabels, type Ref } from "@/domain/expression";
 import type { Code, Id, Value, ValueSlot } from "@/domain/types";
 
@@ -62,6 +62,23 @@ export function elementForNode(rec: RepeatDecision, node: string | undefined): s
     if (hit) return hit.id;
   }
   return rec.elements[0]?.id;
+}
+
+/**
+ * 동적표 탭의 처음 고름 — 누른 노드 id 가 그 표의 칸이면 그 행(감액 표 `@r{행}`, 1부터) · 표 블록(정액형 `@k{블록}`)의 탭, 아니면 첫 탭.
+ * 노드 id 규칙은 `dyntable/expand.ts` · `expandFixed.ts` 머리 주석.
+ */
+export function dynRowForNode(rec: DynTableDecision, node: string | undefined): number {
+  const local = node?.startsWith(`${rec.nodeId}/`) ? node.slice(rec.nodeId.length + 1) : node;
+  if (!local) return 0;
+  if (rec.fixed) {
+    const k = /@k(\d+)/.exec(local);
+    const hit = k ? rec.rows.findIndex((r) => r.blocks?.includes(Number(k[1]))) : -1;
+    return hit < 0 ? 0 : hit;
+  }
+  const r = /@r(\d+)c/.exec(local);
+  const i = r ? Number(r[1]) - 1 : -1;
+  return i >= 0 && i < rec.rows.length ? i : 0;
 }
 
 // ───────────────────────────── 값 표기 ─────────────────────────────
