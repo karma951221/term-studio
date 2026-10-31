@@ -15,7 +15,8 @@ import { ALL_GENERAL_ANCESTORS, BOX_PICK_LABELS, HUMAN_CLAUSE_CODE, SEED, genera
 
 const NAME = "말기신부전증진단비보장";
 const CLAIM = "말기신부전증진단비";
-const GENERAL_2607 = "alpha2607-general";
+/** 대응 보통약관 — 보통약관 통합(6031636) 뒤 템플릿 하나 「보통약관(일반)」(바탕 판 = 2607). */
+const GENERAL_2607 = "general";
 /** 쓰는 함수조항 — 이름으로 고른다(코드는 시스템 채번). */
 const clauseCode = (label: string) => SEED.clauses.find((c) => c.label === label)!.code;
 const THIRD_PARTY = clauseCode("보험금 지급에 관한 세부규정(제3자 합의)");

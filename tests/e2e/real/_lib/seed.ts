@@ -79,6 +79,8 @@ export interface ProductSpec {
   planOptions: { code: string; axis: "type" | "form"; number: number; name: string; planTypeCode: string; values: { path: string; value: unknown }[] }[];
   plans: string[][];
   mounts: { code: string; coverage: string; section: "base" | "special"; attributes: { kindCode: string; valueCode: string }[]; auto?: true }[];
+  /** 보통약관 탭에서 노출을 끄는 템플릿 조 id — 다른 상품군 · 기본계약의 변형 조 (보통약관 통합 6031636, 기능/상품 §3.6). */
+  hiddenArticles?: string[];
 }
 
 /**
@@ -173,13 +175,19 @@ export function generalTreeOf(code: string): DocumentNode {
 export const ALL_GENERAL_ANCESTORS = new Map(SEED.generals.flatMap((g) => [...generalAncestors(g.tree)]));
 
 /**
- * 보통약관이 쓰는 함수조항 — 바탕 DB(`SEED_PROFILE=base`)가 보통약관과 함께 시드로 넣는다(C0001~, 보통약관 가져오기 전에 있어야 한다).
+ * 보통약관 쪽 문면 — 템플릿 「보통약관(일반)」과 상품 조 사본(그 판의 글을 지키는 조 — 예: 통합간편 「계약의 무효」의 무효 문구(통합간편)).
+ * 사본이 쓰는 함수조항 · 박스도 보통약관 몫이다 (src/db/seed/load.ts `generalSources` 와 같은 셈).
+ */
+const GENERAL_SOURCES: unknown[] = [...SEED.generals.map((g) => g.tree), ...SEED.products.flatMap((p) => ((p as { copies?: { replace?: unknown }[] }).copies ?? []).flatMap((c) => (c.replace ? [c.replace] : [])))];
+
+/**
+ * 보통약관 쪽이 쓰는 함수조항 — 바탕 DB(`SEED_PROFILE=base`)가 보통약관과 함께 시드로 넣는다(C0001~, 보통약관 가져오기 전에 있어야 한다).
  * 화면 E2E 는 이것들을 치지 않는다.
  */
-export const BASE_CLAUSE_CODES = new Set(SEED.generals.flatMap((g) => [...JSON.stringify(g.tree).matchAll(/"clauseCode":"(C\d+)"/g)].map((m) => m[1])));
+export const BASE_CLAUSE_CODES = new Set(GENERAL_SOURCES.flatMap((tree) => [...JSON.stringify(tree).matchAll(/"clauseCode":"(C\d+)"/g)].map((m) => m[1])));
 
-/** 보통약관 문면 + 보통약관이 쓰는 함수조항 본문(역할 함수조항 — 박스 · 열거형을 품는다). 바탕 DB 가 함께 넣는 것의 근거 (src/db/seed/load.ts 와 같은 셈). */
-const BASE_SOURCES = JSON.stringify([...SEED.generals.map((g) => g.tree), ...SEED.clauses.filter((c) => BASE_CLAUSE_CODES.has(c.code))]);
+/** 보통약관 쪽 문면 + 보통약관이 쓰는 함수조항 본문(역할 함수조항 — 박스 · 열거형을 품는다). 바탕 DB 가 함께 넣는 것의 근거 (src/db/seed/load.ts 와 같은 셈). */
+const BASE_SOURCES = JSON.stringify([...GENERAL_SOURCES, ...SEED.clauses.filter((c) => BASE_CLAUSE_CODES.has(c.code))]);
 
 /** 코드 목록에서 `codes` 중 가장 뒤 코드까지의 앞자리 — 채번값이라 바탕 DB 는 앞에서부터 만든다. */
 function prefixCodes(list: readonly { code: string }[], codes: ReadonlySet<string>): Set<string> {
