@@ -101,8 +101,8 @@ export function validateValue(
         for (const col of type.columns) {
           keys.delete(col.key);
           const cell = (row as Record<string, unknown>)[col.key];
-          const bad = cellIssue(col, cell);
-          if (bad) issues.push(mismatch(`${i + 1}행 ${col.label}: ${bad}`, at));
+          const bad = cellIssue(col, cell, enums);
+          if (bad) issues.push((bad.kind === "brokenRef" ? broken : mismatch)(`${i + 1}행 ${col.label}: ${bad.message}`, at));
         }
         for (const extra of keys) issues.push(mismatch(`${i + 1}행: 정의에 없는 열 ${extra}`, at));
       });
@@ -111,21 +111,30 @@ export function validateValue(
   }
 }
 
-/** 열 하나의 값 검사 — 통과면 undefined, 아니면 이유. */
-function cellIssue(col: TableColumn, cell: unknown): string | undefined {
+type CellIssue = { kind: "typeMismatch" | "brokenRef"; message: string };
+const cellMismatch = (message: string): CellIssue => ({ kind: "typeMismatch", message });
+
+/** 열 하나의 값 검사 — 통과면 undefined, 아니면 이유. `enum` 열은 그 열거형의 값 코드 — 없는 열거형 · 없는 값은 brokenRef (enum 필드와 같은 규칙). */
+function cellIssue(col: TableColumn, cell: unknown, enums: EnumLookup): CellIssue | undefined {
   switch (col.type) {
     case "string":
-      return typeof cell === "string" ? undefined : "문자열이어야 합니다";
+      return typeof cell === "string" ? undefined : cellMismatch("문자열이어야 합니다");
     case "boolean":
-      return typeof cell === "boolean" ? undefined : "참/거짓이어야 합니다";
+      return typeof cell === "boolean" ? undefined : cellMismatch("참/거짓이어야 합니다");
     case "number":
-      return typeof cell === "number" && Number.isFinite(cell) ? undefined : "숫자여야 합니다";
+      return typeof cell === "number" && Number.isFinite(cell) ? undefined : cellMismatch("숫자여야 합니다");
     case "percent":
-      if (typeof cell !== "number" || !Number.isInteger(cell)) return "0~100 정수여야 합니다";
-      return cell >= 0 && cell <= 100 ? undefined : "0~100 정수여야 합니다";
+      if (typeof cell !== "number" || !Number.isInteger(cell)) return cellMismatch("0~100 정수여야 합니다");
+      return cell >= 0 && cell <= 100 ? undefined : cellMismatch("0~100 정수여야 합니다");
     case "period":
-      if (typeof cell !== "number" || !Number.isInteger(cell)) return "개월 수는 정수여야 합니다";
-      return cell >= 0 ? undefined : "개월 수는 0 이상이어야 합니다";
+      if (typeof cell !== "number" || !Number.isInteger(cell)) return cellMismatch("개월 수는 정수여야 합니다");
+      return cell >= 0 ? undefined : cellMismatch("개월 수는 0 이상이어야 합니다");
+    case "enum": {
+      const def = col.enumCode ? enums(col.enumCode) : undefined;
+      if (!def) return { kind: "brokenRef", message: `enum ${col.enumCode ?? "(없음)"} 이(가) 없습니다` };
+      if (typeof cell !== "string") return cellMismatch("enum 값 코드여야 합니다");
+      return def.values.some((v) => v.code === cell) ? undefined : { kind: "brokenRef", message: missingValueMessage(def, [cell]) };
+    }
   }
 }
 

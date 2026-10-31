@@ -72,12 +72,15 @@ export function isWorkMark(value: unknown): value is WorkMark {
 }
 export const WORK_MARK_MESSAGE = "작업용 글자색은 빨강 · 파랑 · 초록 · 주황 중 하나여야 합니다";
 
-export type TableColumnType = "number" | "percent" | "period" | "boolean" | "string";
+/** `enum` 열은 열거형 값 코드 하나 — `enumCode` 가 그 열거형이다 (감액 경계 「감액기간」, 기능/담보 §3.4 · 2026-10-31). */
+export type TableColumnType = "number" | "percent" | "period" | "boolean" | "string" | "enum";
 
 export interface TableColumn {
   key: Code;
   label: string;
   type: TableColumnType;
+  /** `type: "enum"` 일 때 — 값 코드를 고르는 열거형. */
+  enumCode?: Code;
 }
 
 /** 구조체 필드 타입. 일반 list<T> 는 MVP 제외 — 스칼라 열의 행 목록인 `table` 만 있다 (ADR-0065 §1). */

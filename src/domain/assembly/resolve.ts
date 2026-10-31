@@ -909,7 +909,7 @@ class Walker {
       };
       const rate = read("pay.rate");
       const payRate = rate?.entered && typeof rate.value === "number" ? rate.value : undefined;
-      const reduction = reductionPeriods(read);
+      const reduction = reductionPeriods(read, (code) => this.env.enums?.get(code));
       benefits.push({
         subCoverageKey: sub.key ?? sub.id,
         subCoverageName: sub.name,

@@ -74,6 +74,11 @@ export function cascadeOf(def: EnumDef | { code: Code }): string[] {
  */
 export function enumReferences(enumCode: Code): Coordinate[] {
   return allMasterFields()
-    .filter((f) => "enumCode" in f.field.type && f.field.type.enumCode === enumCode)
+    .filter((f) => {
+      const t = f.field.type;
+      if ("enumCode" in t) return t.enumCode === enumCode;
+      // 표 필드의 enum 열(감액 구간의 「감액기간」)도 코드 참조다 — 지우면 값 행의 경계가 갈 곳을 잃는다
+      return t.kind === "table" && t.columns.some((c) => c.type === "enum" && c.enumCode === enumCode);
+    })
     .map((f) => ({ refPath: f.path, ownerName: masterFieldFullLabel(f) }));
 }

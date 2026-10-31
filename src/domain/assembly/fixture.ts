@@ -568,7 +568,7 @@ export const nodeQualMaster: MasterForm[] = [
     label: "감액",
     level: "benefit",
     optional: true,
-    fields: [{ key: "periods", label: "구간", type: { kind: "table", columns: [{ key: "end", label: "기간", type: "period" }] } }],
+    fields: [{ key: "periods", label: "구간", type: { kind: "table", columns: [{ key: "end", label: "기간", type: "enum", enumCode: "E0010" }] } }],
   },
 ];
 export const nodeQualCatalog: Discriminator[] = [
@@ -592,7 +592,7 @@ export function nodeQualFixture(): AssemblyInput {
       { id: "s-a", key: "01", masterNodeId: "master-sub-a", name: "세부A", benefits: [{ id: "b-a", key: "1", masterNodeId: "master-ben-a", name: "급부A" }] },
       { id: "s-b", key: "03", masterNodeId: "master-sub-b", name: "세부B", benefits: [{ id: "b-b", key: "1", masterNodeId: "master-ben-b", name: "급부B" }] },
     ],
-    values: { "b-a": { "reduction.periods": [{ end: 12 }] } },
+    values: { "b-a": { "reduction.periods": [{ end: "V03" }] } },
   });
   return { ...input, master: nodeQualMaster, catalog: nodeQualCatalog, coverages: [coverage] };
 }

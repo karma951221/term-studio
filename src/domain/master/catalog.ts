@@ -23,6 +23,8 @@
 import type { ValueSlot } from "../types";
 import type { FormFieldReader, MasterForm } from "./types";
 
+/** 열거형 「감액기간」 코드 — 감액 구간표의 경계 열이 이 열거형의 값 하나를 고른다 (기능/담보 §3.4 · 기능/열거형 §3.1, 2026-10-31). 시드가 만든다. */
+export const REDUCTION_PERIOD_ENUM = "E0010";
 /** 고지유형 E0005 값 코드 — 상품특성 조건부 칸의 조건. */
 export const NOTICE_KIND = { general: "V01", review: "V02", health: "V03" } as const;
 /** 계약형태 E0007 값 코드 — 독립특약이면 기본계약을 두지 않는다 (기능/상품 §3.1 · 2026-10-01). */
@@ -153,7 +155,7 @@ export const MASTER: readonly MasterForm[] = [
     level: "benefit",
     optional: true,
     system: true,
-    description: "급부의 감액 구간 — 보장개시 후 n개월 미만은 지급률을 낮춘다. 폼을 열지 않으면 감액 없음",
+    description: "급부의 감액 구간 — 보장개시 후 그 기간 미만은 지급률을 낮춘다. 폼을 열지 않으면 감액 없음",
     fields: [
       {
         key: "periods",
@@ -162,11 +164,12 @@ export const MASTER: readonly MasterForm[] = [
         type: {
           kind: "table",
           columns: [
-            { key: "end", label: "기간", type: "period" },
+            // 경계는 열거형 「감액기간」(E0010 — 90일 · 180일 · 1년 · 2년 …)의 값 하나 — 엄격 오름차순은 열거 순서 (2026-10-31)
+            { key: "end", label: "기간", type: "enum", enumCode: REDUCTION_PERIOD_ENUM },
             { key: "rate", label: "지급률", type: "percent" },
           ],
         },
-        description: "행 = 「직전 경계 ~ 이 경계 미만」. 기간은 3M · 1Y, 지급률은 % 정수. 엄격 오름차순",
+        description: "행 = 「직전 경계 ~ 이 경계 미만」. 기간은 열거형 「감액기간」 값(90일 · 1년 …), 지급률은 % 정수. 열거 순서로 엄격 오름차순",
       },
       {
         key: "after_rate",

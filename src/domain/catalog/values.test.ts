@@ -174,6 +174,19 @@ describe("validateValue — table", () => {
     expect(validateValue(구간표, ["a"], enums)).toHaveLength(1);
     expect(validateValue(구간표, "x", enums)).toHaveLength(1);
   });
+  it("enum 열은 그 열거형의 값 코드 — 없는 값은 brokenRef 「없는 값」, 없는 열거형은 brokenRef", () => {
+    const lookup: EnumLookup = (c) => (c === "E0001" ? 고지유형 : undefined);
+    const 열거표: FieldType = { kind: "table", columns: [{ key: "end", label: "기간", type: "enum", enumCode: "E0001" }] };
+    expect(validateValue(열거표, [{ end: "V02" }], lookup)).toEqual([]);
+    const missing = validateValue(열거표, [{ end: "V09" }], lookup);
+    expect(missing).toHaveLength(1);
+    expect(missing[0].kind).toBe("brokenRef");
+    expect(missing[0].message).toContain("1행 기간");
+    expect(missing[0].message).toContain("없는 값 V09");
+    expect(validateValue(열거표, [{ end: 12 }], lookup)[0].kind).toBe("typeMismatch");
+    const noEnum: FieldType = { kind: "table", columns: [{ key: "end", label: "기간", type: "enum", enumCode: "E0099" }] };
+    expect(validateValue(noEnum, [{ end: "V01" }], lookup)[0].kind).toBe("brokenRef");
+  });
 });
 
 describe("여는 폼(optional) — 값 행이 없으면 자리 없음 (ADR-0065 §4)", () => {

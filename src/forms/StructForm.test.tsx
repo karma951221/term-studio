@@ -357,6 +357,27 @@ describe("StructForm — 여는 폼 카드 (ADR-0065 §4)", () => {
     expect(tagsWith(html, 'aria-label="특성 추가"')[0]).toContain('disabled=""');
   });
 
+  it("enum 열(감액기간)은 셀이 열거값 고르기 — 선택지는 열거 순서, 고른 값이 선택돼 있다 (2026-10-31)", () => {
+    const 감액기간: EnumDef = { code: "E0010", label: "감액기간", values: [{ code: "V01", label: "90일", order: 0 }, { code: "V03", label: "1년", order: 1 }] };
+    const lookup: EnumLookup = (c) => (c === "E0010" ? 감액기간 : undefined);
+    const master: MasterForm[] = [
+      {
+        key: "reduction",
+        label: "감액",
+        level: "benefit",
+        optional: true,
+        fields: [{ key: "periods", label: "구간", type: { kind: "table", columns: [{ key: "end", label: "기간", type: "enum", enumCode: "E0010" }, { key: "rate", label: "지급률", type: "percent" }] } }],
+      },
+    ];
+    const model = buildForm("benefit", lookup, new Map<string, ValueSlot>([["reduction.periods", entered([{ end: "V03", rate: 50 }])]]), undefined, master);
+    const html = renderToStaticMarkup(<StructForm model={model} onSubmit={() => {}} />);
+    const select = tagsWith(html, 'aria-label="1행 기간"')[0];
+    expect(select).toContain("<select");
+    expect(html).toContain('<option value="V01">90일</option>');
+    expect(html).toContain('<option value="V03" selected="">1년</option>');
+    expect(html).not.toContain("기간은 3M · 1Y");
+  });
+
   it("연 특성 박스의 ⊖ 는 박스 왼쪽 위 — 제목보다 앞 (2026-10-21)", () => {
     const model = buildForm("benefit", enums, new Map<string, ValueSlot>([["reduction.periods", entered([{ end: 12, rate: 50 }])]]), undefined, openableMaster);
     const html = renderToStaticMarkup(<StructForm model={model} embedded flat />);

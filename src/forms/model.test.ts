@@ -644,6 +644,32 @@ describe("table 필드 · 여는 폼", () => {
     const view = buildForm("benefit", enums, new Map([["reduction.periods", entered([{ end: 12, rate: 50 }])]]), undefined, master).fields[0];
     expect(formatValue(view)).toBe("1행");
   });
+
+  describe("enum 열 — 감액기간 열거값 고르기 (기능/담보 §3.4 · 2026-10-31)", () => {
+    const 감액기간 = { code: "E0010", label: "감액기간", values: [{ code: "V01", label: "90일", order: 0 }, { code: "V03", label: "1년", order: 1 }] };
+    const lookup: EnumLookup = (c) => (c === "E0010" ? 감액기간 : undefined);
+    const enumMaster: MasterForm[] = [
+      {
+        key: "reduction", label: "감액", level: "benefit", optional: true,
+        fields: [{ key: "periods", label: "구간", type: { kind: "table", columns: [{ key: "end", label: "기간", type: "enum", enumCode: "E0010" }, { key: "rate", label: "지급률", type: "percent" }] } }],
+      },
+    ];
+    it("뷰에 열마다 선택지(열거 순서) · 초안은 코드", () => {
+      const model = buildForm("benefit", lookup, new Map([["reduction.periods", entered([{ end: "V03", rate: 50 }])]]), undefined, enumMaster);
+      expect(model.fields[0].columnEnums).toEqual({ end: { label: "감액기간", options: [{ code: "V01", label: "90일" }, { code: "V03", label: "1년" }] } });
+      expect(initFormState(model).fields["reduction.periods"].draft).toEqual([["V03", "50"]]);
+    });
+    it("편집 초안의 코드 · 붙여넣은 표시 글자가 행으로 파싱되고, 열거 순서 역전은 구간 규칙 오류 · 없는 값은 brokenRef", () => {
+      let s = initFormState(buildForm("benefit", lookup, new Map(), undefined, enumMaster));
+      s = formReducer(s, { type: "openForm", form: "reduction" });
+      s = formReducer(s, { type: "edit", path: "reduction.periods", draft: [["90일", "10%"], ["V03", "50"]] });
+      expect(s.fields["reduction.periods"].value).toEqual([{ end: "V01", rate: 10 }, { end: "V03", rate: 50 }]);
+      s = formReducer(s, { type: "edit", path: "reduction.periods", draft: [["V03", "50"], ["V01", "10"]] });
+      expect(s.fields["reduction.periods"].error).toContain("2행");
+      s = formReducer(s, { type: "edit", path: "reduction.periods", draft: [["V09", "50"]] });
+      expect(s.fields["reduction.periods"].error).toContain("없는 값 V09");
+    });
+  });
 });
 
 describe("기본 숨김 필드 (hiddenByDefault) — 감액 「이후 지급률」 (기능/담보 §3.4)", () => {

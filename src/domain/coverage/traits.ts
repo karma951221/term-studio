@@ -2,30 +2,67 @@
  * 급부 특성(감액 · 면책)의 값 규칙 — 시드 폼 `reduction` · `exemption` 전용 (ADR-0065 · 기능/담보 §3.4).
  *
  * 폼 시스템은 타입만 안다(`validateValue`). 「구간은 엄격 오름차순」 같은 뜻은 시스템 폼이라 코드가 안다 — 여기가 그 자리다.
- * 동적 표 엔진(P7)이 감액 구간을 읽는 창구도 여기(`reductionPeriods`) — 폼 키 · 필드 키를 다른 곳에 흘리지 않는다.
+ * 동적 표 엔진이 감액 구간을 읽는 창구도 여기(`reductionPeriods`) — 폼 키 · 필드 키를 다른 곳에 흘리지 않는다.
+ *
+ * 감액 경계는 열거형 **「감액기간」**(E0010 — 초기값 90일 · 180일 · 1년 · 2년)의 값 코드다 (2026-10-31 사용자 결정, 기능/담보 §3.4 · 기능/열거형 §3.1).
+ * 「엄격 오름차순」은 열거 값 순서로 견주고, 동적표의 경계 합집합 · 정렬 · 머리글 글자(「90일」 · 「1년」)도 그 순서 · 이름에서 나온다.
  */
-import { isFormOpened, validateValue, type EnumLookup, type SlotPath, type SlotReader } from "../catalog";
-import { findForm } from "../master";
-import type { Coordinate, FieldType, Issue, TableRow } from "../types";
+import { isFormOpened, validateValue, type EnumDef, type EnumLookup, type SlotPath, type SlotReader } from "../catalog";
+import { findForm, REDUCTION_PERIOD_ENUM } from "../master";
+import type { Code, Coordinate, FieldType, Issue, TableRow } from "../types";
 
 export const REDUCTION_PERIODS: SlotPath = "reduction.periods";
 export const REDUCTION_AFTER_RATE: SlotPath = "reduction.after_rate";
 export const EXEMPTION_MONTHS: SlotPath = "exemption.months";
 
+export { REDUCTION_PERIOD_ENUM };
+
+/** 「감액기간」 초기값 — 값 순서 = 기간 순서. 새 값은 시간 순 자리에 넣는다(끝에 붙이면 순서가 틀린다). */
+export const REDUCTION_PERIOD_SEED_LABELS: readonly string[] = ["90일", "180일", "1년", "2년"];
+
+/** 시드 「감액기간」 정의 그대로 — 시드 JSON · 테스트 · 마이그레이션 대조가 같은 것을 본다. */
+export function reductionPeriodEnumSeed(): EnumDef {
+  return {
+    code: REDUCTION_PERIOD_ENUM,
+    label: "감액기간",
+    values: REDUCTION_PERIOD_SEED_LABELS.map((label, i) => ({ code: `V${String(i + 1).padStart(2, "0")}`, label, order: i })),
+  };
+}
+
 function mismatch(message: string, at: Coordinate): Issue {
   return { kind: "typeMismatch", message, at };
 }
 
-/** 감액 구간표 — 기간(end) 은 1 이상 · 엄격 오름차순 (같으면 중복, 작으면 역전). */
-export function checkReductionPeriods(rows: readonly TableRow[], at: Coordinate = {}): Issue[] {
+/** 값 코드 → 열거 순서 (없는 값은 undefined). */
+export type BoundaryOrder = (code: string) => number | undefined;
+/** 값 코드 → 표시 글자 (없는 값은 undefined). */
+export type BoundaryLabel = (code: string) => string | undefined;
+
+/**
+ * 감액 구간표 — 기간(end) 은 「감액기간」 값 코드, 엄격 오름차순은 열거 값 순서로 (같으면 중복, 앞이면 역전).
+ * 열거형에 없는 코드는 여기서 견주지 않는다 — `validateValue` 가 brokenRef 「없는 값」으로 먼저 잡는다.
+ * 옛 모양(`period` 열 — 개월 정수)도 받는다: 1 이상 · 수로 엄격 오름차순 (열거 열이 아닌 표 정의가 아직 이 규칙을 쓴다).
+ */
+export function checkReductionPeriods(rows: readonly TableRow[], at: Coordinate = {}, orderOf: BoundaryOrder = () => undefined, labelOf: BoundaryLabel = () => undefined): Issue[] {
   const issues: Issue[] = [];
-  let prev = 0;
+  let prev: { code: string; order: number; name: string } | undefined;
   rows.forEach((row, i) => {
     const end = row.end;
-    if (typeof end !== "number") return; // 타입은 validateValue 가 본다
-    if (end <= 0) issues.push(mismatch(`${i + 1}행 기간: 0 은 구간이 아닙니다`, at));
-    else if (end <= prev) issues.push(mismatch(`${i + 1}행 기간: 앞 행(${prev}개월)보다 커야 합니다 (같으면 중복 · 작으면 역전)`, at));
-    prev = Math.max(prev, end);
+    let order: number | undefined;
+    let name: string;
+    if (typeof end === "number") {
+      if (end <= 0) return void issues.push(mismatch(`${i + 1}행 기간: 0 은 구간이 아닙니다`, at));
+      order = end;
+      name = `${end}개월`;
+    } else if (typeof end === "string") {
+      order = orderOf(end);
+      if (order === undefined) return; // 없는 값 — validateValue 의 몫
+      name = labelOf(end) ?? end;
+    } else return; // 타입은 validateValue 가 본다
+    if (prev && order <= prev.order) {
+      issues.push(mismatch(`${i + 1}행 기간: 앞 행(${prev.name})보다 뒤 순서의 감액기간이어야 합니다 (같으면 중복 · 앞이면 역전)`, at));
+    }
+    if (!prev || order > prev.order) prev = { code: String(end), order, name };
   });
   return issues;
 }
@@ -37,13 +74,23 @@ function integerIn(value: unknown, min: number, max: number | undefined, what: s
   return [];
 }
 
+/** 표 타입의 `end` 열이 가리키는 열거형 — 감액 구간표의 경계 열거(보통 E0010). */
+function boundaryEnumOf(type: FieldType, enums: EnumLookup): EnumDef | undefined {
+  if (type.kind !== "table") return undefined;
+  const col = type.columns.find((c) => c.key === "end");
+  return col?.type === "enum" && col.enumCode ? enums(col.enumCode) : undefined;
+}
+
 /** 타입 검사 + 경로별 규칙. 값 쓰기(담보 마스터 · 상품 스냅샷 · 폼 제출)가 전부 이것을 부른다. */
 export function validateSlotValue(path: SlotPath, type: FieldType, value: unknown, enums: EnumLookup, at: Coordinate = {}): Issue[] {
   const base = validateValue(type, value, enums, at);
   if (base.length > 0) return base;
   switch (path) {
-    case REDUCTION_PERIODS:
-      return checkReductionPeriods(value as TableRow[], at);
+    case REDUCTION_PERIODS: {
+      const def = boundaryEnumOf(type, enums);
+      const find = (code: string) => def?.values.find((v) => v.code === code);
+      return checkReductionPeriods(value as TableRow[], at, (code) => find(code)?.order, (code) => find(code)?.label);
+    }
     case REDUCTION_AFTER_RATE:
       return integerIn(value, 0, 100, "이후 지급률", at);
     case EXEMPTION_MONTHS:
@@ -53,19 +100,38 @@ export function validateSlotValue(path: SlotPath, type: FieldType, value: unknow
   }
 }
 
+/**
+ * 감액 경계 하나 — 「감액기간」 값의 코드 · 열거 순서 · 표시 글자. 동적표는 순서로 합집합 · 정렬 · 「≥」 견주기를 하고 글자를 머리글에 찍는다.
+ * 열거형에서 지워진 값은 `missing` — 순서는 맨 뒤, 글자는 「없는 값 V09」(조립이 brokenRef 로 드러낸다).
+ */
+export interface ReductionBoundary {
+  code: Code;
+  order: number;
+  label: string;
+  missing?: true;
+}
+
+/** 값 코드 → 경계. 열거형이 없거나 값이 없으면 `missing`. */
+export function reductionBoundary(def: EnumDef | undefined, code: Code): ReductionBoundary {
+  const v = def?.values.find((x) => x.code === code);
+  if (!v) return { code, order: Number.POSITIVE_INFINITY, label: `없는 값 ${code}`, missing: true };
+  return { code, order: v.order, label: v.label };
+}
+
 export interface ReductionPeriods {
-  periods: { end: number; rate: number }[];
+  periods: { end: ReductionBoundary; rate: number }[];
   /** 마지막 구간 이후 지급률. 자리가 비면 100. */
   afterRate: number;
 }
 
-/** 급부 하나의 감액 구간 — 폼을 안 열었으면 undefined (= 감액 없음). 동적 표 엔진의 창구. */
-export function reductionPeriods(read: SlotReader): ReductionPeriods | undefined {
+/** 급부 하나의 감액 구간 — 폼을 안 열었으면 undefined (= 감액 없음). 동적 표 엔진의 창구. 경계는 `enums` 의 「감액기간」으로 푼다. */
+export function reductionPeriods(read: SlotReader, enums: EnumLookup): ReductionPeriods | undefined {
   const form = findForm("reduction");
   if (!form || !isFormOpened(form, read)) return undefined;
   const slot = read(REDUCTION_PERIODS);
   if (!slot?.entered || !Array.isArray(slot.value)) return undefined;
-  const periods = (slot.value as TableRow[]).map((r) => ({ end: Number(r.end), rate: Number(r.rate) }));
+  const def = enums(REDUCTION_PERIOD_ENUM);
+  const periods = (slot.value as TableRow[]).map((r) => ({ end: reductionBoundary(def, String(r.end)), rate: Number(r.rate) }));
   const after = read(REDUCTION_AFTER_RATE);
   return { periods, afterRate: after?.entered && typeof after.value === "number" ? after.value : 100 };
 }

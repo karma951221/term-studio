@@ -51,6 +51,8 @@ export interface FieldView {
   enumOptions?: EnumOption[];
   /** enum · list<enum> 만 — 열거형변수 이름. 「없는 값」 오류 문구에 쓴다 (ADR-0078 결정 5). */
   enumLabel?: string;
+  /** table 만 — `enum` 열(열 키)마다 그 열거형의 이름 · 선택지(열거 순서). 셀은 고르기 칸이 된다 (감액기간, 2026-10-31). */
+  columnEnums?: Record<Code, { label: string; options: EnumOption[] }>;
   /** 저장소 기준 — 기본값과 무관하다. */
   state: "entered" | "notEntered";
   /** state 가 entered 일 때만. */
@@ -154,6 +156,15 @@ function fieldView(
   if (type.kind === "enum" || type.kind === "list<enum>") {
     const enumLabel = enums(type.enumCode)?.label;
     if (enumLabel !== undefined) view.enumLabel = enumLabel;
+  }
+  if (type.kind === "table") {
+    const columnEnums: NonNullable<FieldView["columnEnums"]> = {};
+    for (const col of type.columns) {
+      if (col.type !== "enum" || !col.enumCode) continue;
+      const def = enums(col.enumCode);
+      columnEnums[col.key] = { label: def?.label ?? "", options: enumOptionsOf({ kind: "enum", enumCode: col.enumCode }, enums) ?? [] };
+    }
+    if (Object.keys(columnEnums).length > 0) view.columnEnums = columnEnums;
   }
   if (slot?.entered) {
     view.state = "entered";
@@ -353,6 +364,12 @@ export function toggleEnumCode(options: readonly string[], selected: readonly st
 function lookupFromView(view: FieldView): EnumLookup {
   return (code) => {
     const t = view.type;
+    if (t.kind === "table") {
+      // enum 열 — 뷰에 실린 열별 선택지로 그 열거형을 되살린다 (열거 순서 = 선택지 순서)
+      const col = t.columns.find((c) => c.type === "enum" && c.enumCode === code);
+      const e = col ? view.columnEnums?.[col.key] : undefined;
+      return e ? { code, label: e.label, values: e.options.map((o, i) => ({ ...o, order: i })) } : undefined;
+    }
     if ((t.kind !== "enum" && t.kind !== "list<enum>") || t.enumCode !== code) return undefined;
     return {
       code,
@@ -388,7 +405,7 @@ function parseDraft(view: FieldView, draft: Draft): { value: Value } | { issue: 
       candidate = Array.isArray(draft) ? draft : [draft];
       break;
     case "table": {
-      const r = parseTableDraft(t.columns, draft as TableDraft, { refPath: view.path });
+      const r = parseTableDraft(t.columns, draft as TableDraft, { refPath: view.path }, lookupFromView(view));
       if ("issue" in r) return r;
       candidate = r.value;
       break;

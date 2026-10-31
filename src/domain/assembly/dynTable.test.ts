@@ -4,6 +4,7 @@ import type { Bindings } from "../clause/params";
 import type { DocumentNode } from "../document/nodes";
 import { nodeBuilders, sequentialIds } from "../document/builders";
 import { titleNodes } from "../document/title";
+import { reductionPeriodEnumSeed } from "../coverage/traits";
 import { dynTableFixtureA, type DynTable } from "../dyntable";
 import { findForm } from "../master";
 import type { Id } from "../types";
@@ -23,7 +24,8 @@ const tableA: DynTable = { id: "dt-a", code: TABLE_CODE, ...dynTableFixtureA() }
 
 const master = [...alphaMaster, findForm("reduction")!];
 
-type Benefit = { id: Id; name: string; payRate?: number; reduction?: { periods: { end: number; rate: number }[]; afterRate?: number } };
+/** 감액 구간의 `end` 는 「감액기간」 값 코드 (V03 = 1년). */
+type Benefit = { id: Id; name: string; payRate?: number; reduction?: { periods: { end: string; rate: number }[]; afterRate?: number } };
 type Sub = { id: Id; name: string; benefits: Benefit[] };
 
 function spec(subs: Sub[], renewal = false): CoverageSpec {
@@ -67,6 +69,7 @@ function input(subs: Sub[], opts: { renewal?: boolean; doc?: DocumentNode; table
     master,
     coverages: [...base.coverages, coverageEntry(spec(subs, opts.renewal))],
     specialDocuments: new Map([...base.specialDocuments, ["cov-dyn", opts.doc ?? document()]]),
+    enums: [...base.enums, reductionPeriodEnumSeed()],
     dynTables: opts.tables ?? [tableA],
   };
 }
@@ -86,10 +89,10 @@ function rowsOf(inp: AssemblyInput): { rows: string[][]; issues: { kind: string;
   return { rows: t.rows.map((row) => row.cells.map(cellText)), issues: r.value.issues, complete: r.value.complete };
 }
 
-const 후유장해 = (id: Id, reduction = true): Sub => ({ id, name: "질병후유장해", benefits: [{ id: `${id}-b`, name: "질병80%이상후유장해", payRate: 100, ...(reduction ? { reduction: { periods: [{ end: 12, rate: 50 }] } } : {}) }] });
+const 후유장해 = (id: Id, reduction = true): Sub => ({ id, name: "질병후유장해", benefits: [{ id: `${id}-b`, name: "질병80%이상후유장해", payRate: 100, ...(reduction ? { reduction: { periods: [{ end: "V03", rate: 50 }] } } : {}) }] });
 
 describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
-  it("(a) 인수 케이스 1 — 세부보장 1 · 급부 1 · 감액 12개월 50% → 열 둘 · 셀 50% / 100%", () => {
+  it("(a) 인수 케이스 1 — 세부보장 1 · 급부 1 · 감액 1년(V03) 50% → 열 둘 · 셀 50% / 100%", () => {
     const r = rowsOf(input([후유장해("s1")]));
     expect(r.rows).toEqual([
       ["구 분", "계약일부터 1년경과시점 전일 이전", "계약일부터 1년경과시점 이후"],
@@ -100,7 +103,7 @@ describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
   });
 
   it("(b) 인수 케이스 4 — 세부보장 넷(급부 하나씩) → 셀에 「해당보장의 」, 머리글은 그대로", () => {
-    const subs: Sub[] = ["s1", "s2", "s3", "s4"].map((id, i) => ({ id, name: `세부${i + 1}`, benefits: [{ id: `${id}-b`, name: `급부${i + 1}`, payRate: 100, reduction: { periods: [{ end: 12, rate: 50 }] } }] }));
+    const subs: Sub[] = ["s1", "s2", "s3", "s4"].map((id, i) => ({ id, name: `세부${i + 1}`, benefits: [{ id: `${id}-b`, name: `급부${i + 1}`, payRate: 100, reduction: { periods: [{ end: "V03", rate: 50 }] } }] }));
     const r = rowsOf(input(subs));
     expect(r.rows[0]).toEqual(["구 분", "계약일부터 1년경과시점 전일 이전", "계약일부터 1년경과시점 이후"]);
     expect(r.rows.slice(1)).toEqual([1, 2, 3, 4].map((i) => [`급부${i}`, "해당보장의 보험가입금액의 50%", "해당보장의 보험가입금액의 100%"]));
@@ -113,8 +116,8 @@ describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
 
   it("(d) 같은 급부명 · 비율 다름 → 따로 찍고 경고 dynTableMergeConflict, 완성본은 깨지지 않는다", () => {
     const subs: Sub[] = [
-      { id: "s1", name: "1종수술", benefits: [{ id: "s1-b", name: "수술보험금", payRate: 100, reduction: { periods: [{ end: 12, rate: 50 }] } }] },
-      { id: "s2", name: "2종수술", benefits: [{ id: "s2-b", name: "수술보험금", payRate: 50, reduction: { periods: [{ end: 12, rate: 50 }] } }] },
+      { id: "s1", name: "1종수술", benefits: [{ id: "s1-b", name: "수술보험금", payRate: 100, reduction: { periods: [{ end: "V03", rate: 50 }] } }] },
+      { id: "s2", name: "2종수술", benefits: [{ id: "s2-b", name: "수술보험금", payRate: 50, reduction: { periods: [{ end: "V03", rate: 50 }] } }] },
     ];
     const r = rowsOf(input(subs));
     expect(r.rows).toHaveLength(3);
