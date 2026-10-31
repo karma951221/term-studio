@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { EnumDef } from "../catalog";
 import { entered } from "../types";
-import { checkReductionPeriods, REDUCTION_PERIOD_ENUM, reductionBoundary, reductionPeriodEnumSeed, reductionPeriods, validateSlotValue } from "./traits";
+import { checkReductionPeriods, FIXED_GRID, fixedGrid, INSURED_AMOUNTS, insuredAmounts, REDUCTION_PERIOD_ENUM, reductionBoundary, reductionPeriodEnumSeed, reductionPeriods, validateSlotValue } from "./traits";
 
 /** 시드 「감액기간」 — 90일 V01 · 180일 V02 · 1년 V03 · 2년 V04 (기능/열거형 §3.1, 값 순서 = 기간 순서). */
 const 감액기간: EnumDef = reductionPeriodEnumSeed();
@@ -71,5 +71,40 @@ describe("reductionPeriods — 동적 표 창구: 경계는 열거값(코드 · 
   it("열거형에서 지워진 값은 missing 표식 + 「없는 값」 글자 — 순서는 맨 뒤", () => {
     expect(reductionBoundary(감액기간, "V09")).toEqual({ code: "V09", order: Number.POSITIVE_INFINITY, label: "없는 값 V09", missing: true });
     expect(reductionBoundary(undefined, "V01")).toEqual({ code: "V01", order: Number.POSITIVE_INFINITY, label: "없는 값 V01", missing: true });
+  });
+});
+
+describe("담보 「가입금액」 · 급부 「정액표」 특성 — 값 규칙 · 읽는 창구 (기능/담보 §3.3 · §3.4, 2026-10-31)", () => {
+  const enums = () => undefined;
+  const amountsType = { kind: "table", columns: [{ key: "amount", label: "금액(원)", type: "number" }] } as const;
+  it("가입금액 — 금액은 1 이상 정수 · 같은 금액 두 번 거부", () => {
+    expect(validateSlotValue(INSURED_AMOUNTS, amountsType, [{ amount: 30_000_000 }, { amount: 50_000_000 }], enums)).toEqual([]);
+    expect(validateSlotValue(INSURED_AMOUNTS, amountsType, [{ amount: 0 }], enums)[0].message).toContain("1행");
+    expect(validateSlotValue(INSURED_AMOUNTS, amountsType, [{ amount: 1.5 }], enums)[0].message).toContain("정수");
+    expect(validateSlotValue(INSURED_AMOUNTS, amountsType, [{ amount: 100 }, { amount: 100 }], enums)[0].message).toContain("2행");
+  });
+  it("insuredAmounts — 폼을 안 열었으면 undefined · 열렸으면 오름차순 금액", () => {
+    expect(insuredAmounts(() => undefined)).toBeUndefined();
+    const read = (p: string) => (p === INSURED_AMOUNTS ? entered([{ amount: 50_000_000 }, { amount: 30_000_000 }]) : undefined);
+    expect(insuredAmounts(read)).toEqual([30_000_000, 50_000_000]);
+  });
+  it("정액표 — 글자 열 1개 이상(비지 않은 머리) · 행 1개 이상 · 행마다 글자 칸 수 = 열 수 · 가입금액 열마다 정액(공란 거부 · 0 이상 정수)", () => {
+    const ok = { columns: ["분류", "치료항목"], rows: [{ cells: ["상해", "입원"], amounts: { "30000000": 50_000 } }] };
+    expect(validateSlotValue(FIXED_GRID, { kind: "grid" }, ok, enums)).toEqual([]);
+    expect(validateSlotValue(FIXED_GRID, { kind: "grid" }, { columns: [], rows: ok.rows }, enums)[0].message).toContain("글자 열");
+    expect(validateSlotValue(FIXED_GRID, { kind: "grid" }, { columns: ["분류", " "], rows: ok.rows }, enums)[0].message).toContain("머리");
+    expect(validateSlotValue(FIXED_GRID, { kind: "grid" }, { columns: ok.columns, rows: [] }, enums)[0].message).toContain("행");
+    expect(validateSlotValue(FIXED_GRID, { kind: "grid" }, { columns: ok.columns, rows: [{ cells: ["상해"], amounts: { "30000000": 1 } }] }, enums)[0].message).toContain("1행");
+    expect(validateSlotValue(FIXED_GRID, { kind: "grid" }, { columns: ok.columns, rows: [{ cells: ["상해", "입원"], amounts: {} }] }, enums)[0].message).toContain("가입금액");
+    const blank = { columns: ok.columns, rows: [{ cells: ["상해", "입원"], amounts: { "30000000": 50_000, "50000000": 80_000 } }, { cells: ["질병", "입원"], amounts: { "30000000": 50_000 } }] };
+    expect(validateSlotValue(FIXED_GRID, { kind: "grid" }, blank, enums)[0].message).toContain("2행");
+    expect(validateSlotValue(FIXED_GRID, { kind: "grid" }, { columns: ok.columns, rows: [{ cells: ["상해", "입원"], amounts: { "30000000": -1 } }] }, enums)[0].message).toContain("정수");
+    expect(validateSlotValue(FIXED_GRID, { kind: "grid" }, { columns: ok.columns, rows: [{ cells: ["상해", "입원"], amounts: { abc: 1 } }] }, enums)[0].message).toContain("금액");
+    expect(validateSlotValue(FIXED_GRID, { kind: "grid" }, "x", enums)[0].kind).toBe("typeMismatch");
+  });
+  it("fixedGrid — 폼을 안 열었으면 undefined · 열렸으면 격자 그대로", () => {
+    expect(fixedGrid(() => undefined)).toBeUndefined();
+    const g = { columns: ["분류"], rows: [{ cells: ["상해"], amounts: { "30000000": 1 } }] };
+    expect(fixedGrid((p) => (p === FIXED_GRID ? entered(g) : undefined))).toEqual(g);
   });
 });

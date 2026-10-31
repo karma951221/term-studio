@@ -80,7 +80,7 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
       "conversion.converts",
       "business_type.applies",
     ]);
-    expect(valueSlotsOf("coverage")).toEqual([]); // 담보 레벨 폼은 없다 — 보험금명(coverage_basic.claim_name)은 2026-10-21 뺐다
+    expect(valueSlotsOf("coverage")).toEqual(["insured_amount.amounts"]); // 담보 레벨은 특성 「가입금액」 하나 (2026-10-31) — 보험금명은 2026-10-21 뺐다
   });
 
   it("마스터가 비어 있는 레벨은 값 자리가 없다", () => {
@@ -94,6 +94,7 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
       "exemption.months",
       "exemption.age15_only",
       "exemption.new_only",
+      "fixed_table.grid",
     ]);
   });
 
@@ -257,5 +258,16 @@ describe("mergeMasterOwned — 조립 · 화면이 읽는 노드 값 = 상품 �
   });
   it("마스터 값이 없으면(없는 노드) 상품 소유 값만", () => {
     expect([...mergeMasterOwned("benefit", new Map([["pay.rate", entered(80)]]), undefined, master)]).toEqual([["pay.rate", entered(80)]]);
+  });
+});
+
+describe("validateValue — grid(정액표 격자) (기능/담보 §3.4, 2026-10-31)", () => {
+  const enums: EnumLookup = () => undefined;
+  it("모양 — columns 문자열 배열 · rows 배열(cells 문자열 배열 · amounts 금액 → 숫자)", () => {
+    expect(validateValue({ kind: "grid" }, { columns: ["분류"], rows: [{ cells: ["상해"], amounts: { "30000000": 50000 } }] }, enums)).toEqual([]);
+    expect(validateValue({ kind: "grid" }, [], enums)[0].kind).toBe("typeMismatch");
+    expect(validateValue({ kind: "grid" }, { columns: "x", rows: [] }, enums)[0].kind).toBe("typeMismatch");
+    expect(validateValue({ kind: "grid" }, { columns: ["분류"], rows: [{ cells: "상해", amounts: {} }] }, enums)[0].kind).toBe("typeMismatch");
+    expect(validateValue({ kind: "grid" }, { columns: ["분류"], rows: [{ cells: ["상해"], amounts: { "30000000": "5만" } }] }, enums)[0].kind).toBe("typeMismatch");
   });
 });

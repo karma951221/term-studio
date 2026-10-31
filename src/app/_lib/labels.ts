@@ -136,6 +136,7 @@ export const TYPE_LABEL = {
   enum: "목록값",
   "list<enum>": "목록값(복수)",
   table: "표",
+  grid: "정액표 격자",
 } as const satisfies Record<FieldTypeKind, string>;
 
 /**

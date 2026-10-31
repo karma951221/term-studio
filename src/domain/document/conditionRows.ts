@@ -177,6 +177,7 @@ export function operatorsFor(kind: FieldTypeKind): readonly CompareOp[] {
       return COMPARE_OPS;
     case "list<enum>":
     case "table":
+    case "grid":
       return [];
   }
 }

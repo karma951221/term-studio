@@ -251,6 +251,10 @@ export interface RTable<I> {
   kind: "table";
   id: Id;
   title?: string;
+  /** 정액형 동적표(기능/동적표 §3.7)의 급부 머리글 — 표 위 한 줄(「1. 상해로 인한 경우」). 그 급부의 첫 표에만. */
+  heading?: I[];
+  /** 정액형 동적표의 캡션 — 표 바로 위 「<보험가입금액 3,000만원>」. */
+  caption?: I[];
   columns: TableColumn[];
   /** `spans` = 셀별 rowSpan (반복 표 바깥 key 병합, 0 = 위 셀에 병합됨 — ADR-0070). 없으면 병합 없음. */
   rows: { header?: boolean; cells: I[][]; spans?: number[] }[];

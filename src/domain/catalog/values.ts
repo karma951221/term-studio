@@ -10,7 +10,7 @@
  * - **선택 필드(`MasterField.optional`)** — 값이 없으면 `missingSlots` 가 세지 않는다. 식이 읽는 뜻은 그대로(미입력)다.
  */
 import { fieldsOfLevel, findMasterField, formsOfLevel, isFieldShown, isMasterOwnedPath, MASTER, masterPath, type MasterForm, type MasterTree } from "../master";
-import type { AttachLevel, Coordinate, FieldType, Issue, TableColumn, Value, ValueSlot } from "../types";
+import { isFixedGrid, type AttachLevel, type Coordinate, type FieldType, type Issue, type TableColumn, type Value, type ValueSlot } from "../types";
 import type { EnumDef, EnumLookup, SlotPath } from "./types";
 
 // ───────────────────────────── 값 검증 ─────────────────────────────
@@ -105,6 +105,22 @@ export function validateValue(
           if (bad) issues.push((bad.kind === "brokenRef" ? broken : mismatch)(`${i + 1}행 ${col.label}: ${bad.message}`, at));
         }
         for (const extra of keys) issues.push(mismatch(`${i + 1}행: 정의에 없는 열 ${extra}`, at));
+      });
+      return issues;
+    }
+    case "grid": {
+      // 모양만 — 글자 열 · 행 · 가입금액별 정액의 뜻(공란 거부 · 열 수 맞춤)은 `validateSlotValue`(coverage/traits.ts `checkFixedGrid`) 가 본다
+      if (!isFixedGrid(value)) return [mismatch("정액표는 { columns, rows } 격자여야 합니다", at)];
+      if (!value.columns.every((c) => typeof c === "string")) return [mismatch("정액표의 글자 열 머리는 문자열이어야 합니다", at)];
+      const issues: Issue[] = [];
+      value.rows.forEach((row, i) => {
+        if (typeof row !== "object" || row === null || !Array.isArray(row.cells) || !row.cells.every((c) => typeof c === "string")) {
+          issues.push(mismatch(`${i + 1}행: 글자 칸은 문자열 배열이어야 합니다`, at));
+          return;
+        }
+        if (typeof row.amounts !== "object" || row.amounts === null || Array.isArray(row.amounts) || !Object.values(row.amounts).every((v) => typeof v === "number" && Number.isFinite(v))) {
+          issues.push(mismatch(`${i + 1}행: 가입금액별 정액은 금액 → 숫자여야 합니다`, at));
+        }
       });
       return issues;
     }

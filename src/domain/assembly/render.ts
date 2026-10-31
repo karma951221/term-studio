@@ -503,7 +503,13 @@ class Renderer {
   static(n: RStatic<SInline>, source: ReferenceTarget): RenderedStatic {
     if (n.kind === "box") return { kind: "box", id: n.id, title: n.title, lines: n.lines.map((line) => this.inlines(line, source).map(boxText).join("")) };
     if (n.kind === "bulletList") return this.bullets(n, source);
-    return { ...n, rows: n.rows.map((row) => ({ ...row, cells: row.cells.map((cell) => this.inlines(cell, source)) })) };
+    const { heading, caption, ...rest } = n;
+    return {
+      ...rest,
+      ...(heading ? { heading: this.inlines(heading, source) } : {}),
+      ...(caption ? { caption: this.inlines(caption, source) } : {}),
+      rows: n.rows.map((row) => ({ ...row, cells: row.cells.map((cell) => this.inlines(cell, source)) })),
+    };
   }
 
   paragraph(n: RParagraph<SInline>): RenderedParagraph {

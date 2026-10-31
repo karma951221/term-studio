@@ -20,7 +20,7 @@ import type { ParamDef } from "@/domain/clause/params";
 import type { PresetDef } from "@/domain/clause/presets";
 import type { ClauseBody, ClauseMode, OptionDef } from "@/domain/clause/types";
 import type { Inline } from "@/domain/clause/nodes";
-import type { DynTableHeaders } from "@/domain/dyntable/types";
+import type { DynTableFixed, DynTableHeaders } from "@/domain/dyntable/types";
 import type { Code } from "@/domain/types";
 
 export const clauses = pgTable("clauses", {
@@ -73,6 +73,8 @@ export const dynTables = pgTable("dyn_tables", {
   headers: jsonb("headers").$type<DynTableHeaders>().notNull(),
   /** 셀 템플릿 (Inline[]). */
   cell: jsonb("cell").$type<Inline[]>().notNull(),
+  /** 정액형 표의 칸 { caption, benefitHeader } (Inline[] 둘) — 있으면 정액형(기능/동적표 §3.7, 2026-10-31 · 0041). null = 감액(비율) 표. */
+  fixed: jsonb("fixed").$type<DynTableFixed>(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   /** users.id — FK 없음. */

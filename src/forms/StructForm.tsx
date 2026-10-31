@@ -56,6 +56,7 @@ import {
   type FormState,
   type Submission,
 } from "./model";
+import { GridInput } from "./GridInput";
 import { TableInput } from "./TableInput";
 
 export type { InputProps } from "./inputTypes";
@@ -116,7 +117,7 @@ export interface StructFormProps {
 // ───────────────────────────── 타입별 입력 ─────────────────────────────
 
 function textDraft(field: FieldState): string {
-  return Array.isArray(field.draft) ? field.draft.join(",") : field.draft;
+  return Array.isArray(field.draft) ? field.draft.join(",") : typeof field.draft === "string" ? field.draft : "";
 }
 
 function StringInput({ id, field, onEdit, className, name }: InputProps) {
@@ -356,6 +357,7 @@ const INPUT_BY_KIND: Record<FieldState["view"]["type"]["kind"], (p: InputProps) 
   enum: EnumInput,
   "list<enum>": ListEnumInput,
   table: TableInput,
+  grid: GridInput,
 };
 
 /**

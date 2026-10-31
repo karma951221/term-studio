@@ -13,6 +13,9 @@ import { BoxLines } from "./BoxView";
 export interface StaticTableShape {
   id: string;
   title?: string;
+  /** 정액형 동적표의 급부 머리글 · 캡션 — 표 위 줄 (기능/동적표 §3.7). */
+  heading?: ReactNode;
+  caption?: ReactNode;
   columns: { width?: number }[];
   /** 셀은 인라인 노드를 그린 결과다 — 표 안의 조·별표 참조도 계산 번호로 찍힌다 (기능/문면 §3.2). */
   rows: { header?: boolean; cells: ReactNode[]; spans?: number[] }[];
@@ -53,7 +56,9 @@ export function StaticTable({ node, controls, band }: { node: StaticTableShape; 
   return (
     <figure id={`node-${node.id}`} className="ts-doc-table-wrap">
       {controls}
+      {node.heading && <p className="ts-doc-table-heading">{node.heading}</p>}
       {node.title && <figcaption className="ts-doc-table-title">{node.title}</figcaption>}
+      {node.caption && <figcaption className="ts-doc-table-caption">{node.caption}</figcaption>}
       <table className="ts-doc-table">
         <colgroup>
           {band && <col style={{ width: "6.5em" }} />}

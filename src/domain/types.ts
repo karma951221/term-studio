@@ -83,7 +83,20 @@ export interface TableColumn {
   enumCode?: Code;
 }
 
-/** 구조체 필드 타입. 일반 list<T> 는 MVP 제외 — 스칼라 열의 행 목록인 `table` 만 있다 (ADR-0065 §1). */
+/**
+ * 정액표 격자 (기능/담보 §3.4 「정액표」, 2026-10-31) — 글자 열(개수 · 머리 이름은 사용자 정의) + 행(치료항목 한 줄) + 가입금액별 정액(원 단위 정수).
+ * `amounts` 의 키는 가입금액(원, 정수를 10진 글자로 — `"30000000"`), 값은 그 가입금액일 때의 정액. 행마다 같은 가입금액 열을 모두 채운다(공란 거부).
+ */
+export interface FixedGridRow {
+  cells: string[];
+  amounts: Record<string, number>;
+}
+export interface FixedGrid {
+  columns: string[];
+  rows: FixedGridRow[];
+}
+
+/** 구조체 필드 타입. 일반 list<T> 는 MVP 제외 — 스칼라 열의 행 목록인 `table`, 정액표 격자 `grid` 만 있다 (ADR-0065 §1 · 2026-10-31). */
 export type FieldType =
   | { kind: "string" }
   | { kind: "number" }
@@ -91,7 +104,8 @@ export type FieldType =
   | { kind: "date" }
   | { kind: "enum"; enumCode: Code }
   | { kind: "list<enum>"; enumCode: Code }
-  | { kind: "table"; columns: readonly TableColumn[] };
+  | { kind: "table"; columns: readonly TableColumn[] }
+  | { kind: "grid" };
 
 export type FieldTypeKind = FieldType["kind"];
 
@@ -101,12 +115,17 @@ export type ScalarValue = string | number | boolean;
 /** 표 한 행 — 열 키 → 스칼라. */
 export type TableRow = Record<string, ScalarValue>;
 
-/** 저장·평가되는 값. list<enum> 은 enum 값 코드 배열, table 은 행 배열. */
-export type Value = ScalarValue | string[] | TableRow[];
+/** 저장·평가되는 값. list<enum> 은 enum 값 코드 배열, table 은 행 배열, grid 는 정액표 격자. */
+export type Value = ScalarValue | string[] | TableRow[] | FixedGrid;
 
 /** 행 배열인가 (빈 배열은 아니다 — 타입이 갈라 준다). */
 export function isTableRows(value: Value): value is TableRow[] {
   return Array.isArray(value) && value.length > 0 && typeof value[0] === "object";
+}
+
+/** 정액표 격자인가 — 배열이 아닌 객체. */
+export function isFixedGrid(value: unknown): value is FixedGrid {
+  return typeof value === "object" && value !== null && !Array.isArray(value) && Array.isArray((value as FixedGrid).columns) && Array.isArray((value as FixedGrid).rows);
 }
 
 /**

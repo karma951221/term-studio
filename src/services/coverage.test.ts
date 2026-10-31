@@ -131,20 +131,21 @@ describe("coverage 서비스 (PGlite)", () => {
   });
 
   describe("담보값입력 S1 — 값 자리는 마스터가 정한다 (ADR-0037)", () => {
-    it("그 레벨 마스터 필드가 두 담보 모두의 폼에 그대로 뜬다 — 부착 조작이 없다 (담보 레벨은 폼이 없어 빈 목록)", async () => {
+    it("그 레벨 마스터 필드가 두 담보 모두의 폼에 그대로 뜬다 — 부착 조작이 없다 (담보 레벨은 특성 「가입금액」 한 자리, 2026-10-31)", async () => {
       for (const c of [accident, surgery]) {
         const form = unwrap(await svc.form(cov(c)));
-        expect(form.fields.map((f) => f.path)).toEqual([]); // 보험금명(coverage_basic.claim_name)은 2026-10-21 뺐다
+        expect(form.fields.map((f) => f.path)).toEqual(["insured_amount.amounts"]); // 보험금명(coverage_basic.claim_name)은 2026-10-21 뺐다
         expect(form.slots).toEqual({});
       }
     });
 
-    it("급부 레벨은 보험금지급 한 자리 + 여는 폼(감액·면책) 여섯 자리 — 폼 정의는 열림 여부와 무관하게 전부 뜬다", async () => {
+    it("급부 레벨은 보험금지급 한 자리 + 여는 폼(감액·면책) 여섯 자리 + 정액표 한 자리 — 폼 정의는 열림 여부와 무관하게 전부 뜬다", async () => {
       const b: CoverageNodeRef = { level: "benefit", id: accident.subCoverages[0].benefits[0].id };
       expect(unwrap(await svc.form(b)).fields.map((f) => f.path)).toEqual([
         "pay.rate",
         "reduction.periods", "reduction.after_rate", "reduction.new_only",
         "exemption.months", "exemption.age15_only", "exemption.new_only",
+        "fixed_table.grid",
       ]);
     });
 

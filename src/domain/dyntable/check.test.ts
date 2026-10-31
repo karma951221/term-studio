@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Inline } from "../clause/nodes";
 import { checkDynTable } from "./check";
-import { dynTableFixtureA, dynTableFixtureAPrime, dynTableFixtureR } from "./fixture";
+import { dynTableFixtureA, dynTableFixtureAPrime, dynTableFixtureF, dynTableFixtureFR, dynTableFixtureR } from "./fixture";
 import { DYN_TABLE_SLOTS, type NewDynTable } from "./types";
 
 const text = (id: string, t: string): Inline => ({ id, kind: "text", text: t });
@@ -16,10 +16,30 @@ function withHeaders(base: NewDynTable, over: Partial<NewDynTable["headers"]>): 
 }
 
 describe("checkDynTable", () => {
-  it("표본 정의 A · A′ · R 은 통과한다", () => {
+  it("표본 정의 A · A′ · R · F · FR 은 통과한다", () => {
     expect(checkDynTable(dynTableFixtureA())).toEqual([]);
     expect(checkDynTable(dynTableFixtureAPrime())).toEqual([]);
     expect(checkDynTable(dynTableFixtureR())).toEqual([]);
+    expect(checkDynTable(dynTableFixtureF())).toEqual([]);
+    expect(checkDynTable(dynTableFixtureFR())).toEqual([]);
+  });
+
+  it("정액형 정의(fixed) — 셀은 {금액}만 · 감액 표 정의의 셀은 {비율}만 (§3.7)", () => {
+    const f = dynTableFixtureF();
+    const rateInFixed = { ...f, cell: [slot("c1", DYN_TABLE_SLOTS.rate)] };
+    expect(checkDynTable(rateInFixed)).toEqual([expect.objectContaining({ kind: "structure", at: expect.objectContaining({ refPath: "cell", nodePath: ["c1"] }) })]);
+    const amountInRate = { ...dynTableFixtureA(), cell: [slot("c1", DYN_TABLE_SLOTS.amount)] };
+    expect(checkDynTable(amountInRate)).toEqual([expect.objectContaining({ kind: "structure", at: expect.objectContaining({ refPath: "cell", nodePath: ["c1"] }) })]);
+  });
+
+  it("정액형 정의 — 캡션은 {가입금액}, 급부 머리글은 {번호} · {급부명}만 · 캡션이 비면 structure", () => {
+    const f = dynTableFixtureF();
+    const badCaption = { ...f, fixed: { ...f.fixed!, caption: [slot("cap1", DYN_TABLE_SLOTS.amount)] } };
+    expect(checkDynTable(badCaption)).toEqual([expect.objectContaining({ kind: "structure", at: expect.objectContaining({ refPath: "fixed.caption", nodePath: ["cap1"] }) })]);
+    const badHeader = { ...f, fixed: { ...f.fixed!, benefitHeader: [slot("bh1", DYN_TABLE_SLOTS.insuredAmount)] } };
+    expect(checkDynTable(badHeader)).toEqual([expect.objectContaining({ kind: "structure", at: expect.objectContaining({ refPath: "fixed.benefitHeader", nodePath: ["bh1"] }) })]);
+    const emptyCaption = { ...f, fixed: { ...f.fixed!, caption: [text("cap1", " ")] } };
+    expect(checkDynTable(emptyCaption)).toEqual([expect.objectContaining({ kind: "structure", at: expect.objectContaining({ refPath: "fixed.caption" }) })]);
   });
 
   it("표 모양 — 첫 · 가운데 · 마지막 중 일부만 채우면 빈 쪽 자리에 structure", () => {

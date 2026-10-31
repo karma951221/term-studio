@@ -58,6 +58,7 @@ import type {
 import { applyBindings } from "../clause/bind";
 import { presetUsage } from "../clause/presets";
 import type { CurrentValue, LocalEnv } from "../clause/locals";
+import type { ParamDef } from "../clause/params";
 import { cloneForElement, CURRENT_VALUE_NAME_MESSAGE, currentValueSlot } from "../document/blockRepeat";
 import { enumCoordinate, enumFieldValue } from "../catalog/fields";
 import { templateIdOf } from "../document/repeat";
@@ -67,8 +68,8 @@ import { expandClause, resolveOptions } from "../clause/reference";
 import type { Clause, ClauseMode, OptionSelection } from "../clause/types";
 import type { EnumDef } from "../catalog/types";
 import type { Box } from "../document/box";
-import { expandDynTable, type DynBenefit, type DynTable } from "../dyntable";
-import { reductionPeriods } from "../coverage/traits";
+import { expandDynTable, expandFixedDynTable, type DynBenefit, type DynTable } from "../dyntable";
+import { fixedGrid, insuredAmounts, reductionPeriods } from "../coverage/traits";
 import type { SlotReader } from "../catalog";
 import type { MasterTree } from "../master";
 import { fallbackPathId, type ArticleNode, type BoxNode, type BoxRefNode, type BulletListNode, type BulletNode, type ClauseBlockRefNode, type CondBlockNode, type DocumentNode, type DynTableRefNode, type ForBlockNode, type InlineForNode, type InlineNode, type ItemNode, type ParagraphNode, type RepeatNode, type SectionNode, type SubitemNode, type TableNode } from "../document/nodes";
@@ -879,12 +880,12 @@ class Walker {
    * 급부 값은 그 급부 노드 문맥(`rows.rowContext`)에서 마스터 필드로 읽는다 — `pay.rate`, 감액 폼은 `reductionPeriods`(SlotReader 어댑터: 경로 → 마스터 참조 → 슬롯).
    * 없는 정의 · 행 원천 없는 문맥(보통약관) · 펼침 오류(argUnbound · brokenRef)는 오류 마커. 미입력 · 묶기 충돌은 issues 에만.
    */
-  dynTable(n: DynTableRefNode, f: Frame): RTable<RInline> | ErrorNode {
+  dynTable(n: DynTableRefNode, f: Frame): (RTable<RInline> | ErrorNode)[] {
     const at = this.at(f, n.id);
     const rec = this.note((): DynTableDecision => ({ kind: "dynTable", ...this.place(n, f), tableCode: n.tableCode, benefits: [], header: [], rows: [] }));
-    const fail = (issue: Issue): ErrorNode => {
+    const fail = (issue: Issue): ErrorNode[] => {
       if (rec) rec.issue = issue;
-      return this.error(n.id, issue);
+      return [this.error(n.id, issue)];
     };
     const def = this.env.dynTables?.get(n.tableCode);
     if (!def) return fail({ kind: "brokenRef", message: `동적표 ${n.tableCode} 이(가) 없습니다`, at });
@@ -895,21 +896,23 @@ class Walker {
       const what = keys.rejection.reason === "notFound" ? ` — ${keys.rejection.what} 없음` : "";
       return fail({ kind: "structure", message: `동적표의 급부를 열거할 수 없습니다${what}`, at });
     }
+    const readerOf = (c: EvalContext | undefined): SlotReader => (path) => {
+      if (!c) return undefined;
+      const [form, field] = path.split(".");
+      if (!form || !field) return undefined;
+      const r = c.lookup({ kind: "master", form, field });
+      return r.kind === "slot" ? r.slot : undefined;
+    };
     const benefits: DynBenefit[] = [];
     for (const chain of keys.value) {
       const [sub, benefit] = chain;
       if (!sub || !benefit) continue;
-      const c = rows.rowContext(benefit);
-      const read: SlotReader = (path) => {
-        if (!c) return undefined;
-        const [form, field] = path.split(".");
-        if (!form || !field) return undefined;
-        const r = c.lookup({ kind: "master", form, field });
-        return r.kind === "slot" ? r.slot : undefined;
-      };
+      const read = readerOf(rows.rowContext(benefit));
       const rate = read("pay.rate");
       const payRate = rate?.entered && typeof rate.value === "number" ? rate.value : undefined;
       const reduction = reductionPeriods(read, (code) => this.env.enums?.get(code));
+      // 정액표(마스터 소유 — 조립 입력이 마스터 값을 섞어 둔다, ADR-0097)
+      const grid = def.fixed ? fixedGrid(read) : undefined;
       benefits.push({
         subCoverageKey: sub.key ?? sub.id,
         subCoverageName: sub.name,
@@ -917,39 +920,77 @@ class Walker {
         name: benefit.name,
         ...(payRate !== undefined ? { payRate } : {}),
         ...(reduction ? { reduction } : {}),
+        ...(grid ? { fixedGrid: grid } : {}),
       });
     }
     if (rec) rec.benefits = benefits;
-    const expanded = expandDynTable(def, { benefits }, n.bindings, { formatConst: (value, param) => this.constText(value, param.type), refId: n.id }, at);
+    const deps = { formatConst: (value: Parameters<Walker["constText"]>[0], param: ParamDef) => this.constText(value, param.type), refId: n.id };
+    // 셀은 담보 문맥(행 노드 문맥 아님) — 「해당보장의」 조건이 담보의 세부보장 수를 센다. 템플릿엔 마스터 슬롯이 없어 행 노드가 필요 없다
+    const inner: Frame = { ...f, path: [...f.path, n.id] };
+    delete inner.row;
+    const isFatal = (i: Issue) => i.severity !== "warning" && (i.kind === "argUnbound" || i.kind === "brokenRef" || i.kind === "structure" || i.kind === "notEntered");
+
+    if (def.fixed) {
+      // 정액형 표(기능/동적표 §3.7) — 운영 가입금액은 담보(상품담보) 문맥의 「가입금액」. 급부 → 가입금액 → 캡션 + 표 블록 여럿
+      const amounts = insuredAmounts(readerOf(this.ctx.eval)) ?? [];
+      const expanded = expandFixedDynTable(def, { benefits, insuredAmounts: amounts }, n.bindings, deps, at);
+      this.issues.push(...expanded.issues);
+      const fatal = expanded.issues.find((i) => isFatal(i) && i.kind !== "notEntered") ?? (expanded.blocks.length === 0 ? expanded.issues.find(isFatal) : undefined);
+      if (fatal) {
+        if (rec) rec.issue = fatal;
+        return [{ kind: "error", id: n.id, issue: fatal }];
+      }
+      const out: RTable<RInline>[] = [];
+      let heading: RInline[] | undefined;
+      let caption: RInline[] | undefined;
+      expanded.blocks.forEach((b, k) => {
+        if (b.kind === "benefitHeader") heading = this.inlines(b.inlines, inner);
+        else if (b.kind === "caption") caption = this.inlines(b.inlines, inner);
+        else {
+          out.push({
+            kind: "table",
+            id: `${n.id}#${k}`,
+            ...(heading ? { heading } : {}),
+            ...(caption ? { caption } : {}),
+            columns: b.header.map(() => ({})),
+            rows: [{ header: true, cells: b.header.map((cell) => this.inlines(cell, inner)) }, ...b.rows.map((row) => ({ cells: row.cells.map((cell) => this.inlines(cell, inner)), ...(row.spans ? { spans: row.spans } : {}) }))],
+          });
+          heading = undefined;
+          caption = undefined;
+        }
+      });
+      return out;
+    }
+
+    const expanded = expandDynTable(def, { benefits }, n.bindings, deps, at);
     this.issues.push(...expanded.issues);
     const fatal = expanded.issues.find((i) => i.severity !== "warning" && (i.kind === "argUnbound" || i.kind === "brokenRef"));
     if (fatal) {
       if (rec) rec.issue = fatal;
-      return { kind: "error", id: n.id, issue: fatal };
+      return [{ kind: "error", id: n.id, issue: fatal }];
     }
-    // 셀은 담보 문맥(행 노드 문맥 아님) — 「해당보장의」 조건이 담보의 세부보장 수를 센다. 템플릿엔 마스터 슬롯이 없어 행 노드가 필요 없다
-    const inner: Frame = { ...f, path: [...f.path, n.id] };
-    delete inner.row;
-    return {
-      kind: "table",
-      id: n.id,
-      columns: expanded.header.map(() => ({})),
-      rows: [
-        { header: true, cells: this.into(rec?.header, () => expanded.header.map((cell) => this.inlines(cell, inner))) },
-        ...expanded.rows.map((row) => {
-          const r = rec ? { name: row.name, benefitKeys: row.benefitKeys, decisions: [] as DecisionRecord[] } : undefined;
-          if (r) rec!.rows.push(r);
-          return { cells: this.into(r?.decisions, () => row.cells.map((cell) => this.inlines(cell, inner))) };
-        }),
-      ],
-    };
+    return [
+      {
+        kind: "table",
+        id: n.id,
+        columns: expanded.header.map(() => ({})),
+        rows: [
+          { header: true, cells: this.into(rec?.header, () => expanded.header.map((cell) => this.inlines(cell, inner))) },
+          ...expanded.rows.map((row) => {
+            const r = rec ? { name: row.name, benefitKeys: row.benefitKeys, decisions: [] as DecisionRecord[] } : undefined;
+            if (r) rec!.rows.push(r);
+            return { cells: this.into(r?.decisions, () => row.cells.map((cell) => this.inlines(cell, inner))) };
+          }),
+        ],
+      },
+    ];
   }
 
   items(list: readonly AnyItemSlot[], f: Frame): (RItem<RInline> | RStatic<RInline> | ErrorNode)[] {
     return list.flatMap((n): (RItem<RInline> | RStatic<RInline> | ErrorNode)[] => {
       if (n.kind === "item") return [this.item(n, f)];
       if (n.kind === "boxRef") return [this.boxRef(n, f)];
-      if (n.kind === "dynTableRef") return [this.dynTable(n, f)];
+      if (n.kind === "dynTableRef") return this.dynTable(n, f);
       if (n.kind === "table" || n.kind === "box" || n.kind === "bulletList") return this.static(n, f);
       if (n.kind === "clauseBlockRef") {
         // 「호」 함수조항 — 호 목록(빈 목록 · 여러 호 가능)을 이 자리에 펴고 번호는 사용처에서 이어 매긴다 (최종 결정 4).
@@ -990,7 +1031,7 @@ class Walker {
         case "boxRef":
           return [this.boxRef(n, f)];
         case "dynTableRef":
-          return [this.dynTable(n, f)];
+          return this.dynTable(n, f);
         case "condBlock":
           return this.cond(n, f, false, (children, g) => this.blocks(children as AnyBlock[], g, excludeFromComparison));
         case "switchBlock":

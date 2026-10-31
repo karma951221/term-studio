@@ -45,6 +45,7 @@ function toDynTable(row: DynTableRow): DynTable {
     rowHeader: row.rowHeader,
     headers: row.headers,
     cell: row.cell,
+    ...(row.fixed ? { fixed: row.fixed } : {}),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     ...(row.updatedBy ? { updatedBy: row.updatedBy } : {}),
@@ -58,6 +59,7 @@ function toRow(def: NewDynTable) {
     rowHeader: def.rowHeader,
     headers: def.headers,
     cell: def.cell,
+    fixed: def.fixed ?? null,
   };
 }
 

@@ -58,7 +58,7 @@ function constBindings(params: readonly ParamDef[], values: DynTableArgValues): 
   const out: Bindings = {};
   for (const p of params) {
     const v = values[p.name];
-    if (v === undefined || Array.isArray(v)) continue;
+    if (v === undefined || Array.isArray(v) || typeof v === "object") continue;
     if (typeof v === "string" && v === "") continue;
     const b: Binding = { kind: "const", value: v };
     out[p.name] = b;
@@ -93,14 +93,34 @@ function sampleContext(benefits: readonly DynBenefit[]): EvalContext {
   };
 }
 
-export function renderDynTableSample(def: NewDynTable | DynTable, benefits: readonly DynBenefit[], argValues: DynTableArgValues, enums?: ReadonlyMap<Code, EnumDef>): DynTableSampleView {
+/** 견본 펼침의 공통 재료 — 참조 id · 상수 연결 · 상수 글 · 이슈 모으기. 정액형 견본(`fixedSample.ts`)도 쓴다. */
+export const SAMPLE_REF_ID = REF_ID;
+
+export function sampleDeps(def: NewDynTable | DynTable, argValues: DynTableArgValues, enums: ReadonlyMap<Code, EnumDef> | undefined) {
   const issues: string[] = [];
   const note = (m: string) => {
     if (!issues.includes(m)) issues.push(m);
   };
   const table: DynTable = { id: REF_ID, code: REF_ID, ...def };
-  const expanded = expandDynTable(table, { benefits: [...benefits] }, constBindings(def.params, argValues), { formatConst: formatterOf(enums), refId: REF_ID });
-  for (const i of expanded.issues) note(i.message.replace(`동적표 ${REF_ID} — `, "").replace(`동적표 ${REF_ID} 의 `, ""));
+  const noteIssue = (message: string) => note(message.replace(`동적표 ${REF_ID} — `, "").replace(`동적표 ${REF_ID} 의 `, ""));
+  return { table, bindings: constBindings(def.params, argValues), deps: { formatConst: formatterOf(enums), refId: REF_ID }, issues, note, noteIssue };
+}
+
+export function renderDynTableSample(def: NewDynTable | DynTable, benefits: readonly DynBenefit[], argValues: DynTableArgValues, enums?: ReadonlyMap<Code, EnumDef>): DynTableSampleView {
+  const { table, bindings, deps, issues, note, noteIssue } = sampleDeps(def, argValues, enums);
+  const expanded = expandDynTable(table, { benefits: [...benefits] }, bindings, deps);
+  for (const i of expanded.issues) noteIssue(i.message);
+  const render = partsRenderer(def, benefits, note);
+
+  const regions = regionsOf(expanded);
+  const header = expanded.header.map((cell, j): SampleCell => ({ region: regions.header[j], parts: render(cell) }));
+  const rows = expanded.rows.map((row, i) => row.cells.map((cell, j): SampleCell => ({ region: regions.rows[i][j], parts: render(cell) })));
+  const used = new Set<DynTableRegion>([...regions.header, ...regions.rows.flat()]);
+  return { header, rows, regions: DYN_TABLE_REGIONS.filter((r) => used.has(r)), issues };
+}
+
+/** 펼친 인라인 → 글 조각 — 남은 조건 · 값별 분기 · 조사를 견본 문맥으로 풀고, 자리표시자 값에 `value` 를 단다. */
+export function partsRenderer(def: Pick<NewDynTable, "headers" | "cell" | "fixed">, benefits: readonly DynBenefit[], note: (m: string) => void): (list: readonly Inline[]) => SamplePart[] {
   const placeholders = placeholderIds(def);
 
   const ctx = sampleContext(benefits);
@@ -170,10 +190,5 @@ export function renderDynTableSample(def: NewDynTable | DynTable, benefits: read
     walk(list, false);
     return parts;
   };
-
-  const regions = regionsOf(expanded);
-  const header = expanded.header.map((cell, j): SampleCell => ({ region: regions.header[j], parts: render(cell) }));
-  const rows = expanded.rows.map((row, i) => row.cells.map((cell, j): SampleCell => ({ region: regions.rows[i][j], parts: render(cell) })));
-  const used = new Set<DynTableRegion>([...regions.header, ...regions.rows.flat()]);
-  return { header, rows, regions: DYN_TABLE_REGIONS.filter((r) => used.has(r)), issues };
+  return render;
 }

@@ -69,8 +69,8 @@ export function formatRatio(payRate: number, reductionRate: number): string {
 
 // ───────────────────────────── 노드 복제 ─────────────────────────────
 
-/** 템플릿을 자리마다 복제한다 — id 를 유일화하고 표 슬롯을 글로 바꾼다. 나머지(조건 · 값별 분기 · 조사)는 그대로. */
-function instantiate(template: readonly Inline[], tag: (id: Id) => Id, slotText: (ref: DynTableSlotRef) => string): Inline[] {
+/** 템플릿을 자리마다 복제한다 — id 를 유일화하고 표 슬롯을 글로 바꾼다. 나머지(조건 · 값별 분기 · 조사)는 그대로. 정액형 펼침(`expandFixed.ts`)도 쓴다. */
+export function instantiate(template: readonly Inline[], tag: (id: Id) => Id, slotText: (ref: DynTableSlotRef) => string): Inline[] {
   const node = (n: Inline): Inline => {
     switch (n.kind) {
       case "slot":
@@ -138,7 +138,7 @@ export function expandDynTable(def: DynTable, input: DynTableInput, bindings: Bi
         return boundaries[Math.min(j, boundaries.length - 1)].label;
       case DYN_TABLE_SLOTS.prevBoundary:
         return boundaries[j - 1].label;
-      case DYN_TABLE_SLOTS.rate:
+      default:
         return "";
     }
   };

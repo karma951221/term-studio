@@ -17,8 +17,8 @@ import { z } from "zod";
 
 import type { EnumLookup, SlotPath } from "@/domain/catalog/types";
 import { validateSlotValue } from "@/domain/coverage";
-import { fieldsOfForm, fieldsOfLevel, formsOfLevel, masterPath, parseTableDraft, tableRowsToDraft, type MasterField, type MasterTree, type TableDraft } from "@/domain/master";
-import { ATTACH_LEVEL_LABEL, type AttachLevel, type Code, type FieldType, type Issue, type TableRow, type Value, type ValueSlot } from "@/domain/types";
+import { fieldsOfForm, fieldsOfLevel, FIXED_GRID_DEFAULT_COLUMNS, formsOfLevel, masterPath, parseTableDraft, tableRowsToDraft, type MasterField, type MasterTree, type TableDraft } from "@/domain/master";
+import { ATTACH_LEVEL_LABEL, isFixedGrid, type AttachLevel, type Code, type FieldType, type FixedGrid, type Issue, type TableRow, type Value, type ValueSlot } from "@/domain/types";
 
 // ───────────────────────────── 폼 모델 ─────────────────────────────
 
@@ -280,6 +280,8 @@ export function formatValue(field: FieldView): string | undefined {
       return Array.isArray(v) ? (v as string[]).map(labelOf).join(", ") : String(v);
     case "table":
       return Array.isArray(v) ? `${v.length}행` : String(v);
+    case "grid":
+      return isFixedGrid(v) ? `${v.rows.length}행 · 가입금액 ${[...new Set(v.rows.flatMap((r) => Object.keys(r.amounts)))].length}개` : String(v);
     default:
       return field.unit === undefined ? String(v) : `${String(v)}${field.unit}`;
   }
@@ -287,8 +289,8 @@ export function formatValue(field: FieldView): string | undefined {
 
 // ───────────────────────────── 편집 상태 ─────────────────────────────
 
-/** 입력 원문. list<enum> 은 코드 배열, table 은 셀 원문 2차원 배열, 나머지는 문자열. */
-export type Draft = string | string[] | TableDraft;
+/** 입력 원문. list<enum> 은 코드 배열, table 은 셀 원문 2차원 배열, grid 는 격자 그대로(셀이 곧 값 — `GridInput`), 나머지는 문자열. */
+export type Draft = string | string[] | TableDraft | FixedGrid;
 
 export interface FieldState {
   /** 폼 모델의 원본 (저장소 기준 상태·프리필·선택지). */
@@ -344,19 +346,28 @@ export type FormAction =
   /** 선택 필드를 뺀다 (「⊖」) — 칸을 감추고 값을 비운다. 저장돼 있던 값은 지우기로 제출된다. */
   | { type: "removeField"; path: SlotPath };
 
+/** 새 정액표 격자 — 글자 열 기본 머리(분류 · 치료항목 · 지급횟수), 행 없음 (기능/담보 §3.4). 행 · 가입금액 열은 `GridInput` 에서 더한다. */
+export function emptyGrid(): FixedGrid {
+  return { columns: [...FIXED_GRID_DEFAULT_COLUMNS], rows: [] };
+}
+
 function emptyDraft(type: FieldType): Draft {
   if (type.kind === "table") return [];
+  if (type.kind === "grid") return emptyGrid();
   return type.kind === "list<enum>" ? [] : "";
 }
 
 /** 값 → 입력 원문. */
 function draftOf(type: FieldType, value: Value): Draft {
   if (type.kind === "table") return tableRowsToDraft(type.columns, value as TableRow[]);
+  if (type.kind === "grid") return isFixedGrid(value) ? value : emptyGrid();
   if (type.kind === "list<enum>") return Array.isArray(value) ? [...(value as string[])] : [String(value)];
-  return Array.isArray(value) ? value.join(",") : String(value);
+  return Array.isArray(value) ? value.join(",") : typeof value === "object" ? "" : String(value);
 }
 
+/** 빈 초안 — 격자는 행이 하나도 없으면 빈 것(열 머리만 있는 격자는 「아직 안 적음」). */
 function isEmptyDraft(draft: Draft): boolean {
+  if (isFixedGrid(draft)) return draft.rows.length === 0;
   return Array.isArray(draft) ? draft.length === 0 : draft.trim() === "";
 }
 
@@ -395,23 +406,25 @@ function lookupFromView(view: FieldView): EnumLookup {
 function parseDraft(view: FieldView, draft: Draft): { value: Value } | { issue: Issue } {
   const t = view.type;
   let candidate: unknown;
+  // 격자 초안은 grid 타입에만 온다 — 다른 타입에 들어오면 빈 글로 본다
+  if (isFixedGrid(draft) && t.kind !== "grid") draft = "";
   switch (t.kind) {
     case "string":
       candidate = Array.isArray(draft) ? draft.join(",") : draft;
       break;
     case "number": {
-      const s = Array.isArray(draft) ? draft.join(",") : draft.trim();
+      const s = Array.isArray(draft) ? draft.join(",") : (draft as string).trim();
       candidate = s === "" ? Number.NaN : Number(s);
       break;
     }
     case "boolean": {
-      const s = Array.isArray(draft) ? "" : draft.trim();
+      const s = Array.isArray(draft) ? "" : (draft as string).trim();
       candidate = s === "true" ? true : s === "false" ? false : s;
       break;
     }
     case "date":
     case "enum":
-      candidate = Array.isArray(draft) ? draft.join(",") : draft.trim();
+      candidate = Array.isArray(draft) ? draft.join(",") : (draft as string).trim();
       break;
     case "list<enum>":
       candidate = Array.isArray(draft) ? draft : [draft];
@@ -422,6 +435,9 @@ function parseDraft(view: FieldView, draft: Draft): { value: Value } | { issue: 
       candidate = r.value;
       break;
     }
+    case "grid":
+      candidate = draft;
+      break;
   }
   const issues = validateSlotValue(view.path, t, candidate, lookupFromView(view), { refPath: view.path });
   return issues.length === 0 ? { value: candidate as Value } : { issue: issues[0] };
@@ -718,6 +734,8 @@ export function zodValueSchema(type: FieldType, enums: EnumLookup): z.ZodType<Va
     case "table":
       // 정밀 검사(구간 규칙 등)는 서버 액션이 validateSlotValue 로 다시 한다 — 제출 스키마는 모양만 본다.
       return z.array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))).min(1) as unknown as z.ZodType<Value>;
+    case "grid":
+      return z.object({ columns: z.array(z.string()), rows: z.array(z.object({ cells: z.array(z.string()), amounts: z.record(z.string(), z.number()) })) }) as unknown as z.ZodType<Value>;
   }
 }
 

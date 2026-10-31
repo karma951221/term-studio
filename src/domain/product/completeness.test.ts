@@ -5,8 +5,8 @@ import { BASE_CONTRACT_REF, baseContractCountIssue, baseContractDesignationIssue
 
 describe("완결성 — 값 자리는 레벨의 마스터 필드 전부다 (ADR-0037)", () => {
   it("레벨만 알면 자리 수가 정해진다 — 부착을 묻지 않는다", () => {
-    expect(slotCountOf("coverage")).toBe(0); // 담보 레벨 폼은 없다 (보험금명 2026-10-21 삭제)
-    expect(slotCountOf("benefit")).toBe(7); // pay 1(선택 필드 — 지급률) + 여는 폼 reduction 3 · exemption 3 (연 폼도 포함한 raw 카운트 — ADR-0065 §4)
+    expect(slotCountOf("coverage")).toBe(1); // 담보 레벨은 여는 폼 「가입금액」 하나 (2026-10-31 — 보험금명은 2026-10-21 삭제)
+    expect(slotCountOf("benefit")).toBe(8); // pay 1(선택 필드 — 지급률) + 여는 폼 reduction 3 · exemption 3 · fixed_table 1 (연 폼도 포함한 raw 카운트 — ADR-0065 §4)
     expect(slotCountOf("subCoverage")).toBe(0);
   });
 });

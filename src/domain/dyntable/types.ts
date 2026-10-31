@@ -13,7 +13,7 @@
 import type { Inline } from "../clause/nodes";
 import type { ParamDef } from "../clause/params";
 import type { ReductionPeriods } from "../coverage/traits";
-import type { Code, Id, Issue } from "../types";
+import type { Code, FixedGrid, Id, Issue } from "../types";
 
 /** 열 머리글 템플릿 네 벌 — 열 하나 = 단일, 둘 = 첫 + 마지막, 셋 이상 = 첫 + 가운데(열마다) + 마지막 (§3.3). */
 export interface DynTableHeaders {
@@ -23,6 +23,19 @@ export interface DynTableHeaders {
   single: Inline[];
 }
 
+/**
+ * 정액형 표(통합치료비 — §3.7)의 칸 — 있으면 이 정의는 정액형이다: 행 · 정액은 담보의 급부 「정액표」 특성에서 읽고,
+ * 가입금액마다 캡션 + 표, 정액표 급부가 둘 이상이면 급부 머리글. 지급금액 열 머리글(`headers`)은 감액 표와 같고 셀 템플릿은 `{금액}` 을 쓴다.
+ */
+export interface DynTableFixed {
+  /** 캡션 템플릿 — 슬롯 `{가입금액}`, 기본 `<보험가입금액 {가입금액}>`. */
+  caption: Inline[];
+  /** 급부 머리글 템플릿 — 슬롯 `{번호}` · `{급부명}`, 기본 `{번호}. {급부명}`. 정액표가 있는 급부가 둘 이상일 때만 찍는다. */
+  benefitHeader: Inline[];
+}
+
+export type DynTableKind = "rate" | "amount";
+
 export interface DynTable {
   id: Id;
   /** 시스템 발급 코드 (`T0001` — 채번은 서비스 단계). */
@@ -30,11 +43,13 @@ export interface DynTable {
   label: string;
   /** 값 인자만 (§3.1) — 조 참조 인자는 저장 검사가 거부한다. */
   params: ParamDef[];
-  /** 구분 칸 머리글 — 기본 「구 분」. */
+  /** 구분 칸 머리글 — 기본 「구 분」. 정액형에서는 쓰지 않는다(글자 열 머리는 정액표가 정한다). */
   rowHeader: string;
   headers: DynTableHeaders;
-  /** 셀 템플릿 — 기본 「보험가입금액의 {비율}%」(`defaultCellTemplate`). */
+  /** 셀 템플릿 — 감액 표는 「보험가입금액의 {비율}%」(`defaultCellTemplate`), 정액형은 「{금액}」(`defaultAmountCellTemplate`). */
   cell: Inline[];
+  /** 정액형 표의 칸(§3.7) — 있으면 정액형, 없으면 감액(비율) 표. */
+  fixed?: DynTableFixed;
   createdAt?: Date;
   updatedAt?: Date;
   /** 마지막으로 저장한 사람의 id — 이름은 화면이 붙인다. */
@@ -63,6 +78,8 @@ export interface DynBenefit {
   payRate?: number;
   /** 감액 구간 — undefined = 감액 폼을 열지 않음(모든 열 100). */
   reduction?: ReductionPeriods;
+  /** 정액표 특성 (§3.7) — undefined = 정액표 없음(정액형 표에 나오지 않는다). */
+  fixedGrid?: FixedGrid;
 }
 
 export interface ExpandedDynTableRow {
@@ -81,11 +98,15 @@ export interface ExpandedDynTable {
   issues: Issue[];
 }
 
-/** 표 슬롯의 내장 경로 — 머리글 `{경계}` · `{앞경계}`, 셀 `{비율}` (§3.3). */
+/** 표 슬롯의 내장 경로 — 머리글 `{경계}` · `{앞경계}`, 셀 `{비율}` (§3.3); 정액형 `{금액}` · 캡션 `{가입금액}` · 급부 머리글 `{번호}` · `{급부명}` (§3.7). */
 export const DYN_TABLE_SLOTS = {
   boundary: "builtin.table.boundary",
   prevBoundary: "builtin.table.prevBoundary",
   rate: "builtin.table.rate",
+  amount: "builtin.table.amount",
+  insuredAmount: "builtin.table.insuredAmount",
+  benefitNo: "builtin.table.benefitNo",
+  benefitName: "builtin.table.benefitName",
 } as const;
 
 export type DynTableSlotRef = (typeof DYN_TABLE_SLOTS)[keyof typeof DYN_TABLE_SLOTS];
@@ -95,21 +116,42 @@ export const DYN_TABLE_SLOT_LABEL: Record<DynTableSlotRef, string> = {
   [DYN_TABLE_SLOTS.boundary]: "경계",
   [DYN_TABLE_SLOTS.prevBoundary]: "앞경계",
   [DYN_TABLE_SLOTS.rate]: "비율",
+  [DYN_TABLE_SLOTS.amount]: "금액",
+  [DYN_TABLE_SLOTS.insuredAmount]: "가입금액",
+  [DYN_TABLE_SLOTS.benefitNo]: "번호",
+  [DYN_TABLE_SLOTS.benefitName]: "급부명",
 };
 
-export type DynTableTemplateKey = keyof DynTableHeaders | "cell";
+export type DynTableTemplateKey = keyof DynTableHeaders | "cell" | "caption" | "benefitHeader";
 
-/** 템플릿마다 쓸 수 있는 표 슬롯 (§3.3 표) — 첫 · 마지막: 경계, 가운데: 경계 + 앞경계, 단일: 없음, 셀: 비율. */
+/**
+ * 템플릿마다 쓸 수 있는 표 슬롯 (§3.3 · §3.7 표) — 첫 · 마지막: 경계, 가운데: 경계 + 앞경계, 단일: 없음,
+ * 셀: 감액 표는 비율 · 정액형은 금액(`allowedCellSlots`), 캡션: 가입금액, 급부 머리글: 번호 · 급부명.
+ */
 export const DYN_TABLE_ALLOWED_SLOTS: Record<DynTableTemplateKey, readonly DynTableSlotRef[]> = {
   first: [DYN_TABLE_SLOTS.boundary],
   middle: [DYN_TABLE_SLOTS.boundary, DYN_TABLE_SLOTS.prevBoundary],
   last: [DYN_TABLE_SLOTS.boundary],
   single: [],
   cell: [DYN_TABLE_SLOTS.rate],
+  caption: [DYN_TABLE_SLOTS.insuredAmount],
+  benefitHeader: [DYN_TABLE_SLOTS.benefitNo, DYN_TABLE_SLOTS.benefitName],
 };
 
+/** 정의의 종류 — 정액형 칸이 있으면 `amount`, 없으면 `rate`(감액 지급금액 표). */
+export function dynTableKind(def: Pick<DynTable, "fixed">): DynTableKind {
+  return def.fixed ? "amount" : "rate";
+}
+
+/** 셀 템플릿에 쓸 수 있는 표 슬롯 — 정의 종류별. */
+export function allowedCellSlots(def: Pick<DynTable, "fixed">): readonly DynTableSlotRef[] {
+  return dynTableKind(def) === "amount" ? [DYN_TABLE_SLOTS.amount] : [DYN_TABLE_SLOTS.rate];
+}
+
+const SLOT_REFS = new Set<string>(Object.values(DYN_TABLE_SLOTS));
+
 export function isDynTableSlotRef(ref: string): ref is DynTableSlotRef {
-  return ref === DYN_TABLE_SLOTS.boundary || ref === DYN_TABLE_SLOTS.prevBoundary || ref === DYN_TABLE_SLOTS.rate;
+  return SLOT_REFS.has(ref);
 }
 
 export const DEFAULT_ROW_HEADER = "구 분";
@@ -126,4 +168,32 @@ export function defaultCellTemplate(idPrefix = "cell"): Inline[] {
 /** 기본 단일 열 머리글 「지급금액」 — 새 정의의 씨앗. */
 export function defaultSingleHeader(idPrefix = "single"): Inline[] {
   return [{ id: `${idPrefix}-t1`, kind: "text", text: "지급금액" }];
+}
+
+/** 정액형 기본 셀 템플릿 「{금액}」 (§3.7). */
+export function defaultAmountCellTemplate(idPrefix = "cell"): Inline[] {
+  return [{ id: `${idPrefix}-amount`, kind: "slot", ref: DYN_TABLE_SLOTS.amount }];
+}
+
+/** 정액형 기본 캡션 「<보험가입금액 {가입금액}>」 (§3.7). */
+export function defaultCaptionTemplate(idPrefix = "caption"): Inline[] {
+  return [
+    { id: `${idPrefix}-t1`, kind: "text", text: "<보험가입금액 " },
+    { id: `${idPrefix}-amount`, kind: "slot", ref: DYN_TABLE_SLOTS.insuredAmount },
+    { id: `${idPrefix}-t2`, kind: "text", text: ">" },
+  ];
+}
+
+/** 정액형 기본 급부 머리글 「{번호}. {급부명}」 (§3.7). */
+export function defaultBenefitHeaderTemplate(idPrefix = "bh"): Inline[] {
+  return [
+    { id: `${idPrefix}-no`, kind: "slot", ref: DYN_TABLE_SLOTS.benefitNo },
+    { id: `${idPrefix}-t1`, kind: "text", text: ". " },
+    { id: `${idPrefix}-name`, kind: "slot", ref: DYN_TABLE_SLOTS.benefitName },
+  ];
+}
+
+/** 정액형 정의의 씨앗 — 캡션 · 급부 머리글 기본 템플릿. */
+export function defaultFixed(): DynTableFixed {
+  return { caption: defaultCaptionTemplate(), benefitHeader: defaultBenefitHeaderTemplate() };
 }

@@ -74,6 +74,7 @@ export function valueText(value: Value, labels?: EnumLabels): string {
   if (typeof value === "boolean") return value ? "예" : "아니오";
   if (typeof value === "number") return String(value);
   if (typeof value === "string") return labels?.values[value] ? `${labels.values[value]} (${value})` : value;
+  if (!Array.isArray(value)) return `정액표 ${value.rows.length}행`;
   if (value.length === 0) return "(빈 목록)";
   if (typeof value[0] === "object") return `표 ${value.length}행`;
   return (value as string[]).map((v) => valueText(v, labels)).join(" · ");

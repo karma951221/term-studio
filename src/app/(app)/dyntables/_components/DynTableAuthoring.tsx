@@ -30,17 +30,18 @@ import { enumDefsOf } from "@/app/(app)/functions/_components/locals";
 import { paramEntries } from "@/app/(app)/functions/_components/params";
 import type { Inline } from "@/domain/clause/nodes";
 import { formatCoordinate } from "@/domain/coordinate";
+import { renderDynTableFixedSample } from "@/domain/dyntable/fixedSample";
 import type { DynTableRegion } from "@/domain/dyntable/regions";
 import { renderDynTableSample } from "@/domain/dyntable/sampleView";
 import { DYN_TABLE_SAMPLES, dynTableSample, sampleArgValues, sampleDescription } from "@/domain/dyntable/samples";
 import { TABLE_SHAPE_LINE, tableShape } from "@/domain/dyntable/shape";
-import { DYN_TABLE_ALLOWED_SLOTS, type DynTableHeaders, type DynTableTemplateKey, type NewDynTable } from "@/domain/dyntable/types";
+import { allowedCellSlots, defaultAmountCellTemplate, defaultCellTemplate, defaultFixed, DYN_TABLE_ALLOWED_SLOTS, DYN_TABLE_SLOTS, type DynTableHeaders, type DynTableTemplateKey, type NewDynTable } from "@/domain/dyntable/types";
 import type { Impact, Issue } from "@/domain/types";
 
 import { createDynTableAction, removeDynTableAction, saveDynTableAction } from "../actions";
 import type { DynTableEditorData } from "../editorData";
 import { ParamsTable } from "./ParamsTable";
-import { REGION_LABEL, SampleTable } from "./SampleTable";
+import { FixedSampleView, REGION_LABEL, SampleTable } from "./SampleTable";
 import { TemplateEditor } from "./TemplateEditor";
 
 export interface DynTableAuthoringProps {
@@ -91,6 +92,8 @@ function RegionField({ region, on, absent, onActivate, labelFor, badge, sub, chi
 
 const PARAM_NOTE = "템플릿이 arg.<이름> 으로 읽는 값 인자 — 시스템이 정하고, 값은 사용처(담보약관)가 넣는 자리에서 구분자 · 상수로 댄다. 여기서는 고치지 않는다.";
 
+const FIXED_NOTE = "정액형 표(통합치료비) — 행 · 정액은 담보의 급부 「정액표」 특성에서, 가입금액은 상품담보의 「가입금액」에서 읽는다. 정액표 급부마다(둘 이상이면 급부 머리글) 운영 가입금액(오름차순)마다 캡션 + 표를 찍고, 지급금액 열은 그 급부 하나의 감액으로 나눈다. 셀 = 정액 × 감액비율(지급률은 곱하지 않는다).";
+
 const HEADER_NOTE = "표 모양은 머리글이 정한다 — 첫 · 가운데 · 마지막 열을 모두 채우면 감액 구간으로 열을 나누고(열 하나면 단일, 둘이면 첫 + 마지막, 셋 이상이면 첫 + 가운데(열마다) + 마지막), 셋 다 비우면 감액이 있어도 늘 열 하나(단일 열, 비율 = 지급률). 일부만 채우면 저장할 수 없다. 슬롯 {경계} · {앞경계} 는 펼칠 때 기간 글로 바뀐다.";
 
 /** 저장 거부 사유를 칸별로 — `refPath` 가 가리키는 자리(인자 · 템플릿 줄 · 이름)로 모은다. 자리를 모르면 배너. */
@@ -102,6 +105,8 @@ function placeIssues(issues: readonly Issue[]): { label?: string; params?: strin
     if (p === "label") out.label = join(out.label, i.message);
     else if (p.startsWith("arg.") || p === "params") out.params = join(out.params, i.message);
     else if (p === "cell") out.templates.cell = join(out.templates.cell, i.message);
+    else if (p === "fixed.caption") out.templates.caption = join(out.templates.caption, i.message);
+    else if (p === "fixed.benefitHeader") out.templates.benefitHeader = join(out.templates.benefitHeader, i.message);
     else if (p.startsWith("headers.")) {
       const k = p.slice("headers.".length) as keyof DynTableHeaders;
       out.templates[k] = join(out.templates[k], i.message);
@@ -136,15 +141,32 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
 
   const patch = (next: Partial<NewDynTable>) => setDraft((d) => ({ ...d, ...next }));
   const setHeader = (key: keyof DynTableHeaders, inlines: Inline[]) => setDraft((d) => ({ ...d, headers: { ...d.headers, [key]: inlines } }));
+  const setFixed = (key: "caption" | "benefitHeader", inlines: Inline[]) => setDraft((d) => (d.fixed ? { ...d, fixed: { ...d.fixed, [key]: inlines } } : d));
+  /** 정액형 ↔ 감액 표 — 켜면 캡션 · 급부 머리글 기본 템플릿이 생기고 셀의 {비율} 은 {금액} 으로(끄면 반대로). 다른 템플릿은 그대로. */
+  const setKind = (fixed: boolean) =>
+    setDraft((d) => {
+      const slot = (ref: string, to: string): Inline[] => d.cell.map((n) => (n.kind === "slot" && n.ref === ref ? { ...n, ref: to } : n));
+      if (fixed) {
+        const { fixed: _was, ...rest } = d;
+        void _was;
+        return { ...rest, fixed: d.fixed ?? defaultFixed(), cell: d.cell.some((n) => n.kind === "slot" && n.ref === DYN_TABLE_SLOTS.rate) ? slot(DYN_TABLE_SLOTS.rate, DYN_TABLE_SLOTS.amount) : d.cell.length === 0 ? defaultAmountCellTemplate() : d.cell };
+      }
+      const { fixed: _gone, ...rest } = d;
+      void _gone;
+      return { ...rest, cell: d.cell.some((n) => n.kind === "slot" && n.ref === DYN_TABLE_SLOTS.amount) ? slot(DYN_TABLE_SLOTS.amount, DYN_TABLE_SLOTS.rate) : d.cell.length === 0 ? defaultCellTemplate() : d.cell };
+    });
 
   /** 조건 · 슬롯 문맥 — 변수는 인자 칸뿐(§3.1 — 구분자 · 세목 · 담보속성은 인자로 받아 연결한다). */
   const condition = useMemo(() => ({ ...data.condition, discriminators: paramEntries(shown.params, data.enums), attributes: [], quick: [] }), [data.condition, data.enums, shown.params]);
   const enumDefs = useMemo(() => enumDefsOf(data.enums), [data.enums]);
 
-  // 견본 표 — 편집 중이면 편집본으로(저장 전에 바로 보인다)
+  // 견본 표 — 편집 중이면 편집본으로(저장 전에 바로 보인다). 정액형이면 통합치료비 꼴 고정 견본
   const sample = dynTableSample(sampleId);
+  const isFixed = shown.fixed !== undefined;
   const view = useMemo(() => renderDynTableSample(shown, sample.benefits, sampleArgValues(shown.params, sample, enumDefs), enumDefs), [shown, sample, enumDefs]);
-  const fieldState = (region: DynTableRegion) => ({ on: selected === region, absent: region !== "row" && !view.regions.includes(region), onActivate: () => setSelected(region) });
+  const fixedView = useMemo(() => (isFixed ? renderDynTableFixedSample(shown, sampleArgValues(shown.params, sample, enumDefs), enumDefs) : undefined), [isFixed, shown, sample, enumDefs]);
+  const usedRegions = fixedView ? fixedView.regions : view.regions;
+  const fieldState = (region: DynTableRegion) => ({ on: selected === region, absent: region !== "row" && !usedRegions.includes(region), onActivate: () => setSelected(region) });
   const pickFromTable = (region: DynTableRegion) => {
     const next = selected === region ? undefined : region;
     setSelected(next);
@@ -316,17 +338,41 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
               구조
             </h2>
             <p className="ts-muted ts-dyn-shape-line" data-testid="dyn-shape-line">
-              {TABLE_SHAPE_LINE[tableShape(shown.headers)]}
+              {isFixed ? `정액형 표 · ${TABLE_SHAPE_LINE[tableShape(shown.headers)]}` : TABLE_SHAPE_LINE[tableShape(shown.headers)]}
             </p>
+            {editing && (
+              <label className="ts-dyn-kind-toggle">
+                <input type="checkbox" checked={isFixed} onChange={(e) => setKind(e.target.checked)} aria-label="정액형 표" /> 정액형 표(통합치료비) — 행 · 정액을 급부의 정액표에서 읽고 가입금액마다 표를 찍는다
+                <InfoTip text={FIXED_NOTE} />
+              </label>
+            )}
             <div className="ts-dyn-layout">
-              <SampleTable sample={sample} description={sampleDescription(sample, shown)} onSample={setSampleId} view={view} selected={selected} hovered={hovered} onSelect={pickFromTable} onHover={setHovered} />
+              {fixedView ? (
+                <FixedSampleView view={fixedView} selected={selected} hovered={hovered} onSelect={pickFromTable} onHover={setHovered} />
+              ) : (
+                <SampleTable sample={sample} description={sampleDescription(sample, shown)} onSample={setSampleId} view={view} selected={selected} hovered={hovered} onSelect={pickFromTable} onHover={setHovered} />
+              )}
 
               <div className="ts-dyn-panel" aria-label="템플릿">
                 <section aria-label="행">
                   <h3 className="ts-clause-sec">행</h3>
-                  <RegionField region="row" {...fieldState("row")} badge="시스템">
-                    <p className="ts-dyn-field-static">급부명 — 급부마다 한 행(같은 급부명은 열마다 비율이 같을 때 한 행). 모델링하지 않는다.</p>
-                  </RegionField>
+                  {isFixed ? (
+                    <>
+                      <RegionField region="benefitHeader" {...fieldState("benefitHeader")} sub="{번호} · {급부명} — 정액표가 있는 급부가 둘 이상일 때만 급부마다 표 위에 찍는다">
+                        <TemplateEditor id="dyn-f-benefitHeader" value={shown.fixed?.benefitHeader ?? []} onChange={(next) => setFixed("benefitHeader", next)} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS.benefitHeader} placeholder="급부 머리글" {...(placed?.templates.benefitHeader ? { error: placed.templates.benefitHeader } : {})} />
+                      </RegionField>
+                      <RegionField region="caption" {...fieldState("caption")} sub="{가입금액} — 운영 가입금액마다 표 바로 위에 찍는다 (오름차순)">
+                        <TemplateEditor id="dyn-f-caption" value={shown.fixed?.caption ?? []} onChange={(next) => setFixed("caption", next)} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS.caption} placeholder="캡션" {...(placed?.templates.caption ? { error: placed.templates.caption } : {})} />
+                      </RegionField>
+                      <RegionField region="textCell" {...fieldState("textCell")} badge="시스템">
+                        <p className="ts-dyn-field-static">정액표의 행(치료항목 한 줄) — 급부의 정액표가 정한다. 첫 글자 열은 위아래로 연속한 같은 값을 합친다.</p>
+                      </RegionField>
+                    </>
+                  ) : (
+                    <RegionField region="row" {...fieldState("row")} badge="시스템">
+                      <p className="ts-dyn-field-static">급부명 — 급부마다 한 행(같은 급부명은 열마다 비율이 같을 때 한 행). 모델링하지 않는다.</p>
+                    </RegionField>
+                  )}
                 </section>
 
                 <section aria-label="머리글">
@@ -334,9 +380,15 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
                     머리글
                     <InfoTip text={HEADER_NOTE} />
                   </h3>
-                  <RegionField region="corner" {...fieldState("corner")} labelFor={editing ? "dyn-rowheader" : undefined}>
-                    {editing ? <input id="dyn-rowheader" className="ts-field-direct" value={draft.rowHeader} onChange={(e) => patch({ rowHeader: e.target.value })} placeholder="구 분" /> : <span className="ts-clause-meta-value">{props.table.rowHeader}</span>}
-                  </RegionField>
+                  {isFixed ? (
+                    <RegionField region="textHeader" {...fieldState("textHeader")} badge="시스템">
+                      <p className="ts-dyn-field-static">글자 열 머리(분류 · 치료항목 · 지급횟수 …) — 급부의 정액표가 정한다.</p>
+                    </RegionField>
+                  ) : (
+                    <RegionField region="corner" {...fieldState("corner")} labelFor={editing ? "dyn-rowheader" : undefined}>
+                      {editing ? <input id="dyn-rowheader" className="ts-field-direct" value={draft.rowHeader} onChange={(e) => patch({ rowHeader: e.target.value })} placeholder="구 분" /> : <span className="ts-clause-meta-value">{props.table.rowHeader}</span>}
+                    </RegionField>
+                  )}
                   {rows.map((r) => (
                     <RegionField key={r.key} region={r.key} {...fieldState(r.key)} sub={r.hint}>
                       <TemplateEditor id={`dyn-h-${r.key}`} value={shown.headers[r.key]} onChange={(next) => setHeader(r.key, next)} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS[r.key]} placeholder={`${REGION_LABEL[r.key]} 머리글`} {...(placed?.templates[r.key] ? { error: placed.templates[r.key] } : {})} />
@@ -346,8 +398,8 @@ export function DynTableAuthoring(props: DynTableAuthoringProps) {
 
                 <section aria-label="본문">
                   <h3 className="ts-clause-sec">본문</h3>
-                  <RegionField region="cell" {...fieldState("cell")} sub="{비율} = 급부 지급률 × 감액 지급률. 세부보장이 둘 이상일 때만 붙일 글은 조건 count(builtin.subCoverage.name) >= 2 로.">
-                    <TemplateEditor id="dyn-cell" value={shown.cell} onChange={(next) => patch({ cell: next })} editing={editing} condition={condition} slots={DYN_TABLE_ALLOWED_SLOTS.cell} placeholder="셀 템플릿" {...(placed?.templates.cell ? { error: placed.templates.cell } : {})} />
+                  <RegionField region="cell" {...fieldState("cell")} sub={isFixed ? "{금액} = 정액 × 감액비율 (원 단위 반올림 없음 · 지급률은 곱하지 않는다). 표기는 5만원 · 2만 5천원 · 1,000만원." : "{비율} = 급부 지급률 × 감액 지급률. 세부보장이 둘 이상일 때만 붙일 글은 조건 count(builtin.subCoverage.name) >= 2 로."}>
+                    <TemplateEditor id="dyn-cell" value={shown.cell} onChange={(next) => patch({ cell: next })} editing={editing} condition={condition} slots={allowedCellSlots(shown)} placeholder="셀 템플릿" {...(placed?.templates.cell ? { error: placed.templates.cell } : {})} />
                   </RegionField>
                 </section>
               </div>
