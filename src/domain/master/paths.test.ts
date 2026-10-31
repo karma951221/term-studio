@@ -8,8 +8,10 @@ import {
   findForm,
   findMasterField,
   formsOfLevel,
+  isMasterOwnedPath,
   isMasterPathShape,
   levelDepth,
+  productOwnedMaster,
   masterFieldFullLabel,
   masterFieldLabel,
   masterPath,
@@ -105,5 +107,23 @@ describe("마스터 경로 — 폼키.필드키", () => {
   it("레벨 깊이는 부착 레벨 순서", () => {
     expect(levelDepth("product")).toBe(0);
     expect(levelDepth("benefit")).toBe(4);
+  });
+});
+
+describe("필드별 소유 — 마스터 소유 폼 (ADR-0097, 2026-10-31)", () => {
+  const owned: MasterTree = [
+    { key: "pay", label: "보험금지급", level: "benefit", fields: [{ key: "rate", label: "지급률", type: { kind: "number" } }] },
+    { key: "fixed", label: "정액표", level: "benefit", optional: true, owner: "master", fields: [{ key: "grid", label: "격자", type: { kind: "string" } }] },
+  ];
+  it("isMasterOwnedPath — 소유 표식이 있는 폼의 자리만, 없는 경로는 아니다", () => {
+    expect(isMasterOwnedPath("fixed.grid", owned)).toBe(true);
+    expect(isMasterOwnedPath("pay.rate", owned)).toBe(false);
+    expect(isMasterOwnedPath("nope.x", owned)).toBe(false);
+  });
+  it("productOwnedMaster — 상품 소유 폼만 남긴 마스터 (스냅샷 완결성 · 복사의 재료)", () => {
+    expect(productOwnedMaster(owned).map((f) => f.key)).toEqual(["pay"]);
+  });
+  it("MVP 정본에는 아직 마스터 소유 폼이 없다 — 지급률 · 감액 · 면책은 상품 소유", () => {
+    expect(productOwnedMaster().length).toBe(MASTER.length);
   });
 });

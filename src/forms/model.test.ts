@@ -935,3 +935,54 @@ describe("스냅샷 값 명령 — 값 비우기 · 현재 마스터 값 가져�
     ]);
   });
 });
+
+describe("마스터 소유 폼 — 스냅샷 문맥에서는 지금 마스터 값을 읽기 전용으로 (ADR-0097, 2026-10-31)", () => {
+  const master: MasterForm[] = [
+    { key: "pay", label: "보험금지급", level: "benefit", fields: [{ key: "rate", label: "지급률", type: { kind: "number" } }] },
+    { key: "fixed", label: "정액표", level: "benefit", optional: true, owner: "master", fields: [{ key: "note", label: "메모", type: { kind: "string" } }] },
+  ];
+  const enums: EnumLookup = () => undefined;
+
+  it("스냅샷 문맥 — 마스터 소유 칸은 masterOwned · 값은 마스터 것 · 가져오기 재료(masterValue)가 없다 · 폼 카드도 masterOwned", () => {
+    const model = buildForm("benefit", enums, new Map([["pay.rate", entered(80)], ["fixed.note", entered("옛 사본")]]), { masterLabel: "급부 (마스터)", masterValues: new Map([["pay.rate", entered(100)], ["fixed.note", entered("지금 마스터")]]) }, master);
+    const note = model.fields.find((f) => f.path === "fixed.note")!;
+    expect(note.masterOwned).toBe(true);
+    expect(note.value).toBe("지금 마스터");
+    expect(note.state).toBe("entered");
+    expect(note.masterValue).toBeUndefined();
+    expect(note.source).toBe("direct");
+    expect(model.cards.find((c) => c.key === "fixed")?.masterOwned).toBe(true);
+    const rate = model.fields.find((f) => f.path === "pay.rate")!;
+    expect(rate.masterOwned).toBeUndefined();
+    expect(rate.masterValue).toBe(100);
+  });
+
+  it("스냅샷 문맥 — 마스터에 없는 마스터 소유 특성은 닫힌 채 · 「가져오기」 대상이 아니다 · 열 수도 없다", () => {
+    const model = buildForm("benefit", enums, new Map([["fixed.note", entered("옛 사본")]]), { masterLabel: "급부 (마스터)", masterValues: new Map() }, master);
+    const s = initFormState(model);
+    expect(s.open.fixed).toBe(false);
+    expect(masterHasForm(model.cards.find((c) => c.key === "fixed")!)).toBe(false);
+    expect(formReducer(s, { type: "openForm", form: "fixed" }).open.fixed).toBe(false);
+    expect(formReducer(s, { type: "importMasterForm", form: "fixed" }).open.fixed).toBe(false);
+  });
+
+  it("제출에 마스터 소유 칸은 실리지 않는다 — 편집 · 비우기 명령도 그 칸을 바꾸지 않는다", () => {
+    const model = buildForm("benefit", enums, new Map(), { masterLabel: "급부 (마스터)", masterValues: new Map([["fixed.note", entered("지금 마스터")]]) }, master);
+    let s = initFormState(model);
+    expect(s.open.fixed).toBe(true);
+    s = formReducer(s, { type: "edit", path: "fixed.note", draft: "고침" });
+    s = formReducer(s, { type: "edit", path: "pay.rate", draft: "70" });
+    expect(s.fields["fixed.note"].value).toBe("지금 마스터");
+    s = formReducer(s, { type: "clear", path: "fixed.note" });
+    expect(s.fields["fixed.note"].value).toBe("지금 마스터");
+    expect(toSubmission(s).values).toEqual([{ path: "pay.rate", value: 70 }]);
+  });
+
+  it("마스터 문맥(담보 화면 — 스냅샷 없음)에서는 보통 폼이다 — 고치고 제출한다", () => {
+    const model = buildForm("benefit", enums, new Map([["fixed.note", entered("원본")]]), undefined, master);
+    expect(model.fields.find((f) => f.path === "fixed.note")?.masterOwned).toBeUndefined();
+    let s = initFormState(model);
+    s = formReducer(s, { type: "edit", path: "fixed.note", draft: "고침" });
+    expect(toSubmission(s).values).toEqual([{ path: "fixed.note", value: "고침" }]);
+  });
+});

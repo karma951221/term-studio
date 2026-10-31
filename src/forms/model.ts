@@ -81,6 +81,11 @@ export interface FieldView {
   optional?: true;
   /** 입력 모양 — `radio` 면 enum 을 라디오로 (마스터 `display`). */
   display?: "radio";
+  /**
+   * 마스터 소유 칸(ADR-0097) — 스냅샷 문맥에서만 선다: 값은 지금 마스터 것이고 읽기 전용이다(편집 · 비우기 · 가져오기 · 제출 없음).
+   * 마스터 문맥(담보 화면)에서는 보통 칸이다.
+   */
+  masterOwned?: true;
 }
 
 /**
@@ -100,6 +105,8 @@ export interface FormRef {
   label: string;
   /** 여는 폼 — 값 행이 하나도 없으면 카드가 닫힌 채 태어난다 (ADR-0065 §4). */
   optional?: boolean;
+  /** 마스터 소유 폼이 스냅샷 문맥에 선 것 — 카드째 읽기 전용(⊖ · 특성 ⊕ · 가져오기 없음) (ADR-0097). */
+  masterOwned?: true;
 }
 
 /** 카드 하나 = 마스터 폼 하나 (기능/마스터 §3.5). 필드는 폼 선언 순. */
@@ -207,11 +214,16 @@ export function buildForm(
   const cards: FormCard[] = formsOfLevel(level, master).map((form) => {
     const ref: FormRef = { key: form.key, label: form.label };
     if (form.optional === true) ref.optional = true;
+    // 마스터 소유 폼 + 스냅샷 문맥 — 값은 지금 마스터 것, 읽기 전용. 스냅샷에 남은 옛 복사본은 보지 않는다 (ADR-0097)
+    const masterOwned = snapshot !== undefined && form.owner === "master";
+    if (masterOwned) ref.masterOwned = true;
     const card: FormCard = {
       ...ref,
-      fields: fieldsOfForm(form).map((r) =>
-        fieldView(r.path, r.field.label, r.field.type, r.field.defaultValue, r.field.hiddenByDefault === true, r.field.optional === true, r.field, ref, enums, current, snapshot),
-      ),
+      fields: fieldsOfForm(form).map((r) => {
+        const view = fieldView(r.path, r.field.label, r.field.type, r.field.defaultValue, r.field.hiddenByDefault === true, r.field.optional === true, r.field, ref, enums, masterOwned ? snapshot.masterValues : current, masterOwned ? undefined : snapshot);
+        if (masterOwned) view.masterOwned = true;
+        return view;
+      }),
     };
     if (form.description !== undefined) card.description = form.description;
     return card;
@@ -472,6 +484,9 @@ function fieldPresent(view: FieldView, added: boolean): boolean {
 
 export function formReducer(state: FormState, action: FormAction): FormState {
   if (action.type === "reset") return initFormState(action.model);
+  // 마스터 소유 칸 · 카드는 스냅샷 문맥에서 손대지 않는다 — 값은 담보 마스터에서 고친다 (ADR-0097)
+  if ("path" in action && state.fields[action.path]?.view.masterOwned) return state;
+  if ("form" in action && state.model.cards.find((c) => c.key === action.form)?.masterOwned) return state;
   if (action.type === "reveal") return { ...state, revealed: { ...state.revealed, [action.path]: true } };
   if (action.type === "addField" || action.type === "removeField") {
     const f = state.fields[action.path];
@@ -506,7 +521,7 @@ export function formReducer(state: FormState, action: FormAction): FormState {
     for (const view of state.model.fields) {
       const f = state.fields[view.path];
       if (!f) continue;
-      fields[view.path] = fieldStateOf(view, emptyDraft(view.type), true);
+      fields[view.path] = view.masterOwned ? f : fieldStateOf(view, emptyDraft(view.type), true);
     }
     return { ...state, fields };
   }
@@ -541,7 +556,7 @@ export function differsFromMaster(field: FieldState): boolean {
 
 /** 마스터에 그 특성(여는 폼)이 있나 — 그 폼 자리에 마스터 값이 하나라도 있으면 (기능/상품 §4.8 「마스터에는 면책 있음」). */
 export function masterHasForm(card: FormCard): boolean {
-  return card.optional === true && card.fields.some((f) => f.masterValue !== undefined);
+  return card.optional === true && card.masterOwned !== true && card.fields.some((f) => f.masterValue !== undefined);
 }
 
 /** 하나만 고르게 된 list<enum> 칸에 여럿이 들어 있으면 첫 것만 남긴다 — 통합 → 단일로 바꿀 때. */
@@ -634,6 +649,8 @@ export function toSubmission(state: FormState): Submission {
   for (const view of state.model.fields) {
     const f = state.fields[view.path];
     if (!f) continue;
+    // 마스터 소유 칸은 상품담보 저장에 실리지 않는다 — 주인이 마스터다 (ADR-0097)
+    if (view.masterOwned) continue;
     // 조건이 맞지 않는 조건부 칸 — 자리가 없다. 저장된 값이 있으면 지운다 (고지유형을 바꾸면 딸린 칸 값이 남지 않게)
     if (!isViewShown(view, valueOf)) {
       if (view.state === "entered") values.push({ path: view.path, value: undefined });

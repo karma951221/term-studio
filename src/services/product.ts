@@ -87,14 +87,14 @@ import {
   type OmissionDisposition,
   type VerdictResult,
 } from "@/domain/product";
-import { CONTRACT_KIND_PATH, describeTraitDetachment, noticeAffixOf, findForm, findMasterField, formRuleIssues, formsOfLevel, isStandaloneContract, traitDetachments, type MasterForm } from "@/domain/master";
+import { CONTRACT_KIND_PATH, describeTraitDetachment, noticeAffixOf, findForm, findMasterField, formRuleIssues, formsOfLevel, isMasterOwnedPath, isStandaloneContract, productOwnedMaster, traitDetachments, type MasterForm } from "@/domain/master";
 import type { Actor, AttachLevel, Code, Coordinate, Id, Impact, Issue, Result, Value, ValueSlot } from "@/domain/types";
 import { entered, mergeImpacts, ok, reject } from "@/domain/types";
 
 import * as catalog from "@/db/repo/catalog";
 import * as repo from "@/db/repo/product";
 import type { Db } from "@/db/repo/types";
-import { clearOwner, copySlots, readSlots, writeSlot, type ValueOwner } from "@/db/repo/values";
+import { clearOwner, readSlots, writeSlot, type ValueOwner } from "@/db/repo/values";
 
 import { rollbackUnless } from "./txContext";
 
@@ -413,6 +413,9 @@ export interface ProductService {
 
 // ───────────────────────────── 구현 ─────────────────────────────
 
+/** 스냅샷 실체 — 마스터 소유 값을 쓰지 않는 쪽 (ADR-0097). */
+const SNAPSHOT_KINDS = new Set<ValueOwner["kind"]>(["productCoverage", "productSubCoverage", "productBenefit"]);
+
 const LEVEL_OF: Record<ValueOwner["kind"], AttachLevel> = {
   product: "product",
   plan: "plan",
@@ -486,6 +489,8 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
     const level = LEVEL_OF[owner.kind];
     const type = slotType(level, path);
     if (!type) return [issue("brokenRef", `${level} 레벨에 값 자리 ${path} 이(가) 없습니다`, { refPath: path })];
+    // 마스터 소유 자리는 상품담보에서 쓰지 않는다 — 담보 마스터에서 고친다 (ADR-0097)
+    if (SNAPSHOT_KINDS.has(owner.kind) && isMasterOwnedPath(path)) return [issue("structure", `${path} 은(는) 마스터 소유 값입니다 — 담보 마스터에서 고친다`, { refPath: path })];
     if (value === undefined) return [];
     const { findEnum } = await catalogDefs(tx);
     return validateSlotValue(path, type, value, findEnum, { refPath: path });
@@ -725,16 +730,12 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
     return n;
   }
 
-  /** 마스터 실체 → 스냅샷 실체 값·부착 복사 (ADR-0002). */
+  /** 마스터 실체 → 스냅샷 실체 값 복사 (ADR-0002) — 상품 소유 값만. 마스터 소유 값(유형 특성)은 복사하지 않고 늘 지금 마스터를 읽는다 (ADR-0097). */
   async function snapshotFrom(tx: Db, from: { kind: "coverage" | "subCoverage" | "benefit"; id: Id }, to: SnapshotOwner, who: Id): Promise<void> {
-    if (master.masterSlots) {
-      const slots = await master.masterSlots(from);
-      for (const [path, slot] of slots) {
-        if (!slot.entered) continue;
-        await writeSlot(tx, to, path, slot.value, who);
-      }
-    } else {
-      await copySlots(tx, from, to, who);
+    const slots = master.masterSlots ? await master.masterSlots(from) : await readSlots(tx, from);
+    for (const [path, slot] of slots) {
+      if (!slot.entered || isMasterOwnedPath(path)) continue;
+      await writeSlot(tx, to, path, slot.value, who);
     }
   }
 
@@ -1706,12 +1707,14 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
       if (!pc) return { total: 0, missing: [] };
       const missing: MissingSlot[] = [];
       let total = 0;
+      // 마스터 소유 폼은 상품담보의 자리가 아니다 — 완결성은 상품 소유 폼만 센다 (ADR-0097)
+      const owned = productOwnedMaster();
       for (const { owner, node } of await snapshotOwners(db, id)) {
         const slots = await readSlots(db, owner);
         const level = LEVEL_OF[owner.kind];
         // 안 연 여는 폼(감액·면책)의 자리는 분모에 안 든다 — 열어야 「자리」가 생긴다 (ADR-0065 §4)
-        total += countedSlotsOf(level, (p) => slots.get(p)).length;
-        missing.push(...missingSlotsOf(owner, node ? node.name : pc.name, level, (p) => slots.get(p)));
+        total += countedSlotsOf(level, (p) => slots.get(p), owned).length;
+        missing.push(...missingSlotsOf(owner, node ? node.name : pc.name, level, (p) => slots.get(p), owned));
       }
       return { total, missing };
     },

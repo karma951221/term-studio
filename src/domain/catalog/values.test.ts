@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { MasterForm } from "../master";
 import { entered, NOT_ENTERED, type FieldType, type ValueSlot } from "../types";
 import type { EnumDef, EnumLookup } from "./types";
-import { countedSlotsOf, isFormOpened, missingSlots, prefill, slotType, validateValue, valueSlotsOf, type SlotReader } from "./values";
+import { countedSlotsOf, isFormOpened, mergeMasterOwned, missingSlots, prefill, slotType, validateValue, valueSlotsOf, type SlotReader } from "./values";
 
 const 고지유형: EnumDef = {
   code: "E0001",
@@ -240,5 +240,22 @@ describe("선택 필드(MasterField.optional) — 값이 없으면 세지 않는
   it("정본 마스터 — 보험금지급의 지급률이 선택 필드다 · 면책여부 자리는 없다(면책 특성으로만, 2026-10-21)", () => {
     expect(slotType("benefit", "pay.exempt")).toBeUndefined();
     expect(countedSlotsOf("benefit", () => undefined).filter((p) => p.startsWith("pay."))).not.toContain("pay.rate");
+  });
+});
+
+describe("mergeMasterOwned — 조립 · 화면이 읽는 노드 값 = 상품 소유는 스냅샷, 마스터 소유는 지금 마스터 (ADR-0097, 2026-10-31)", () => {
+  const master: MasterForm[] = [
+    { key: "pay", label: "보험금지급", level: "benefit", fields: [{ key: "rate", label: "지급률", type: { kind: "number" } }] },
+    { key: "fixed", label: "정액표", level: "benefit", optional: true, owner: "master", fields: [{ key: "grid", label: "격자", type: { kind: "string" } }] },
+  ];
+  it("마스터 소유 자리는 스냅샷에 남아 있어도(옛 복사본) 마스터 값으로 바꾸고, 마스터에 없으면 뺀다", () => {
+    const snapshot = new Map<string, ValueSlot>([["pay.rate", entered(80)], ["fixed.grid", entered("옛 사본")]]);
+    const out = mergeMasterOwned("benefit", snapshot, new Map([["pay.rate", entered(100)], ["fixed.grid", entered("지금 마스터")]]), master);
+    expect([...out]).toEqual([["pay.rate", entered(80)], ["fixed.grid", entered("지금 마스터")]]);
+    const gone = mergeMasterOwned("benefit", snapshot, new Map([["pay.rate", entered(100)]]), master);
+    expect([...gone]).toEqual([["pay.rate", entered(80)]]);
+  });
+  it("마스터 값이 없으면(없는 노드) 상품 소유 값만", () => {
+    expect([...mergeMasterOwned("benefit", new Map([["pay.rate", entered(80)]]), undefined, master)]).toEqual([["pay.rate", entered(80)]]);
   });
 });

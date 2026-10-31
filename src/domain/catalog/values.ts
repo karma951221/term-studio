@@ -9,7 +9,7 @@
  *   세지 않고(`countedSlotsOf`), 직접 읽으면 자리 없음. 값 행이 하나라도 있으면 나머지 필드는 보통 자리다.
  * - **선택 필드(`MasterField.optional`)** — 값이 없으면 `missingSlots` 가 세지 않는다. 식이 읽는 뜻은 그대로(미입력)다.
  */
-import { fieldsOfLevel, findMasterField, formsOfLevel, isFieldShown, masterPath, type MasterForm, type MasterTree } from "../master";
+import { fieldsOfLevel, findMasterField, formsOfLevel, isFieldShown, isMasterOwnedPath, MASTER, masterPath, type MasterForm, type MasterTree } from "../master";
 import type { AttachLevel, Coordinate, FieldType, Issue, TableColumn, Value, ValueSlot } from "../types";
 import type { EnumDef, EnumLookup, SlotPath } from "./types";
 
@@ -167,6 +167,21 @@ export function prefill(level: AttachLevel, master?: MasterTree): Record<SlotPat
 
 /** 저장소 조회 — 자리를 모르면 undefined (= 미입력). */
 export type SlotReader = (path: SlotPath) => ValueSlot | undefined;
+
+/**
+ * 스냅샷 노드가 읽는 값 — 상품 소유 자리는 스냅샷 값, 마스터 소유 자리는 지금 마스터 값 (ADR-0097 · 기능/상품 §3.4).
+ * 스냅샷에 남은 마스터 소유 값 행(옛 복사본)은 버린다 — 주인이 하나다. `masterSlots` 가 없으면(마스터 노드가 없음) 상품 소유 값만.
+ */
+export function mergeMasterOwned(level: AttachLevel, snapshot: ReadonlyMap<SlotPath, ValueSlot>, masterSlots: ReadonlyMap<SlotPath, ValueSlot> | undefined, master: MasterTree = MASTER): Map<SlotPath, ValueSlot> {
+  const out = new Map<SlotPath, ValueSlot>();
+  for (const [path, slot] of snapshot) if (!isMasterOwnedPath(path, master)) out.set(path, slot);
+  for (const ref of fieldsOfLevel(level, master)) {
+    if (ref.form.owner !== "master") continue;
+    const slot = masterSlots?.get(ref.path);
+    if (slot?.entered) out.set(ref.path, slot);
+  }
+  return out;
+}
 
 /** 여는 폼이 열려 있는가 — 그 폼의 필드 중 하나라도 입력됨. */
 export function isFormOpened(form: MasterForm, read: SlotReader): boolean {

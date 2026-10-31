@@ -422,7 +422,9 @@ function FieldRow({ idBase, field, externalIssues, onEdit, commands, onRemove, s
   // 면책 기간(개월) 입력 — 숫자 옆에 「n년 n개월」 해석을 곁들인다 (ADR-0065 §1).
   const monthsHint = view.path === EXEMPTION_MONTHS && typeof field.value === "number" ? formatPeriod(field.value) : undefined;
 
-  const rowClass = `ts-form-row${field.entered ? "" : " is-not-entered"}${highlighted ? " ts-field-highlight" : ""}`;
+  // 마스터 소유 칸 — 스냅샷 문맥에서 잠긴다(값 비우기 · 가져오기 없음). 담보 마스터에서 고친다 (ADR-0097)
+  const locked = readOnly || view.masterOwned === true;
+  const rowClass = `ts-form-row${field.entered ? "" : " is-not-entered"}${highlighted ? " ts-field-highlight" : ""}${view.masterOwned ? " is-master-owned" : ""}`;
 
   return (
     <div ref={rowRef} className={rowClass} data-path={view.path} data-source={view.source}>
@@ -447,11 +449,11 @@ function FieldRow({ idBase, field, externalIssues, onEdit, commands, onRemove, s
         )}
       </span>
       {/* 읽기 모드는 입력만 잠근다 — 라벨 옆 ⓘ 의 tooltip · 링크는 살아 있어야 한다 */}
-      <div className="ts-form-control" inert={readOnly}>
+      <div className="ts-form-control" inert={locked}>
         <Input id={id} field={field} onEdit={onEdit} className="ts-field-direct" />
-        {commands && !readOnly && <ValueCommands field={field} onClear={commands.onClear} onImport={commands.onImport} />}
+        {commands && !locked && <ValueCommands field={field} onClear={commands.onClear} onImport={commands.onImport} />}
         {monthsHint && <span className="ts-muted">{monthsHint}</span>}
-        {notEntered && !readOnly && <span className="ts-badge missing">미입력</span>}
+        {notEntered && !locked && <span className="ts-badge missing">미입력</span>}
         {field.proposed && <span className="ts-badge proposed">제안값 · 저장해야 확정</span>}
         {field.error !== undefined && (
           <span className="ts-form-error" role="alert">
@@ -488,7 +490,7 @@ function HeadField({ idBase, field, absent, readOnly, issues, onAdd, onRemove, o
   onEdit: (draft: Draft) => void;
 }) {
   const { view } = field;
-  if (readOnly) {
+  if (readOnly || view.masterOwned) {
     const shown = formatValue(view);
     return shown === undefined ? null : (
       <span className="ts-head-field" data-path={view.path}>
@@ -647,7 +649,8 @@ export function StructForm({
   const unplaced = allIssues.filter((i) => !i.at.refPath || !live.fields[i.at.refPath]);
   // 선택 폼은 열렸을 때만 카드로 선다 — 닫힌 것은 편집 모드에서 폼 아래 「⊕ {폼}」 한 줄로만.
   const shownCards = model.cards.filter((card) => !card.optional || live.open[card.key]);
-  const closedCards = model.cards.filter((card) => card.optional && !live.open[card.key]);
+  // 마스터 소유 특성은 상품담보에서 붙이지 않는다 — 마스터에 있으면 열린 채 읽기 전용, 없으면 자리 자체가 없다 (ADR-0097)
+  const closedCards = model.cards.filter((card) => card.optional && !live.open[card.key] && !card.masterOwned);
   // 오류가 걸렸거나 강조로 건너온 자리는 숨기지 않는다 (기능/담보 §3.4).
   const pinned = (path: string) => issuesAt(path).length > 0 || highlightPath === path;
   // 카드마다 그릴 행 · 더할 수 있는 선택 필드. 읽기 모드에서 보일 행이 하나도 없는 카드는 통째로 그리지 않는다 (2026-09-27).
@@ -679,7 +682,7 @@ export function StructForm({
                   ? { onClear: () => dispatch({ type: "clear", path: view.path }), onImport: () => dispatch({ type: "importMaster", path: view.path }) }
                   : undefined
               }
-              onRemove={view.optional && !readOnly ? () => dispatch({ type: "removeField", path: view.path }) : undefined}
+              onRemove={view.optional && !readOnly && !card.masterOwned ? () => dispatch({ type: "removeField", path: view.path }) : undefined}
               showCode={showCodes}
               readOnly={readOnly}
               highlighted={highlightPath === view.path}
@@ -687,12 +690,13 @@ export function StructForm({
           ),
         )
         .filter((row) => row !== null);
-      return { card, rows, addable: readOnly ? [] : absent };
+      return { card, rows, addable: readOnly || card.masterOwned ? [] : absent };
     })
     .filter(({ rows, addable }) => rows.length > 0 || addable.length > 0);
 
   const renderCard = ({ card, rows, addable }: (typeof visibleCards)[number]) => {
-    const remove = card.optional && !readOnly && (
+    const ownedTip = card.masterOwned ? <span className="ts-badge ts-master-owned" title="마스터 소유 — 담보 마스터에서 고친다">마스터 소유 — 담보 마스터에서 고친다</span> : null;
+    const remove = card.optional && !readOnly && !card.masterOwned && (
       // 연 특성 박스 — 왼쪽 위 ⊖ 는 그 자리를 지운다(값도). 다시 더하려면 「특성 ⊕」 (ADR-0065 §4 · 2026-10-21)
       <IconButton
         className="ts-form-card-remove"
@@ -730,6 +734,7 @@ export function StructForm({
               {remove}
               {card.label}
               {card.description && <InfoTip text={card.description} />}
+              {ownedTip}
             </p>
           )}
           {rows}
@@ -744,6 +749,7 @@ export function StructForm({
           {remove}
           {card.label}
           {card.description && <InfoTip text={card.description} />}
+          {ownedTip}
         </legend>
         {rows}
         {addRow}

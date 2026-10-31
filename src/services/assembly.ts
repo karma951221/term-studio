@@ -32,9 +32,10 @@
  * - 컨테이너(C1 동시 작업)는 쓰지 않는다 — 호출자가 서비스 5개를 넘긴다.
  */
 import { assemble, assembleSpecial, buildSourceView, explainArticle, liveSourceView, type AssemblyCoverage, type AssemblyInput, type AssemblyPlanOption, type Booklet, type MasterBundle, type ExplainTarget, type ProductInput, type SourceView, type SpecialPreview } from "@/domain/assembly";
-import type { SlotPath } from "@/domain/catalog";
+import { mergeMasterOwned, type SlotPath } from "@/domain/catalog";
 import type { DocumentNode } from "@/domain/document";
 import type { DynTable } from "@/domain/dyntable";
+import { productOwnedMaster, MASTER } from "@/domain/master";
 import { PLAN_AXES, type PlanOption } from "@/domain/product";
 import type { Actor, Id, Result, ValueSlot } from "@/domain/types";
 import { ok, reject } from "@/domain/types";
@@ -179,21 +180,28 @@ export function createAssemblyService(db: Db, services: AssemblyServices): Assem
     return sorted.map((o) => ({ id: o.id, axis: o.axis, number: o.number, name: o.name, planTypeCode: o.planTypeCode, values: values.get(o.id) ?? new Map() }));
   }
 
-  /** 탑재분 전부 — 스냅샷 · 값(kind 별 1회씩, 모든 탑재분의 노드 id 를 모아) · 부착 세목. 상품담보 수와 무관한 쿼리 수. */
+  /**
+   * 탑재분 전부 — 스냅샷 · 값(kind 별 1회씩, 모든 탑재분의 노드 id 를 모아) · 부착 세목. 상품담보 수와 무관한 쿼리 수.
+   * 마스터 소유 폼(유형 특성 — ADR-0097)의 값은 스냅샷이 아니라 지금 마스터 노드에서 읽어 섞는다(`mergeMasterOwned`) — 그 폼이 있을 때만 마스터를 읽는다.
+   */
   async function loadCoverages(productId: Id): Promise<AssemblyCoverage[]> {
     const [snapshots, plansByPc] = await Promise.all([product.listSnapshots(productId), listAttachedPlansForProduct(db, productId)]);
     const subIds = snapshots.flatMap((s) => s.subCoverages.map((x) => x.id));
     const benIds = snapshots.flatMap((s) => s.subCoverages.flatMap((x) => x.benefits.map((b) => b.id)));
-    const [cov, sub, ben] = await Promise.all([
+    const hasMasterOwned = productOwnedMaster().length !== MASTER.length;
+    const [cov, sub, ben, mCov, mSub, mBen] = await Promise.all([
       readSlotsMany(db, "productCoverage", snapshots.map((s) => s.id)),
       readSlotsMany(db, "productSubCoverage", subIds),
       readSlotsMany(db, "productBenefit", benIds),
+      hasMasterOwned ? readSlotsMany(db, "coverage", [...new Set(snapshots.map((s) => s.coverageId))]) : undefined,
+      hasMasterOwned ? readSlotsMany(db, "subCoverage", snapshots.flatMap((s) => s.subCoverages.map((x) => x.masterNodeId))) : undefined,
+      hasMasterOwned ? readSlotsMany(db, "benefit", snapshots.flatMap((s) => s.subCoverages.flatMap((x) => x.benefits.map((b) => b.masterNodeId)))) : undefined,
     ]);
     return snapshots.map((s) => {
       const values = new Map<Id, ReadonlyMap<SlotPath, ValueSlot>>();
-      values.set(s.id, cov.get(s.id)!);
-      for (const x of s.subCoverages) values.set(x.id, sub.get(x.id)!);
-      for (const x of s.subCoverages) for (const b of x.benefits) values.set(b.id, ben.get(b.id)!);
+      values.set(s.id, mergeMasterOwned("coverage", cov.get(s.id)!, mCov?.get(s.coverageId)));
+      for (const x of s.subCoverages) values.set(x.id, mergeMasterOwned("subCoverage", sub.get(x.id)!, mSub?.get(x.masterNodeId)));
+      for (const x of s.subCoverages) for (const b of x.benefits) values.set(b.id, mergeMasterOwned("benefit", ben.get(b.id)!, mBen?.get(b.masterNodeId)));
       return { snapshot: s, values, plans: plansByPc.get(s.id) ?? [] };
     });
   }
