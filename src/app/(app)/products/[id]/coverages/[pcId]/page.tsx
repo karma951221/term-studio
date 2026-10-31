@@ -83,7 +83,7 @@ export default async function ProductCoverageDetailPage({ params, searchParams }
     ownerModel("coverage", "productCoverage", pc.id, `${pc.coverageName} (마스터)`),
     ...pc.subCoverages.flatMap((s) => [
       ownerModel("subCoverage", "productSubCoverage", s.id, `${s.name} (마스터)`),
-      ...s.benefits.map((b) => ownerModel("benefit", "productBenefit", b.id, `${b.name} (마스터)`)),
+      ...s.benefits.map((b) => ownerModel("benefit", "productBenefit", b.id, `${b.name.trim() || s.name} (마스터)`)),
     ]),
   ];
   const tree: PcTree = {

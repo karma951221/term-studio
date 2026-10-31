@@ -32,7 +32,8 @@ export async function createCoverageAction(formData: FormData): Promise<void> {
     name: str(formData, "name"),
     description: str(formData, "description"),
     subCoverageName: str(formData, "subCoverageName") || undefined,
-    benefitName: str(formData, "benefitName") || undefined,
+    // 급부명은 선택 — 비워 보내면 빈 채로 저장하고 읽을 때 세부보장명 (기능/담보 §3.1, 2026-10-31)
+    benefitName: str(formData, "benefitName"),
     category,
   });
   if (!r.ok) redirect(errorRedirectPath(`${BASE}/new`, msg(r.rejection)));

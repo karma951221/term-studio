@@ -6,6 +6,7 @@ import {
   dryRunStructurePlan,
   hasRemoves,
   hasStructuralChange,
+  resolveOrder,
   savedStructureOf,
   structureDraftOf,
   structureIssues,
@@ -26,6 +27,11 @@ const tree: Coverage = {
     { id: "s2", key: "02", name: "2종수술", order: 1, benefits: [{ id: "b3", key: "1", name: "수술급여금", order: 0 }] },
   ],
 };
+
+function unwrap<T>(r: { ok: true; value: T } | { ok: false; rejection: unknown }): T {
+  if (!r.ok) throw new Error(`기대: ok, 실제: ${JSON.stringify(r.rejection)}`);
+  return r.value;
+}
 
 /** 깊은 복사 — 테스트마다 초안을 손대므로. */
 const draftOf = (): StructureDraftSub[] => structureDraftOf(tree).map((s) => ({ ...s, benefits: s.benefits.map((b) => ({ ...b })) }));
@@ -52,12 +58,20 @@ describe("structureIssues", () => {
     expect(structureIssues(draftOf())).toEqual([]);
   });
 
-  it("빈 이름 — 공백만 있어도 빈 것", () => {
+  it("빈 세부보장명 — 공백만 있어도 빈 것. 급부명은 선택이라 비워도 이슈가 아니다 (2026-10-31)", () => {
     const draft = draftOf();
+    draft[0]!.name = "  ";
     draft[0]!.benefits[1]!.name = "  ";
     const issues = structureIssues(draft);
     expect(issues).toHaveLength(1);
-    expect(issues[0]!.key).toBe("benefit:b2");
+    expect(issues[0]!.key).toBe("subCoverage:s1");
+  });
+
+  it("빈 급부명 둘은 형제 중복이 아니다 — 적힌 급부명끼리만 견준다", () => {
+    const draft = draftOf();
+    draft[0]!.benefits[0]!.name = "";
+    draft[0]!.benefits[1]!.name = " ";
+    expect(structureIssues(draft)).toEqual([]);
   });
 
   it("형제 중복 — trim 으로 비교하고 두 행 모두 표시. 다른 세부보장 아래 같은 급부명은 허용", () => {
@@ -302,5 +316,28 @@ describe("draftNodeKeys — 편집 중 새 카드에도 같은 규칙으로 미�
   it("structureDraftOf 는 저장 노드의 키를 싣는다", () => {
     const tree: Coverage = { id: "c", name: "c", description: "", subCoverages: [{ id: "s", key: "02", name: "s", order: 0, benefits: [{ id: "b", key: "3", name: "b", order: 0 }] }] };
     expect(structureDraftOf(tree)[0]).toMatchObject({ nodeKey: "02", benefits: [{ nodeKey: "3" }] });
+  });
+});
+
+describe("빈 급부명과 순서 — 새 급부 둘이 이름 없이 서도 순서를 맞춘다 (기능/담보 §3.1, 2026-10-31)", () => {
+  it("resolveOrder 는 같은 이름(빈 이름 포함)의 새 노드를 초안 순서대로 하나씩 잇는다", () => {
+    const siblings = [
+      { id: "b1", name: "수술급여금" },
+      { id: "n1", name: "" },
+      { id: "n2", name: "" },
+    ];
+    expect(resolveOrder(siblings, [{ name: "" }, { id: "b1", name: "수술급여금" }, { name: "" }])).toEqual(["n1", "b1", "n2"]);
+  });
+
+  it("새 급부 둘을 빈 이름으로 맨 앞에 끼워 넣는 계획이 끝까지 돈다 — 둘 다 빈 이름으로 저장된다", () => {
+    const draft = draftOf();
+    draft[0]!.benefits = [{ key: "new:1", name: "" }, { key: "new:2", name: "" }, ...draft[0]!.benefits];
+    const plan = structurePlan(tree, draft);
+    expect(plan.newBenefits).toEqual([
+      { subCoverageId: "s1", name: "" },
+      { subCoverageId: "s1", name: "" },
+    ]);
+    const out = unwrap(dryRunStructurePlan(tree, plan));
+    expect(out.subCoverages[0]!.benefits.map((b) => b.name)).toEqual(["", "", "수술급여금", "위로금"]);
   });
 });

@@ -5010,6 +5010,12 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   font-size: 13px;
 }
 
+/* 급부명이 비어 세부보장명으로 읽는 급부 — 흐리게 (기능/담보 §3.1) */
+.ts-cov-card-name.ts-cov-name-inherited {
+  font-weight: 400;
+  color: var(--ts-muted, #6b7280);
+}
+
 .ts-cov-card-input {
   min-width: 0;
   flex: 0 1 240px;

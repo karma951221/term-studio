@@ -53,13 +53,15 @@ interface SiblingControls {
  * 노드 카드 하나 — 담보 상세와 상품담보 값 화면(기능/상품 §4.8)이 함께 쓴다. 상품담보 값 화면은 늘 `editing={false}` 로 부른다 —
  * 이름 · 순서 · ⊖ 같은 구조 조작이 없다(구조는 마스터, 기능/상품 §3.3).
  */
-export function Card({ editing, level, nodeKey, treeKey, name, onName, issue, sibling, isTarget, scrollToCard, children, body, headExtra }: {
+export function Card({ editing, level, nodeKey, treeKey, name, fallbackName, onName, issue, sibling, isTarget, scrollToCard, children, body, headExtra }: {
   editing: boolean;
   level: Level;
   nodeKey: string;
   /** 노드 키(ADR-0087) — 머리 라벨 「세부보장 01」. `nodeKey` 는 행 열쇠 `<level>:<id>` 라 이름을 달리 둔다. */
   treeKey?: string;
   name: string;
+  /** 급부만 — 급부명이 비면 읽는 이름(세부보장명). 읽기는 흐리게, 편집은 placeholder (기능/담보 §3.1, 2026-10-31). */
+  fallbackName?: string;
   onName: (value: string) => void;
   issue?: string;
   sibling?: SiblingControls;
@@ -78,7 +80,8 @@ export function Card({ editing, level, nodeKey, treeKey, name, onName, issue, si
   }, [isTarget, scrollToCard]);
 
   const what = LEVEL_LABEL[level];
-  const shown = name.trim() || what;
+  const inherited = name.trim() === "" && fallbackName !== undefined && fallbackName.trim() !== "";
+  const shown = name.trim() || (inherited ? fallbackName!.trim() : what);
   const ariaName = level === "coverage" ? NAME_LABEL.coverage : `${what}명 · ${treeKey ?? ""}`;
   if (level === "coverage") {
     // 담보 카드 — 머리 줄 대신 본문 첫 행 「담보 [이름]」: 담보분류 · 값 폼 행과 같은 라벨 열에 선다 (2026-10-21)
@@ -112,7 +115,19 @@ export function Card({ editing, level, nodeKey, treeKey, name, onName, issue, si
         ) : null}
         <span className="ts-cov-card-level">{treeKey ? `${what} ${treeKey}` : what}</span>
         {editing ? (
-          <input value={name} onChange={(e) => onName(e.target.value)} className="ts-field-direct ts-cov-card-input" aria-label={ariaName} aria-invalid={issue ? true : undefined} autoFocus={name === ""} />
+          <input
+            value={name}
+            onChange={(e) => onName(e.target.value)}
+            className="ts-field-direct ts-cov-card-input"
+            aria-label={ariaName}
+            aria-invalid={issue ? true : undefined}
+            autoFocus={name === "" && fallbackName === undefined}
+            placeholder={fallbackName !== undefined ? `비우면 세부보장명 (${fallbackName.trim() || "세부보장"})` : undefined}
+          />
+        ) : inherited ? (
+          <span className="ts-cov-card-name ts-cov-name-inherited" title="급부명이 비어 세부보장명으로 읽는다">
+            {fallbackName!.trim()}
+          </span>
         ) : (
           <span className="ts-cov-card-name">{name}</span>
         )}
@@ -261,6 +276,7 @@ export function CoverageCards({ coverageKey, formByNode, original, attributeValu
         nodeKey={benefit.key}
         treeKey={treeKeys.get(benefit.key)}
         name={benefit.name}
+        fallbackName={sub.name}
         onName={(name) => updateSub(sub.key, (s) => ({ ...s, benefits: s.benefits.map((b) => (b.key === benefit.key ? { ...b, name } : b)) }))}
         issue={issueOf(benefit.key)}
         sibling={{

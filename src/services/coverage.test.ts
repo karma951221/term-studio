@@ -101,6 +101,16 @@ describe("coverage 서비스 (PGlite)", () => {
       expect(surgery.subCoverages[1].benefits.map((b) => b.name)).toEqual(["통원보험금", "수술보험금"]);
     });
 
+    it("급부명은 선택 — 빈 급부명 둘이 한 세부보장 아래 함께 저장되고(형제 유일 인덱스는 적힌 이름만), 조회 트리는 빈 글자 그대로", async () => {
+      let cancer = unwrap(await svc.create(editor, { name: "암진단비", subCoverageName: "암진단", benefitName: "" }));
+      const sub = cancer.subCoverages[0];
+      cancer = unwrap(await svc.addBenefit(editor, sub.id, ""));
+      expect(cancer.subCoverages[0].benefits.map((b) => b.name)).toEqual(["", ""]);
+      expect((await svc.get(cancer.id))?.subCoverages[0].benefits.map((b) => b.name)).toEqual(["", ""]);
+      cancer = unwrap(await svc.addBenefit(editor, sub.id, "소액암"));
+      expect(rejection(await svc.addBenefit(editor, sub.id, "소액암")).reason).toBe("duplicate");
+    });
+
     it("설명·문서 연결 자리 · 없는 id 는 notFound", async () => {
       const desc = unwrap(await svc.setDescription(editor, surgery.id, "수술 담보"));
       expect(desc.description).toBe("수술 담보");

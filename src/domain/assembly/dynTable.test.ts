@@ -148,6 +148,13 @@ describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
     expect(r.value.complete).toBe(false);
   });
 
+  it("(h) 급부명이 비면 행 머리는 세부보장명 — 식의 builtin.benefit.name 도 같다 (기능/담보 §3.1 · 기능/동적표 §3.2, 2026-10-31)", () => {
+    const subs: Sub[] = [{ id: "s1", name: "질병후유장해", benefits: [{ id: "s1-b", name: "", payRate: 100, reduction: { periods: [{ end: "V03", rate: 50 }] } }] }];
+    const r = rowsOf(input(subs));
+    expect(r.rows[1]).toEqual(["질병후유장해", "보험가입금액의 50%", "보험가입금액의 100%"]);
+    expect(r.complete).toBe(true);
+  });
+
   it("(g) 어느 급부도 감액 폼을 열지 않음 → 열 하나 「지급금액」 · 비율 = 지급률", () => {
     const r = rowsOf(input([후유장해("s1", false)]));
     expect(r.rows).toEqual([
