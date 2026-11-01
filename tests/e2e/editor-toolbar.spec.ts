@@ -107,7 +107,7 @@ test(
       await expect(toolbar).toContainText("자리 — ");
       await expect(tool("조건식")).toBeEnabled();
       await tool("조건식").click();
-      await expect(page.locator("dialog[open]")).toHaveCount(0);
+      await expect(page.locator("[role=dialog]")).toHaveCount(0);
       const head = body.locator("[data-cond-head]");
       await expect(head).toHaveCount(1);
       await expect(head.locator(".ts-cond-badge")).toHaveText("IF");
@@ -123,7 +123,7 @@ test(
 
     await ev.action("툴바#7b", "빈 조건 블록을 🗑 로 지운다 — 확인 카드에서 삭제", async () => {
       await body.locator("[data-cond-head]").getByRole("button", { name: "조건 블록 삭제" }).click();
-      await page.locator("dialog[open]").getByRole("button", { name: /삭제$/ }).click();
+      await page.locator("[role=dialog]").getByRole("button", { name: /삭제$/ }).click();
       await expect(body.locator("[data-cond-head]")).toHaveCount(0);
       await expect(paragraphs).toHaveCount(2);
     });
@@ -133,7 +133,7 @@ test(
       await paragraphs.first().press("Home");
       for (let i = 0; i < 3; i++) await paragraphs.first().press("Shift+ArrowRight");
       await tool("조건식").click();
-      await expect(page.locator("dialog[open]")).toHaveCount(0);
+      await expect(page.locator("[role=dialog]")).toHaveCount(0);
       await expect(body.locator("[data-cond-head]")).toHaveCount(1);
       await expect(body.locator(".ts-doc-cond").getByRole("textbox", { name: "항", exact: true })).toHaveText(["회사는 피보험자가 보험기간 중 상해로 사망한 경우 보험금을 지급합니다."]);
       await expect(body.locator(".ts-doc-cond [data-chip]")).toHaveCount(0);
@@ -301,7 +301,7 @@ test(
       await paragraph.press("Home");
       await paragraph.press("Shift+End");
       await tool("조건식").click();
-      await expect(page.locator("dialog[open]")).toHaveCount(0);
+      await expect(page.locator("[role=dialog]")).toHaveCount(0);
       const head = editor.locator("[data-cond-head]");
       await expect(head).toHaveCount(1);
       const form = editForm(page, "조건식");
