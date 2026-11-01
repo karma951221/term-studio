@@ -19,6 +19,10 @@ const buttonVariants = cva(
           "border border-input bg-card text-muted-foreground hover:border-destructive hover:bg-destructive-bg hover:text-destructive focus-visible:border-destructive focus-visible:text-destructive",
         ghost: "text-muted-foreground hover:bg-accent hover:text-foreground",
         "ghost-destructive": "text-muted-foreground hover:bg-destructive-bg hover:text-destructive focus-visible:text-destructive",
+        /** 상자 없는 글자 버튼 — 둘러싼 글자의 색 · 크기를 그대로 잇고 hover 에만 마크색. 줄 안에 박힌 조작(조건 머리 · 접기 ▸). */
+        bare: "inline h-auto whitespace-normal rounded-none p-0 text-left text-inherit hover:text-mark",
+        /** 글자처럼 보이는 버튼 — 본문 속에서 「누를 수 있다」를 점선 밑줄로 말한다(고칠 자리로 · 추천 · 그 자리로). aria-current 는 실선 마크색. */
+        text: "inline h-auto whitespace-normal rounded-none p-0 text-left text-inherit underline decoration-dotted decoration-input underline-offset-4 hover:decoration-muted-foreground aria-[current=true]:decoration-solid aria-[current=true]:decoration-mark",
         link: "h-auto px-0 text-foreground underline-offset-4 hover:text-mark hover:underline",
       },
       size: {
@@ -26,8 +30,12 @@ const buttonVariants = cva(
         sm: "h-7 px-2.5",
         icon: "size-8",
         "icon-sm": "size-6",
+        /** 줄 안 작은 조작(+칸 · +조건) — 22px, 11px 글자 */
+        xs: "h-[22px] px-1.5 text-[11px]",
       },
     },
+    // 글자 버튼(bare · text · link)은 상자 규격(높이 32 · 가로 12)을 입지 않는다 — size 클래스가 variant 뒤에 붙어 이기므로 여기서 되돌린다
+    compoundVariants: [{ variant: ["bare", "text", "link"], size: "default", class: "h-auto min-h-0 px-0" }],
     defaultVariants: { variant: "default", size: "default" },
   },
 );

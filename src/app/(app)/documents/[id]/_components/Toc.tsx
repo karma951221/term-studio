@@ -13,8 +13,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { foldTitle, type ArticleNode, type DocumentNode, type FoldOptions, type Node, type NodeNumber, type SectionNode } from "@/domain/document";
 import type { Id } from "@/domain/types";
+import { cn } from "@/lib/utils";
 
 import type { BlockDrag } from "./useBlockDrag";
+import { Button } from "@/components/ui/button";
 
 /** 조건 블록을 투명하게 펼쳐 조만 순서대로. */
 export function articlesOf(tree: DocumentNode | SectionNode): ArticleNode[] {
@@ -45,6 +47,10 @@ export function tocOf(tree: DocumentNode): TocEntry[] {
   walk(tree.children);
   return out;
 }
+
+/** 목차 한 줄 — 왼쪽 2px 줄이 현재 조(마크색)를 말한다. 조 · 관 이름 · 접기 ▸ 가 모두 이 규격에서 갈라진다. */
+const TOC_ROW =
+  "block h-auto min-h-0 w-full overflow-hidden rounded-none border-0 border-l-2 border-transparent px-1.5 py-0.5 text-left text-[13px] text-ellipsis whitespace-nowrap text-ink-2 hover:bg-accent hover:text-foreground disabled:cursor-default disabled:text-muted-foreground disabled:opacity-100 aria-[current=true]:border-mark aria-[current=true]:text-mark";
 
 export function Toc({
   tree,
@@ -97,17 +103,18 @@ export function Toc({
   const articleRow = (a: ArticleNode, nested: boolean) => {
     const label = `${numbers.get(a.id)?.label ?? "조"}(${foldTitle(a.title, fold)})`;
     return (
-      <button
+      <Button
         key={a.id}
         type="button"
-        className={`ts-toc-article${nested ? " is-nested" : ""}${picked(a.id)}`}
+        variant="ghost"
+        className={cn(TOC_ROW, nested && "pl-[22px]", `ts-toc-article${nested ? " is-nested" : ""}${picked(a.id)}`)}
         title={drag ? `${label} — 끌어 옮기기 · Shift+누르기로 여럿 고르기` : label}
         aria-current={a.id === currentArticleId ? "true" : undefined}
         onClick={pick(a.id, () => onPick(a.id))}
         {...dragAttrs(a.id)}
       >
         {label}
-      </button>
+      </Button>
     );
   };
 
@@ -125,18 +132,19 @@ export function Toc({
           return (
             <div key={s.id} className="ts-toc-section">
               <div className={`ts-toc-section-row${picked(s.id)}`} {...dragAttrs(s.id)}>
-                <button
+                <Button
                   type="button"
-                  className="ts-toc-fold"
+                  variant="ghost"
+                  className={cn(TOC_ROW, "w-[18px] flex-none border-l-0 px-0 text-center text-muted-foreground")}
                   aria-expanded={open}
                   aria-label={`${label} ${open ? "접기" : "펴기"}`}
                   onClick={() => setFolded(open ? new Set([...folded, s.id]) : new Set([...folded].filter((id) => id !== s.id)))}
                 >
                   {open ? "▾" : "▸"}
-                </button>
-                <button type="button" className="ts-toc-section-name" title={first ? `${label} — 첫 조로` : `${label} — 조가 없다`} disabled={!first} onClick={pick(s.id, () => first && onPick(first.id))}>
+                </Button>
+                <Button type="button" variant="ghost" className={cn(TOC_ROW, "font-bold text-foreground")} title={first ? `${label} — 첫 조로` : `${label} — 조가 없다`} disabled={!first} onClick={pick(s.id, () => first && onPick(first.id))}>
                   {label}
-                </button>
+                </Button>
               </div>
               {open && e.articles.map((a) => articleRow(a, true))}
             </div>

@@ -19,6 +19,7 @@ import { decodeAt } from "./ctx";
 import { inlineListAt } from "./editOps";
 import { markedTokensOf } from "./Inline";
 import { identityRuns, runsFromTokens, sameRuns } from "./inlineRuns";
+import { Button } from "@/components/ui/button";
 
 export const MARK_TOOL_TITLE = "작업용 글자색 — 산출물에는 나오지 않습니다";
 
@@ -176,9 +177,9 @@ export function MarkPicker({ onMark }: { onMark: (mark: WorkMark | undefined) =>
               </button>
             ))}
           </div>
-          <button type="button" role="menuitem" className="ts-tool-menu-item" data-mark-clear="" title="고른 글의 작업용 글자색을 지운다" onClick={() => pick(undefined)}>
+          <Button type="button" variant="ghost" role="menuitem" className="h-7 justify-start rounded-sm px-2.5 text-foreground disabled:opacity-45" data-mark-clear="" title="고른 글의 작업용 글자색을 지운다" onClick={() => pick(undefined)}>
             색 지우기
-          </button>
+          </Button>
           <p className="ts-mark-menu-note">작업용 — 산출물에는 나오지 않습니다</p>
         </div>
       )}

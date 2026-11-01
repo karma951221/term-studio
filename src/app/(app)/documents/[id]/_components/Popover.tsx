@@ -3,15 +3,19 @@
 /**
  * 그 자리 팝업 · 오른쪽 클릭 메뉴 (기능/문면 §4.3).
  *
- * - `Popover` — 누른 자리 **바로 아래**에 뜨는 모달 `<dialog>`. 아래가 모자라면 위로 올린다. Esc · 바깥 클릭으로 닫힌다.
+ * - `Popover` — 누른 자리 **바로 아래**에 뜨는 모달 Radix Dialog(role=dialog). 아래가 모자라면 위로 올린다. Esc · 바깥 클릭으로 닫힌다.
  *   함수조항 · 동적표 템플릿 · 상품 조 사본 편집기의 고치기 · 넣기 폼과 삭제 확인 카드가 쓴다. 문면 편집기의 폼은 우측 패널 「편집」 탭이다(2026-10-21).
  * - `ContextMenu` — 브라우저 기본 메뉴 대신 뜨는 앱 메뉴(툴바의 지름길). 팝업 안에서 열면 그 팝업 안에 그린다(모달 밖은 눌리지 않는다).
  *   툴바의 여러 갈래 버튼(옵션 자리 ▾)도 이 메뉴로 고른다.
  */
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { HeadButton } from "@/app/_components/HeadActions";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 import type { Anchor } from "./ctx";
 import { forContextMenu, type MenuItem, type MenuSections } from "./menus";
@@ -33,37 +37,42 @@ export function placeAt(el: HTMLElement, anchor: Anchor): void {
 }
 
 export function Popover({ anchor, label, onClose, children, wide }: { anchor: Anchor; label: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useLayoutEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (!d.open) d.showModal();
-    placeAt(d, anchor);
-    // 열린 뒤 내용이 자라면(값 한정 「해당 값들」 체크 목록 등) 다시 자리를 잡는다 — 처음 높이로 잡은 자리면 아래가 화면 밖으로 나가 확인 단추를 못 누른다
-    if (typeof ResizeObserver === "undefined") return;
-    const watch = new ResizeObserver(() => placeAt(d, anchor));
-    watch.observe(d);
-    return () => watch.disconnect();
-  }, [anchor]);
+  // Radix 는 내용을 포털에 늦게 붙인다 — 부모의 layout effect 로는 ref 가 비어 있다. 붙는 순간(콜백 ref)에 자리를 잡고, 정리 함수로 관찰을 끊는다.
+  const place = useCallback(
+    (el: HTMLDivElement | null) => {
+      if (!el) return;
+      placeAt(el, anchor);
+      // 열린 뒤 내용이 자라면(값 한정 「해당 값들」 체크 목록 등) 다시 자리를 잡는다 — 처음 높이로 잡은 자리면 아래가 화면 밖으로 나가 확인 단추를 못 누른다
+      if (typeof ResizeObserver === "undefined") return;
+      const watch = new ResizeObserver(() => placeAt(el, anchor));
+      watch.observe(el);
+      return () => watch.disconnect();
+    },
+    [anchor],
+  );
   return (
-    <dialog
-      ref={ref}
-      className={`ts-dialog ts-pop${wide ? " is-wide" : ""}`}
-      aria-label={label}
-      onClose={(e) => {
-        // 안에 뜬 조건 팝업(dialog)이 닫힐 때의 close 는 React 트리를 타고 여기까지 온다 — 제 것만 받는다
-        if (e.target === e.currentTarget) onClose();
-      }}
-      onMouseDown={(e) => {
-        // 바깥(backdrop) 클릭 — 대상이 dialog 자신이고 좌표가 상자 밖이면 닫는다
-        if (e.target !== e.currentTarget) return;
-        const r = e.currentTarget.getBoundingClientRect();
-        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) onClose();
-      }}
-    >
-      <p className="ts-pop-title">{label}</p>
-      {children}
-    </dialog>
+    <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+      <DialogPortal>
+        {/* 바깥 클릭으로 닫힌다 — 뒤는 어둡게 하지 않는다 */}
+        <DialogOverlay className="bg-transparent" />
+        <DialogPrimitive.Content
+          ref={place}
+          data-slot="dialog-content"
+          aria-describedby={undefined}
+          onEscapeKeyDown={(e) => {
+            // 팝업 안에서 연 오른쪽 클릭 메뉴의 Esc 는 메뉴만 닫는다
+            if (e.target instanceof Element && e.target.closest("[role=menu]")) e.preventDefault();
+          }}
+          className={cn(
+            "ts-pop fixed z-50 block max-h-[calc(100vh-32px)] overflow-auto rounded-md border border-input bg-card p-3 text-foreground shadow-float outline-none",
+            wide ? "w-[min(600px,calc(100vw-32px))]" : "w-[min(440px,calc(100vw-32px))]",
+          )}
+        >
+          <DialogTitle className="mb-2 text-[13px] leading-normal">{label}</DialogTitle>
+          {children}
+        </DialogPrimitive.Content>
+      </DialogPortal>
+    </Dialog>
   );
 }
 
@@ -79,8 +88,9 @@ export function PopActions({ onCancel, confirmLabel = "확인", disabled }: { on
   );
 }
 
+/** 오른쪽 클릭 메뉴를 그릴 곳 — 열린 팝업(모달) 안. 모달 밖은 눌리지 않아서 body 에 그리면 메뉴가 죽는다. */
 function topModal(): HTMLElement {
-  const open = Array.from(document.querySelectorAll<HTMLDialogElement>("dialog[open]")).filter((d) => d.matches(":modal"));
+  const open = Array.from(document.querySelectorAll<HTMLElement>("[role=dialog][data-state=open]"));
   return open.at(-1) ?? document.body;
 }
 
@@ -136,12 +146,13 @@ export function ContextMenu({ x, y, sections, onPick, onClose }: { x: number; y:
         shown.map((section, i) => (
           <div key={i} className="ts-ctx-section">
             {section.map((item) => (
-              <button
+              <Button
                 key={item.name ?? item.label}
                 type="button"
+                variant={item.danger ? "ghost-destructive" : "ghost"}
                 role="menuitem"
                 aria-label={item.name}
-                className={[item.danger ? "danger" : "", item.indent ? "is-indent" : ""].filter(Boolean).join(" ") || undefined}
+                className={cn("flex h-auto w-full justify-start rounded-none px-3 py-1 text-left text-[13px] focus-visible:bg-accent", item.danger ? "text-foreground hover:text-destructive" : "text-foreground", item.indent && "pl-6 text-ink-2")}
                 disabled={item.disabled}
                 onClick={() => {
                   onClose();
@@ -149,7 +160,7 @@ export function ContextMenu({ x, y, sections, onPick, onClose }: { x: number; y:
                 }}
               >
                 {item.label}
-              </button>
+              </Button>
             ))}
           </div>
         ))

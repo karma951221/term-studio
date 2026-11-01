@@ -37,6 +37,7 @@ import { findTableDiscriminator } from "@/domain/dyntable/system";
 import type { Code, Id } from "@/domain/types";
 
 import { BoxView } from "@/app/_components/BoxView";
+import { Button } from "@/components/ui/button";
 import { ClauseModel } from "@/app/_components/ClauseModel";
 import { bindingLabel } from "@/app/(app)/functions/_components/params";
 
@@ -121,9 +122,9 @@ function HeadTools({ ctx, branch, first, ownerId }: { ctx: DocCtx; branch: Block
         const item = items.find((i) => t.match(i.label) && !i.disabled);
         if (!item) return null;
         return (
-          <button key={t.text} type="button" className="ts-cond-mini" title={t.title} onClick={run(item)}>
+          <Button key={t.text} type="button" size="xs" title={t.title} onClick={run(item)}>
             {t.text}
-          </button>
+          </Button>
         );
       })}
       {first ? (
@@ -203,9 +204,9 @@ function CondHeadLine({ ctx, branch, label, text, full, tools }: { ctx: DocCtx; 
               <span className="ts-muted">그 밖의 경우</span>
             </>
           ) : (
-            <button type="button" className="ts-doc-cond-btn ts-cond-read" title={`${full} — 눌러서 편집 탭에서 고치기`} aria-label={`${label} 조건식 고치기`} onClick={(e) => edit.popup({ kind: "condHead", branchId: branch.id }, anchorOf(e.currentTarget))}>
+            <Button type="button" variant="bare" className="ts-doc-cond-btn inline-flex items-center gap-1" title={`${full} — 눌러서 편집 탭에서 고치기`} aria-label={`${label} 조건식 고치기`} onClick={(e) => edit.popup({ kind: "condHead", branchId: branch.id }, anchorOf(e.currentTarget))}>
               <span className="ts-cond-badge">{label}</span> {branch.when.trim() === "" ? <span className="ts-muted">(조건 없음 — 눌러서 식을 고른다)</span> : text}
-            </button>
+            </Button>
           )}
           {tools}
         </div>
@@ -224,9 +225,9 @@ function CellToolbar({ ctx, table, row, col }: { ctx: DocCtx; table: TableNode; 
     if (edit.apply(ops)) edit.setActiveCell(next ? { tableId: table.id, ...next } : undefined);
   };
   const b = (label: string, onClick: (e: MouseEvent<HTMLButtonElement>) => void, disabled = false, danger = false) => (
-    <button type="button" className={danger ? "danger" : undefined} disabled={disabled} onClick={onClick}>
+    <Button type="button" size="xs" variant={danger ? "destructive" : "default"} disabled={disabled} onClick={onClick}>
       {label}
-    </button>
+    </Button>
   );
   return (
     <span className="ts-cell-bar" role="toolbar" aria-label={`${row + 1}행 ${col + 1}열 셀 조작`}>
@@ -369,9 +370,9 @@ function ClauseBlock({ node, ctx }: { node: ClauseBlockRefNode; ctx: DocCtx }) {
         </span>
         {hasOptions &&
           (edit ? (
-            <button type="button" className="ts-doc-clause-opt" title="옵션 · 인자 연결 고치기" onClick={(e) => edit.popup({ kind: "editChip", nodeId: node.id }, anchorOf(e.currentTarget))}>
+            <Button type="button" variant="bare" className="ts-doc-clause-opt underline decoration-dotted underline-offset-[3px] hover:decoration-solid hover:text-inherit" title="옵션 · 인자 연결 고치기" onClick={(e) => edit.popup({ kind: "editChip", nodeId: node.id }, anchorOf(e.currentTarget))}>
               {options}
-            </button>
+            </Button>
           ) : (
             <span className="ts-doc-clause-opt">{options}</span>
           ))}
@@ -446,9 +447,9 @@ function SwitchHead({ node, ctx, subject }: { node: Node & { kind: "condBlock" }
       {edit && (
         <span className="ts-cond-tools">
           {add && (
-            <button type="button" className="ts-cond-mini" title="칸 추가 — 칸 없는 값 첫째를 든 칸" onClick={run(add)}>
+            <Button type="button" size="xs" title="칸 추가 — 칸 없는 값 첫째를 든 칸" onClick={run(add)}>
               +{SWITCH_WORD.case}
-            </button>
+            </Button>
           )}
           {remove && <IconButton className="ts-cond-rowbtn" icon={<IconTrash />} danger label="값별 분기 삭제" onClick={run(remove)} />}
         </span>
@@ -552,9 +553,9 @@ function RepeatBlock({ node, ctx, as }: { node: Node & { kind: "forBlock" }; ctx
       <DragHandle id={node.id} what="반복 블록" ctx={ctx} acts={false} />
       <p className={`ts-doc-cond-head${edit ? " is-acts" : ""}`} data-block={node.id} title="반복 블록 — 원천의 원소마다 본문을 복제한다(번호는 조립이 펼친 뒤 매긴다)">
         {edit ? (
-          <button type="button" className="ts-doc-cond-btn" aria-label={`반복 원천 — ${label}`} onClick={(e) => edit.popup({ kind: "repeatBlock", nodeId: node.id }, anchorOf(e.currentTarget))}>
+          <Button type="button" variant="bare" className="ts-doc-cond-btn" aria-label={`반복 원천 — ${label}`} onClick={(e) => edit.popup({ kind: "repeatBlock", nodeId: node.id }, anchorOf(e.currentTarget))}>
             ⟳ {label}
-          </button>
+          </Button>
         ) : (
           <>⟳ {label}</>
         )}
@@ -581,24 +582,25 @@ function RepeatFallback({ node, ctx, as }: { node: Node & { kind: "forBlock" }; 
     const add = edit.blockItems?.(node.id).find((i) => i.label.startsWith("「비었을 때」 칸에 ") && i.action.do === "ops" && !i.disabled);
     return (
       <p className="ts-doc-repeat-empty-add">
-        <button
+        <Button
           type="button"
+          variant="bare"
           className="ts-doc-cond-btn"
           disabled={!add}
           title="「비었을 때」 칸 — 원소가 0개일 때 이 반복 자리에 나올 내용(비우면 아무것도 없다)"
           onClick={(e) => add && edit.run(add, anchorOf(e.currentTarget))}
         >
           + 비었을 때 내용
-        </button>
+        </Button>
       </p>
     );
   }
   return (
     <div className={`ts-doc-cond is-alt ts-doc-repeat-empty${flash(ctx, node.id)}`} data-fallback={node.id}>
       <p className="ts-doc-cond-head">
-        <button type="button" className="ts-doc-cond-btn" aria-expanded={open} aria-label={open ? "「비었을 때」 칸 접기" : "「비었을 때」 칸 펼치기"} onClick={() => setOpen(!open)}>
+        <Button type="button" variant="bare" className="ts-doc-cond-btn" aria-expanded={open} aria-label={open ? "「비었을 때」 칸 접기" : "「비었을 때」 칸 펼치기"} onClick={() => setOpen(!open)}>
           {open ? "▾" : "▸"}
-        </button>{" "}
+        </Button>{" "}
         <span className="ts-cond-badge">비었을 때</span> <span className="ts-muted">원소가 하나도 없으면 반복 대신 이 내용이 나온다{open ? "" : ` — ${fallback.length}개 블록`}</span>
       </p>
       {open && <BlockIn nodes={fallback} ctx={ctx} as={as} />}
@@ -793,9 +795,9 @@ function ArticleLink({ article, ctx }: { article: ArticleNode; ctx: DocCtx }) {
   const edit = ctx.edit;
   return (
     <p>
-      <button type="button" className="ts-doc-cond-head ts-doc-cond-btn" title="조연결 고치기" onClick={(e) => edit.popup({ kind: "link", articleId: article.id }, anchorOf(e.currentTarget))}>
+      <Button type="button" variant="bare" className="ts-doc-cond-head ts-doc-cond-btn" title="조연결 고치기" onClick={(e) => edit.popup({ kind: "link", articleId: article.id }, anchorOf(e.currentTarget))}>
         {text}
-      </button>
+      </Button>
     </p>
   );
 }
@@ -814,9 +816,9 @@ function ArticleJoinMode({ article, ctx }: { article: ArticleNode; ctx: DocCtx }
   const edit = ctx.edit;
   return (
     <p>
-      <button type="button" className="ts-doc-cond-head ts-doc-cond-btn" title="준용하기 고치기" onClick={(e) => edit.popup({ kind: "joinMode", articleId: article.id }, anchorOf(e.currentTarget))}>
+      <Button type="button" variant="bare" className="ts-doc-cond-head ts-doc-cond-btn" title="준용하기 고치기" onClick={(e) => edit.popup({ kind: "joinMode", articleId: article.id }, anchorOf(e.currentTarget))}>
         {text}
-      </button>
+      </Button>
     </p>
   );
 }
@@ -835,9 +837,9 @@ function ArticleOmitMode({ article, ctx }: { article: ArticleNode; ctx: DocCtx }
   const edit = ctx.edit;
   return (
     <p>
-      <button type="button" className="ts-doc-cond-head ts-doc-cond-btn" title="생략 기준 고치기" onClick={(e) => edit.popup({ kind: "joinMode", articleId: article.id }, anchorOf(e.currentTarget))}>
+      <Button type="button" variant="bare" className="ts-doc-cond-head ts-doc-cond-btn" title="생략 기준 고치기" onClick={(e) => edit.popup({ kind: "joinMode", articleId: article.id }, anchorOf(e.currentTarget))}>
         {text}
-      </button>
+      </Button>
     </p>
   );
 }

@@ -20,6 +20,7 @@ import { ATTACH_LEVELS, ATTACH_LEVEL_LABEL } from "@/domain/types";
 import { DiscriminatorTree } from "./DiscriminatorTree";
 import { qualifiedLabel } from "./rows";
 import type { ConditionContext, CtxDiscriminator } from "./types";
+import { Input } from "@/components/ui/input";
 
 const slotable = (d: CtxDiscriminator) => d.type?.kind === "string" || d.type?.kind === "enum";
 
@@ -99,7 +100,7 @@ export function SlotRefInput({ id, name, initial, context }: { id?: string; name
     <span className="ts-slot-ref">
       {input}
       <span className="ts-slot-ref-tree" style={{ display: "block", marginTop: 6 }}>
-        <input type="search" placeholder="구분자 검색" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="슬롯 구분자 검색" />
+        <Input variant="box" type="search" placeholder="구분자 검색" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="슬롯 구분자 검색" />
         <DiscriminatorTree context={context} query={query} accept={slotable} onPick={(ref) => setValue(refPath(ref))} />
         <span className="ts-muted">잎을 더블클릭하면 참조 칸에 들어간다.</span>
       </span>

@@ -21,6 +21,7 @@ import type { WorkMark } from "@/domain/types";
 import type { MenuSections } from "./menus";
 import { MarkPicker } from "./workMarks";
 import { onBar, toolState, type Tool, type ToolGroup, type ToolIcon, type ToolId, type ToolState } from "./tools";
+import { Button } from "@/components/ui/button";
 
 const ICONS: Record<ToolIcon, ReactNode> = {
   table: <IconTable />,
@@ -155,11 +156,12 @@ function MoreTools({ tools, onRun }: { tools: ToolState[]; onRun: (tool: ToolId,
       {open && (
         <div id={menuId} role="menu" aria-label="더보기" className="ts-tool-menu">
           {tools.map((state) => (
-            <button
+            <Button
               key={state.tool.id}
               type="button"
+              variant="ghost"
               role="menuitem"
-              className="ts-tool-menu-item"
+              className="h-7 justify-start rounded-sm px-2.5 text-foreground disabled:opacity-45"
               data-tool={state.tool.id}
               aria-label={state.tool.label}
               title={state.title}
@@ -171,7 +173,7 @@ function MoreTools({ tools, onRun }: { tools: ToolState[]; onRun: (tool: ToolId,
               }}
             >
               {state.tool.label}
-            </button>
+            </Button>
           ))}
         </div>
       )}

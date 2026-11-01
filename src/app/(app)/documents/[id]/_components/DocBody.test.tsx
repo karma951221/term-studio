@@ -420,7 +420,7 @@ describe("조의 준용하기 옵션 — 조 바로 위 평문 (보통약관 템
   it("없음이면 아무것도 없고, 공통항 · 전체항이면 「준용하기 — …」(읽기는 글, 편집은 고치기 버튼)", () => {
     expect(html(withMode(), false)).not.toContain("준용하기 —");
     expect(html(withMode("common"), false)).toMatch(/<p class="ts-doc-cond-head"[^>]*>준용하기 — 공통항 모으기<\/p>/);
-    expect(html(withMode("all"), true)).toMatch(/<button type="button" class="ts-doc-cond-head ts-doc-cond-btn" title="준용하기 고치기">준용하기 — 전체항 모으기<\/button>/);
+    expect(html(withMode("all"), true)).toMatch(/<button [^>]*data-variant="bare"[^>]*title="준용하기 고치기">준용하기 — 전체항 모으기<\/button>/);
   });
 });
 
@@ -437,7 +437,7 @@ describe("조의 생략 기준 — 조 바로 위 평문 (보통약관 템플릿
     expect(html(withOmit(true), false)).toMatch(
       /<p class="ts-doc-cond-head"[^>]*>준용하기 — 공통항 모으기<\/p><p class="ts-doc-cond-head" title="생략 기준 — 특약 조가 이 조에 포함되면 생략한다\(기본은 같을 때만\)">생략 기준 — 포함하면 생략<\/p>/,
     );
-    expect(html(withOmit(true), true)).toMatch(/<button type="button" class="ts-doc-cond-head ts-doc-cond-btn" title="생략 기준 고치기">생략 기준 — 포함하면 생략<\/button>/);
+    expect(html(withOmit(true), true)).toMatch(/<button [^>]*data-variant="bare"[^>]*title="생략 기준 고치기">생략 기준 — 포함하면 생략<\/button>/);
   });
 
   it("상품 조 사본 편집기(copyEditor)에서는 생략 기준 평문을 그리지 않는다 — 실효 기준은 상품 표 > 템플릿이라 사본 트리의 값은 틀릴 수 있다 · 준용하기 평문은 그대로", () => {

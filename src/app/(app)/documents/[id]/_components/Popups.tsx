@@ -17,6 +17,11 @@ import { Combobox, type ComboOption } from "@/app/_components/Combobox";
 import { IconButton, IconTrash } from "@/app/_components/icons";
 import { blockRefChipText, blockRefValue, parseBlockRefValue, type BlockRefChoice } from "@/app/_lib/blockRef";
 import { FormLabel } from "@/app/_components/FormRow";
+import { RadioDot } from "@/app/_components/RadioGroup";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { InfoTip } from "@/app/_components/InfoTip";
 import { DOC_KIND_LABEL, JOIN_MODE_INFO, OMIT_MODE_INFO, OMIT_MODE_LABEL, REPEAT_DEPTH_LABEL, STRUCT_KEY_CHIP, SWITCH_WORD } from "@/app/_lib/labels";
 import { bindingLabel, bindingOptions, constBindingOfText, planFormChoices, staleBindingOption, type LoopChoice, type NodeTree } from "@/app/(app)/functions/_components/params";
@@ -337,7 +342,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
             범위
           </FormLabel>
           <div>
-            <select
+            <NativeSelect
               id={`${idBase}-scope`}
               name={field("scope")}
               value={choice}
@@ -356,17 +361,17 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
                   </option>
                 );
               })}
-            </select>
+            </NativeSelect>
           </div>
         </div>
       )}
       {!choices && ctx.docKind === "special" && (
         <div className="ts-form-row">
           <label htmlFor={`${idBase}-scope`}>범위</label>
-          <select id={`${idBase}-scope`} name={field("scope")} defaultValue={node?.scope ?? "self"}>
+          <NativeSelect id={`${idBase}-scope`} name={field("scope")} defaultValue={node?.scope ?? "self"}>
             <option value="self">이 템플릿</option>
             <option value="general">대응 보통약관</option>
-          </select>
+          </NativeSelect>
         </div>
       )}
       {picked?.value === "param" ? (
@@ -376,7 +381,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
           <div className="ts-form-radios" role="radiogroup" aria-label="조 참조 인자">
             {(picked.params ?? []).map((name) => (
               <label key={name} className="ts-form-radio">
-                <input type="radio" name={field("param")} value={name} defaultChecked={savedParam === name} />⟨{name}⟩
+                <RadioDot name={field("param")} value={name} defaultChecked={savedParam === name} />⟨{name}⟩
               </label>
             ))}
           </div>
@@ -386,7 +391,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
           {!prefix && ((picked && picked.value === "general") || (!choices && ctx.docKind === "special")) && (
             <div className="ts-form-row ts-form-full">
               <label className="ts-form-radio" htmlFor={`${idBase}-whole`}>
-                <input type="checkbox" id={`${idBase}-whole`} name={field("wholeDocument")} defaultChecked={node !== undefined && isDocumentWideRef(node)} />
+                <Checkbox id={`${idBase}-whole`} name={field("wholeDocument")} defaultChecked={node !== undefined && isDocumentWideRef(node)} />
                 문서 전체
               </label>
               <InfoTip text="대상 없이 보통약관 전체를 가리킨다. 준용규정 「… 보통약관을 따릅니다」 자리. 조립이 출력 위치의 호칭을 찍는다 — 특약 「보통약관」 · 기본계약 2+ 의 특약 「보통약관 제1절 일반조항」 · 블록 「제1절 일반조항」(위치 호칭). 범위는 대응 보통약관이다." />
@@ -420,7 +425,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
                 {restrict.values.length > 0 ? "값 한정" : "키 한정"}
               </FormLabel>
               <div>
-                <select id={`${idBase}-restrict`} name={field("restrictMode")} value={mode} onChange={(e) => setMode(e.target.value)}>
+                <NativeSelect id={`${idBase}-restrict`} name={field("restrictMode")} value={mode} onChange={(e) => setMode(e.target.value)}>
                   <option value="">없음 — 펼친 것 전부</option>
                   {restrict.values.length > 0 && <option value="values">해당 값들</option>}
                   {treeLevel !== undefined && keyChoicesFor(restrict.keys, treeLevel).length > 0 && <option value="keys">해당 키들</option>}
@@ -436,12 +441,12 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
                         {l.level === "subCoverage" ? "현재 세부보장" : "현재 급부"}
                       </option>
                     ))}
-                </select>
+                </NativeSelect>
                 {mode === "keys" && treeLevel !== undefined && (
                   <div className="ts-form-checks" role="group" aria-label="한정할 키">
                     {keyChoicesFor(restrict.keys, treeLevel).map((k) => (
                       <label key={k.path} className="ts-form-radio">
-                        <input type="checkbox" name={field("restrictKey")} value={k.path} defaultChecked={savedKeys.includes(k.path)} onChange={(e) => setPickedKeys((list) => toggleIn(list, k.path, e.target.checked))} />
+                        <Checkbox name={field("restrictKey")} value={k.path} defaultChecked={savedKeys.includes(k.path)} onCheckedChange={(on) => setPickedKeys((list) => toggleIn(list, k.path, on === true))} />
                         {k.label}
                       </label>
                     ))}
@@ -451,7 +456,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
                   <div className="ts-form-checks" role="group" aria-label="한정할 값">
                     {restrict.values.map((v) => (
                       <label key={v.code} className="ts-form-radio">
-                        <input type="checkbox" name={field("restrictValue")} value={v.code} defaultChecked={savedValues.includes(v.code)} onChange={(e) => setPickedValues((list) => toggleIn(list, v.code, e.target.checked))} />
+                        <Checkbox name={field("restrictValue")} value={v.code} defaultChecked={savedValues.includes(v.code)} onCheckedChange={(on) => setPickedValues((list) => toggleIn(list, v.code, on === true))} />
                         {v.label}
                       </label>
                     ))}
@@ -466,7 +471,7 @@ function ArticleRefFields({ ctx, node, restrict, prefix = "", idBase = "pop-ref"
               <div className="ts-form-radios" role="radiogroup" aria-label="연결어">
                 {REFERENCE_CONNECTORS.map((c) => (
                   <label key={c} className="ts-form-radio">
-                    <input type="radio" name={field("connector")} value={c} checked={connector === c} onChange={() => setConnector(c)} />
+                    <RadioDot name={field("connector")} value={c} checked={connector === c} onChange={() => setConnector(c)} />
                     {c}
                   </label>
                 ))}
@@ -600,7 +605,7 @@ function ClauseFields({ clauses, code, options, bindings, preset, condition, loo
       {clause && (presets.length > 0 || preset !== undefined) && (
         <div className="ts-form-row">
           <label htmlFor="pop-preset">프리셋</label>
-          <select id="pop-preset" name="preset" value={mode} onChange={(e) => setMode(e.target.value)}>
+          <NativeSelect id="pop-preset" name="preset" value={mode} onChange={(e) => setMode(e.target.value)}>
             <option value="">직접 연결</option>
             {presets.map((p) => (
               <option key={p.code} value={p.code}>
@@ -608,7 +613,7 @@ function ClauseFields({ clauses, code, options, bindings, preset, condition, loo
               </option>
             ))}
             {preset !== undefined && !presets.some((p) => p.code === preset) && <option value={preset}>{preset}(없는 프리셋)</option>}
-          </select>
+          </NativeSelect>
         </div>
       )}
       {clause && clause.options.length === 0 && (clause.params ?? []).length === 0 && <p className="ts-muted">고를 옵션 · 연결할 인자가 없는 함수조항이다.</p>}
@@ -646,14 +651,14 @@ function ClauseFields({ clauses, code, options, bindings, preset, condition, loo
           clause?.options.map((o) => (
             <div key={`${clause.code}-${o.code}`} className="ts-form-row">
               <label htmlFor={`pop-opt-${o.code}`}>{o.label}</label>
-              <select id={`pop-opt-${o.code}`} name={`option:${o.code}`} defaultValue={seed.options[o.code] ?? ""}>
+              <NativeSelect id={`pop-opt-${o.code}`} name={`option:${o.code}`} defaultValue={seed.options[o.code] ?? ""}>
                 <option value="">— 미선택 —</option>
                 {o.values.map((v) => (
                   <option key={v.code} value={v.code}>
                     {v.label}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
           ))}
       </div>
@@ -672,14 +677,14 @@ function TableRefFields({ code }: { code?: Code }) {
       <FormLabel htmlFor="pop-tableref" info={TABLE_REF_INFO}>
         표 구분자
       </FormLabel>
-      <select id="pop-tableref" name="tableCode" defaultValue={code ?? ""}>
+      <NativeSelect id="pop-tableref" name="tableCode" defaultValue={code ?? ""}>
         <option value="">— 고르세요 —</option>
         {TABLE_DISCRIMINATORS.map((t) => (
           <option key={t.code} value={t.code}>
             {t.label} ({t.code})
           </option>
         ))}
-      </select>
+      </NativeSelect>
     </div>
   );
 }
@@ -829,18 +834,18 @@ function InlineCondForm({ env, node, anchor, onClose }: { env: PopupEnv; node: E
         );
       })}
       <div className="ts-form-actions">
-        <button type="button" onClick={() => update(addElif(draft, env.newId))}>
+        <Button type="button" onClick={() => update(addElif(draft, env.newId))}>
           가지 추가(ELIF)
-        </button>
+        </Button>
         {!hasElse && (
-          <button type="button" onClick={() => update(addElse(draft, env.newId))}>
+          <Button type="button" onClick={() => update(addElse(draft, env.newId))}>
             ELSE 가지 추가
-          </button>
+          </Button>
         )}
         {!shell && (
-          <button type="button" className="primary" onClick={onClose}>
+          <Button type="button" variant="primary" onClick={onClose}>
             닫기
-          </button>
+          </Button>
         )}
       </div>
       <p className="ts-muted">
@@ -899,14 +904,14 @@ function InlineSwitchForm({ env, node, anchor, onClose }: { env: PopupEnv; node:
     <div onContextMenu={env.ctx.edit?.contextMenu}>
       <div className="ts-doc-cond-head ts-switch-on is-edit">
         <span className="ts-cond-badge">{SWITCH_WORD.switch}</span>
-        <select aria-label="값별 분기 대상" value={switchOn} onChange={(e) => onSubject(e.target.value)}>
+        <NativeSelect aria-label="값별 분기 대상" value={switchOn} onChange={(e) => onSubject(e.target.value)}>
           {!subject && <option value={switchOn}>{switchOn} (없는 대상)</option>}
           {subjects.map((s) => (
             <option key={s.code} value={s.code}>
               {s.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {missing.length > 0 && (
           <span className="ts-cond-issue ts-switch-missing" role="note">
             {SWITCH_WORD.unassigned}: {missing.map((v) => v.label).join(" · ")}
@@ -933,13 +938,13 @@ function InlineSwitchForm({ env, node, anchor, onClose }: { env: PopupEnv; node:
         </div>
       ))}
       <div className="ts-form-actions">
-        <button type="button" onClick={() => update(addCase(draft, env.newId, missing[0] ? [missing[0].code] : []))}>
+        <Button type="button" onClick={() => update(addCase(draft, env.newId, missing[0] ? [missing[0].code] : []))}>
           칸 추가
-        </button>
+        </Button>
         {!shell && (
-          <button type="button" className="primary" onClick={onClose}>
+          <Button type="button" variant="primary" onClick={onClose}>
             닫기
-          </button>
+          </Button>
         )}
       </div>
       <p className="ts-muted">칸마다 값을 고르고 그 칸 문구를 그 자리에서 쓴다 — 모든 값이 한 칸에 서야 저장된다. 아무것도 내지 않는 칸은 「{SWITCH_WORD.empty}」를 켠다.</p>
@@ -1047,19 +1052,19 @@ function RepeatSourceFields({ choices, current, alias, onSource, onAlias, idBase
       ) : (
         <div className="ts-form-row">
           <label htmlFor={`${idBase}-source`}>반복 원천</label>
-          <select id={`${idBase}-source`} name="source" {...(onSource ? { value: known ? current : "", onChange: (e) => onSource(e.target.value) } : { defaultValue: known ? current : "" })}>
+          <NativeSelect id={`${idBase}-source`} name="source" {...(onSource ? { value: known ? current : "", onChange: (e) => onSource(e.target.value) } : { defaultValue: known ? current : "" })}>
             <option value="">— 고른다 —</option>
             {choices.map((c) => (
               <option key={c.value} value={c.value}>
                 {c.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
       )}
       <div className="ts-form-row">
         <label htmlFor={`${idBase}-alias`}>이름</label>
-        <input
+        <Input
           id={`${idBase}-alias`}
           type="text"
           name="alias"
@@ -1086,7 +1091,7 @@ function RepeatConnectorField({ value, onPick, idBase = "pop-repeat" }: { value?
         <div className="ts-form-radios" role="radiogroup" aria-label="연결어">
           {INLINE_REPEAT_CONNECTORS.map((c) => (
             <label key={c} className="ts-form-radio">
-              <input type="radio" name="connector" value={c} {...(onPick ? { checked: value === c, onChange: () => onPick(c) } : { defaultChecked: value === c })} />
+              <RadioDot name="connector" value={c} {...(onPick ? { checked: value === c, onChange: () => onPick(c) } : { defaultChecked: value === c })} />
               {INLINE_REPEAT_CONNECTOR_LABEL[c]}
             </label>
           ))}
@@ -1192,9 +1197,9 @@ function InlineRepeatPopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec
           <RepeatConnectorField value={node.connector} onPick={(connector) => set({ connector })} idBase="pop-inline-repeat" />
           {bodies}
           <div className="ts-form-actions">
-            <button type="button" className="primary" onClick={onClose}>
+            <Button type="button" variant="primary" onClick={onClose}>
               닫기
-            </button>
+            </Button>
           </div>
           <p className="ts-muted">원소 순서는 블록 반복과 같다(종은 선택지 순서 · 사유는 열거형 순서). 실제 글은 미리보기 탭에서 본다. 고친 것은 편집본에 들어가고 저장해야 반영된다.</p>
         </div>
@@ -1255,11 +1260,11 @@ function CodePopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec: Extrac
         <div className="ts-form-row">
           <label htmlFor="pop-code">코드</label>
           <span className="ts-form-control">
-            <input id="pop-code" type="text" name="code" className="ts-mono" value={value} onChange={(e) => setValue(e.target.value)} autoComplete="off" spellCheck={false} />
+            <Input id="pop-code" type="text" name="code" className="ts-mono" value={value} onChange={(e) => setValue(e.target.value)} autoComplete="off" spellCheck={false} />
             {suggested && suggested !== code && (
-              <button type="button" className="ts-doc-pick" onClick={() => setValue(suggested)}>
+              <Button type="button" variant="text" onClick={() => setValue(suggested)}>
                 추천 {suggested}
-              </button>
+              </Button>
             )}
           </span>
         </div>
@@ -1381,13 +1386,13 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
             {spec.what === "structKey" && (
               <div className="ts-form-row">
                 <label htmlFor="pop-struct">구조 표기</label>
-                <select id="pop-struct" name="structLevel" defaultValue={spec.structLevels?.[0]}>
+                <NativeSelect id="pop-struct" name="structLevel" defaultValue={spec.structLevels?.[0]}>
                   {(spec.structLevels ?? []).map((l) => (
                     <option key={l} value={l}>
                       {ATTACH_LEVEL_LABEL[l]} {STRUCT_KEY_CHIP[l]}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
             )}
             <Actions onCancel={onClose} confirmLabel="넣기" />
@@ -1461,7 +1466,7 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
                   <div className="ts-form-radios" role="radiogroup" aria-label="조사">
                     {PARTICLE_PRESETS.map((p) => (
                       <label key={p.key} className="ts-form-radio">
-                        <input type="radio" name="preset" value={p.key} defaultChecked={p.key === node.preset} />
+                        <RadioDot name="preset" value={p.key} defaultChecked={p.key === node.preset} />
                         {p.label}
                       </label>
                     ))}
@@ -1487,18 +1492,18 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
           >
             <div className="ts-form-row">
               <label htmlFor="pop-rows">행 수</label>
-              <input id="pop-rows" type="number" name="rows" min={1} max={50} defaultValue={3} />
+              <Input id="pop-rows" type="number" name="rows" min={1} max={50} defaultValue={3} />
             </div>
             <div className="ts-form-row">
               <label htmlFor="pop-cols">열 수</label>
-              <input id="pop-cols" type="number" name="cols" min={1} max={12} defaultValue={2} />
+              <Input id="pop-cols" type="number" name="cols" min={1} max={12} defaultValue={2} />
             </div>
             <div className="ts-form-row">
               <label htmlFor="pop-table-title">표 제목</label>
-              <input id="pop-table-title" type="text" name="title" placeholder="없으면 비운다" />
+              <Input id="pop-table-title" type="text" name="title" placeholder="없으면 비운다" />
             </div>
             <label className="ts-form-radio">
-              <input type="checkbox" name="header" defaultChecked /> 첫 행을 제목줄로
+              <Checkbox name="header" defaultChecked /> 첫 행을 제목줄로
             </label>
             <Actions onCancel={onClose} confirmLabel="표 만들기" />
           </PopForm>
@@ -1583,11 +1588,11 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
           >
             <div className="ts-form-row">
               <label htmlFor="pop-t-title">표 제목</label>
-              <input id="pop-t-title" type="text" name="title" defaultValue={t.title ?? ""} placeholder="없으면 비운다" />
+              <Input id="pop-t-title" type="text" name="title" defaultValue={t.title ?? ""} placeholder="없으면 비운다" />
             </div>
             <div className="ts-form-row">
               <label htmlFor="pop-t-widths">열 너비 %</label>
-              <input id="pop-t-widths" type="text" name="widths" className="ts-mono" defaultValue={t.columns.map((c) => c.width ?? "").join(",")} placeholder="예: 30,70 (빈칸은 자동)" />
+              <Input id="pop-t-widths" type="text" name="widths" className="ts-mono" defaultValue={t.columns.map((c) => c.width ?? "").join(",")} placeholder="예: 30,70 (빈칸은 자동)" />
             </div>
             <p className="ts-muted">행 · 열 · 제목줄은 셀을 누르면 뜨는 조작 줄에서 바꾼다.</p>
             <Actions onCancel={onClose} />
@@ -1611,11 +1616,11 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
           >
             <div className="ts-form-row">
               <label htmlFor="pop-repeat">행 반복</label>
-              <select id="pop-repeat" name="repeat" defaultValue={t.repeat ? String(t.repeat.depth) : ""}>
+              <NativeSelect id="pop-repeat" name="repeat" defaultValue={t.repeat ? String(t.repeat.depth) : ""}>
                 <option value="">없음</option>
                 <option value="1">{REPEAT_DEPTH_LABEL[1].option}</option>
                 <option value="2">{REPEAT_DEPTH_LABEL[2].option}</option>
-              </select>
+              </NativeSelect>
             </div>
             <p className="ts-muted">머리글이 아닌 행이 템플릿이 되어 담보의 세부보장(› 급부)마다 복제된다.</p>
             <Actions onCancel={onClose} />
@@ -1673,21 +1678,21 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
                 준용하기
                 <InfoTip text={JOIN_MODE_INFO} />
               </label>
-              <select id="pop-join-mode" name="joinMode" defaultValue={a.joinMode ?? "none"}>
+              <NativeSelect id="pop-join-mode" name="joinMode" defaultValue={a.joinMode ?? "none"}>
                 <option value="none">없음</option>
                 <option value="common">공통항 모으기</option>
                 <option value="all">전체항 모으기</option>
-              </select>
+              </NativeSelect>
             </div>
             <div className="ts-form-row">
               <label htmlFor="pop-omit-mode">
                 생략 기준
                 <InfoTip text={OMIT_MODE_INFO} />
               </label>
-              <select id="pop-omit-mode" name="omitMode" defaultValue={a.omitMode ?? "exact"}>
+              <NativeSelect id="pop-omit-mode" name="omitMode" defaultValue={a.omitMode ?? "exact"}>
                 <option value="exact">{OMIT_MODE_LABEL.exact}</option>
                 <option value="contained">{OMIT_MODE_LABEL.contained}</option>
-              </select>
+              </NativeSelect>
             </div>
             <Actions onCancel={onClose} />
           </PopForm>
@@ -1701,7 +1706,7 @@ function PopupBody({ env, spec, anchor, onClose }: { env: PopupEnv; spec: PopupS
           <PopForm env={env} onClose={onClose} build={(fd) => (str(fd, "title") ? [{ type: "setTitle", nodeId: env.tree.id, title: str(fd, "title") }] : "이름을 쓴다.")}>
             <div className="ts-form-row">
               <label htmlFor="pop-doc-title">템플릿 이름</label>
-              <input id="pop-doc-title" type="text" name="title" defaultValue={env.tree.title} />
+              <Input id="pop-doc-title" type="text" name="title" defaultValue={env.tree.title} />
             </div>
             <Actions onCancel={onClose} />
           </PopForm>
@@ -1764,7 +1769,7 @@ function BlockRefSelect({ choices }: { choices: readonly BlockRefChoice[] }) {
   return (
     <div className="ts-form-row">
       <label htmlFor="pop-block-ref">대상 블록</label>
-      <select id="pop-block-ref" name="blockTarget" defaultValue="">
+      <NativeSelect id="pop-block-ref" name="blockTarget" defaultValue="">
         <option value="">— 블록 · 블록 조를 고른다 —</option>
         {choices.map((c) => (
           <optgroup key={c.productCoverageId} label={c.label}>
@@ -1776,7 +1781,7 @@ function BlockRefSelect({ choices }: { choices: readonly BlockRefChoice[] }) {
             ))}
           </optgroup>
         ))}
-      </select>
+      </NativeSelect>
     </div>
   );
 }
