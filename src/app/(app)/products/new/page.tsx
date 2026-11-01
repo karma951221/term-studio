@@ -3,6 +3,7 @@ import { CreateHead, FormRow } from "@/app/_components/FormRow";
 import { ENTITY_LABEL, NAME_LABEL, newLabel } from "@/app/_lib/labels";
 
 import { createProductAction } from "../actions";
+import { Input } from "@/components/ui/input";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export default async function NewProductPage({ searchParams }: { searchParams: P
       <CreateHead title={newLabel(ENTITY_LABEL.product)} formId={FORM_ID} path={[{ label: ENTITY_LABEL.product, href: "/products" }]} banner={<ErrorBanner message={error} />} />
       <form id={FORM_ID} action={createProductAction} className="ts-create-form">
         <FormRow label={NAME_LABEL.product} htmlFor="product-name">
-          <input id="product-name" type="text" name="name" required autoFocus />
+          <Input id="product-name" type="text" name="name" required autoFocus />
         </FormRow>
       </form>
     </div>

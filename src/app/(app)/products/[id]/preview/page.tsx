@@ -16,6 +16,7 @@ import { runPreviewAction } from "../../actions";
 import { articleCount, excludedClauseLabel, omissionCounts, omissionPairLabel, omissionPairVerdict } from "../../lib";
 import { omissionSlots } from "./omissionSlots";
 import { OmittedToggle, PreviewPanelHost } from "@/app/_components/sourcePanel/PanelHost";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -63,9 +64,9 @@ export default async function ProductPreviewPage({ params, searchParams }: { par
   const panelAfterRun = { ...(panel.target ? { target: panel.target } : {}), ...(panel.node ? { node: panel.node } : {}), showOmitted: panel.showOmitted };
   const runForm = (label: string, primary: boolean) => (
     <form action={runPreviewAction.bind(null, id, panelAfterRun)} style={{ display: "inline" }}>
-      <button type="submit" className={primary ? "primary" : undefined}>
+      <Button type="submit" className={primary ? "primary" : undefined}>
         {label}
-      </button>
+      </Button>
     </form>
   );
 

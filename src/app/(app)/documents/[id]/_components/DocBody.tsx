@@ -28,12 +28,12 @@ import {
   type ArticleNode,
   type BlockBranch,
   type ClauseBlockRefNode,
-  type DynTableRefNode,
   type Node,
   type TableNode,
+  type TableRefNode,
   type TreeIndex,
 } from "@/domain/document";
-import { tableShape } from "@/domain/dyntable/shape";
+import { findTableDiscriminator } from "@/domain/dyntable/system";
 import type { Code, Id } from "@/domain/types";
 
 import { BoxView } from "@/app/_components/BoxView";
@@ -47,6 +47,7 @@ import { EditableText, InlineSlot } from "./Inline";
 import type { MenuItem } from "./menus";
 import { CaseControls, caseValueLabel } from "./SwitchControls";
 import { unassignedValues, type SwitchSubject } from "./switchCases";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const flash = (ctx: DocCtx, id: Id) => `${ctx.flashId === id ? " is-flash" : ""}${ctx.edit?.blockSel?.includes(id) ? " is-block-sel" : ""}`;
 
@@ -382,44 +383,23 @@ function ClauseBlock({ node, ctx }: { node: ClauseBlockRefNode; ctx: DocCtx }) {
 }
 
 /**
- * 동적표 참조 띠 (기능/동적표 §3.5) — 「[코드] 동적표명 · 인자 ← 연결 …」. 표 자체는 조립이 그 상품담보의 급부로 펼친다 — 여기서는 띠만(미리보기 탭이 펼친 표를 보인다).
- * 편집이면 연결 글자를 눌러 인자 연결 팝업, 오른쪽 위 복제 · 삭제는 다른 잎 블록과 같다.
+ * 표 구분자 띠 (기능/구분자 §3.7) — 「[코드] 표 구분자 보험금 지급금액표」. 표 자체는 조립이 그 상품담보의 폼 값으로 계산한다 — 여기서는 띠만(미리보기 탭이 펼친 표를 보인다).
+ * 편집이면 띠를 눌러 다른 표 구분자로 바꾸는 팝업, 오른쪽 위 복제 · 삭제는 다른 잎 블록과 같다. 인자 연결은 없다 — 갈림(갱신형 · 단서문구)은 시스템이 읽는다.
  */
-function DynTableBand({ node, ctx }: { node: DynTableRefNode; ctx: DocCtx }) {
+function TableRefBand({ node, ctx }: { node: TableRefNode; ctx: DocCtx }) {
   const edit = ctx.edit;
-  const def = ctx.dynTables?.find((t) => t.code === node.tableCode);
-  const condition = ctx.conditionFor?.(node.id);
-  const discriminators = condition?.discriminators ?? [];
-  const tree = condition?.coverage ? { nodes: condition.coverage.nodes, loops: [] } : undefined;
-  const enumChoicesOf = (t: { kind: string; enumCode?: Code }) => {
-    const d = t.enumCode !== undefined ? ctx.enumOf?.(t.enumCode) : undefined;
-    return d ? [d] : [];
-  };
-  const args = (def?.params ?? []).map((p) => {
-    const own = node.bindings?.[p.name];
-    const b = own ?? p.default;
-    const what = b?.kind === "current" ? `현재 ⟳ ${ctx.repeatLabelOf?.(b.loop) ?? "반복"}` : b ? bindingLabel(b, p.type, discriminators, enumChoicesOf(p.type), [], [], tree) : "연결 없음";
-    return `${p.name} ← ${what}${own || !b ? "" : "(기본)"}`;
-  });
-  const words = def ? (args.length > 0 ? `인자: ${args.join(" · ")}` : "인자 없음") : "없는 동적표 — 깨진 참조";
+  const def = findTableDiscriminator(node.code);
   return (
     <div className={`ts-doc-clause is-dyntable${flash(ctx, node.id)}`} data-block={node.id} data-node={node.id}>
-      <DragHandle id={node.id} what="동적표" ctx={ctx} acts={false} />
+      <DragHandle id={node.id} what="표 구분자" ctx={ctx} acts={false} />
       <div className="ts-doc-clause-head" onClick={edit && def ? (e) => { if (!(e.target as HTMLElement).closest("button")) edit.popup({ kind: "editChip", nodeId: node.id }, anchorOf(e.currentTarget)); } : undefined}>
-        <span className="ts-doc-clause-name" title={`동적표 · ${node.tableCode}`}>
-          <span className="ts-doc-clause-code">[{node.tableCode}]</span> 동적표 {def?.label ?? "없는 동적표"}
+        <span className="ts-doc-clause-name" title={`표 구분자 · ${node.code}`}>
+          <span className="ts-doc-clause-code">[{node.code}]</span> 표 구분자 {def?.label ?? "없는 표 구분자"}
         </span>
-        {edit && def ? (
-          <button type="button" className="ts-doc-clause-opt" title="인자 연결 고치기" onClick={(e) => edit.popup({ kind: "editChip", nodeId: node.id }, anchorOf(e.currentTarget))}>
-            {words}
-          </button>
-        ) : (
-          <span className="ts-doc-clause-opt">{words}</span>
-        )}
-        <BlockActs id={node.id} what={`동적표 ${def?.label ?? node.tableCode}`} ctx={ctx} inline />
+        <BlockActs id={node.id} what={`표 구분자 ${def?.label ?? node.code}`} ctx={ctx} inline />
       </div>
       <p className="ts-muted ts-doc-clause-body">
-        {def ? `${tableShape(def.headers) === "split" ? "감액 구간으로 열을 나누는 표" : "열 하나 표"} · 조립이 이 상품담보의 급부를 급부명 · 지급률 · 감액 구간으로 펼쳐 표로 낸다 — 미리보기 탭에서 본다.` : "약관 조문 › 동적표에서 정의를 확인한다."}
+        {def ? `${def.variant === "general" ? "감액 구간으로 열을 나누는 표" : "열 하나 표"} · 조립이 이 상품담보의 폼 값(${def.kind === "fixed" ? "통합치료비 · 가입금액 · 감액" : "지급률 · 감액 · 체증 · 단서문구"})으로 표를 계산한다 — 미리보기 탭에서 본다.` : "구분자 메뉴에서 표 구분자를 확인한다 — 깨진 참조."}
       </p>
     </div>
   );
@@ -451,14 +431,14 @@ function SwitchHead({ node, ctx, subject }: { node: Node & { kind: "condBlock" }
     <div className={`ts-doc-cond-head ts-switch-on${edit ? " is-edit" : ""}`}>
       <span className="ts-cond-badge">{SWITCH_WORD.switch}</span>{" "}
       {edit ? (
-        <select aria-label="값별 분기 대상" value={node.switchOn} onChange={(e) => onSubject(e.target.value)}>
+        <NativeSelect aria-label="값별 분기 대상" value={node.switchOn} onChange={(e) => onSubject(e.target.value)}>
           {!subject && <option value={node.switchOn}>{node.switchOn} (없는 대상)</option>}
           {subjects.map((s) => (
             <option key={s.code} value={s.code}>
               {s.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       ) : (
         <span>{subject?.label ?? node.switchOn}</span>
       )}{" "}
@@ -709,14 +689,14 @@ export function Block({ nodes, ctx, inList }: { nodes: readonly Node[]; ctx: Doc
         );
       }
 
-      case "dynTableRef":
-        // 동적표 — 표처럼 번호 없는 잎 블록. 목록 자리면 <li> 로 감싼다 (기능/동적표 §3.5)
+      case "tableRef":
+        // 표 구분자 — 표처럼 번호 없는 잎 블록. 목록 자리면 <li> 로 감싼다 (기능/구분자 §3.7)
         return inList ? (
           <li key={node.id} className="ts-doc-static-item">
-            <DynTableBand node={node} ctx={ctx} />
+            <TableRefBand node={node} ctx={ctx} />
           </li>
         ) : (
-          <DynTableBand key={node.id} node={node} ctx={ctx} />
+          <TableRefBand key={node.id} node={node} ctx={ctx} />
         );
 
       case "condBlock":

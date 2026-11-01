@@ -21,6 +21,7 @@ import type { Id } from "@/domain/types";
 import { pickProductGeneralDocumentAction, setProductGeneralDocumentAction } from "../../actions";
 import { useGeneralEdit } from "./GeneralEdit";
 import { useProductEdit } from "./ProductEdit";
+import { Button } from "@/components/ui/button";
 
 export function GeneralTemplateLine({
   productId,
@@ -67,9 +68,9 @@ export function GeneralTemplateLine({
           <Combobox name="generalDocumentId" value={choice} onChange={setChoice} placeholder="이름으로 찾기" options={options} />
         </label>
         <span className="ts-terms-template-end">
-          <button type="submit" disabled={choice === ""}>
+          <Button type="submit" disabled={choice === ""}>
             템플릿 지정
-          </button>
+          </Button>
         </span>
       </form>
     );
@@ -81,16 +82,16 @@ export function GeneralTemplateLine({
         <span className="ts-terms-template-label">보통약관 템플릿</span>
         <span className="ts-terms-template-name">{templateTitle ?? generalDocumentId}</span>
         {editing && !picking && (
-          <button
-            type="button"
-            className="ts-terms-template-change"
-            onClick={() => {
-              setChoice(generalDocumentId);
-              setPicking(true);
-            }}
-          >
+          <Button
+ type="button"
+ className="ts-terms-template-change"
+ onClick={() => {
+ setChoice(generalDocumentId);
+ setPicking(true);
+ }}
+ >
             템플릿 바꾸기…
-          </button>
+          </Button>
         )}
         <span className="ts-terms-template-end">
           {tools}
@@ -153,12 +154,12 @@ export function TemplatePicker({
           <span>바꿀 템플릿</span>
           <Combobox name="generalDocumentId" value={choice} onChange={onChoice} placeholder="이름으로 찾기" options={[{ value: "", label: "미지정 (템플릿 해제)" }, ...options]} />
         </label>
-        <button type="submit" disabled={choice === current || pending}>
+        <Button type="submit" disabled={choice === current || pending}>
           바꾸기
-        </button>
-        <button type="button" onClick={onClose}>
+        </Button>
+        <Button type="button" onClick={onClose}>
           닫기
-        </button>
+        </Button>
         <span className="ts-muted">
           바꾸면 조 노출 · 조 생략 기준 · 옵션 오버라이드 · 조 사본이 초기화된다{unsaved > 0 ? ` — 저장하지 않은 변경 ${unsaved}건도 버려진다` : ""}.
         </span>

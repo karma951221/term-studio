@@ -45,7 +45,7 @@ export interface ExpandedFixedDynTable {
 
 export function expandFixedDynTable(def: DynTable, input: FixedDynTableInput, bindings: Bindings | undefined, deps: DynTableDeps, at: Coordinate = {}): ExpandedFixedDynTable {
   const issues: Issue[] = [];
-  const owner = `동적표 ${def.code}`;
+  const owner = def.label; // 오류 좌표 「<구분자명> › 행 <급부명>」 (기능/구분자 §3.7)
   const here = (refPath: string): Coordinate => ({ ...at, refPath });
   const fixed = def.fixed ?? { caption: [], benefitHeader: [] };
 

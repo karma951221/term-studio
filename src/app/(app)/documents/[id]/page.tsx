@@ -22,6 +22,8 @@ import { duplicateGeneralAction, duplicateSpecialAction, removeDocumentAction } 
 import { docListHref } from "../lib";
 import { buildConditionContext } from "./_components/condition/conditionContext";
 import { DocumentEditor } from "./_components/DocumentEditor";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const dynamic = "force-dynamic";
 
@@ -47,11 +49,10 @@ export default async function DocumentDetailPage({ params, searchParams }: { par
   }
   const actor = await currentActor();
 
-  const [appendices, boxes, clauses, dynTables, discriminators, enums, generalSummaries, attributeKinds] = await Promise.all([
+  const [appendices, boxes, clauses, discriminators, enums, generalSummaries, attributeKinds] = await Promise.all([
     services.document.listAppendices(),
     services.document.listBoxes(),
     services.clause.list(),
-    services.dynTable.list(),
     services.catalog.list(),
     services.catalog.listEnums(),
     services.document.list("general"),
@@ -120,12 +121,12 @@ export default async function DocumentDetailPage({ params, searchParams }: { par
           <form action={duplicateGeneralAction.bind(null, id)}>
             <div className="ts-form-row">
               <label htmlFor="dup-title">새 이름</label>
-              <input id="dup-title" type="text" name="title" defaultValue={`${doc.title} (사본)`} required />
+              <Input id="dup-title" type="text" name="title" defaultValue={`${doc.title} (사본)`} required />
             </div>
             <div className="ts-confirm-actions">
-              <button type="submit" className="primary">
+              <Button variant="primary" type="submit" >
                 복제
-              </button>
+              </Button>
               <a href={`/documents/${id}`}>취소</a>
             </div>
           </form>
@@ -144,12 +145,12 @@ export default async function DocumentDetailPage({ params, searchParams }: { par
             </div>
             <div className="ts-form-row">
               <label htmlFor="dup-title">이름</label>
-              <input id="dup-title" type="text" name="title" defaultValue={`${doc.title} (사본)`} required />
+              <Input id="dup-title" type="text" name="title" defaultValue={`${doc.title} (사본)`} required />
             </div>
             <div className="ts-confirm-actions">
-              <button type="submit" className="primary">
+              <Button variant="primary" type="submit" >
                 복제
-              </button>
+              </Button>
               <a href={`/documents/${id}`}>취소</a>
             </div>
           </form>
@@ -181,7 +182,6 @@ export default async function DocumentDetailPage({ params, searchParams }: { par
         appendices={appendices}
         boxes={boxes}
         clauses={clauses}
-        dynTables={dynTables}
         discriminators={discriminators}
         enums={enums}
         attributeValues={Object.fromEntries(attributeKinds.map((k) => [k.code, k.values.map((v) => v.code)]))}

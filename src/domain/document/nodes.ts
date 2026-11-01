@@ -5,7 +5,7 @@
  * 노드는 세 부류다:
  *   - 구조   : document · article(조) · paragraph(항) · item(호) · subitem(목)
  *   - 블록 동적: condBlock(if/elif/else) · forBlock(블록 반복 — 원천 원소마다 복제, ADR-0077) · clauseBlockRef(함수조항 블록 참조 — 항 · 호 · 목 유형) · boxRef(정적 마스터 박스 참조)
- *               · dynTableRef(동적표 참조 — 기능/동적표 §3.5, 담보약관 문맥에서만)
+ *               · tableRef(표 구분자 자리 — 기능/구분자 §3.7, 담보약관 문맥에서만)
  *   - 인라인  : text · slot · inlineCond · inlineFor(인라인 반복 — ADR-0088) · articleRef · appendixRef · 조사(particle) · clauseInlineRef
  *
  * - 조의 메타는 조 명 · 조연결(`linkedArticleId`) · 템플릿 조 옵션(준용하기 `joinMode` · 생략 기준 `omitMode`) 뿐. 번호는 저장하지 않는다 (계산값 — numbering.ts).
@@ -29,6 +29,7 @@ import type { Clause } from "../clause/types";
 import type { MasterTree } from "../master";
 import type { Coverage } from "../coverage/types";
 import { foldTitle, TITLE_INLINE, titleKindMessage } from "./title";
+import { isTableDiscriminatorCode } from "../dyntable/codes";
 
 export type { ParticleNode } from "./particles";
 export { PARTICLE_PRESET_MESSAGE } from "./particles";
@@ -296,7 +297,7 @@ export interface ParagraphNode {
    */
   restart?: true;
   children: InlineNode[];
-  items?: (ItemNode | CondBlockNode | TableNode | BoxNode | BulletListNode | BoxRefNode | ClauseBlockRefNode | ForBlockNode | DynTableRefNode)[];
+  items?: (ItemNode | CondBlockNode | TableNode | BoxNode | BulletListNode | BoxRefNode | ClauseBlockRefNode | ForBlockNode | TableRefNode)[];
 }
 
 /** 블록 조건의 가지. */
@@ -375,16 +376,16 @@ export interface BoxRefNode {
 }
 
 /**
- * 동적표 참조 (기능/동적표 §3.5) — 동적표 정의의 코드 + 인자 연결(함수조항과 같은 `Binding` — 상수 · 구분자). 잎이라 조 자리 · 항의 호 목록 자리에 선다
- * (표와 같은 자리, 목 목록 · 함수조항 본문에는 없다). P코드는 없다(표처럼 번호 없는 블록). 조립이 담보 문맥의 급부를 펼쳐 정적 표로 낸다 (§3.6).
+ * 표 구분자 자리 (기능/구분자 §3.7, ADR-0099) — 시스템 표 구분자(보험금 지급금액표 · 갱신 보험금 지급금액표 …)의 코드 하나. 인자 연결은 없다 —
+ * 문구 안의 갈림(기준일 낱말 · 단서문구)은 시스템이 문맥에서 읽는다. 잎이라 조 자리 · 항의 호 목록 자리에 선다(표와 같은 자리, 목 목록 · 함수조항 본문에는 없다).
+ * P코드는 없다(표처럼 번호 없는 블록). 조립이 그 상품담보의 폼 값으로 표를 계산해 정적 표로 낸다. 언제 낼지는 감싼 조건 블록이 정한다.
  * 담보약관(상품담보) 문맥에서만 — 보통약관 문서에 넣으면 저장 검사가 거부한다.
  */
-export interface DynTableRefNode {
+export interface TableRefNode {
   id: Id;
-  kind: "dynTableRef";
-  tableCode: Code;
-  /** 인자 연결 — 인자 이름 → 연결. 없는 인자는 기본 연결을 쓴다. 비면 키를 싣지 않는다. */
-  bindings?: Bindings;
+  kind: "tableRef";
+  /** 표 구분자 코드 (`DT000001` …, dyntable/system.ts `TABLE_DISCRIMINATORS`). */
+  code: Code;
 }
 
 /** 관(款) — 제목 + 조 목록. 조 번호는 관을 넘어 문서 전역 연속이다 (기능/문면 §3.2). */
@@ -448,7 +449,7 @@ export type BlockNode =
   | ForBlockNode
   | ClauseBlockRefNode
   | BoxRefNode
-  | DynTableRefNode;
+  | TableRefNode;
 
 /** 문서 루트. 자식은 조 · 관 · 조 자리의 조건 블록. */
 export interface DocumentNode {
@@ -473,7 +474,7 @@ const INLINE: readonly NodeKind[] = ["text", "structKey", "slot", "inlineCond", 
 export const allowedChildren: Record<NodeKind, readonly NodeKind[]> = {
   document: ["article", "section", "condBlock"],
   section: ["article", "condBlock"],
-  article: ["paragraph", "condBlock", "clauseBlockRef", "forBlock", "table", "box", "bulletList", "boxRef", "dynTableRef"],
+  article: ["paragraph", "condBlock", "clauseBlockRef", "forBlock", "table", "box", "bulletList", "boxRef", "tableRef"],
   table: [],
   box: [],
   bulletList: ["bullet", "condBlock"],
@@ -485,7 +486,7 @@ export const allowedChildren: Record<NodeKind, readonly NodeKind[]> = {
   forBlock: [], // 투명 — 서 있는 자리의 허용 집합에서 표 · 옛 박스를 뺀 것 (indexTree)
   clauseBlockRef: [],
   boxRef: [],
-  dynTableRef: [],
+  tableRef: [],
   text: [],
   structKey: [],
   slot: [],
@@ -501,7 +502,7 @@ export const allowedChildren: Record<NodeKind, readonly NodeKind[]> = {
 /** 두 번째 목록 자리 — 항의 호 목록 · 호의 목 목록. 조건 블록도 그 자리에 설 수 있다. */
 export const allowedListChildren = {
   // 목록 자리에도 함수조항 참조가 선다 — 「호」 유형은 호 목록, 「목」 유형은 목 목록 (유형 = 출력 모양, 최종 결정 4 · clausePlacement)
-  "paragraph.items": ["item", "condBlock", "table", "box", "bulletList", "boxRef", "clauseBlockRef", "forBlock", "dynTableRef"],
+  "paragraph.items": ["item", "condBlock", "table", "box", "bulletList", "boxRef", "clauseBlockRef", "forBlock", "tableRef"],
   "item.subitems": ["subitem", "condBlock", "bulletList", "clauseBlockRef"],
 } as const satisfies Record<string, readonly NodeKind[]>;
 
@@ -535,7 +536,7 @@ export function slotsOf(kind: NodeKind): readonly SlotName[] {
     case "table":
     case "box":
     case "boxRef":
-    case "dynTableRef":
+    case "tableRef":
       return [];
     default:
       return ["children"];
@@ -868,19 +869,6 @@ export const PERMISSIVE_GATE: ClauseGate = {
   validateOptions: () => [],
 };
 
-/**
- * 동적표 게이트 — 동적표 정의(기능/동적표)로 만든다(`dynTableGateFrom`). 없으면 전부 통과.
- * - exists           : 코드가 정의돼 있는가 (없으면 brokenRef)
- * - validateBindings : 인자 연결 검사 — 함수조항 게이트와 같은 결(§3.6 삽입 검사): 누락 `argUnbound`(저장 시점만 거부) · 타입 불일치 · 없는 인자 `brokenRef`.
- *                      좌표 `refPath: arg.<이름>` 은 게이트가 단다.
- */
-export interface DynTableGate {
-  exists(code: Code): boolean;
-  validateBindings?(code: Code, bindings: Bindings | undefined, loops?: ReadonlyMap<Id, LoopElementType>): Issue[];
-}
-
-export const PERMISSIVE_DYN_TABLE_GATE: DynTableGate = { exists: () => true };
-
 /** 검증 환경 — 문서 밖의 사실. 주지 않은 항목은 검사하지 않는다. */
 export interface TreeEnv {
   /** 문서 종류. general 이면 조연결·보통약관 조 참조가 금지된다 (D-P4-20·22). */
@@ -893,8 +881,6 @@ export interface TreeEnv {
   /** 정적 마스터 박스 존재 — 없는 박스를 가리키는 박스 참조는 brokenRef. */
   boxExists?: (code: Code) => boolean;
   clauseGate?: ClauseGate;
-  /** 동적표 게이트 — 없는 동적표 · 인자 연결 검사 (기능/동적표 §3.6). 없으면 존재 · 연결을 검사하지 않는다. */
-  dynTableGate?: DynTableGate;
   /** 대응 보통약관의 반복 블록 안 대상 열쇠 — 대상이 하나여도 여러 번호가 될 수 있어 연결어가 필요하다(결정 14 확장). */
   generalRepeatedKeys?: ReadonlySet<string>;
   /** 대응 보통약관의 대상 열쇠마다 머리의 사실 — 안쪽 코드 존재 · 값 한정 열거형 검사(`refTargetFactIssues`). 없으면 그 검사를 건너뛴다. */
@@ -1027,8 +1013,8 @@ export function checkNodeRefs(e: NodeEntry, ix: TreeIndex, env: TreeEnv, atSave:
     case "clauseBlockRef":
     case "clauseInlineRef":
       return [...clausePlacement(n, e.allowed, gate, at), ...checkClauseRef(n, gate, at, atSave, loopTypesAt(ix, e, env.master)), ...bindingRefIssues(n, e, ix, env, at)];
-    case "dynTableRef":
-      return checkDynTableRef(n, env, at, atSave, loopTypesAt(ix, e, env.master));
+    case "tableRef":
+      return checkTableRef(n, env, at);
     case "forBlock":
       return checkRepeatSource(n, enclosingLoops(ix, e), repeatEnvOf(env), at);
     case "inlineFor":
@@ -1044,20 +1030,12 @@ export function checkNodeRefs(e: NodeEntry, ix: TreeIndex, env: TreeEnv, atSave:
 }
 
 /**
- * 동적표 참조 검사 (기능/동적표 §3.5 · §3.6 삽입 검사) — 담보약관 문맥만 · 정의 존재 · 인자 연결(게이트).
- * 연결 누락(`argUnbound`)은 함수조항처럼 저장 시점에만 거부한다(넣는 순간엔 아직 대지 않았다).
+ * 표 구분자 자리 검사 (기능/구분자 §3.7) — 담보약관 문맥만 · 시스템 표 구분자 코드만. 표 구분자는 시스템 정의라 게이트(DB)가 필요 없다.
  */
-export function checkDynTableRef(node: DynTableRefNode, env: TreeEnv, at: Coordinate, atSave: boolean, loops?: ReadonlyMap<Id, LoopElementType>): Issue[] {
-  if (env.kind === "general") return [{ kind: "structure", message: "동적표는 담보약관(상품담보) 문맥에서만 쓸 수 있습니다 — 보통약관에는 넣을 수 없습니다", at }];
-  const gate = env.dynTableGate;
-  if (!gate) return [];
-  if (!gate.exists(node.tableCode)) return [{ kind: "brokenRef", message: `동적표 ${node.tableCode} 이(가) 없습니다`, at }];
-  const issues: Issue[] = [];
-  for (const i of gate.validateBindings?.(node.tableCode, node.bindings, loops) ?? []) {
-    if (!atSave && i.kind === "argUnbound") continue;
-    issues.push({ ...i, at: { ...at, ...i.at } });
-  }
-  return issues;
+export function checkTableRef(node: TableRefNode, env: TreeEnv, at: Coordinate): Issue[] {
+  if (env.kind === "general") return [{ kind: "structure", message: "표 구분자는 담보약관(상품담보) 문맥에서만 쓸 수 있습니다 — 보통약관에는 넣을 수 없습니다", at }];
+  if (!isTableDiscriminatorCode(node.code)) return [{ kind: "brokenRef", message: `표 구분자 ${node.code} 이(가) 없습니다`, at }];
+  return [];
 }
 
 function repeatEnvOf(env: TreeEnv): RepeatEnv {

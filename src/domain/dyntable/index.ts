@@ -1,8 +1,9 @@
 /**
- * 동적표 도메인 (순수) — 기능/동적표.
+ * 표 구분자 계산 (순수) — 기능/구분자 §3.7 · ADR-0099. 옛 동적표 정의 객체(기능/동적표)는 걷어내고 펼침 · 견본 계산만 남았다.
  *
  * - types.ts      : DynTable · 템플릿 · 표 슬롯(`builtin.table.*`) · 펼침 입력 · 결과
- * - codes.ts      : DT000001 코드 규칙 (formatDynTableCode)
+ * - codes.ts      : 표 구분자 고정 코드(DT000001 …) · isTableDiscriminatorCode — 의존 없는 잎
+ * - system.ts     : 표 구분자 넷(시스템 정의 · 일반 · 갱신 한 쌍) · 시스템 연결 · 문구 읽기 표기 (기능/구분자 §3.7)
  * - check.ts      : checkDynTable — 저장 검사(인자 표 · 템플릿이 읽는 것 · 표 슬롯 자리 · 값별 분기)
  * - expand.ts     : expandDynTable — 경계 합집합 · 행 묶기 · 셀 계산 · 템플릿 바꿔 쓰기
  * - expandFixed.ts: expandFixedDynTable — 정액형 표(§3.7): 급부 → 가입금액 → 캡션 + 표(글자 열 + 지급금액 열) · 세로 병합
@@ -14,7 +15,6 @@
  * - sampleView.ts : renderDynTableSample — 견본으로 펼친 표, 칸마다 영역 + 글 조각(자리표시자 값 · 조건 글)
  */
 export * from "./check";
-export * from "./codes";
 export * from "./amount";
 export * from "./expand";
 export * from "./expandFixed";
@@ -24,4 +24,5 @@ export * from "./regions";
 export * from "./samples";
 export * from "./sampleView";
 export * from "./shape";
+export * from "./system";
 export * from "./types";

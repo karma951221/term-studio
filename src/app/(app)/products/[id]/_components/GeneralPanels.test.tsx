@@ -109,7 +109,7 @@ describe("목차 줄 생략 기준 (ADR-0093 결정 7 · 기능/상품 §3.6)", 
 
   it("편집 중 목차 줄에 생략 기준 고르기(템플릿대로(…) · 같을 때만 · 포함하면) — 잠긴 조에도 선다", () => {
     const html = render(true, [{ articleId: "A1", mode: "contained" }]);
-    const select = (label: string) => html.match(new RegExp(`<select aria-label="생략 기준 · ${label.replace(/[()]/g, "\\$&")}"[^>]*>(.*?)</select>`))?.[1];
+    const select = (label: string) => html.match(new RegExp(`<select[^>]*aria-label="생략 기준 · ${label.replace(/[()]/g, "\\$&")}"[^>]*>(.*?)</select>`))?.[1];
     const a1 = select("제1조(목적)");
     expect(a1).toContain(">템플릿대로(같을 때만)</option>");
     expect(a1).toContain(">같을 때만 생략</option>");

@@ -21,6 +21,11 @@ import { GraphPanel } from "./GraphPanel";
 import { KIND_OPTIONS, VIA_LABEL, parseRefTarget, presetUsageRows, refTargetParams, type RelationQuery } from "./lib";
 import { parsePlotOptions, serializePlotOptions } from "./plot-options";
 import { plotNeighborhood, type Plot, type PlotOptions } from "./plot";
+import { RadioDot } from "@/app/_components/RadioGroup";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +60,7 @@ function GraphControls({ target, options }: { target: RefNodeKey; options: PlotO
         <legend>깊이</legend>
         {[1, 2, 3].map((depth) => (
           <label key={depth}>
-            <input type="radio" name="depth" value={depth} defaultChecked={options.depth === depth} /> {depth}
+            <RadioDot name="depth" value={depth} defaultChecked={options.depth === depth} /> {depth}
           </label>
         ))}
       </fieldset>
@@ -67,7 +72,7 @@ function GraphControls({ target, options }: { target: RefNodeKey; options: PlotO
           ["out", "정방향만"],
         ] as const).map(([value, label]) => (
           <label key={value}>
-            <input type="radio" name="dir" value={value} defaultChecked={options.direction === value} /> {label}
+            <RadioDot name="dir" value={value} defaultChecked={options.direction === value} /> {label}
           </label>
         ))}
       </fieldset>
@@ -76,7 +81,7 @@ function GraphControls({ target, options }: { target: RefNodeKey; options: PlotO
         <input type="hidden" name="kinds" value="" />
         {KIND_OPTIONS.map(({ value, label }) => (
           <label key={value}>
-            <input type="checkbox" name="kinds" value={value} defaultChecked={options.kinds.has(value as RefNodeKind)} /> {label}
+            <Checkbox name="kinds" value={value} defaultChecked={options.kinds.has(value as RefNodeKind)} /> {label}
           </label>
         ))}
       </fieldset>
@@ -85,15 +90,15 @@ function GraphControls({ target, options }: { target: RefNodeKey; options: PlotO
         <input type="hidden" name="vias" value="" />
         {VIA_GROUPS.map((group) => (
           <label key={group.label}>
-            <input type="checkbox" name="vias" value={group.values.join(",")} defaultChecked={group.values.every((via) => options.vias.has(via))} /> {group.label}
+            <Checkbox name="vias" value={group.values.join(",")} defaultChecked={group.values.every((via) => options.vias.has(via))} /> {group.label}
           </label>
         ))}
         <input type="hidden" name="containment" value="false" />
         <label>
-          <input type="checkbox" name="containment" value="true" defaultChecked={options.containment} /> 포함 관계
+          <Checkbox name="containment" value="true" defaultChecked={options.containment} /> 포함 관계
         </label>
       </fieldset>
-      <button type="submit">적용</button>
+      <Button type="submit">적용</Button>
     </form>
   );
 }
@@ -272,46 +277,46 @@ export default async function RelationsPage({ searchParams }: { searchParams: Pr
           {[...serializedOptions].map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}
           <div className="ts-form-row">
             <label htmlFor="rel-kind">{FIELD_LABEL.type}</label>
-            <select id="rel-kind" name="kind" defaultValue={q.kind ?? ""}>
+            <NativeSelect id="rel-kind" name="kind" defaultValue={q.kind ?? ""}>
               <option value="">— 선택 —</option>
               {KIND_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="ts-form-row">
             <label htmlFor="rel-code">{FIELD_LABEL.code}</label>
-            <input id="rel-code" type="text" name="code" defaultValue={q.code ?? ""} placeholder="D0001 · C0001 · AX000001 …" className="ts-mono" />
+            <Input id="rel-code" type="text" name="code" defaultValue={q.code ?? ""} placeholder="D0001 · C0001 · AX000001 …" className="ts-mono" />
           </div>
           <div className="ts-form-row">
             <label htmlFor="rel-id">id</label>
-            <input id="rel-id" type="text" name="id" defaultValue={q.id ?? ""} placeholder="문서 · 담보 노드 · 상품 · 상품담보" className="ts-mono" />
+            <Input id="rel-id" type="text" name="id" defaultValue={q.id ?? ""} placeholder="문서 · 담보 노드 · 상품 · 상품담보" className="ts-mono" />
           </div>
           <div className="ts-form-row">
             <label htmlFor="rel-level">{FIELD_LABEL.level}</label>
-            <select id="rel-level" name="level" defaultValue={q.level ?? ""}>
+            <NativeSelect id="rel-level" name="level" defaultValue={q.level ?? ""}>
               <option value="">—</option>
               {(Object.keys(NODE_LEVEL_LABEL) as (keyof typeof NODE_LEVEL_LABEL)[]).map((level) => (
                 <option key={level} value={level}>
                   {NODE_LEVEL_LABEL[level]}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="ts-form-row">
             <label htmlFor="rel-field">필드 코드</label>
-            <input id="rel-field" type="text" name="fieldCode" defaultValue={q.fieldCode ?? ""} placeholder="구분자 필드일 때 — F01" className="ts-mono" />
+            <Input id="rel-field" type="text" name="fieldCode" defaultValue={q.fieldCode ?? ""} placeholder="구분자 필드일 때 — F01" className="ts-mono" />
           </div>
           <div className="ts-form-row">
             <label htmlFor="rel-value">값 코드</label>
-            <input id="rel-value" type="text" name="valueCode" defaultValue={q.valueCode ?? ""} placeholder="선택형 값 · 담보속성 값일 때 — V01" className="ts-mono" />
+            <Input id="rel-value" type="text" name="valueCode" defaultValue={q.valueCode ?? ""} placeholder="선택형 값 · 담보속성 값일 때 — V01" className="ts-mono" />
           </div>
           <div className="ts-form-actions">
-            <button type="submit" className="primary">
+            <Button variant="primary" type="submit" >
               조회
-            </button>
+            </Button>
           </div>
         </form>
       </section>

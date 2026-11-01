@@ -12,6 +12,7 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { findTableDiscriminator } from "@/domain/dyntable/system";
 import type { ClauseDecision, ConditionDecision, DecisionRecord, DynTableDecision, RepeatDecision, SourceView, SwitchDecision } from "@/domain/assembly";
 import { optionCodeOf, repeatLabel, type BlockNode, type InlineNode } from "@/domain/document";
 import { particlePreset } from "@/domain/document/particles";
@@ -192,7 +193,7 @@ function Block({ node, ctx }: { node: BlockNode; ctx: OverlayCtx }) {
       return <RepeatView node={node} ctx={ctx} />;
     case "clauseBlockRef":
       return <ClauseCall node={node} ctx={ctx} />;
-    case "dynTableRef":
+    case "tableRef":
       return <DynTableView node={node} ctx={ctx} />;
     case "article":
     case "section":
@@ -392,9 +393,9 @@ export function ClauseCall({ node, ctx, inline = false }: { node: CallNode; ctx:
   );
 }
 
-// ───────────────────────────── 동적표 ─────────────────────────────
+// ───────────────────────────── 표 구분자 (기능/구분자 §3.7) ─────────────────────────────
 
-function DynTableView({ node, ctx }: { node: Extract<BlockNode, { kind: "dynTableRef" }>; ctx: OverlayCtx }) {
+function DynTableView({ node, ctx }: { node: Extract<BlockNode, { kind: "tableRef" }>; ctx: OverlayCtx }) {
   const rec = ctx.dim ? undefined : ctx.index.get(keyOf(ctx.scope, node.id));
   const table = rec?.kind === "dynTable" ? (rec as DynTableDecision) : undefined;
   const [selected, setSelected] = useState(() => (table ? dynRowForNode(table, ctx.focus) : 0));
@@ -403,17 +404,17 @@ function DynTableView({ node, ctx }: { node: Extract<BlockNode, { kind: "dynTabl
   return (
     <Spot ctx={ctx} id={node.id} as="div" className={table ? "ts-src-repeat" : "ts-src-repeat is-dim"}>
       <div className="ts-src-branch-head">
-        동적표 {node.tableCode}
-        {table && table.rows.length > 0 && <Tabs label={`동적표 ${node.tableCode} ${unit}`} items={table.rows.map((r, i) => ({ id: String(i), label: r.name }))} selected={String(selected)} onSelect={(id) => setSelected(Number(id))} />}
+        {findTableDiscriminator(node.code)?.label ?? `표 구분자 ${node.code}`}
+        {table && table.rows.length > 0 && <Tabs label={`표 구분자 ${node.code} ${unit}`} items={table.rows.map((r, i) => ({ id: String(i), label: r.name }))} selected={String(selected)} onSelect={(id) => setSelected(Number(id))} />}
         {table?.issue && <span className="ts-src-mark is-blocked"> {table.issue.message}</span>}
       </div>
-      {table && table.rows.length === 0 && <div className="ts-src-empty">{table.fixed ? "표 없음 — 정액표 급부 또는 운영 가입금액 0개" : "행 없음 — 원천 급부 0개"}</div>}
+      {table && table.rows.length === 0 && <div className="ts-src-empty">{table.fixed ? "표 없음 — 통합치료비 급부 또는 운영 가입금액 0개" : "행 없음 — 원천 급부 0개"}</div>}
       {row && <DecisionList decisions={row.decisions} ctx={ctx} />}
     </Spot>
   );
 }
 
-/** 모델 자리가 없는 기록(동적표 셀 · 조 자리 조건)을 줄로 — 조건은 가지 표식 · 근거, 값별 분기는 판단 값. */
+/** 모델 자리가 없는 기록(표 구분자 셀 · 조 자리 조건)을 줄로 — 조건은 가지 표식 · 근거, 값별 분기는 판단 값. */
 export function DecisionList({ decisions, ctx }: { decisions: readonly DecisionRecord[]; ctx: OverlayCtx }) {
   if (decisions.length === 0) return null;
   return (
@@ -441,7 +442,7 @@ export function DecisionList({ decisions, ctx }: { decisions: readonly DecisionR
           )}
           {d.kind === "clause" && <span>함수조항 {ctx.view.clauses[d.clauseCode]?.label ?? d.clauseCode}</span>}
           {d.kind === "repeat" && <span>반복 — 원소 {d.elements.length}개</span>}
-          {d.kind === "dynTable" && <span>동적표 {d.tableCode} — {d.fixed ? "표" : "행"} {d.rows.length}</span>}
+          {d.kind === "dynTable" && <span>{findTableDiscriminator(d.tableCode)?.label ?? `표 구분자 ${d.tableCode}`} — {d.fixed ? "표" : "행"} {d.rows.length}</span>}
         </li>
       ))}
     </ul>

@@ -7,6 +7,7 @@ import type { RefNodeKey } from "@/domain/refs";
 
 import { VIA_LABEL, refTargetParams } from "./lib";
 import { NODE_COLOR, type Plot, type PlotEdge, type PlotNode } from "./plot";
+import { Button } from "@/components/ui/button";
 
 interface GraphPanelProps {
   plot: Plot;
@@ -120,9 +121,9 @@ export function GraphPanel({ plot, optionQuery }: GraphPanelProps) {
   return (
     <div className="ts-graph-panel">
       <div className="ts-graph-toolbar">
-        <button type="button" onClick={() => setViewBox(naturalViewBox)}>
+        <Button type="button" onClick={() => setViewBox(naturalViewBox)}>
           맞춤
-        </button>
+        </Button>
         <span className="ts-muted">휠로 확대 · 드래그로 이동</span>
       </div>
       <svg

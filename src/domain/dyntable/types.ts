@@ -12,7 +12,7 @@
  */
 import type { Inline } from "../clause/nodes";
 import type { ParamDef } from "../clause/params";
-import type { ReductionPeriods } from "../coverage/traits";
+import type { EscalationStep, ReductionPeriods } from "../coverage/traits";
 import type { Code, FixedGrid, Id, Issue } from "../types";
 
 /** 열 머리글 템플릿 네 벌 — 열 하나 = 단일, 둘 = 첫 + 마지막, 셋 이상 = 첫 + 가운데(열마다) + 마지막 (§3.3). */
@@ -80,6 +80,8 @@ export interface DynBenefit {
   reduction?: ReductionPeriods;
   /** 정액표 특성 (§3.7) — undefined = 정액표 없음(정액형 표에 나오지 않는다). */
   fixedGrid?: FixedGrid;
+  /** 체증 특성 (기능/구분자 §3.7) — 구분마다 한 행. undefined · 빈 목록 = 체증 없음. */
+  escalation?: EscalationStep[];
 }
 
 export interface ExpandedDynTableRow {

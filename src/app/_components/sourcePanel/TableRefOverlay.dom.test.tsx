@@ -10,7 +10,6 @@ import { assemble, buildSourceView, explainArticle, type AssemblyInput, type Exp
 import { alphaMaster, alphaPlusFixture, coverageEntry } from "@/domain/assembly/fixture";
 import { reductionPeriodEnumSeed } from "@/domain/coverage/traits";
 import { titleNodes } from "@/domain/document/title";
-import { dynTableFixtureF } from "@/domain/dyntable";
 import { findForm } from "@/domain/master";
 
 import { SourcePanel } from "./SourcePanel";
@@ -51,10 +50,9 @@ function fixedInput(insuredAmounts: number[]): AssemblyInput {
     coverages: [...base.coverages, entry],
     specialDocuments: new Map([
       ...base.specialDocuments,
-      ["cov-dyn", { id: "dyn-doc", kind: "document", title: "통합치료비 특별약관", children: [{ id: "dyn-art", kind: "article", title: titleNodes("보험금의 지급", "dyn-art"), children: [{ id: "dyn-ref", kind: "dynTableRef", tableCode: "DT000003", bindings: { 갱신형: { kind: "const", value: false } } }] }] }],
+      ["cov-dyn", { id: "dyn-doc", kind: "document", title: "통합치료비 특별약관", children: [{ id: "dyn-art", kind: "article", title: titleNodes("보험금의 지급", "dyn-art"), children: [{ id: "dyn-ref", kind: "tableRef", code: "DT000003" }] }] }],
     ]),
     enums: [...base.enums, reductionPeriodEnumSeed()],
-    dynTables: [{ id: "dt-f", code: "DT000003", ...dynTableFixtureF() }],
   } as AssemblyInput;
 }
 
@@ -62,10 +60,10 @@ const target: ExplainTarget = { document: "special", productCoverageId: "pc-dyn"
 const viewOf = (input: AssemblyInput) => buildSourceView(input, input, explainArticle(input, input, target), assemble(input, input));
 const block = (container: HTMLElement) => container.querySelector('[data-node="dyn-ref"]') as HTMLElement;
 
-describe("정액형 동적표 — 표 블록(급부 × 가입금액) 탭", () => {
+describe("통합치료비 표 구분자 — 표 블록(급부 × 가입금액) 탭", () => {
   it("탭 = 「급부명 · 가입금액」, 탭 묶음 이름은 「표」", () => {
     const { container } = render(<SourcePanel content={{ state: "ok", view: viewOf(fixedInput([50_000_000, 30_000_000])) }} onClose={() => {}} />);
-    const tabs = within(block(container)).getByRole("tablist", { name: "동적표 DT000003 표" });
+    const tabs = within(block(container)).getByRole("tablist", { name: "표 구분자 DT000003 표" });
     expect(within(tabs).getAllByRole("tab").map((t) => t.textContent)).toEqual(["상해로 인한 경우 · 3,000만원", "상해로 인한 경우 · 5,000만원", "질병으로 인한 경우 · 3,000만원", "질병으로 인한 경우 · 5,000만원"]);
     expect(within(tabs).getAllByRole("tab")[0].getAttribute("aria-selected")).toBe("true");
   });

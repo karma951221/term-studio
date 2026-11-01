@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { Bindings } from "../clause/params";
 import type { DocumentNode } from "../document/nodes";
 import { nodeBuilders, sequentialIds } from "../document/builders";
 import { titleNodes } from "../document/title";
 import { reductionPeriodEnumSeed } from "../coverage/traits";
-import { dynTableFixtureA, dynTableFixtureF, type DynTable } from "../dyntable";
 import { findForm } from "../master";
 import type { Id } from "../types";
 import { assembleSpecial } from "./booklet";
@@ -16,23 +14,25 @@ import { resolveDocument } from "./resolve";
 import type { AssemblyInput, DynTableDecision, RenderedArticle, RenderedStatic } from "./types";
 
 /*
- * 동적표 조립 — 기능/동적표 §3.2 · §3.4 · §3.6, QA/인수기준 「동적표(감액 지급금액 표) 인수 케이스」.
- * 마스터 = 알파 픽스처 + 실제 정본의 감액 폼(`reduction` — `reductionPeriods` 가 읽는 창구).
+ * 표 구분자 조립 — 기능/구분자 §3.7 (ADR-0099), QA/인수기준 「동적표(감액 지급금액 표) 인수 케이스」.
+ * 문면의 표 구분자 자리(`tableRef`)가 그 상품담보의 폼 값(감액 · 지급률 · 체증 · 단서문구 · 정액표 · 가입금액)으로 표를 낸다.
+ * 마스터 = 알파 픽스처 + 실제 정본의 특성 폼(`reduction` · `insured_amount` · `fixed_table` · `escalation` · `proviso`).
  */
 
 const TABLE_CODE = "DT000001";
-const tableA: DynTable = { id: "dt-a", code: TABLE_CODE, ...dynTableFixtureA() };
+const RENEWAL_CODE = "DT000002";
 
-const master = [...alphaMaster, findForm("reduction")!, findForm("insured_amount")!, findForm("fixed_table")!];
+const master = [...alphaMaster, findForm("reduction")!, findForm("insured_amount")!, findForm("fixed_table")!, findForm("escalation")!, findForm("proviso")!];
 const FIXED_CODE = "DT000003";
-const tableF: DynTable = { id: "dt-f", code: FIXED_CODE, ...dynTableFixtureF() };
 
 /** 감액 구간의 `end` 는 「감액기간」 값 코드 (V03 = 1년). `fixedGrid` 는 급부 정액표(마스터 소유 — 조립 입력엔 이미 섞여 온다). */
-type Benefit = { id: Id; name: string; payRate?: number; reduction?: { periods: { end: string; rate: number }[]; afterRate?: number }; fixedGrid?: { columns: string[]; rows: { cells: string[]; amounts: Record<string, number> }[] } };
+type Benefit = { id: Id; name: string; payRate?: number; escalation?: { label: string; ratio: number }[]; reduction?: { periods: { end: string; rate: number }[]; afterRate?: number }; fixedGrid?: { columns: string[]; rows: { cells: string[]; amounts: Record<string, number> }[] } };
 type Sub = { id: Id; name: string; benefits: Benefit[] };
 
-function spec(subs: Sub[], renewal = false, insuredAmounts?: number[]): CoverageSpec {
-  const values: CoverageSpec["values"] = { "pc-dyn": { "coverage_basic.renewal": renewal, ...(insuredAmounts ? { "insured_amount.amounts": insuredAmounts.map((amount) => ({ amount })) } : {}) } as CoverageSpec["values"][string] };
+function spec(subs: Sub[], renewal = false, insuredAmounts?: number[], proviso?: string): CoverageSpec {
+  const values: CoverageSpec["values"] = {
+    "pc-dyn": { ...(insuredAmounts ? { "insured_amount.amounts": insuredAmounts.map((amount) => ({ amount })) } : {}), ...(proviso ? { "proviso.text": proviso } : {}) } as CoverageSpec["values"][string],
+  };
   for (const s of subs) {
     for (const b of s.benefits) {
       const v: Record<string, unknown> = {};
@@ -42,6 +42,7 @@ function spec(subs: Sub[], renewal = false, insuredAmounts?: number[]): Coverage
         if (b.reduction.afterRate !== undefined) v["reduction.after_rate"] = b.reduction.afterRate;
       }
       if (b.fixedGrid) v["fixed_table.grid"] = b.fixedGrid;
+      if (b.escalation) v["escalation.steps"] = b.escalation;
       values[b.id] = v as CoverageSpec["values"][string];
     }
   }
@@ -50,31 +51,31 @@ function spec(subs: Sub[], renewal = false, insuredAmounts?: number[]): Coverage
     name: "감액테스트",
     coverageId: "cov-dyn",
     coverageName: "감액테스트",
-    attributes: [],
+    // 갱신형 = 담보속성 갱신유형(A0001) 갱신형('2') — 표 구분자의 기준일 낱말이 읽는다 (dyntable/system.ts RENEWABLE_CONDITION)
+    attributes: renewal ? [{ kindCode: "A0001", valueCode: "2" }] : [],
     subCoverages: subs.map((s, i) => ({ id: s.id, key: String(i + 1).padStart(2, "0"), masterNodeId: `m-${s.id}`, name: s.name, benefits: s.benefits.map((b, j) => ({ id: b.id, key: String(j + 1), masterNodeId: `m-${b.id}`, name: b.name })) })),
     values,
   };
 }
 
-function document(tableCode = TABLE_CODE, bindings: Bindings = { 갱신형: { kind: "const", value: false } }): DocumentNode {
+function document(tableCode = TABLE_CODE): DocumentNode {
   const b = nodeBuilders(sequentialIds("n"));
   return {
     id: "dyn-doc",
     kind: "document",
     title: "감액테스트 특별약관",
-    children: [{ id: "dyn-art", kind: "article", title: titleNodes("보험금의 지급", "dyn-art"), children: [{ ...b.dynTableRef(tableCode, bindings), id: "dyn-ref" }] }],
+    children: [{ id: "dyn-art", kind: "article", title: titleNodes("보험금의 지급", "dyn-art"), children: [{ ...b.tableRef(tableCode), id: "dyn-ref" }] }],
   };
 }
 
-function input(subs: Sub[], opts: { renewal?: boolean; doc?: DocumentNode; tables?: DynTable[]; insuredAmounts?: number[] } = {}): AssemblyInput {
+function input(subs: Sub[], opts: { renewal?: boolean; doc?: DocumentNode; insuredAmounts?: number[]; proviso?: string } = {}): AssemblyInput {
   const base = alphaPlusFixture();
   return {
     ...base,
     master,
-    coverages: [...base.coverages, coverageEntry(spec(subs, opts.renewal, opts.insuredAmounts))],
+    coverages: [...base.coverages, coverageEntry(spec(subs, opts.renewal, opts.insuredAmounts, opts.proviso))],
     specialDocuments: new Map([...base.specialDocuments, ["cov-dyn", opts.doc ?? document()]]),
     enums: [...base.enums, reductionPeriodEnumSeed()],
-    dynTables: opts.tables ?? [tableA, tableF],
   };
 }
 
@@ -100,14 +101,14 @@ function rowsOf(inp: AssemblyInput): { rows: string[][]; issues: { kind: string;
 
 const 후유장해 = (id: Id, reduction = true): Sub => ({ id, name: "질병후유장해", benefits: [{ id: `${id}-b`, name: "질병80%이상후유장해", payRate: 100, ...(reduction ? { reduction: { periods: [{ end: "V03", rate: 50 }] } } : {}) }] });
 
-describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
+describe("조립 — 표 구분자 (기능/구분자 §3.7)", () => {
   it("(a) 인수 케이스 1 — 세부보장 1 · 급부 1 · 감액 1년(V03) 50% → 열 둘 · 셀 50% / 100%", () => {
     const r = rowsOf(input([후유장해("s1")]));
     expect(r.rows).toEqual([
       ["구 분", "계약일부터 1년경과시점 전일 이전", "계약일부터 1년경과시점 이후"],
       ["질병80%이상후유장해", "보험가입금액의 50%", "보험가입금액의 100%"],
     ]);
-    expect(r.issues.filter((i) => i.message.includes("동적표"))).toEqual([]);
+    expect(r.issues.filter((i) => i.message.includes("지급금액표"))).toEqual([]);
     expect(r.complete).toBe(true);
   });
 
@@ -118,9 +119,37 @@ describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
     expect(r.rows.slice(1)).toEqual([1, 2, 3, 4].map((i) => [`급부${i}`, "해당보장의 보험가입금액의 50%", "해당보장의 보험가입금액의 100%"]));
   });
 
-  it("(c) 갱신형을 담보 구분자(D0001 갱신여부)에 연결 · 상품 값 true → 「최초계약일부터…」", () => {
-    const r = rowsOf(input([후유장해("s1")], { renewal: true, doc: document(TABLE_CODE, { 갱신형: { kind: "discriminator", code: "D0001" } }) }));
+  it("(c) 기준일 낱말은 시스템 문구가 그 상품담보의 갱신형(담보속성 갱신유형 = 갱신형)을 읽어 고른다 → 「최초계약일부터…」", () => {
+    const r = rowsOf(input([후유장해("s1")], { renewal: true }));
     expect(r.rows[0]).toEqual(["구 분", "최초계약일부터 1년경과시점 전일 이전", "최초계약일부터 1년경과시점 이후"]);
+  });
+
+  it("(c2) 단서문구(담보 특성 — 마스터 소유)가 있으면 감액 열 머리글 끝에 꼬리 · 갱신표는 열 하나라 꼬리가 없다", () => {
+    const r = rowsOf(input([후유장해("s1")], { proviso: "「2대질환」으로 진단확정시" }));
+    expect(r.rows[0]).toEqual(["구 분", "계약일부터 1년경과시점 전일 이전 「2대질환」으로 진단확정시", "계약일부터 1년경과시점 이후 「2대질환」으로 진단확정시"]);
+    expect(rowsOf(input([후유장해("s1")], { proviso: "꼬리", doc: document(RENEWAL_CODE) })).rows).toEqual([
+      ["구 분", "지급금액"],
+      ["질병80%이상후유장해", "보험가입금액의 100%"],
+    ]);
+  });
+
+  it("(c3) 체증 급부 — 구분마다 행 「급부명(구분)」 · 칩 (최초)계약일은 갱신형이면 최초계약일 · 셀 = 지급률 × 체증 비율 × 감액비율", () => {
+    const subs: Sub[] = [
+      {
+        id: "s1",
+        name: "주요치료비",
+        benefits: [
+          { id: "s1-a", name: "주요치료비", payRate: 100, reduction: { periods: [{ end: "V03", rate: 50 }] }, escalation: [{ label: "〔(최초)계약일〕부터 5년 이전", ratio: 1 }, { label: "이후", ratio: 1.2 }] },
+          { id: "s1-b", name: "일반치료비", payRate: 100 },
+        ],
+      },
+    ];
+    const r = rowsOf(input(subs, { renewal: true }));
+    expect(r.rows.slice(1)).toEqual([
+      ["주요치료비(최초계약일부터 5년 이전)", "보험가입금액의 50%", "보험가입금액의 100%"],
+      ["주요치료비(이후)", "보험가입금액의 60%", "보험가입금액의 120%"],
+      ["일반치료비", "보험가입금액의 100%", "보험가입금액의 100%"],
+    ]);
   });
 
   it("(d) 같은 급부명 · 비율 다름 → 따로 찍고 경고 dynTableMergeConflict, 완성본은 깨지지 않는다", () => {
@@ -139,20 +168,20 @@ describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
     expect(r.complete).toBe(true);
   });
 
-  it("(e) 보통약관(행 원천 없는 문맥)의 동적표는 구조 오류 마커", () => {
+  it("(e) 보통약관(행 원천 없는 문맥)의 표 구분자는 구조 오류 마커", () => {
     const inp = input([후유장해("s1")]);
     const ctx = buildContexts(inp).general;
-    const out = resolveDocument(document(), ctx, { clauses: new Map(), overrides: new Map(), coordinate: { document: "general" }, dynTables: new Map([[TABLE_CODE, tableA]]) });
-    expect(out.issues.map((i) => [i.kind, i.message])).toEqual([["structure", "동적표는 담보약관(상품담보) 문맥에서만 쓸 수 있습니다"]]);
+    const out = resolveDocument(document(), ctx, { clauses: new Map(), overrides: new Map(), coordinate: { document: "general" } });
+    expect(out.issues.map((i) => [i.kind, i.message])).toEqual([["structure", "표 구분자는 담보약관(상품담보) 문맥에서만 쓸 수 있습니다"]]);
   });
 
-  it("(f) 없는 동적표 코드 → brokenRef 마커", () => {
+  it("(f) 없는 표 구분자 코드 → brokenRef 마커", () => {
     const inp = input([후유장해("s1")], { doc: document("DT999999") });
     const r = assembleSpecial(inp, inp, "pc-dyn");
     if (!r.ok) throw new Error(JSON.stringify(r.rejection));
     expect(tableOf(r.value.doc)).toBeUndefined();
     const issue = r.value.issues.find((i) => i.kind === "brokenRef");
-    expect(issue?.message).toBe("동적표 DT999999 이(가) 없습니다");
+    expect(issue?.message).toBe("표 구분자 DT999999 이(가) 없습니다");
     expect(issue?.at.nodePath).toContain("dyn-ref");
     expect(r.value.complete).toBe(false);
   });
@@ -179,7 +208,7 @@ describe("조립 — 동적표 펼침 (기능/동적표 §3.6)", () => {
     const r = assembleSpecial(inp, inp, "pc-dyn");
     if (!r.ok) throw new Error(JSON.stringify(r.rejection));
     const tables = tablesOf(r.value.doc).filter((t): t is Extract<RenderedStatic, { kind: "table" }> => t.kind === "table");
-    expect(r.value.issues.filter((i) => i.message.includes("동적표"))).toEqual([]);
+    expect(r.value.issues.filter((i) => i.message.includes("지급금액표"))).toEqual([]);
     expect(r.value.complete).toBe(true);
     expect(tables).toHaveLength(4);
     const text = (cell: { kind: string; text?: string }[] | undefined) => (cell ?? []).map((n) => (n.kind === "text" ? n.text : `<${n.kind}>`)).join("");

@@ -378,15 +378,14 @@ describe("텍스트 · 조 명 · 슬롯 · 참조 대상 · 옵션 수정", () 
     expect((cleared.children[0] as ArticleNode).children[1]).not.toHaveProperty("bindings");
   });
 
-  it("동적표 참조 — 인자 연결 바꾸기(setDynTableBindings): 빈 맵이면 키를 걷고, 동적표 참조가 아니면 거부 (기능/동적표 §3.5)", () => {
+  it("표 구분자 자리 — 다른 표 구분자로 바꾸기(setTableRef): 표 구분자가 아닌 코드 · 표 구분자 자리가 아니면 거부 (기능/구분자 §3.7)", () => {
     const { b, doc } = twoArticles();
-    const env = { kind: "special" as const, dynTableGate: { exists: (c: string) => c === "T0001", validateBindings: () => [] } };
-    const next = unwrap(applyCommand(doc, { type: "insert", node: b.dynTableRef("T0001"), at: { parentId: "n3" } }, { env })); // n6
-    const bound = unwrap(applyCommand(next, { type: "setDynTableBindings", nodeId: "n6", bindings: { 갱신형: { kind: "const", value: true } } }, { env }));
-    expect((bound.children[0] as ArticleNode).children[1]).toMatchObject({ kind: "dynTableRef", tableCode: "T0001", bindings: { 갱신형: { kind: "const", value: true } } });
-    const cleared = unwrap(applyCommand(bound, { type: "setDynTableBindings", nodeId: "n6", bindings: {} }, { env }));
-    expect((cleared.children[0] as ArticleNode).children[1]).not.toHaveProperty("bindings");
-    expect(rejection(applyCommand(cleared, { type: "setDynTableBindings", nodeId: "n3", bindings: {} }, { env })).reason).toBe("invalid");
+    const env = { kind: "special" as const };
+    const next = unwrap(applyCommand(doc, { type: "insert", node: b.tableRef("DT000001"), at: { parentId: "n3" } }, { env })); // n6
+    const swapped = unwrap(applyCommand(next, { type: "setTableRef", nodeId: "n6", code: "DT000002" }, { env }));
+    expect((swapped.children[0] as ArticleNode).children[1]).toEqual({ id: "n6", kind: "tableRef", code: "DT000002" });
+    expect(rejection(applyCommand(swapped, { type: "setTableRef", nodeId: "n6", code: "D0001" }, { env })).reason).toBe("invalid");
+    expect(rejection(applyCommand(swapped, { type: "setTableRef", nodeId: "n3", code: "DT000001" }, { env })).reason).toBe("invalid");
   });
 
   it("인라인 반복의 원천 · 별칭 · 연결어를 setFor 로 고친다 (ADR-0088)", () => {

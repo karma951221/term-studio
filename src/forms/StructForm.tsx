@@ -30,6 +30,8 @@
 import { useEffect, useId, useReducer, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { InfoTip } from "@/app/_components/InfoTip";
+import { RadioDot } from "@/app/_components/RadioGroup";
+import { Button } from "@/components/ui/button";
 import { IconButton, IconClose, IconImport, IconInfo, IconMinusCircle, IconPlus, IconPlusCircle } from "@/app/_components/icons";
 import { EXEMPTION_MONTHS } from "@/domain/coverage";
 import { formatPeriod } from "@/domain/master";
@@ -235,7 +237,7 @@ function EnumInput({ id, field, onEdit, className, name }: InputProps) {
       <span className="ts-form-radios" role="radiogroup" aria-labelledby={`${id}-label`}>
         {(field.view.enumOptions ?? []).map((o) => (
           <label key={o.code} className="ts-form-radio">
-            <input type="radio" name={name ?? field.view.path} value={o.code} checked={draft === o.code} onChange={() => onEdit(o.code)} />
+            <RadioDot name={name ?? field.view.path} value={o.code} checked={draft === o.code} onChange={() => onEdit(o.code)} />
             {o.label}
           </label>
         ))}
@@ -286,7 +288,7 @@ function ListEnumInput({ id, field, onEdit, name, single }: InputProps) {
       <span className="ts-form-checks" role="radiogroup" aria-labelledby={`${id}-label`}>
         {(field.view.enumOptions ?? []).map((o) => (
           <label key={o.code} className="ts-form-check">
-            <input type="radio" name={name ?? field.view.path} value={o.code} checked={selected.includes(o.code)} onChange={() => onEdit([o.code])} />
+            <RadioDot name={name ?? field.view.path} value={o.code} checked={selected.includes(o.code)} onChange={() => onEdit([o.code])} />
             {o.label}
           </label>
         ))}
@@ -504,9 +506,9 @@ function HeadField({ idBase, field, absent, readOnly, issues, onAdd, onRemove, o
   if (absent) {
     return (
       <>
-        <button type="button" className="ts-form-optional-btn ts-head-add" title={`${view.label} 추가`} data-path={view.path} onClick={onAdd}>
+        <Button type="button" variant="link" size="sm" className="ts-head-add text-xs text-muted-foreground" title={`${view.label} 추가`} data-path={view.path} onClick={onAdd}>
           {view.label} <IconPlusCircle />
-        </button>
+        </Button>
         {importButton}
       </>
     );
@@ -557,9 +559,9 @@ function TraitAdd({ closed, onOpen, onImport }: { closed: readonly FormCard[]; o
         {onImport &&
           closed.filter(masterHasForm).map((card) => (
             // 마스터엔 있는데 이 상품담보에서 뗀 특성 — 마스터 값으로 다시 붙인다 (기능/상품 §4.8)
-            <button key={card.key} type="button" className="ts-linklike ts-trait-import" onClick={() => onImport(card.key)}>
+            <Button key={card.key} type="button" variant="link" size="sm" className="mr-2" onClick={() => onImport(card.key)}>
               마스터에는 {card.label} 있음 · 가져오기
-            </button>
+            </Button>
           ))}
         {open && !none && (
           <span className="ts-trait-menu" role="menu" aria-label="붙일 특성">
@@ -667,9 +669,9 @@ export function StructForm({
           isFieldHidden(live, view.path) && !pinned(view.path) ? (
             readOnly ? null : (
               <p key={view.path} className="ts-form-reveal-row" data-path={view.path}>
-                <button type="button" className="ts-linklike ts-form-reveal" onClick={() => dispatch({ type: "reveal", path: view.path })}>
+                <Button type="button" variant="link" size="sm" className="text-[0.85em]" onClick={() => dispatch({ type: "reveal", path: view.path })}>
                   {view.label} 바꾸기
-                </button>
+                </Button>
               </p>
             )
           ) : (
@@ -777,18 +779,18 @@ export function StructForm({
       )}
       {model.fields.length > 0 && !embedded && (
         <div className="ts-form-actions">
-          <button type="submit" className="primary" disabled={pending}>
+          <Button type="submit" variant="primary" disabled={pending}>
             {submitLabel}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="ts-form-clear"
+            size="sm"
             onClick={() => dispatch({ type: "clearAll" })}
             title={`${model.label} 의 입력칸을 모두 비운다 (제안값도 걷어낸다)`}
             disabled={pending}
           >
             비우기
-          </button>
+          </Button>
         </div>
       )}
     </form>

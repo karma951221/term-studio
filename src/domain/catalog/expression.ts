@@ -30,6 +30,7 @@ import {
   type Result,
 } from "../types";
 import { findMasterField, levelDepth, masterFieldFullLabel, type MasterTree } from "../master";
+import { isTableDiscriminatorCode } from "../dyntable/codes";
 import type { Discriminator, DiscriminatorResultType, RefListType } from "./types";
 
 /** 담보속성 유효값 조회 — 주면 `attr.X = '값'` 의 리터럴을 유효값 목록으로 검사한다 (ADR-0015). */
@@ -219,6 +220,11 @@ export function checkReferenceRules(
 
   for (const { ref, path, aggregate } of extractRefs(expr)) {
     if (ref.kind === "discriminator") {
+      // 표 구분자(시스템 정의 · 결과 타입 「표」)는 식에서 읽을 수 없다 — 문면의 블록 자리에만 놓는다 (기능/구분자 §3.7)
+      if (isTableDiscriminatorCode(ref.code)) {
+        issues.push(issue("typeMismatch", `표 구분자 ${ref.code} 은(는) 식에서 읽을 수 없습니다 — 담보약관 문면의 블록 자리에만 놓는다`, at, path));
+        continue;
+      }
       const def = catalog?.get(ref.code);
       if (!def) {
         issues.push(issue("brokenRef", `카탈로그에 구분자 ${path} 가 없습니다`, at, path));

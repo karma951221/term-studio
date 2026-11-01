@@ -19,6 +19,8 @@ import { ENTITY_LABEL, FIELD_LABEL } from "@/app/_lib/labels";
 import type { MasterRow } from "./filterRows";
 import { fieldHref, formHref } from "./lib";
 import { ClickCell, ClickRow } from "./RowLink";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const MASTER_PAGE_SIZE = 20;
 
@@ -51,9 +53,9 @@ export function MasterTable({ rows, total, page, defined, q }: MasterTableProps)
             <label className="ts-searchbox">
               <IconSearch />
               <span className="sr-only">검색</span>
-              <input type="search" name="q" defaultValue={q} placeholder="코드 · 표시명 · 폼" aria-label="코드 · 표시명 · 폼 검색" />
+              <Input type="search" name="q" className="w-[min(320px,32vw)]" defaultValue={q} placeholder="코드 · 표시명 · 폼" aria-label="코드 · 표시명 · 폼 검색" />
             </label>
-            <button type="submit">검색</button>
+            <Button type="submit">검색</Button>
           </>
         }
         total={total}

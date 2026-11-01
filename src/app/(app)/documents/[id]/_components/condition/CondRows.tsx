@@ -21,6 +21,8 @@ import { OUTPUT_DISPLAY, OUTPUT_LABEL, OUTPUT_POSITIONS, type Literal } from "@/
 
 import { OP_LABEL, addRow, ctxCodeOf, headOf, opsOf, pickerGroups, qualifiedLabel, refKey, refOfKey, removeRow, setLeft, sourceOf, type HeadModel } from "./rows";
 import type { ConditionContext, CtxAttribute, CtxDiscriminator } from "./types";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /** 값 칸 — 좌변 타입대로. 우변이 구분자 참조면 칩 + 비우기. 담보속성이면 유효값 목록(있음 · 없음은 값 없음). */
 function ValueInput({
@@ -45,28 +47,28 @@ function ValueInput({
     // 작성위치 — 세 값 (ADR-0089). 저장은 코드(replace · block · special), 화면은 대치 · 블록 · 특약
     const chosen = row.right?.kind === "literal" && row.right.literal.type === "string" ? row.right.literal.value : "";
     return (
-      <select className="ts-cond-value" aria-label={label} value={chosen} onChange={(e) => onChange(e.target.value === "" ? undefined : { kind: "literal", literal: { type: "string", value: e.target.value } }, true)}>
+      <NativeSelect className="ts-cond-value" aria-label={label} value={chosen} onChange={(e) => onChange(e.target.value === "" ? undefined : { kind: "literal", literal: { type: "string", value: e.target.value } }, true)}>
         <option value="">값</option>
         {OUTPUT_POSITIONS.map((p) => (
           <option key={p} value={p}>
             {OUTPUT_LABEL[p]}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     );
   }
   if (row.left?.kind === "attr") {
     if (isUnaryOp(row.op)) return <span className="ts-cond-value ts-muted" aria-label={label}>—</span>;
     const chosen = row.right?.kind === "literal" && row.right.literal.type === "string" ? row.right.literal.value : "";
     return (
-      <select className="ts-cond-value" aria-label={label} value={chosen} onChange={(e) => onChange(e.target.value === "" ? undefined : { kind: "literal", literal: { type: "string", value: e.target.value } }, true)}>
+      <NativeSelect className="ts-cond-value" aria-label={label} value={chosen} onChange={(e) => onChange(e.target.value === "" ? undefined : { kind: "literal", literal: { type: "string", value: e.target.value } }, true)}>
         <option value="">값</option>
         {(attribute?.values ?? []).map((v) => (
           <option key={v.code} value={v.code}>
             {v.label}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     );
   }
   if (row.right?.kind === "ref") {
@@ -88,30 +90,30 @@ function ValueInput({
     }
   };
   const kind = def?.type?.kind;
-  if (!row.left || !kind) return <input type="text" className="ts-cond-value" aria-label={label} placeholder="값" disabled />;
+  if (!row.left || !kind) return <Input type="text" className="ts-cond-value" aria-label={label} placeholder="값" disabled />;
   switch (kind) {
     case "boolean":
       return (
-        <select className="ts-cond-value" aria-label={label} value={lit?.type === "boolean" ? String(lit.value) : ""} onChange={(e) => set(e.target.value === "" ? undefined : { type: "boolean", value: e.target.value === "true" }, true)}>
+        <NativeSelect className="ts-cond-value" aria-label={label} value={lit?.type === "boolean" ? String(lit.value) : ""} onChange={(e) => set(e.target.value === "" ? undefined : { type: "boolean", value: e.target.value === "true" }, true)}>
           <option value="">값</option>
           <option value="true">참</option>
           <option value="false">거짓</option>
-        </select>
+        </NativeSelect>
       );
     case "enum":
       return (
-        <select className="ts-cond-value" aria-label={label} value={lit?.type === "string" ? lit.value : ""} onChange={(e) => set(e.target.value === "" ? undefined : { type: "string", value: e.target.value }, true)}>
+        <NativeSelect className="ts-cond-value" aria-label={label} value={lit?.type === "string" ? lit.value : ""} onChange={(e) => set(e.target.value === "" ? undefined : { type: "string", value: e.target.value }, true)}>
           <option value="">값</option>
           {(def?.enumOptions ?? []).map((o) => (
             <option key={o.code} value={o.code}>
               {o.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       );
     case "number":
       return (
-        <input
+        <Input
           type="number"
           className="ts-cond-value"
           aria-label={label}
@@ -122,10 +124,10 @@ function ValueInput({
         />
       );
     case "date":
-      return <input type="date" className="ts-cond-value" aria-label={label} value={lit?.type === "date" ? lit.value : ""} onChange={(e) => set(e.target.value === "" ? undefined : { type: "date", value: e.target.value }, true)} />;
+      return <Input type="date" className="ts-cond-value" aria-label={label} value={lit?.type === "date" ? lit.value : ""} onChange={(e) => set(e.target.value === "" ? undefined : { type: "date", value: e.target.value }, true)} />;
     default:
       return (
-        <input
+        <Input
           type="text"
           className="ts-cond-value"
           aria-label={label}
@@ -217,7 +219,7 @@ export function CondRows({
       <div className="ts-cond-rows">
         <div className="ts-cond-line">
           <span className="ts-cond-badge">{label}</span>
-          <input
+          <Input
             ref={rawInput}
             type="text"
             readOnly
@@ -262,7 +264,7 @@ export function CondRows({
             {i === 0 ? (
               <span className="ts-cond-badge">{label}</span>
             ) : (
-              <select
+              <NativeSelect
                 className="ts-cond-join"
                 aria-label={`${name} 결합`}
                 value={rows.joins[i - 1]}
@@ -270,7 +272,7 @@ export function CondRows({
               >
                 <option value="and">AND</option>
                 <option value="or">OR</option>
-              </select>
+              </NativeSelect>
             )}
             {maxOpen > 0 && (
               <span className="ts-cond-paren ts-cond-paren-open" aria-hidden="true">
@@ -287,7 +289,7 @@ export function CondRows({
               valueLabel={row.left && !known.has(key) ? `${leftText(row.left)} (목록에 없음)` : undefined}
               placeholder="변수 · 구분자 찾기"
             />
-            <select
+            <NativeSelect
               className="ts-cond-op"
               aria-label={`${name} 연산자`}
               value={row.op ?? ""}
@@ -305,7 +307,7 @@ export function CondRows({
                   {OP_LABEL[op]}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <ValueInput
               row={row}
               name={name}

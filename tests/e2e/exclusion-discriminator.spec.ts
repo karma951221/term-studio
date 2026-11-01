@@ -5,7 +5,7 @@ import { expect, test } from "./_lib/fixtures";
 /**
  * 준용예외 구분자 (기능/구분자 §3.8 · ADR-0098 결정 1) — 결과 타입 「조 참조 목록」, 식 대신 후보 조(보통약관 템플릿 조).
  *
- * - 상세(시드 D0013 「준용예외」): 결과 타입 「조 참조 목록」 · 후보 조 목록(템플릿 「제N조(제목)」) · 식 칸 없음.
+ * - 상세(시드 D0014 「준용예외」): 결과 타입 「조 참조 목록」 · 후보 조 목록(템플릿 「제N조(제목)」) · 식 칸 없음.
  * - 생성: 결과 타입 「조 참조 목록 (준용예외)」을 고르면 레벨이 담보로 고정되고 식 칸 대신 후보 칸(템플릿마다 조 체크)이 선다 → 저장하면 상세에 후보가 보인다.
  */
 
@@ -21,8 +21,8 @@ test(
   async ({ page, ev }) => {
     await ev.action("준용예외#1", "관리자로 로그인한다", () => login(page));
 
-    await ev.action("준용예외#2", "시드 D0013 상세 — 결과 타입 「조 참조 목록」 · 후보 조 셋 · 식 칸 없음", async () => {
-      await page.goto("/catalog/D0013");
+    await ev.action("준용예외#2", "시드 D0014 상세 — 결과 타입 「조 참조 목록」 · 후보 조 셋 · 식 칸 없음", async () => {
+      await page.goto("/catalog/D0014");
       await expect(page.getByText("조 참조 목록", { exact: true })).toBeVisible();
       const list = page.getByRole("list", { name: "후보 조" });
       await expect(list.getByRole("listitem")).toHaveCount(3);

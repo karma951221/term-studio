@@ -171,7 +171,7 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     expect(burn.subCoverages.map((s) => s.benefits.map((b) => b.name))).toEqual(names.map((n) => [n]));
   });
 
-  it("시드 구분자는 원문 모델링이 쓰는 납입면제 있음(D0002) · 해약환급금 지급형(D0003 · D0004 있음) · 갱신형 담보 · 상품(D0005 · D0006) · 해약환급금 미지급형 있음(D0007) · 15세 단서와 보장개시일 정의 항이 읽는 15세 이상 적용(D0008 · D0009) · 면책(D0010 ~ D0012)뿐 — 감액 · 최초1회 같은 특성 구분자는 두지 않는다 · 담보명(D0001)은 2026-10-21 뺐다 (알파플러스_모델명세 §2)", async () => {
+  it("시드 구분자는 원문 모델링이 쓰는 납입면제 있음(D0002) · 해약환급금 지급형(D0003 · D0004 있음) · 갱신형 담보 · 상품(D0005 · D0006) · 해약환급금 미지급형 있음(D0007) · 15세 단서와 보장개시일 정의 항이 읽는 15세 이상 적용(D0008 · D0009) · 면책(D0010 ~ D0012) · 표 구분자를 감싸는 감액 있음(D0013 — ADR-0099)뿐 — 최초1회 같은 특성 구분자는 두지 않는다 · 담보명(D0001)은 2026-10-21 뺐다 (알파플러스_모델명세 §2)", async () => {
     const defs = await services.catalog.list();
     expect(defs.map((d) => [d.code, d.label, d.level, d.expression])).toEqual([
       ["D0002", "납입면제 있음", "product", "any(waiver.applies)"],
@@ -188,14 +188,16 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
       ["D0010", "면책 있음", "coverage", "exist(exemption.months)"],
       ["D0011", "15세 이상만 면책", "benefit", "exist(exemption.months) and exemption.age15_only"],
       ["D0012", "15세 이상만 면책 있음", "coverage", "any(D0011)"],
+      // 표 구분자 「보험금 지급금액표」를 감싸는 조건 (기능/구분자 §3.7, ADR-0099 — 2026-11-01)
+      ["D0013", "감액 있음", "coverage", "exist(reduction.periods)"],
       // 준용예외 — 결과 타입 「조 참조 목록」, 식 없음 · 정의 = 후보 템플릿 조 (ADR-0098 결정 1). 준용규정 함수조항의 후보 묶음마다 하나
-      ["D0013", "준용예외", "coverage", ""],
-      ["D0014", "준용예외(갱신형)", "coverage", ""],
-      ["D0015", "준용예외(질병)", "coverage", ""],
-      ["D0016", "준용예외(세부규정 포함)", "coverage", ""],
-      ["D0017", "준용예외(질병 · 납입면제)", "coverage", ""],
+      ["D0014", "준용예외", "coverage", ""],
+      ["D0015", "준용예외(갱신형)", "coverage", ""],
+      ["D0016", "준용예외(질병)", "coverage", ""],
+      ["D0017", "준용예외(세부규정 포함)", "coverage", ""],
+      ["D0018", "준용예외(질병 · 납입면제)", "coverage", ""],
     ]);
-    expect(defs.find((d) => d.code === "D0013")).toMatchObject({ resultType: { kind: "list<ref>" }, candidates: ["g-a9", "g-a10", "g-a38"] });
+    expect(defs.find((d) => d.code === "D0014")).toMatchObject({ resultType: { kind: "list<ref>" }, candidates: ["g-a9", "g-a10", "g-a38"] });
   });
 
   it("함수조항 60건 — 조 · 여러 항(두 곳 이상이 되풀이) 36 + 납입면제 함수조항 21(호 1 · 사유별 정의 13 · 역할 7) + 문구 「기준일 문구」 + 알파Plus2607 질병 특약 둘(맨 뒤) · 박스는 함수조항이 아니라 정적 마스터 142 (알파플러스_모델명세 §4 · §6 · 메리츠_모델명세 §4)", async () => {
@@ -290,10 +292,10 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     // 알파Plus 준용규정은 담보속성(갱신유형)을 읽는다 — 담보속성은 함수조항이 직접 읽는다 — 요구 참조는 저장 때 식에서 뽑는다 (기능/함수조항 §3.3).
     // 「1종 … 납입면제 조도 제외」 문장은 「납입면제 있음」 인자(기본 연결 D0002)로 가른다 — 납입면제 없는 상품이면 빠진다
     // 「다만, … 은 제외합니다」 목록은 준용예외 구분자 인자(갱신형 가지 · 비갱신 가지)로 — 조립이 판정한다 (ADR-0098 결정 2)
-    expect((await services.clause.get(byLabel("준용규정(알파Plus)").code))?.required).toEqual({ discriminators: ["D0014", "D0002", "D0013"], attributes: ["A0001"] });
+    expect((await services.clause.get(byLabel("준용규정(알파Plus)").code))?.required).toEqual({ discriminators: ["D0015", "D0002", "D0014"], attributes: ["A0001"] });
     expect(byLabel("준용규정(통합간편)").params?.map((p) => [p.name, p.default])).toEqual([
       ["납입면제_있음", { kind: "discriminator", code: "D0002" }],
-      ["준용예외", { kind: "discriminator", code: "D0013" }],
+      ["준용예외", { kind: "discriminator", code: "D0014" }],
     ]);
     // 준용규정 함수조항은 작성위치 = 대치이면 빈 출력 (ADR-0089 결정 5) — 자동 묶음이 만든 판까지 전부 작성위치를 읽는다
     const applications = list.filter((c) => c.label.startsWith("준용규정"));
