@@ -37,6 +37,7 @@ import { articlesDeep, canonicalArticle, claimOf, collapseRenewal, coverageNameO
 import { APPENDED_CLAUSE_KEYS, APPENDICES, CLAUSES, GENERAL_TEMPLATE, PRODUCTS, RENEWAL, SEED_DIR, type ClauseUse, type ProductTerms, type SlotOverlay, type SpecialSpec } from "./config";
 import { parseTerms, type ParsedArticle, type ParsedDoc } from "./parse";
 import { applyExemption, type ExemptionTrait } from "./exemption";
+import { applyPaymentTables, type PaymentTrait } from "./payment";
 import { mergeGenerals, remapIds } from "./merge";
 import { applyArticleCopies } from "../../src/domain/product/articleCopies";
 import { productRefIssues } from "../../src/domain/product/copyRefIntegrity";
@@ -508,6 +509,15 @@ function main(): void {
       if (trait) exemptions.set(spec.ownerCoverage, trait);
     }
   }
+  // 지급금액 표 — 손으로 쓴 감액 표를 「감액 있음」 조건 + 표 구분자로(ADR-0099 결정 4). 바꾼 담보약관의 담보는 원문 감액 · 지급률 · 단서문구를 싣는다(writeAutoSeeds)
+  const subCoverageCount = new Map((JSON.parse(readFileSync(path.join(root, SEED_DIR, "coverages.json"), "utf8")) as { key: string; subCoverages?: unknown[] }[]).map((c) => [c.key, c.subCoverages?.length ?? 1]));
+  const payments = new Map<string, PaymentTrait>();
+  for (const p of products) {
+    for (const spec of p.product.specials) {
+      const trait = applyPaymentTables(p.specials.get(spec.code)!.tree, subCoverageCount.get(spec.ownerCoverage) ?? 1);
+      if (trait) payments.set(spec.ownerCoverage, trait);
+    }
+  }
 
   // ── 조 자리 조건 · 검증
   const generals: { code: string; tree: DocumentNode }[] = [];
@@ -595,7 +605,7 @@ function main(): void {
   // 함수조항은 구분자를 직접 읽지 않고 인자만 읽는다 (최종 결정 2) — 직접 읽기를 「인자 + 기본 연결 = 그 구분자」로 기계 변환한다.
   // 구분자 카탈로그는 손으로 적는 시드(discriminators.json)다. 사용처는 기본 연결을 쓰므로 조립 결과가 그대로다
   out("clauses.json", finalClauses);
-  writeAutoSeeds(products, exemptions, generalSettings, out);
+  writeAutoSeeds(products, exemptions, payments, generalSettings, out);
 
   const stats = (tree: DocumentNode) => {
     const ix = indexTree(tree);
@@ -831,9 +841,10 @@ interface GeneralSetting {
   copies: ArticleNode[];
 }
 
-function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyMap<string, ExemptionTrait>, generalSettings: ReadonlyMap<string, GeneralSetting>, out: (file: string, data: unknown) => void): void {
+function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyMap<string, ExemptionTrait>, payments: ReadonlyMap<string, PaymentTrait>, generalSettings: ReadonlyMap<string, GeneralSetting>, out: (file: string, data: unknown) => void): void {
   // 자동 탑재분은 `auto: true` 로 표시한다 — 다시 쓸 때 지난번 자동 탑재분을 모두 지우고 지금 설정으로 새로 쓴다(손으로 쓴 것은 그대로)
-  type Coverage = { key: string; code: string; name: string; benefitName: string; category?: string; coverageValues: { path: string; value: unknown }[]; benefitValues: unknown[]; auto?: true };
+  type Value = { path: string; value: unknown };
+  type Coverage = { key: string; code: string; name: string; benefitName: string; category?: string; subCoverages?: { name: string; benefitName: string; benefitValues?: Value[] }[]; coverageValues: Value[]; benefitValues: unknown[]; auto?: true };
   type Group = { category: string } | { name: string; coverages: string[] };
   type Mount = { code: string; coverage: string; section: string; attributes: { kindCode: string; valueCode: string }[]; auto?: true };
   const coverages = JSON.parse(readFileSync(path.join(root, SEED_DIR, "coverages.json"), "utf8")) as Coverage[];
@@ -889,6 +900,27 @@ function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyM
     const trait = exemptions.get(c.key);
     const rest = (c.benefitValues as { path: string }[]).filter((v) => !v.path.startsWith("exemption."));
     c.benefitValues = trait ? [...rest, { path: "exemption.months", value: trait.months }, { path: "exemption.age15_only", value: trait.age15 }, { path: "exemption.new_only", value: true }] : rest;
+  }
+  // 감액 · 지급률 · 단서문구 — 지급금액 표를 표 구분자로 바꾼 담보약관의 담보만, 원문 표대로(payment.ts). 세부보장이 여럿이면 세부보장마다 같은 감액(표의 행마다)
+  const isPayment = (v: Value) => v.path.startsWith("reduction.") || v.path === "pay.rate";
+  for (const c of next) {
+    const trait = payments.get(c.key);
+    const values: Value[] = trait
+      ? [
+          { path: "reduction.periods", value: trait.periods },
+          { path: "reduction.after_rate", value: trait.afterRate },
+          { path: "reduction.new_only", value: true },
+          ...(trait.payRate !== 100 ? [{ path: "pay.rate", value: trait.payRate }] : []),
+        ]
+      : [];
+    if (c.subCoverages) {
+      for (const sub of c.subCoverages) {
+        const rest = (sub.benefitValues ?? []).filter((v) => !isPayment(v));
+        if (rest.length + values.length > 0) sub.benefitValues = [...rest, ...values];
+        else delete sub.benefitValues;
+      }
+    } else c.benefitValues = [...(c.benefitValues as Value[]).filter((v) => !isPayment(v)), ...values];
+    c.coverageValues = [...c.coverageValues.filter((v) => !v.path.startsWith("proviso.")), ...(trait?.proviso ? [{ path: "proviso.text", value: trait.proviso }] : [])];
   }
   out("coverages.json", next);
   out("products.json", seeded);

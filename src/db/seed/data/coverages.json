@@ -229,7 +229,25 @@
     "benefitName": "질병사망보험금",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": []
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V01",
+            "rate": 10
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ]
   },
   {
     "key": "m-disease-disability80",
@@ -238,7 +256,25 @@
     "benefitName": "질병80%이상후유장해보험금",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": []
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ]
   },
   {
     "key": "m-disease-surgery17",
@@ -249,31 +285,192 @@
     "subCoverages": [
       {
         "name": "질병1종 수술비보장",
-        "benefitName": "질병1종 수술비"
+        "benefitName": "질병1종 수술비",
+        "benefitValues": [
+          {
+            "path": "reduction.periods",
+            "value": [
+              {
+                "end": "V01",
+                "rate": 10
+              },
+              {
+                "end": "V03",
+                "rate": 50
+              }
+            ]
+          },
+          {
+            "path": "reduction.after_rate",
+            "value": 100
+          },
+          {
+            "path": "reduction.new_only",
+            "value": true
+          }
+        ]
       },
       {
         "name": "질병2종 수술비보장",
-        "benefitName": "질병2종 수술비"
+        "benefitName": "질병2종 수술비",
+        "benefitValues": [
+          {
+            "path": "reduction.periods",
+            "value": [
+              {
+                "end": "V01",
+                "rate": 10
+              },
+              {
+                "end": "V03",
+                "rate": 50
+              }
+            ]
+          },
+          {
+            "path": "reduction.after_rate",
+            "value": 100
+          },
+          {
+            "path": "reduction.new_only",
+            "value": true
+          }
+        ]
       },
       {
         "name": "질병3종 수술비보장",
-        "benefitName": "질병3종 수술비"
+        "benefitName": "질병3종 수술비",
+        "benefitValues": [
+          {
+            "path": "reduction.periods",
+            "value": [
+              {
+                "end": "V01",
+                "rate": 10
+              },
+              {
+                "end": "V03",
+                "rate": 50
+              }
+            ]
+          },
+          {
+            "path": "reduction.after_rate",
+            "value": 100
+          },
+          {
+            "path": "reduction.new_only",
+            "value": true
+          }
+        ]
       },
       {
         "name": "질병4종 수술비보장",
-        "benefitName": "질병4종 수술비"
+        "benefitName": "질병4종 수술비",
+        "benefitValues": [
+          {
+            "path": "reduction.periods",
+            "value": [
+              {
+                "end": "V01",
+                "rate": 10
+              },
+              {
+                "end": "V03",
+                "rate": 50
+              }
+            ]
+          },
+          {
+            "path": "reduction.after_rate",
+            "value": 100
+          },
+          {
+            "path": "reduction.new_only",
+            "value": true
+          }
+        ]
       },
       {
         "name": "질병5종 수술비보장",
-        "benefitName": "질병5종 수술비"
+        "benefitName": "질병5종 수술비",
+        "benefitValues": [
+          {
+            "path": "reduction.periods",
+            "value": [
+              {
+                "end": "V01",
+                "rate": 10
+              },
+              {
+                "end": "V03",
+                "rate": 50
+              }
+            ]
+          },
+          {
+            "path": "reduction.after_rate",
+            "value": 100
+          },
+          {
+            "path": "reduction.new_only",
+            "value": true
+          }
+        ]
       },
       {
         "name": "질병6종 수술비보장",
-        "benefitName": "질병6종 수술비"
+        "benefitName": "질병6종 수술비",
+        "benefitValues": [
+          {
+            "path": "reduction.periods",
+            "value": [
+              {
+                "end": "V01",
+                "rate": 10
+              },
+              {
+                "end": "V03",
+                "rate": 50
+              }
+            ]
+          },
+          {
+            "path": "reduction.after_rate",
+            "value": 100
+          },
+          {
+            "path": "reduction.new_only",
+            "value": true
+          }
+        ]
       },
       {
         "name": "질병7종 수술비보장",
-        "benefitName": "질병7종 수술비"
+        "benefitName": "질병7종 수술비",
+        "benefitValues": [
+          {
+            "path": "reduction.periods",
+            "value": [
+              {
+                "end": "V01",
+                "rate": 10
+              },
+              {
+                "end": "V03",
+                "rate": 50
+              }
+            ]
+          },
+          {
+            "path": "reduction.after_rate",
+            "value": 100
+          },
+          {
+            "path": "reduction.new_only",
+            "value": true
+          }
+        ]
       }
     ],
     "coverageValues": [],
@@ -950,7 +1147,25 @@
     "benefitName": "희귀난치성 7대질환진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -960,7 +1175,25 @@
     "benefitName": "뇌출혈진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1234,6 +1467,23 @@
       {
         "path": "exemption.new_only",
         "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
       }
     ],
     "auto": true
@@ -1256,6 +1506,23 @@
       },
       {
         "path": "exemption.new_only",
+        "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
         "value": true
       }
     ],
@@ -1280,6 +1547,23 @@
       {
         "path": "exemption.new_only",
         "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
       }
     ],
     "auto": true
@@ -1291,7 +1575,25 @@
     "benefitName": "간경변증진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1312,6 +1614,23 @@
       },
       {
         "path": "exemption.new_only",
+        "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
         "value": true
       }
     ],
@@ -1354,7 +1673,25 @@
     "benefitName": "전이암진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1453,7 +1790,25 @@
     "benefitName": "급성간염(A,B,C형)진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1474,6 +1829,23 @@
       },
       {
         "path": "exemption.new_only",
+        "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
         "value": true
       }
     ],
@@ -1498,6 +1870,23 @@
       {
         "path": "exemption.new_only",
         "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
       }
     ],
     "auto": true
@@ -1519,7 +1908,25 @@
     "benefitName": "심근병증진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1529,7 +1936,25 @@
     "benefitName": "갑상선기능저하증진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1772,7 +2197,25 @@
     "benefitName": "특정순환계질환진단비",
     "category": "V02",
     "coverageValues": [],
-    "benefitValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
     "auto": true
   },
   {
@@ -1884,7 +2327,12 @@
     "name": "2대질환 주요치료비(연간1회한, 10년간)보장",
     "benefitName": "2대질환 주요치료비(연간1회한, 10년간)보장",
     "category": "V02",
-    "coverageValues": [],
+    "coverageValues": [
+      {
+        "path": "proviso.text",
+        "value": "「2대질환」으로 진단확정 시(보험금 지급기간 동안 적용)"
+      }
+    ],
     "benefitValues": [
       {
         "path": "exemption.months",
@@ -1896,6 +2344,23 @@
       },
       {
         "path": "exemption.new_only",
+        "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
         "value": true
       }
     ],
@@ -1953,7 +2418,12 @@
     "name": "상급종합병원 2대질환 주요치료비(연간1회한, 10년간)보장",
     "benefitName": "상급종합병원 2대질환 주요치료비(연간1회한, 10년간)보장",
     "category": "V02",
-    "coverageValues": [],
+    "coverageValues": [
+      {
+        "path": "proviso.text",
+        "value": "「2대질환」으로 진단확정 시(보험금 지급기간 동안 적용)"
+      }
+    ],
     "benefitValues": [
       {
         "path": "exemption.months",
@@ -1965,6 +2435,23 @@
       },
       {
         "path": "exemption.new_only",
+        "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
         "value": true
       }
     ],
@@ -2203,6 +2690,23 @@
       {
         "path": "exemption.new_only",
         "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
       }
     ],
     "auto": true
@@ -2396,6 +2900,23 @@
       },
       {
         "path": "exemption.new_only",
+        "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
         "value": true
       }
     ],
