@@ -38,7 +38,7 @@ const SELF_NAME: Record<Exclude<RefPosition, "general">, string> = {
   block: "이 보장조항",
 };
 
-/** 준용규정 최소형 한 문장 (ADR-0021 결정 5) — 「이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다.」 · 블록 「이 보장조항에서 … 제1절 일반조항을 따릅니다.」. */
+/** 준용규정 최소형 한 문장 (ADR-0021 결정 5 · ADR-0098) — 「이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다.」 · 블록 「이 보장조항에서 … 제1절 일반조항을 따릅니다.」. */
 export function applicationSentence(position: Exclude<RefPosition, "general">): string {
   return `${SELF_NAME[position]}에서 정하지 않은 사항은 ${DOCUMENT_NAME[position]}을 따릅니다.`;
 }
