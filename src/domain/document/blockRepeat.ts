@@ -64,7 +64,17 @@ export interface UnionRepeatSource {
 /** 담보 트리 원천 (ADR-0087 결정 5) — 담보약관 템플릿만. 원소 = 스냅샷 노드(트리 순서). */
 export type TreeRepeatSource = { kind: "subCoverages" } | { kind: "benefits" } | { kind: "benefitsOfCurrent"; loop: Id };
 
-export type RepeatSource = PlanOptionsRepeatSource | ListOfCurrentRepeatSource | UnionRepeatSource | TreeRepeatSource;
+/**
+ * 조 참조 목록 원천 (ADR-0098 결정 2) — 준용예외 구분자(결과 타입 「조 참조 목록」)의 값. 원소 = 보통약관 템플릿 조(그 상품 최종 번호로 찍힌다).
+ * `ref` = 조 참조 목록 인자(`arg.<이름>`) — 준용규정 함수조항의 문장 안 반복에서만 쓴다(문면 반복 원천으로는 아직 열지 않았다).
+ * 반복 본문의 조 참조가 현재 원소(`restrict: { current: 반복 id }`, 대상 조 없이)를 가리킨다 — 새 노드 없이 「〔[준용예외마다] 조 참조(현재 원소)〕」.
+ */
+export interface RefListRepeatSource {
+  kind: "refList";
+  ref: string;
+}
+
+export type RepeatSource = PlanOptionsRepeatSource | ListOfCurrentRepeatSource | UnionRepeatSource | TreeRepeatSource | RefListRepeatSource;
 
 const TREE_KINDS = new Set(["subCoverages", "benefits", "benefitsOfCurrent"]);
 
@@ -78,7 +88,7 @@ export const REPEAT_MAX_DEPTH = 2;
 export function isRepeatSource(x: unknown): x is RepeatSource {
   if (typeof x !== "object" || x === null) return false;
   const k = (x as { kind?: unknown }).kind;
-  return k === "planOptions" || k === "listOfCurrent" || k === "union" || (typeof k === "string" && TREE_KINDS.has(k));
+  return k === "planOptions" || k === "listOfCurrent" || k === "union" || k === "refList" || (typeof k === "string" && TREE_KINDS.has(k));
 }
 
 export interface RepeatEnv {
@@ -117,6 +127,8 @@ export function loopElementType(source: RepeatSource, outer: RepeatSource | unde
     case "benefits":
     case "benefitsOfCurrent":
       return { kind: "coverageNode", level: "benefit" };
+    case "refList":
+      return { kind: "article" };
   }
 }
 
@@ -181,6 +193,8 @@ export function checkRepeatSource(node: RepeatNode, outers: readonly RepeatNode[
   const source: unknown = node.source;
   const fail = (kind: Issue["kind"], message: string, refPath?: string): Issue[] => [{ kind, message, at: { ...at, ...(refPath !== undefined ? { refPath } : {}) } }];
   if (!isRepeatSource(source)) return fail("structure", `${node.kind === "inlineFor" ? "문장 안 반복" : "반복 블록"}의 원천을 고른다 — 세목 선택지 · 바깥 반복의 현재 원소의 목록 · 목록값의 합집합`);
+  // 조 참조 목록(준용예외) 반복은 준용규정 함수조항의 문장 안 반복으로만 연다 (ADR-0098 결정 2) — 함수조항 본문 검사(clause/body.ts)가 본다
+  if (source.kind === "refList") return fail("structure", "조 참조 목록(준용예외) 반복은 함수조항 본문의 문장 안 반복에서만 씁니다 — 준용규정 함수조항에 쓴다", source.ref);
   const outer = outers.at(-1);
   if (outer && isRepeatSource(outer.source) && isTreeSource(outer.source) !== isTreeSource(source)) {
     return fail("structure", "담보 트리 반복과 세목 반복은 섞어 중첩하지 않습니다 — 한 단계 중첩은 같은 계열 안에서만(종 › 사유, 세부보장 › 급부). 종에 따라 갈리는 문장은 조건식으로 쓴다 (ADR-0087 결정 5)");
@@ -335,6 +349,8 @@ export function repeatLabel(source: RepeatSource | unknown, ctx: { outer?: Repea
       return "세부보장 › 급부마다";
     case "benefitsOfCurrent":
       return "현재 세부보장의 급부마다";
+    case "refList":
+      return `${source.ref.replace(/^arg\./, "")}마다`;
     case "union": {
       const base = `${fieldLabel(source.form, source.field)} 합집합`;
       if (!source.where) return `${base}마다`;

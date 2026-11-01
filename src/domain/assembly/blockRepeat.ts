@@ -24,11 +24,13 @@ export type RepeatElement =
   | { kind: "planOption"; id: Id; form: Code }
   | { kind: "enumValue"; code: Code; enumCode: Code }
   /** 담보 트리 원소 — 스냅샷 노드 (ADR-0087 결정 5). `path` = 키 경로, `suffix` = 복제 접미사 원소(세부보장 `01` · 평평한 급부 `01.2` · 현재 세부보장의 급부 `2`). */
-  | { kind: "coverageNode"; level: "subCoverage" | "benefit"; id: Id; path: string; suffix: string };
+  | { kind: "coverageNode"; level: "subCoverage" | "benefit"; id: Id; path: string; suffix: string }
+  /** 조 참조 목록 원소 — 보통약관 템플릿 조 (준용예외, ADR-0098 결정 2). 반복 안 조 참조의 「현재」가 이 조를 가리킨다. */
+  | { kind: "article"; articleId: Id };
 
 /** 복제 접미사에 쓰는 원소 id — 종이면 세목 선택지 id, 열거값이면 값 코드, 담보 트리 노드면 노드 키(중첩이면 바깥 접미사와 이어져 유일하다). */
 export function repeatElementId(e: RepeatElement): string {
-  return e.kind === "planOption" ? e.id : e.kind === "enumValue" ? e.code : e.suffix;
+  return e.kind === "planOption" ? e.id : e.kind === "enumValue" ? e.code : e.kind === "article" ? e.articleId : e.suffix;
 }
 
 export interface RepeatDeps {
@@ -43,6 +45,8 @@ export interface RepeatDeps {
   rows?: RowSource<EvalContext>;
   /** 미결 → 조립 오류. */
   explain(reason: string, at: Coordinate): Issue;
+  /** 조 참조 목록 원천의 값 — 원천 식(구분자 코드)을 그 자리 문맥에서 평가한 템플릿 조 id 목록 (ADR-0098). 없으면 그 원천은 오류. */
+  refList?(ref: string): Outcome<Id[]>;
 }
 
 type Outcome<T> = { ok: true; value: T } | { ok: false; issue: Issue };
@@ -138,6 +142,11 @@ export function repeatElements(source: RepeatSource | unknown, deps: RepeatDeps,
         elements = out;
       }
       return { ok: true, value: elements };
+    }
+    case "refList": {
+      if (!deps.refList) return fail("structure", "조 참조 목록 반복을 펼칠 문맥이 없습니다", s.ref);
+      const r = deps.refList(s.ref);
+      return r.ok ? { ok: true, value: r.value.map((articleId) => ({ kind: "article", articleId })) } : r;
     }
     case "subCoverages":
     case "benefits":

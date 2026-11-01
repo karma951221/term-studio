@@ -86,6 +86,12 @@ function inlineToTree(node: C.Inline): InlineNode {
       return { ...node, branches: node.branches.map((br) => ({ ...br, children: br.children.map(inlineToTree) })) };
     case "inlineSwitch":
       return { id: node.id, kind: "inlineCond", switchOn: node.on, branches: node.cases.map((k) => caseToBranch(k, inlineToTree)) };
+    case "inlineFor":
+      // 조 참조 목록 인자 원천의 문장 안 반복 (ADR-0098 결정 2) — 문면 인라인 반복과 같은 모양
+    {
+      const { fallback, children, ...rest } = node;
+      return { ...rest, children: children.map(inlineToTree), ...(fallback ? { fallback: fallback.map(inlineToTree) } : {}) };
+    }
     default:
       return node;
   }
@@ -240,7 +246,8 @@ function inlineFromTree(node: InlineNode): C.Inline {
       }
       // 보통약관 조 또는 조 참조 인자 — 인자 슬롯은 인자 하나만, 다른 대상 · 연결어와 섞지 않는다 (ADR-0083 결정 3)
       const params = targets.filter((t) => t.articleId.startsWith(PARAM_TARGET_PREFIX));
-      if (params.length === 0) return { ...rest, targets: targets.map((t) => ({ ...t })) };
+      // 반복의 현재 원소(조 참조 목록 — 대상 조 없음, ADR-0098)는 빈 조 id 로 운반된다 — 되돌릴 때 뺀다
+      if (params.length === 0) return { ...rest, targets: targets.map(({ articleId, ...t }) => (articleId === "" && (t.restrict as { current?: unknown } | undefined)?.current !== undefined ? { ...t } : { articleId, ...t })) };
       if (targets.length !== 1) throw new NotClause("범위 「인자」 조 참조는 조 참조 인자 하나만 가리킨다 — 보통약관 조 · 다른 인자와 섞지 않는다");
       return { id: rest.id, kind: "articleRef", targets: [{ param: params[0]!.articleId.slice(PARAM_TARGET_PREFIX.length) }], scope: "param" };
     }
@@ -252,6 +259,12 @@ function inlineFromTree(node: InlineNode): C.Inline {
     case "inlineCond":
       if (node.switchOn !== undefined) return { id: node.id, kind: "inlineSwitch", on: node.switchOn, cases: node.branches.map((br) => branchToCase(br, inlineFromTree)) };
       return { ...node, branches: node.branches.map((br) => ({ ...br, children: br.children.map(inlineFromTree) })) };
+    case "inlineFor": {
+      // 함수조항의 문장 안 반복은 조 참조 목록 인자 원천만 (ADR-0098 결정 2) — 원천 검사는 본문 검사가 한다
+      if (node.source.kind !== "refList") throw new NotClause("함수조항의 문장 안 반복은 조 참조 목록 인자(준용예외)만 원천으로 씁니다");
+      const { fallback, children, source, ...rest } = node;
+      return { ...rest, source, children: children.map(inlineFromTree), ...(fallback ? { fallback: fallback.map(inlineFromTree) } : {}) };
+    }
     default:
       return refuse(node.kind, "문장 안");
   }

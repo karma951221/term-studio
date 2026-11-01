@@ -97,6 +97,12 @@ function createRewriter(owner: string, params: readonly ParamDef[], bound: Bindi
       case "or":
       case "compare":
         return { ...e, left: rewriteExpr(e.left), right: rewriteExpr(e.right) };
+      case "aggregate": {
+        // 조 참조 목록 인자의 개수 — `count(arg.준용예외)` → `count(D0100)` (ADR-0098 결정 2)
+        if (e.ref.kind !== "param") return e;
+        const r = replacement(e.ref);
+        return r?.kind === "ref" ? { ...e, ref: r.ref } : e;
+      }
       default:
         return e;
     }
@@ -150,7 +156,7 @@ function createRewriter(owner: string, params: readonly ParamDef[], bound: Bindi
   };
 
   /** 노드 하나 — 모양을 몰라도 걷는다(가지 · 글 · 호 목록 · 목 목록). 슬롯과 가지 조건만 바꾼다. */
-  type Loose = { kind: string; on?: string; children?: unknown[]; items?: unknown[]; subitems?: unknown[]; branches?: { when?: string; children: unknown[] }[]; cases?: { values?: string[]; children: unknown[] }[] };
+  type Loose = { kind: string; on?: string; source?: { kind?: string; ref?: unknown }; fallback?: unknown[]; children?: unknown[]; items?: unknown[]; subitems?: unknown[]; branches?: { when?: string; children: unknown[] }[]; cases?: { values?: string[]; children: unknown[] }[] };
   const node = (n: ClauseNode): ClauseNode => {
     if (n.kind === "slot") return slot(n);
     const any = n as unknown as Loose;
@@ -188,6 +194,9 @@ function createRewriter(owner: string, params: readonly ParamDef[], bound: Bindi
       const picked = env && typeof out.on === "string" ? peek(out.on) : undefined;
       out = { ...out, cases: any.cases.map((k) => (!env || (typeof picked === "string" && k.values?.includes(picked)) ? { ...k, children: walk(k.children) } : k)) };
     }
+    // 조 참조 목록 반복의 원천(`arg.준용예외`)도 사용처 연결(구분자 코드)로 (ADR-0098 결정 2)
+    if (any.kind === "inlineFor" && any.source?.kind === "refList" && typeof any.source.ref === "string") out = { ...out, source: { ...any.source, ref: rewrite(any.source.ref) } };
+    if (any.fallback) out = { ...out, fallback: walk(any.fallback) };
     if (any.children) out = { ...out, children: walk(any.children) };
     if (any.items) out = { ...out, items: walk(any.items) };
     if (any.subitems) out = { ...out, subitems: walk(any.subitems) };

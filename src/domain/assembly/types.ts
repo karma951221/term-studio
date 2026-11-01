@@ -296,7 +296,7 @@ interface Keyed {
 export interface LoopTag {
   loop: Id;
   element: string;
-  kind: "planOption" | "enumValue" | "coverageNode";
+  kind: "planOption" | "enumValue" | "coverageNode" | "article";
   /** 담보 트리 원소의 키 경로 (`01` · `01.2`) — 키 한정 해소(ADR-0087 결정 10)가 읽는다. */
   path?: string;
 }
@@ -674,7 +674,7 @@ export interface ClauseDecision extends DecisionAt {
 /** 반복 원소 하나 — 원소 id(복제 접미사) · 이름 · 그 문맥의 결정 노드. 반복 표면 행 노드. */
 export interface RepeatElementRecord {
   id: string;
-  kind: "planOption" | "enumValue" | "coverageNode" | "row";
+  kind: "planOption" | "enumValue" | "coverageNode" | "row" | "article";
   label: string;
   /** 담보 트리 원소의 키 경로 (`01` · `01.2`). */
   path?: string;

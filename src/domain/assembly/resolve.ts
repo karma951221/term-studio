@@ -346,6 +346,7 @@ class Walker {
   elementLabel(e: RepeatElement): string {
     if (e.kind === "planOption") return this.ctx.plans?.options.find((o) => o.id === e.id)?.name ?? e.id;
     if (e.kind === "enumValue") return this.env.enums?.get(e.enumCode)?.values.find((v) => v.code === e.code)?.label ?? e.code;
+    if (e.kind === "article") return e.articleId; // 조 참조 목록 원소 — 화면은 조 id 를 이 상품 번호로 푼다(출처 패널)
     const rows = this.ctx.rows;
     for (const sub of rows?.providers.coverage?.children(rows.root) ?? []) {
       if (sub.id === e.id) return sub.name;
@@ -701,7 +702,7 @@ class Walker {
     const e = f.loops?.[loop];
     if (!e) return undefined;
     if (e.kind === "enumValue") return { kind: "enum", code: e.code };
-    if (e.kind === "coverageNode") return undefined; // 노드는 값 인자에 대지 않는다
+    if (e.kind === "coverageNode" || e.kind === "article") return undefined; // 노드 · 조는 값 인자에 대지 않는다
     const ctx = this.ctx.plans?.context(e.id);
     return ctx ? { kind: "options", form: e.form, contexts: [ctx] } : undefined;
   }
@@ -757,7 +758,8 @@ class Walker {
       case "inlineSwitch":
         return this.switchOf(n, f, true, (children, g) => this.inlines(children as AnyInline[], g));
       case "inlineFor":
-        return this.inlineRepeat(n, f);
+        // 함수조항의 문장 안 반복(조 참조 목록 원천 — ADR-0098)도 문면 인라인 반복과 같은 모양이다
+        return this.inlineRepeat(n as InlineForNode, f);
       case "clauseInlineRef":
         return this.call(n, ["inline"], f, (r) => this.inlines(r.body as ClauseInline[], { ...f, path: [...f.path, n.id], clause: n.clauseCode }));
       case "optionSlot":

@@ -429,6 +429,13 @@ export function localScope(params: readonly ParamDef[], locals: readonly LocalDe
         const r = reduce(e.right);
         return r.ok ? okv({ ...e, left: l.value, right: r.value }) : r;
       }
+      case "aggregate": {
+        // 조 참조 목록 인자의 개수 — `count(arg.준용예외)` → `count(D0100)` (ADR-0098 결정 2). 구분자 연결만 집계 경로가 된다
+        if (e.ref.kind !== "param") return okv(e);
+        const b = bindParam(e.ref);
+        if (!b.ok) return b;
+        return b.value.kind === "ref" ? okv({ ...e, ref: b.value.ref }) : fail("typeMismatch", `인자 ${e.ref.name} 은(는) 구분자에 연결해야 개수를 셀 수 있습니다`, e.ref);
+      }
       default:
         return okv(e);
     }

@@ -138,11 +138,11 @@ export function collectRefs(doc: DocumentNode, base: Coordinate = {}): DocRef[] 
       case "inlineFor": {
         const src = n.source;
         // 담보 트리 반복(세부보장마다 · 급부마다)은 폼 · 필터가 없다 — 반복 원천 간선이 없다 (ADR-0087)
-        if (!isRepeatSource(src) || isTreeSource(src)) break;
+        if (!isRepeatSource(src) || isTreeSource(src) || src.kind === "refList") break;
         const field = (path: string, where?: Code) => out.push({ kind: "repeatSource", path, ...(where !== undefined ? { where } : {}), at: { ...at, refPath: path } });
         if (src.kind === "listOfCurrent") {
           const outer = ix.nodes.get(src.loop)?.node;
-          if (outer?.kind === "forBlock" && isRepeatSource(outer.source) && !isTreeSource(outer.source) && outer.source.kind !== "listOfCurrent") field(`${outer.source.form}.${src.field}`);
+          if (outer?.kind === "forBlock" && isRepeatSource(outer.source) && !isTreeSource(outer.source) && outer.source.kind !== "listOfCurrent" && outer.source.kind !== "refList") field(`${outer.source.form}.${src.field}`);
           break;
         }
         if (src.kind === "union") field(`${src.form}.${src.field}`, src.where?.field);

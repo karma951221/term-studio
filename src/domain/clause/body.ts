@@ -17,7 +17,7 @@
 import { checkTypes, extractRefs, parse } from "../expression";
 import type { EnumInfo, Expr, ExprType, Ref, TypeResolver } from "../expression";
 import { isParticlePreset, PARTICLE_PRESET_MESSAGE } from "../document/particles";
-import { CONNECTOR_REPEAT_MESSAGE, CONNECTOR_REQUIRED_MESSAGE, isReferenceConnector, isWorkMark, ok, reject, WORK_MARK_MESSAGE } from "../types";
+import { CONNECTOR_REPEAT_MESSAGE, CONNECTOR_REQUIRED_MESSAGE, isInlineRepeatConnector, isReferenceConnector, isWorkMark, ok, reject, WORK_MARK_MESSAGE } from "../types";
 import type { Code, Coordinate, Id, Issue, Result } from "../types";
 import { BLOCK_KINDS, INLINE_KINDS } from "./nodes";
 import type { AnySwitchNode, Block, BoxRefNode, BulletListNode, ClauseNode, Inline, InlineBranch, BlockBranch, ItemBodyNode, ItemNode, SubitemBodyNode, SwitchCase } from "./nodes";
@@ -34,8 +34,8 @@ import type { ClauseBody, ClauseMode, OptionDef, RequiredRefs } from "./types";
 export interface CollectedExpression {
   /** 식 원문. */
   source: string;
-  /** 쓰임 — 슬롯 치환 · 조건 · 값별 분기의 대상. */
-  role: "slot" | "condition" | "switch";
+  /** 쓰임 — 슬롯 치환 · 조건 · 값별 분기의 대상 · 문장 안 반복의 원천(조 참조 목록 인자, ADR-0098). */
+  role: "slot" | "condition" | "switch" | "repeat";
   /** 루트에서 이 식이 달린 노드(가지 포함)까지의 id 경로. */
   nodePath: Id[];
 }
@@ -59,6 +59,10 @@ export function collectExpressions(body: ClauseBody, basePath: Id[] = []): Colle
           if (br.when !== undefined) out.push({ source: br.when, role: "condition", nodePath: bp });
           for (const c of br.children) walk(c, bp);
         }
+        return;
+      case "inlineFor":
+        if (typeof node.source?.ref === "string") out.push({ source: node.source.ref, role: "repeat", nodePath: here });
+        for (const c of [...(node.children ?? []), ...(node.fallback ?? [])]) walk(c, here);
         return;
       case "inlineSwitch":
       case "switchBlock":
@@ -204,7 +208,9 @@ export function analyzeBody(
   const paramByName = new Map(params.map((p) => [p.name, p] as const));
   /** 본문의 항 · 호 · 목 코드 — 「이 함수조항」 조 참조의 대상 후보. 선택지 문구에는 구조가 없다. 코드 없는 자리는 저장 때 채워진다. */
   const structCodes = new Set(mode === "inline" ? [] : clauseCodeEntries(body).entries.flatMap((e) => (e.code !== undefined ? [e.code] : [])));
-  const exprs: { expr: Expr; role: "slot" | "condition" | "switch"; path: Id[] }[] = [];
+  const exprs: { expr: Expr; role: "slot" | "condition" | "switch" | "repeat"; path: Id[] }[] = [];
+  /** 감싼 문장 안 반복 id — 조 참조의 「현재 원소」가 가리킬 수 있는 것 (ADR-0098 결정 2). */
+  const repeats: Id[] = [];
   /** 값별 분기 — 대상 참조(인자 · 내부 변수)가 읽혔으면 타입 · 값 배정 검사를 뒤(인자 · 내부 변수 표 뒤)에서 한다. */
   const switches: { node: AnySwitchNode; ref: Ref & { kind: "param" | "local" }; path: Id[]; expr: (typeof exprs)[number] }[] = [];
 
@@ -222,7 +228,7 @@ export function analyzeBody(
     report("typeMismatch", why, [...path, String(node.id ?? "?")]);
   };
 
-  const checkExpr = (source: string, role: "slot" | "condition" | "switch", path: Id[]) => {
+  const checkExpr = (source: string, role: "slot" | "condition" | "switch" | "repeat", path: Id[]) => {
     const parsed = parse(source, { ...base, nodePath: path });
     if (!parsed.ok) {
       if (parsed.rejection.reason === "invalid") issues.push(...parsed.rejection.issues);
@@ -332,6 +338,13 @@ export function analyzeBody(
         }
         let repeated = false;
         for (const t of node.targets) {
+          // 문장 안 반복의 현재 원소(조 참조 목록 — 템플릿 조) — 대상 조 없이 「현재」만 (ADR-0098 결정 2)
+          const current = (t?.restrict as { current?: unknown } | undefined)?.current;
+          if (t && t.articleId === undefined && typeof current === "string") {
+            if (!repeats.includes(current)) report("structure", `조 참조의 「현재」 반복 ${current} 이(가) 이 참조를 감싸지 않습니다 — 그 문장 안 반복 안에서만 쓴다`, here);
+            else if (t.code !== undefined || t.innerCode !== undefined || t.param !== undefined || node.targets.length !== 1) report("structure", "반복의 현재 조를 가리키는 조 참조는 그 조 하나만 가리킵니다 — 항 · 다른 대상과 섞지 않는다", here);
+            continue;
+          }
           if (typeof t?.articleId !== "string" || t.param !== undefined || "host" in t) {
             report("structure", "보통약관 참조 대상은 조(와 항 · 호 · 목의 코드)여야 합니다", here);
             continue;
@@ -385,6 +398,34 @@ export function analyzeBody(
           for (const c of (br as InlineBranch).children ?? []) checkInline(c, bp, true);
         });
         return;
+      case "inlineFor": {
+        // 조 참조 목록 인자 원천만 · 한 겹만 · 연결어 필수 (ADR-0098 결정 2 · ADR-0088 결정 2)
+        if (repeats.length > 0) {
+          report("structure", "문장 안 반복 안에 문장 안 반복을 둘 수 없습니다 (한 겹만)", here);
+          return;
+        }
+        const src = node.source as { kind?: unknown; ref?: unknown } | undefined;
+        if (src?.kind !== "refList" || typeof src.ref !== "string") {
+          report("structure", "함수조항의 문장 안 반복은 조 참조 목록 인자(준용예외)만 원천으로 씁니다", here);
+          return;
+        }
+        const parsed = parse(src.ref, { ...base, nodePath: here });
+        const name = parsed.ok && parsed.value.kind === "ref" && parsed.value.ref.kind === "param" ? parsed.value.ref.name : undefined;
+        if (name === undefined) report("typeMismatch", `문장 안 반복의 원천은 조 참조 목록 인자 하나여야 합니다(arg.<이름>): ${src.ref}`, here, src.ref);
+        else if (paramByName.get(name)?.type?.kind !== "list<ref>") report("typeMismatch", `인자 ${name} 은(는) 조 참조 목록 인자가 아닙니다 — 문장 안 반복의 원천은 타입 「조 참조 목록」 인자다`, here, src.ref);
+        else checkExpr(src.ref, "repeat", here);
+        if (node.connector === undefined) report("structure", "문장 안 반복의 연결어(및 · 또는 · 쉼표만)를 고른다 — 원소 수를 템플릿 시점에 모른다", here);
+        else if (!isInlineRepeatConnector(node.connector)) report("structure", `문장 안 반복의 연결어는 「및」·「또는」·「,」 중 하나여야 합니다: ${String(node.connector)}`, here);
+        repeats.push(node.id);
+        try {
+          for (const c of node.children ?? []) checkInline(c, here, insideCond);
+        } finally {
+          repeats.pop();
+        }
+        // 「비었을 때」 칸은 원소 문맥 밖이다
+        for (const c of node.fallback ?? []) checkInline(c, [...here, `${node.id}~empty`], insideCond);
+        return;
+      }
       case "inlineSwitch":
         // 문장 안 분기는 문장 안 조건과 같은 제약 — 서로 안에 두지 못한다 (최종 결정 5)
         if (insideCond) {

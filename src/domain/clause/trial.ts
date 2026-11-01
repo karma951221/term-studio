@@ -224,6 +224,9 @@ export function runTrial(clause: Clause, input: TrialInput, deps: TrialDeps): Tr
         return inlineText(pickBranch(n.branches), before);
       case "inlineSwitch":
         return inlineText(pickCase(n.on, n.cases), before);
+      case "inlineFor":
+        // 조 참조 목록(준용예외)은 조립이 특약 문맥마다 판정한다 — 시험 평가에는 값이 없다 (ADR-0098)
+        return `〔${n.source.ref.replace(/^arg\./, "")}마다 보통약관 제○조〕`;
       case "articleRef": {
         const target = n.targets[0]?.articleId ?? "";
         if (target.startsWith(PARAM_TARGET)) return `⟨${target.slice(PARAM_TARGET.length)}⟩`;
