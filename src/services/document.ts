@@ -44,7 +44,6 @@ import {
   type Command,
   type DocRef,
   type DocumentNode,
-  type DynTableGate,
   type EditOp,
   type ExpressionScope,
   type GeneralRefs,
@@ -79,8 +78,6 @@ export interface UsageSource {
 export interface DocumentServiceDeps {
   /** 함수조항 게이트 (B2). 기본 전부 통과. */
   clauseGate?: (tx: Db) => Promise<ClauseGate>;
-  /** 동적표 게이트 (기능/동적표 §3.6 삽입 검사). 기본 없음 = 존재 · 연결을 검사하지 않는다. */
-  dynTableGate?: (tx: Db) => Promise<DynTableGate>;
   /** 식 타입 조회. 기본 카탈로그 정의로 구성. */
   typeResolver?: (tx: Db) => Promise<TypeResolver>;
   /** 외부 사용처. 기본 없음. */
@@ -212,7 +209,6 @@ export function createDocumentService(db: Db, deps: DocumentServiceDeps = {}): D
     const appendixCodes = new Set((await repo.listAppendices(tx)).map((a) => a.code));
     const boxCodes = new Set((await repo.listBoxes(tx)).map((x) => x.code));
     const clauseGate = deps.clauseGate ? await deps.clauseGate(tx) : undefined;
-    const dynTableGate = deps.dynTableGate ? await deps.dynTableGate(tx) : undefined;
     const enums = new Map((await catalogRepo.listEnums(tx)).map((e) => [e.code, e]));
     return {
       kind: doc.kind,
@@ -220,7 +216,6 @@ export function createDocumentService(db: Db, deps: DocumentServiceDeps = {}): D
       appendixExists: (c) => appendixCodes.has(c),
       boxExists: (c) => boxCodes.has(c),
       ...(clauseGate ? { clauseGate } : {}),
-      ...(dynTableGate ? { dynTableGate } : {}),
       coordinate: coordinateOf(doc),
     };
   }

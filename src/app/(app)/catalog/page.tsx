@@ -8,6 +8,9 @@
  *
  * 2026-09-27 — 5층 모양 트리(ADR-0070 결정 8)를 같은 날 다시 평면 표로 되돌렸다 — 가지가 다섯 겹이라 훑기 어렵다(UI 검토).
  * 레벨은 맨 앞 컬럼이고 헤더가 곧 필터다(다른 목록과 같은 문법). 행은 레벨 깊이(상품 → 급부) 순, 같은 레벨 안은 코드 순.
+ *
+ * 2026-11-01 — 시스템 표 구분자(보험금 지급금액표 …, 기능/구분자 §3.7 · §4.5)가 다른 구분자와 함께 선다 — 결과 타입 「표」, 구분자명 옆 「시스템」 배지.
+ * DB 가 아니라 코드에 정의되고(`TABLE_DISCRIMINATORS`) `+` 로 만들 수 없다.
  */
 import { EmptyState } from "@/app/_components/EmptyState";
 import type { ColumnFilterSpec } from "@/app/_components/ListFilters";
@@ -16,6 +19,7 @@ import { ENTITY_LABEL, FIELD_LABEL, LEVEL_LABEL, NAME_LABEL, newLabel, searchPla
 import { includesQuery, paginate } from "@/app/_lib/list";
 import { DISCRIMINATORS_MENU } from "@/app/_lib/menu";
 import type { Discriminator } from "@/domain/catalog/types";
+import { TABLE_DISCRIMINATORS, type TableDiscriminator } from "@/domain/dyntable/system";
 import { levelDepth } from "@/domain/master";
 import { ATTACH_LEVELS } from "@/domain/types";
 import { getServices } from "@/lib/services";
@@ -25,6 +29,9 @@ import { resultTypeLabel, warningBadges } from "./lib";
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
+
+/** 목록 한 줄 — 사용자 구분자 또는 시스템 표 구분자. */
+type Row = { code: string; label: string; level: Discriminator["level"] } & ({ def: Discriminator; system?: undefined } | { system: TableDiscriminator; def?: undefined });
 
 const FILTERS = [
   { key: "level", label: "레벨", options: ATTACH_LEVELS.map((value) => ({ value, label: LEVEL_LABEL[value] })) },
@@ -50,11 +57,12 @@ export default async function CatalogListPage({ searchParams }: { searchParams: 
   const q = (sp.q ?? "").trim();
   const level = sp.level ?? "";
   const warning = sp.warning ?? "";
-  const filtered = defs
+  const all: Row[] = [...defs.map((d): Row => ({ code: d.code, label: d.label, level: d.level, def: d })), ...TABLE_DISCRIMINATORS.map((t): Row => ({ code: t.code, label: t.label, level: t.level, system: t }))];
+  const filtered = all
     .filter((d) => {
       if (!includesQuery(q, [d.code, d.label])) return false;
       if (level && d.level !== level) return false;
-      if (warning === "yes" && !warnings.has(d.code)) return false;
+      if (warning === "yes" && !warnings.has(d.code)) return false; // 시스템 표 구분자는 경고가 없다
       if (warning === "no" && warnings.has(d.code)) return false;
       return true;
     })
@@ -63,12 +71,13 @@ export default async function CatalogListPage({ searchParams }: { searchParams: 
   const createParams = new URLSearchParams();
   if (level) createParams.set("level", level);
 
-  const columns: readonly ListColumn<Discriminator>[] = [
+  const columns: readonly ListColumn<Row>[] = [
     { filter: FILTERS[0], width: "sm", cell: (d) => LEVEL_LABEL[d.level] },
     identCol(ENTITY_LABEL.discriminator, (d) => ({ code: d.code, name: d.label }), (d) => `/catalog/${d.code}`),
-    { header: FIELD_LABEL.resultType, width: "sm", cell: (d) => resultTypeLabel(d.resultType, (code) => enumName.get(code)) }, // 필수라 비는 칸이 없다 (2026-10-17)
+    // 필수라 비는 칸이 없다 (2026-10-17). 시스템 표 구분자는 「표」 + 「시스템」 배지 (기능/구분자 §4.5)
+    { header: FIELD_LABEL.resultType, width: "sm", cell: (d) => (d.system ? <>표 <span className="ts-badge" title="시스템이 정의한 표 구분자 — 고치거나 지울 수 없다">시스템</span></> : resultTypeLabel(d.def.resultType, (code) => enumName.get(code))) },
     { filter: FILTERS[1], width: "sm", cell: (d) => { const badges = warningBadges(warnings.get(d.code) ?? []); return badges.length === 0 ? "—" : badges.map((b) => <span key={b.label} className="ts-badge warning" title={b.title}>{b.label}</span>); } },
-    auditCol((d) => audits.get(d.code), userName),
+    auditCol((d) => (d.system ? undefined : audits.get(d.code)), userName),
   ];
 
   return (

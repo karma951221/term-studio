@@ -12,7 +12,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Booklet } from "@/domain/assembly";
 import { renderedToLines } from "@/domain/assembly/compare";
 import type { BlockNode, DocumentNode } from "@/domain/document/nodes";
-import { tableShape } from "@/domain/dyntable/shape";
 import type { Actor } from "@/domain/types";
 
 import { createTestDb, type TestDb } from "@/db/test-utils";
@@ -48,14 +47,9 @@ describe("합성 표본 — 절 형태 세 상품 (PGlite)", () => {
       .flatMap((c) => (c.kind === "section" ? c.children : [c]))
       .flatMap((a) => (a.kind === "article" && a.children.some((p) => p.kind === "paragraph" && p.children.some((n) => n.kind === "text" && n.text.endsWith("는 제2절 보장조항에서 정합니다."))) ? [a.title] : []));
 
-  it("동적표 넷 — 감액 지급금액 표 A(DT000001 · 감액 구간형 · 인자 갱신형) · (갱신) 지급금액 표 R(DT000002 · 단일형) · 정액 지급금액 표 F(DT000003 · 정액형) · (갱신) 정액 지급금액 표 FR(DT000004)", async () => {
-    const tables = await services.dynTable.list();
-    expect(tables.map((t) => [t.code, t.label, tableShape(t.headers), t.params.map((p) => p.name), t.fixed !== undefined])).toEqual([
-      ["DT000001", "감액 지급금액 표", "split", ["갱신형"], false],
-      ["DT000002", "(갱신) 지급금액 표", "single", [], false],
-      ["DT000003", "정액 지급금액 표", "split", ["갱신형"], true],
-      ["DT000004", "(갱신) 정액 지급금액 표", "single", [], true],
-    ]);
+  it("시드 구분자 「감액 있음」 — 담보 레벨 exist(reduction.periods), 표 구분자를 감싸는 조건 (기능/구분자 §3.7, ADR-0099)", async () => {
+    const d = (await services.catalog.list()).find((x) => x.label === "감액 있음");
+    expect(d).toMatchObject({ code: "D0013", level: "coverage", expression: "exist(reduction.periods)", resultType: { kind: "boolean" } });
   });
 
   it("세 표본이 다 있고 절 형태로 완성본이다", () => {

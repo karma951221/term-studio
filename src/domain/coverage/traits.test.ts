@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { EnumDef } from "../catalog";
 import { entered } from "../types";
-import { checkReductionPeriods, FIXED_GRID, fixedGrid, INSURED_AMOUNTS, insuredAmounts, REDUCTION_PERIOD_ENUM, reductionBoundary, reductionPeriodEnumSeed, reductionPeriods, validateSlotValue } from "./traits";
+import { findForm, findMasterField } from "../master";
+import { BASE_DATE_CHIP, checkReductionPeriods, ESCALATION_STEPS, escalationSteps, FIXED_GRID, PROVISO_TEXT, provisoText, resolveBaseDateChip, fixedGrid, INSURED_AMOUNTS, insuredAmounts, REDUCTION_PERIOD_ENUM, reductionBoundary, reductionPeriodEnumSeed, reductionPeriods, validateSlotValue } from "./traits";
 
 /** 시드 「감액기간」 — 90일 V01 · 180일 V02 · 1년 V03 · 2년 V04 (기능/열거형 §3.1, 값 순서 = 기간 순서). */
 const 감액기간: EnumDef = reductionPeriodEnumSeed();
@@ -106,5 +107,38 @@ describe("담보 「가입금액」 · 급부 「정액표」 특성 — 값 규
     expect(fixedGrid(() => undefined)).toBeUndefined();
     const g = { columns: ["분류"], rows: [{ cells: ["상해"], amounts: { "30000000": 1 } }] };
     expect(fixedGrid((p) => (p === FIXED_GRID ? entered(g) : undefined))).toEqual(g);
+  });
+});
+
+describe("급부 「체증」 · 담보 「단서문구」 특성 — 값 규칙 · 읽는 창구 (기능/담보 §3.4 · 기능/구분자 §3.7, 2026-11-01)", () => {
+  const enums = () => undefined;
+  const stepsType = { kind: "table", columns: [{ key: "label", label: "구분", type: "string", chips: [{ label: "(최초)계약일", text: "〔(최초)계약일〕" }] }, { key: "ratio", label: "비율", type: "number" }] } as const;
+  it("폼 — 체증 escalation(급부 · 마스터 소유) · 단서문구 proviso(담보 · 마스터 소유)", () => {
+    expect(findForm("escalation")).toMatchObject({ label: "체증", level: "benefit", optional: true, system: true, owner: "master" });
+    expect(findMasterField(ESCALATION_STEPS)?.field.type).toEqual(stepsType);
+    expect(findForm("proviso")).toMatchObject({ label: "단서문구", level: "coverage", optional: true, system: true, owner: "master" });
+    expect(findMasterField(PROVISO_TEXT)?.field.type).toEqual({ kind: "string" });
+  });
+  it("체증 — 0행 거부 · 구분 비면 거부 · 비율은 0 보다 큰 수", () => {
+    expect(validateSlotValue(ESCALATION_STEPS, stepsType, [{ label: "1차 연도", ratio: 1 }, { label: "2차 연도", ratio: 1.2 }], enums)).toEqual([]);
+    expect(validateSlotValue(ESCALATION_STEPS, stepsType, [], enums)[0].message).toContain("행이 하나");
+    expect(validateSlotValue(ESCALATION_STEPS, stepsType, [{ label: " ", ratio: 1 }], enums)[0].message).toContain("1행 구분");
+    expect(validateSlotValue(ESCALATION_STEPS, stepsType, [{ label: "1차", ratio: 1 }, { label: "2차" }], enums)[0].message).toContain("2행 비율");
+    expect(validateSlotValue(ESCALATION_STEPS, stepsType, [{ label: "1차", ratio: 0 }], enums)[0].message).toContain("1행 비율");
+  });
+  it("escalationSteps — 폼을 안 열었으면 undefined · 열렸으면 행 순서대로 구분 · 비율", () => {
+    expect(escalationSteps(() => undefined)).toBeUndefined();
+    const read = (p: string) => (p === ESCALATION_STEPS ? entered([{ label: `${BASE_DATE_CHIP}부터 5년경과시점 전일 이전`, ratio: 1 }, { label: "이후", ratio: 1.5 }]) : undefined);
+    expect(escalationSteps(read)).toEqual([{ label: "〔(최초)계약일〕부터 5년경과시점 전일 이전", ratio: 1 }, { label: "이후", ratio: 1.5 }]);
+  });
+  it("(최초)계약일 칩 — 갱신형이면 「최초계약일」, 아니면 「계약일」", () => {
+    expect(BASE_DATE_CHIP).toBe("〔(최초)계약일〕");
+    expect(resolveBaseDateChip(`${BASE_DATE_CHIP}부터 1년 · ${BASE_DATE_CHIP}`, true)).toBe("최초계약일부터 1년 · 최초계약일");
+    expect(resolveBaseDateChip(`${BASE_DATE_CHIP}부터 1년`, false)).toBe("계약일부터 1년");
+  });
+  it("provisoText — 폼을 안 열었거나 빈 글이면 undefined", () => {
+    expect(provisoText(() => undefined)).toBeUndefined();
+    expect(provisoText((p) => (p === PROVISO_TEXT ? entered("  ") : undefined))).toBeUndefined();
+    expect(provisoText((p) => (p === PROVISO_TEXT ? entered("「2대질환」으로 진단확정시") : undefined))).toBe("「2대질환」으로 진단확정시");
   });
 });

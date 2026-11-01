@@ -119,7 +119,7 @@ export type Command =
   /** 함수조항 참조의 옵션 선택 · 인자 연결. `bindings` 없으면 연결은 그대로, 빈 맵이면 걷는다(모두 기본 연결, 최종 결정 2). */
   | { type: "setClauseOptions"; nodeId: Id; options: Record<Code, Code>; bindings?: Bindings; preset?: Code | null }
   /** 동적표 참조의 인자 연결 (기능/동적표 §3.5) — 빈 맵이면 걷는다(모두 기본 연결). */
-  | { type: "setDynTableBindings"; nodeId: Id; bindings: Bindings }
+  | { type: "setTableRef"; nodeId: Id; code: Code }
   /**
    * 반복 원천 · 이름 · 연결어 — 원천은 블록 · 인라인 모두 `RepeatSource`(ADR-0077 · ADR-0088). 이름을 빈 글자로 주면 지운다(원천에서 짓는다).
    * 연결어(「및」·「또는」·「,」)는 인라인 반복만 — 고른 뒤 비울 수는 없다(기본값 없음, 미선택은 저장 오류).
@@ -346,7 +346,7 @@ function cloneSubtree<T extends Node>(root: T, newId: IdSource): T {
       });
     }
     if (n.kind === "forBlock" && typeof n.source === "object" && n.source !== null && "loop" in n.source && typeof n.source.loop === "string") n.source = { ...n.source, loop: loopOf(n.source.loop) };
-    if ((n.kind === "clauseBlockRef" || n.kind === "clauseInlineRef" || n.kind === "dynTableRef") && n.bindings) {
+    if ((n.kind === "clauseBlockRef" || n.kind === "clauseInlineRef") && n.bindings) {
       for (const [name, b] of Object.entries(n.bindings)) {
         if (b.kind === "current") n.bindings[name] = { ...b, loop: loopOf(b.loop) };
         else if (b.kind === "discriminator" && b.node && "current" in b.node) n.bindings[name] = { ...b, node: { current: loopOf(b.node.current) } };
@@ -632,7 +632,7 @@ export function applyCommand(doc: DocumentNode, cmd: Command, opts: ApplyOptions
     case "setArticleRef":
     case "setAppendixRef":
     case "setParticle":
-    case "setDynTableBindings":
+    case "setTableRef":
     case "setClauseOptions": {
       const e = entryOf(ix, cmd.nodeId);
       if (!e.ok) return e;
@@ -650,10 +650,9 @@ export function applyCommand(doc: DocumentNode, cmd: Command, opts: ApplyOptions
         if (n.kind !== "particle") return structure("조사 칩이 아닙니다", e.value.path);
         n.preset = cmd.preset;
         return ok(work);
-      } else if (cmd.type === "setDynTableBindings") {
-        if (n.kind !== "dynTableRef") return structure("동적표 참조가 아닙니다", e.value.path);
-        if (Object.keys(cmd.bindings).length === 0) delete n.bindings;
-        else n.bindings = structuredClone(cmd.bindings);
+      } else if (cmd.type === "setTableRef") {
+        if (n.kind !== "tableRef") return structure("표 구분자 자리가 아닙니다", e.value.path);
+        n.code = cmd.code;
       } else {
         if (n.kind !== "clauseBlockRef" && n.kind !== "clauseInlineRef") return structure("함수조항 참조가 아닙니다", e.value.path);
         n.options = { ...cmd.options };

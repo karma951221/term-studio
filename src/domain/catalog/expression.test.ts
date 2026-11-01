@@ -129,6 +129,16 @@ describe("규칙 1 — 마스터 필드와 구분자를 참조한다 (기능/구
   });
 });
 
+describe("표 구분자는 식에서 읽을 수 없다 (기능/구분자 §3.7, ADR-0099)", () => {
+  it("다른 구분자의 식 · 집계 안에서 부르면 typeMismatch — 문면의 블록 자리에만 놓는다", () => {
+    for (const source of ["DT000001", "exist(DT000001)", "D0002 and DT000003 = 'x'"]) {
+      const found = issuesIn(source, "coverage");
+      expect(found.map((i) => i.kind), source).toEqual(["typeMismatch"]);
+      expect(found[0].message, source).toContain("표 구분자");
+    }
+  });
+});
+
 describe("세목 레벨 구분자는 폼 하나만 읽는다 (설계 §2.3 항목 3)", () => {
   it("세목 폼 둘을 직접 읽으면 거부한다", () => {
     const found = issuesIn("no_surrender.type = 'V01' and waiver.applies", "plan");

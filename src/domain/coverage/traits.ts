@@ -8,7 +8,7 @@
  * 「엄격 오름차순」은 열거 값 순서로 견주고, 동적표의 경계 합집합 · 정렬 · 머리글 글자(「90일」 · 「1년」)도 그 순서 · 이름에서 나온다.
  */
 import { isFormOpened, validateValue, type EnumDef, type EnumLookup, type SlotPath, type SlotReader } from "../catalog";
-import { findForm, FIXED_TABLE_FORM, INSURED_AMOUNT_FORM, REDUCTION_PERIOD_ENUM } from "../master";
+import { BASE_DATE_CHIP, ESCALATION_FORM, findForm, FIXED_TABLE_FORM, INSURED_AMOUNT_FORM, PROVISO_FORM, REDUCTION_PERIOD_ENUM } from "../master";
 import { isFixedGrid, type Code, type Coordinate, type FieldType, type FixedGrid, type Issue, type TableRow } from "../types";
 
 export const REDUCTION_PERIODS: SlotPath = "reduction.periods";
@@ -17,8 +17,17 @@ export const EXEMPTION_MONTHS: SlotPath = "exemption.months";
 /** 담보 「가입금액」 금액 표 (기능/담보 §3.3) · 급부 「정액표」 격자 (§3.4) — 2026-10-31. */
 export const INSURED_AMOUNTS: SlotPath = `${INSURED_AMOUNT_FORM}.amounts`;
 export const FIXED_GRID: SlotPath = `${FIXED_TABLE_FORM}.grid`;
+/** 급부 「체증」 구간 표 · 담보 「단서문구」 글 (기능/담보 §3.4 · 기능/구분자 §3.7) — 2026-11-01. */
+export const ESCALATION_STEPS: SlotPath = `${ESCALATION_FORM}.steps`;
+export const PROVISO_TEXT: SlotPath = `${PROVISO_FORM}.text`;
 
-export { REDUCTION_PERIOD_ENUM };
+
+/** 칩 「(최초)계약일」을 기준일 낱말로 — 갱신형이면 「최초계약일」, 아니면 「계약일」. */
+export function resolveBaseDateChip(text: string, renewable: boolean): string {
+  return text.split(BASE_DATE_CHIP).join(renewable ? "최초계약일" : "계약일");
+}
+
+export { BASE_DATE_CHIP, REDUCTION_PERIOD_ENUM };
 
 /** 「감액기간」 초기값 — 값 순서 = 기간 순서. 새 값은 시간 순 자리에 넣는다(끝에 붙이면 순서가 틀린다). */
 export const REDUCTION_PERIOD_SEED_LABELS: readonly string[] = ["90일", "180일", "1년", "2년"];
@@ -84,6 +93,16 @@ function boundaryEnumOf(type: FieldType, enums: EnumLookup): EnumDef | undefined
   return col?.type === "enum" && col.enumCode ? enums(col.enumCode) : undefined;
 }
 
+/** 체증 구간 — 구분은 비지 않은 글 · 비율은 0 보다 큰 수(배수). 0행 거부는 표 타입 공통 규칙(`validateValue`)이 낸다. */
+export function checkEscalationSteps(rows: readonly TableRow[], at: Coordinate = {}): Issue[] {
+  const issues: Issue[] = [];
+  rows.forEach((row, i) => {
+    if (typeof row.label !== "string" || row.label.trim() === "") issues.push(mismatch(`${i + 1}행 구분: 비어 있습니다`, at));
+    if (typeof row.ratio !== "number" || !Number.isFinite(row.ratio) || row.ratio <= 0) issues.push(mismatch(`${i + 1}행 비율: 0 보다 큰 수(1 · 1.2 …)여야 합니다`, at));
+  });
+  return issues;
+}
+
 /** 가입금액 표 — 금액은 1 이상 정수(원) · 같은 금액 두 번 거부. 순서는 묻지 않는다(표는 오름차순으로 찍는다). */
 export function checkInsuredAmounts(rows: readonly TableRow[], at: Coordinate = {}): Issue[] {
   const issues: Issue[] = [];
@@ -138,6 +157,8 @@ export function validateSlotValue(path: SlotPath, type: FieldType, value: unknow
       return checkInsuredAmounts(value as TableRow[], at);
     case FIXED_GRID:
       return isFixedGrid(value) ? checkFixedGrid(value, at) : [];
+    case ESCALATION_STEPS:
+      return checkEscalationSteps(value as TableRow[], at);
     default:
       return [];
   }
@@ -194,4 +215,27 @@ export function fixedGrid(read: SlotReader): FixedGrid | undefined {
   if (!form || !isFormOpened(form, read)) return undefined;
   const slot = read(FIXED_GRID);
   return slot?.entered && isFixedGrid(slot.value) ? slot.value : undefined;
+}
+
+/** 체증 구간 하나 — 구분 글(칩 「(최초)계약일」을 품을 수 있다) · 비율(배수). */
+export interface EscalationStep {
+  label: string;
+  ratio: number;
+}
+
+/** 급부의 체증 구간 — 폼을 안 열었으면 undefined (= 체증 없음). 행 순서 그대로. 표 구분자의 창구 (기능/구분자 §3.7). */
+export function escalationSteps(read: SlotReader): EscalationStep[] | undefined {
+  const form = findForm(ESCALATION_FORM);
+  if (!form || !isFormOpened(form, read)) return undefined;
+  const slot = read(ESCALATION_STEPS);
+  if (!slot?.entered || !Array.isArray(slot.value)) return undefined;
+  return (slot.value as TableRow[]).map((r) => ({ label: String(r.label ?? ""), ratio: Number(r.ratio) }));
+}
+
+/** 담보의 단서문구 — 폼을 안 열었거나 빈 글이면 undefined (= 꼬리 없음). 표 구분자의 창구 (기능/구분자 §3.7). */
+export function provisoText(read: SlotReader): string | undefined {
+  const form = findForm(PROVISO_FORM);
+  if (!form || !isFormOpened(form, read)) return undefined;
+  const slot = read(PROVISO_TEXT);
+  return slot?.entered && typeof slot.value === "string" && slot.value.trim() !== "" ? slot.value : undefined;
 }

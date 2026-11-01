@@ -22,7 +22,7 @@ import { PopupHost, ShellHost, type PopupEnv } from "./Popups";
 
 export const EDIT_FORM_ID = "ts-edit-form";
 
-export const EDIT_TAB_EMPTY = "본문에서 함수조항 · 조 참조 · 조건식 · 동적표를 고르면 여기서 고칩니다.";
+export const EDIT_TAB_EMPTY = "본문에서 함수조항 · 조 참조 · 조건식 · 표 구분자를 고르면 여기서 고칩니다.";
 
 export function EditTab({
   env,

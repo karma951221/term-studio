@@ -295,6 +295,13 @@
       "when": 1793204686152,
       "tag": "0041_dyn_table_fixed",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1793204687152,
+      "tag": "0042_drop_dyn_tables",
+      "breakpoints": true
     }
   ]
 }

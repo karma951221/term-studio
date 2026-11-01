@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * 동적표 상세 왼쪽 — 견본 드롭다운 + 고른 견본으로 펼친 표 (기능/동적표 §4.2 「견본 표」).
+ * 표 구분자 상세의 견본 미리보기 — 견본 드롭다운 + 고른 견본으로 펼친 표 (기능/구분자 §4.5, 옛 동적표 상세의 견본 표를 옮겼다).
  *
  * 표는 `renderDynTableSample`(조립과 같은 `expandDynTable`)이 낸 칸을 그대로 그린다 — 칸마다 그 칸을 만든 영역(`data-region`)이 붙는다.
- * 칸은 버튼이다(키보드로 고른다): 누르면 같은 영역 칸 전부와 오른쪽 그 필드가 강조되고, 다시 누르면 풀린다. 마우스를 올리면 옅게 미리 칠한다.
+ * 칸은 버튼이다(키보드로 고른다): 누르면 같은 영역 칸 전부와 그 영역의 문구 템플릿 줄이 강조되고, 다시 누르면 풀린다. 마우스를 올리면 옅게 미리 칠한다.
  * 자리표시자에 들어간 값은 굵은 밑줄, 조건이 고른 글은 점선. 강조는 색 + 안쪽 띠 + 굵기.
  */
 import type { CSSProperties } from "react";
@@ -62,7 +62,7 @@ export function SampleTable({ sample, description, onSample, view, selected, hov
     const on = c.region === selected;
     const cls = [on ? "is-on" : "", !on && c.region === hovered ? "is-hover" : "", c.region === "row" ? "is-rowhead" : ""].filter(Boolean).join(" ");
     const button = (
-      <button type="button" className="ts-dyn-cellbtn" aria-pressed={on} title={`${REGION_LABEL[c.region]} — 누르면 오른쪽 필드가 강조된다`} onClick={() => onSelect(c.region)}>
+      <button type="button" className="ts-dyn-cellbtn" aria-pressed={on} title={`${REGION_LABEL[c.region]} — 누르면 그 영역의 문구가 강조된다`} onClick={() => onSelect(c.region)}>
         <CellText cell={c} />
       </button>
     );
@@ -106,8 +106,8 @@ export function SampleTable({ sample, description, onSample, view, selected, hov
         </table>
       </div>
       <p className="ts-muted ts-dyn-sample-hint">
-        칸을 누르면 그 칸을 만든 필드가 오른쪽에서 강조된다. 오른쪽 필드에 들어가면 표에서 그 영역이 칠해진다. <span className="ts-dyn-v">굵은 밑줄</span> = 자리표시자에 들어간 값,{" "}
-        <span className="ts-dyn-c">점선</span> = 인자 · 조건에 따라 바뀌는 글.
+        칸을 누르면 그 칸을 만든 문구 템플릿이 강조된다. <span className="ts-dyn-v">굵은 밑줄</span> = 폼 값에서 온 값,{" "}
+        <span className="ts-dyn-c">점선</span> = 갱신형 · 단서문구 · 세부보장 수에 따라 바뀌는 글.
       </p>
       {view.issues.length > 0 && (
         <ul className="ts-clause-warnings" aria-label="견본 표 문제">
@@ -130,12 +130,12 @@ export interface FixedSampleViewProps {
   onHover: (region: DynTableRegion | undefined) => void;
 }
 
-/** 정액형 정의의 견본 — 통합치료비 꼴 견본 하나(고정)를 급부 머리글 · 캡션 · 표 블록으로 그린다 (기능/동적표 §3.7 · §4.2). 칸 조작은 감액 표 견본과 같다. */
+/** 통합치료비 표의 견본 — 통합치료비 꼴 견본 하나(고정)를 급부 머리글 · 캡션 · 표 블록으로 그린다 (기능/구분자 §4.5). 칸 조작은 감액 표 견본과 같다. */
 export function FixedSampleView({ view, selected, hovered, onSelect, onHover }: FixedSampleViewProps) {
   const button = (c: SampleCell) => {
     const on = c.region === selected;
     return (
-      <button type="button" className="ts-dyn-cellbtn" aria-pressed={on} title={`${REGION_LABEL[c.region]} — 누르면 오른쪽 필드가 강조된다`} onClick={() => onSelect(c.region)}>
+      <button type="button" className="ts-dyn-cellbtn" aria-pressed={on} title={`${REGION_LABEL[c.region]} — 누르면 그 영역의 문구가 강조된다`} onClick={() => onSelect(c.region)}>
         <CellText cell={c} />
       </button>
     );
@@ -190,7 +190,7 @@ export function FixedSampleView({ view, selected, hovered, onSelect, onHover }: 
         })}
       </div>
       <p className="ts-muted ts-dyn-sample-hint">
-        칸을 누르면 그 칸을 만든 필드가 오른쪽에서 강조된다. 글자 열 머리 · 글자 칸은 급부의 정액표가 정한다(시스템). <span className="ts-dyn-v">굵은 밑줄</span> = 자리표시자에 들어간 값, <span className="ts-dyn-c">점선</span> = 인자 · 조건에 따라 바뀌는 글.
+        칸을 누르면 그 칸을 만든 문구 템플릿이 강조된다. 글자 열 머리 · 글자 칸은 급부의 통합치료비(정액표)가 정한다. <span className="ts-dyn-v">굵은 밑줄</span> = 폼 값에서 온 값, <span className="ts-dyn-c">점선</span> = 갱신형에 따라 바뀌는 글.
       </p>
       {view.issues.length > 0 && (
         <ul className="ts-clause-warnings" aria-label="견본 표 문제">

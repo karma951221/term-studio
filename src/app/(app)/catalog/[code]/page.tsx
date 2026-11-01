@@ -1,16 +1,21 @@
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { DISCRIMINATORS_MENU, menuCrumb } from "@/app/_lib/menu";
+import { findTableDiscriminator } from "@/domain/dyntable/system";
 import { MASTER } from "@/domain/master";
 import { getServices } from "@/lib/services";
 
 import { insertPanelData } from "../lib";
 import { CatalogEditor } from "./CatalogEditor";
+import { TableDiscriminatorDetail } from "./TableDiscriminatorDetail";
 
 export const dynamic = "force-dynamic";
 
 export default async function CatalogDetailPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const services = getServices();
+  // 시스템 표 구분자(기능/구분자 §3.7 · §4.5) — 읽기 전용 상세 · 견본 미리보기
+  const system = findTableDiscriminator(code);
+  if (system) return <TableDiscriminatorDetail system={system} enums={await services.catalog.listEnums()} />;
   const def = await services.catalog.get(code);
   if (!def) return <div><Breadcrumb items={[menuCrumb(DISCRIMINATORS_MENU), { label: code }]} /><p className="ts-error-banner">찾을 수 없습니다.</p></div>;
   const [enums, defs, inspection] = await Promise.all([

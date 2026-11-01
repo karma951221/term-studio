@@ -1439,6 +1439,14 @@ button:where(:not([data-slot])).danger:focus-visible {
   gap: 16px;
 }
 
+/* 표 구분자 상세(기능/구분자 §4.5) — 읽기 전용 문구 템플릿 줄. 견본 표 칸을 누르면 그 영역 줄이 칠해진다 */
+.ts-table-disc-templates { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.ts-table-disc-templates > div { padding: 6px 8px; border-left: 3px solid var(--rc, var(--ts-rule)); border-radius: 4px; }
+.ts-table-disc-templates > div.is-on { background: color-mix(in srgb, var(--rc, var(--ts-rule)) 22%, transparent); }
+.ts-table-disc-templates > div.is-hover { background: color-mix(in srgb, var(--rc, var(--ts-rule)) 10%, transparent); }
+.ts-table-disc-templates dt { font-size: 12px; color: var(--ts-derived); }
+.ts-table-disc-templates dd { margin: 2px 0 0; }
+
 /* 본문이 좁으면 2단은 지키고 오른쪽 패널을 줄인다 — 왼쪽 표는 가로 스크롤 */
 @container dyn (max-width: 759px) {
   .ts-dyn-layout {
@@ -6092,6 +6100,10 @@ button:where(:not([data-slot])).ts-basic-remove:focus-visible { border-color: va
 .ts-table-input th { border: 1px solid var(--ts-rule); padding: 2px 6px; }
 .ts-table-input input:where(:not([data-slot])) { width: 6em; }
 .ts-table-hint { margin-left: 4px; font-size: 0.85em; }
+/* 글 열 칩 — 표 위 글자 버튼(체증 구분의 「(최초)계약일」, 2026-11-01) */
+.ts-table-chips { display: flex; gap: 4px; margin-bottom: 4px; }
+.ts-table-chip { height: 24px; padding: 0 8px; border: 1px solid var(--ts-rule); border-radius: 6px; background: var(--ts-paper); color: var(--ts-ink); font-size: 0.85em; cursor: pointer; }
+.ts-table-chip:hover { background: var(--ts-surface); }
 
 /* 정액표 격자 입력 (기능/담보 §3.4) */
 .ts-grid-input table { border-collapse: collapse; }

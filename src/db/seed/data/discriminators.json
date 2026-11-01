@@ -108,5 +108,15 @@
     "resultType": {
       "kind": "boolean"
     }
+  },
+  {
+    "code": "D0013",
+    "label": "감액 있음",
+    "description": "그 상품담보에 감액이 모델링된 급부가 있는가 — 담보약관이 표 구분자 「보험금 지급금액표」 · 「갱신 보험금 지급금액표」를 감싸는 조건(IF 감액 있음)으로 읽는다 (기능/구분자 §3.7, ADR-0099)",
+    "level": "coverage",
+    "expression": "exist(reduction.periods)",
+    "resultType": {
+      "kind": "boolean"
+    }
   }
 ]
