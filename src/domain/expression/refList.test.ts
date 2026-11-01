@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { entered } from "../types";
-import type { Expr, ValueRef } from "./ast";
+import type { Expr } from "./ast";
 import { evaluate, type EvalContext } from "./evaluate";
 import { parse } from "./parser";
 import { checkCondition, checkTypes, type ExprType } from "./typecheck";
@@ -36,7 +36,7 @@ describe("count(조 참조 목록)", () => {
 
   it("값 = 그 문맥의 조 목록 — 개수는 원소 수", () => {
     const one = (ids: string[]): EvalContext => ({
-      lookup: (_ref: ValueRef) => ({ kind: "slot", slot: entered(ids) }),
+      lookup: () => ({ kind: "slot", slot: entered(ids) }),
       attribute: () => ({ kind: "unused" }),
       children: () => [one(ids)],
     });
