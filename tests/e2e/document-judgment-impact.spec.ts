@@ -43,7 +43,8 @@ test(
     await page.getByRole("button", { name: "저장", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "저장하면 아래 내용이 함께 바뀝니다" });
     await expect(dialog).toBeVisible({ timeout: 60_000 });
-    await expect(dialog).toContainText("이 문서를 쓰는 상품 3개에서 판정이 바뀝니다");
+    // 상품 수는 앞 spec 이 만든 상품(알파Plus E2E 등)에 따라 다르다
+    await expect(dialog).toContainText(/이 문서를 쓰는 상품 \d+개에서 판정이 바뀝니다/);
     await expect(dialog).toContainText("준용예외가 바뀌는 특약");
     await expect(dialog.getByText("알파Plus보장보험 · 일반상해사망보장 — 준용예외에 제11조(적립부분 적립이율에 관한 사항) 빠짐", { exact: true })).toBeVisible();
     await expect(dialog.getByText("제11조(적립부분 적립이율에 관한 사항) — 마스터 → 특칙 1/2", { exact: true })).toBeVisible();

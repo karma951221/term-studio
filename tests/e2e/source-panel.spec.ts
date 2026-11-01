@@ -1,4 +1,4 @@
-import { applyFrom, editForm } from "./_lib/editTab";
+import { applyFrom, editForm, saveDocumentEdit } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 
 /**
@@ -93,8 +93,8 @@ test(
       // 편집 탭의 「준용하기」 폼 → 적용 (기능/문면 §3.9, 2026-10-21)
       await editForm(page, "준용하기").locator("select[name=joinMode]").selectOption(value);
       await applyFrom(page);
-      await page.getByRole("button", { name: "저장", exact: true }).click();
-      await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible({ timeout: 60_000 });
+      // 쓰는 상품의 판정이 바뀌면 확인 모달(ADR-0082 결정 11) — 〔바꾸고 저장〕
+      await saveDocumentEdit(page);
     };
     await setJoinMode("all");
 
@@ -126,7 +126,6 @@ test(
     await page.locator(".ts-l3-body").getByRole("button", { name: "준용하기 — 전체항 모으기", exact: true }).click();
     await editForm(page, "준용하기").locator("select[name=joinMode]").selectOption("none");
     await applyFrom(page);
-    await page.getByRole("button", { name: "저장", exact: true }).click();
-    await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible({ timeout: 60_000 });
+    await saveDocumentEdit(page);
   },
 );

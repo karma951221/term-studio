@@ -1,4 +1,4 @@
-import { applyFrom, editForm } from "./_lib/editTab";
+import { applyFrom, editForm, saveDocumentEdit } from "./_lib/editTab";
 import { expect, test } from "./_lib/fixtures";
 
 /**
@@ -65,15 +65,18 @@ test(
       const form = editForm(page, "준용하기");
       await form.locator("select[name=joinMode]").selectOption(value);
       await applyFrom(page);
-      await page.getByRole("button", { name: "저장", exact: true }).click();
-      await expect(page.getByRole("button", { name: "편집", exact: true })).toBeVisible({ timeout: 60_000 });
+      // 템플릿 저장이 쓰는 상품의 판정을 바꾸면 확인 모달이 선다(ADR-0082 결정 11) — 〔바꾸고 저장〕으로 넘기고 그 글을 돌려준다
+      return saveDocumentEdit(page);
     };
-    await setJoinMode(async () => {
+    const impact = await setJoinMode(async () => {
       // 목차로 조를 열고(가운데는 조 하나) 툴바 「고른 것 속성」의 「준용하기」
       await page.locator(".ts-l3-toc").getByText(/^제4조\(보험금 지급에 관한 세부/).click();
       await expect(page.getByRole("toolbar", { name: "약관 편집 도구" })).toContainText("자리 — 제4조");
       await page.getByRole("toolbar", { name: "약관 편집 도구" }).getByRole("button", { name: "준용하기", exact: true }).click();
     }, "all");
+    // 템플릿 저장의 판정 변화 영향 카드 — 블록 2개 상품의 제4조가 바뀐다
+    expect(impact).toContain("표본 — 독립특약 블록 2개");
+    expect(impact).toContain("제4조(보험금 지급에 관한 세부규정) — 위임 2/2 → 전체항 합침");
     await page.locator(".ts-l3-toc").getByText(/^제4조\(보험금 지급에 관한 세부/).click();
     await expect(body.getByText("준용하기 — 전체항 모으기", { exact: true })).toBeVisible();
 
