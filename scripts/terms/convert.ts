@@ -32,6 +32,7 @@ import { boxSites, planBoxes, replaceBox, type BoxPlan } from "./boxes";
 import { CLAIM_CATALOG_ENTRY, CLAIM_SLOT, inlineClaimNames } from "./claim";
 import type { Discriminator } from "../../src/domain/catalog/types";
 import { applyClauseUse, articleRefParamsOf, guardApplicationOutput, INNER_TARGETS, positionApplicationHead, clauseFromSource, inlineBody, optionCode, parameterize, placeOptions, reId, valueCode, type ClauseRecord } from "./clauses";
+import { rewriteExclusions } from "./exclusion";
 import { articlesDeep, canonicalArticle, claimOf, collapseRenewal, coverageNameOf, localPaths, mergeRenewal, textNodesOf, wordClusters } from "./auto";
 import { APPENDED_CLAUSE_KEYS, APPENDICES, CLAUSES, GENERAL_TEMPLATE, PRODUCTS, RENEWAL, SEED_DIR, type ClauseUse, type ProductTerms, type SlotOverlay, type SpecialSpec } from "./config";
 import { parseTerms, type ParsedArticle, type ParsedDoc } from "./parse";
@@ -554,6 +555,8 @@ function main(): void {
   const idMap = new Map([...perGeneral.values()].flatMap((p) => [...p.idMap]));
   const codeMap = new Map([...perGeneral.values()].flatMap((p) => [...p.codeMap]));
   finalClauses.splice(0, finalClauses.length, ...remapIds(finalClauses, idMap, codeMap));
+  // 준용규정의 수동 제외 조 목록 → 준용예외 구분자 + 조건 + 문장 안 반복 (ADR-0098 결정 2) — 대상이 템플릿 조 id 로 모인 뒤라야 후보와 맞댄다
+  issues.push(...rewriteExclusions(finalClauses, catalog));
   issues.push(...validate(template, "general").map((l) => `${GENERAL_TEMPLATE.code}: ${l}`));
   for (const d of documents) {
     const p = perGeneral.get(d.general)!;
