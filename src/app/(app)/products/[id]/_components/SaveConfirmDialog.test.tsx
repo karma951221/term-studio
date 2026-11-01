@@ -47,6 +47,16 @@ describe("SaveConfirmDialog", () => {
     expect(html).toContain("깨지는 참조");
     expect(html).toContain("<li>제25조(계약의 소멸) — 블록 「갑」이 이 상품의 블록이 아닙니다</li>");
   });
+  it("준용예외가 바뀌는 특약 (ADR-0098 결정 7) — 「상품 · 특약 — 준용예외에 제N조 추가 / 빠짐」 한 줄", () => {
+    const html = render({
+      valueRowsLost: 0,
+      brokenRefs: [],
+      cascade: [],
+      judgment: { verdicts: [], grayed: [], revived: [], brokenRefs: [], exclusions: [{ productCoverageId: "pc1", label: "알파 · 암진단", added: [{ articleId: "a9", label: "제9조(적립이율)" }], removed: [{ articleId: "a5", label: "제5조(면책)" }] }] },
+    });
+    expect(html).toContain("준용예외가 바뀌는 특약");
+    expect(html).toContain("<li>알파 · 암진단 — 준용예외에 제9조(적립이율) 추가 · 제5조(면책) 빠짐</li>");
+  });
   it("특약 조 판정이 바뀌는 조 묶음", () => {
     const html = render({
       valueRowsLost: 0,

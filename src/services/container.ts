@@ -218,7 +218,8 @@ export function createServices(root: Db, opts: ContainerOptions = {}): Services 
     judgment: {
       booklet: async (productId) => {
         const r = await services.assembly.preview(productId);
-        return r.ok ? { ...(r.value.firstSection ? { firstSection: r.value.firstSection } : {}), omitted: r.value.omitted } : undefined;
+        // 준용예외 기록(ADR-0098 결정 7)도 — 조연결 해제 하나로 준용 문장이 바뀐다
+        return r.ok ? { ...(r.value.firstSection ? { firstSection: r.value.firstSection } : {}), omitted: r.value.omitted, ...(r.value.exclusions ? { exclusions: r.value.exclusions } : {}) } : undefined;
       },
     },
   });
