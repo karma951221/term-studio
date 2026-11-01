@@ -4,23 +4,34 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Tooltip as TooltipPrimitive } from "radix-ui"
 
+/** 공급자가 이미 위에 있는지 — Radix 는 공급자가 없으면 던지므로, 없는 자리(테스트 · 격리 렌더)에서는 Tooltip 이 제 공급자를 둔다. */
+const HasProvider = React.createContext(false)
+
+/** 앱에는 루트 레이아웃에 하나만 둔다. ⓘ 마다 공급자를 두지 않는다. */
 function TooltipProvider({
   delayDuration = 0,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
   return (
-    <TooltipPrimitive.Provider
-      data-slot="tooltip-provider"
-      delayDuration={delayDuration}
-      {...props}
-    />
+    <HasProvider.Provider value>
+      <TooltipPrimitive.Provider
+        data-slot="tooltip-provider"
+        delayDuration={delayDuration}
+        {...props}
+      />
+    </HasProvider.Provider>
   )
 }
 
 function Tooltip({
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+  const root = <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+  return React.useContext(HasProvider) ? (
+    root
+  ) : (
+    <TooltipPrimitive.Provider delayDuration={0}>{root}</TooltipPrimitive.Provider>
+  )
 }
 
 function TooltipTrigger({
