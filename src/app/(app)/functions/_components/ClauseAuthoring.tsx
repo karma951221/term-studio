@@ -21,6 +21,8 @@ import { useRouter } from "next/navigation";
 
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { DiscardDialog } from "@/app/_components/EditShell";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { InfoTip } from "@/app/_components/InfoTip";
 import { useItemEdit, useRestoredDraft } from "@/app/_components/ListDetailLayout";
 import { IconClose, IconTrash } from "@/app/_components/icons";
@@ -1090,27 +1092,29 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
         />
       ) : null}
       {removal ? (
-        <dialog open className="ts-dialog">
-          <p className="ts-confirm-title">
-            {props.label} 삭제 — 사용처 {removal.brokenRefs.length}건의 참조가 깨진다
-          </p>
-          {removal.brokenRefs.length > 0 && (
-            <ul className="ts-confirm-loss">
-              {removal.brokenRefs.map((c, i) => (
-                <li key={i}>{formatCoordinate(c, { source: true })}</li>
-              ))}
-            </ul>
-          )}
-          {removal.cascade.length > 0 && <p className="ts-muted">함께 사라지는 것: {removal.cascade.join(" · ")}</p>}
-          <div className="ts-confirm-actions">
-            <button type="button" onClick={() => setRemoval(undefined)} disabled={pending}>
-              취소
-            </button>
-            <button type="button" className="danger" onClick={() => remove(true)} disabled={pending}>
-              {props.label} 삭제
-            </button>
-          </div>
-        </dialog>
+        <Dialog open onOpenChange={(open) => { if (!open && !pending) setRemoval(undefined); }}>
+          <DialogContent showCloseButton={false} aria-describedby={undefined} className="sm:max-w-[560px]">
+            <DialogTitle className="ts-confirm-title">
+              {props.label} 삭제 — 사용처 {removal.brokenRefs.length}건의 참조가 깨진다
+            </DialogTitle>
+            {removal.brokenRefs.length > 0 && (
+              <ul className="ts-confirm-loss">
+                {removal.brokenRefs.map((c, i) => (
+                  <li key={i}>{formatCoordinate(c, { source: true })}</li>
+                ))}
+              </ul>
+            )}
+            {removal.cascade.length > 0 && <p className="ts-muted">함께 사라지는 것: {removal.cascade.join(" · ")}</p>}
+            <DialogFooter className="ts-confirm-actions">
+              <Button onClick={() => setRemoval(undefined)} disabled={pending}>
+                취소
+              </Button>
+              <Button variant="destructive" onClick={() => remove(true)} disabled={pending}>
+                {props.label} 삭제
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </div>
   );

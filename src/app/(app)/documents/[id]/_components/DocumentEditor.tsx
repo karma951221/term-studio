@@ -28,6 +28,8 @@ import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { useItemEdit, useRestoredDraft } from "@/app/_components/ListDetailLayout";
 import { coordinateHref } from "@/app/_components/coordinateHref";
 import { DiscardDialog } from "@/app/_components/EditShell";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { IconClose, IconPanel } from "@/app/_components/icons";
 import { MoreMenu, type MoreMenuItem } from "@/app/_components/MoreMenu";
 import { HeadActions, HeadButton, HeadIconButton } from "@/app/_components/HeadActions";
@@ -1151,8 +1153,9 @@ export function DocumentEditor(props: EditorProps) {
         />
       ) : null}
       {confirmSave ? (
-        <dialog open className="ts-dialog">
-          <p className="ts-confirm-title">저장하면 참조 {confirmSave.brokenRefs.length}건이 깨진다</p>
+        <Dialog open onOpenChange={(open) => { if (!open && !pending) setConfirmSave(undefined); }}>
+          <DialogContent showCloseButton={false} aria-describedby={undefined} className="sm:max-w-[560px]">
+          <DialogTitle className="ts-confirm-title">저장하면 참조 {confirmSave.brokenRefs.length}건이 깨진다</DialogTitle>
           {(() => {
             // 상품 영향(ADR-0081 결정 3)은 상품별로 묶어 앞에 — 「이 템플릿을 쓰는 상품 N개에서 참조가 깨집니다」
             const products = confirmSave.brokenRefs.filter((c) => c.document === "product");
@@ -1192,15 +1195,16 @@ export function DocumentEditor(props: EditorProps) {
               </>
             );
           })()}
-          <div className="ts-confirm-actions">
-            <button type="button" onClick={() => setConfirmSave(undefined)} disabled={pending}>
+          <DialogFooter className="ts-confirm-actions">
+            <Button onClick={() => setConfirmSave(undefined)} disabled={pending}>
               취소
-            </button>
-            <button type="button" className="danger" onClick={() => save(true)} disabled={pending}>
+            </Button>
+            <Button variant="destructive" onClick={() => save(true)} disabled={pending}>
               참조 {confirmSave.brokenRefs.length}건 끊고 저장
-            </button>
-          </div>
-        </dialog>
+            </Button>
+          </DialogFooter>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </div>
   );
