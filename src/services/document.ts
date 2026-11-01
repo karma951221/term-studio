@@ -225,7 +225,9 @@ export function createDocumentService(db: Db, deps: DocumentServiceDeps = {}): D
     const env = await baseEnvOf(tx, doc);
     if (doc.kind !== "special") return env;
     const refs = doc.generalDocumentId ? await generalRefsFor(tx, doc.generalDocumentId, env.clauseGate) : undefined;
-    return { ...env, ...generalEnvOf(refs) };
+    // 담보약관은 준용예외 구분자(결과 타입 「조 참조 목록」)를 문장 안 반복의 원천으로 쓴다 (ADR-0098 결정 2)
+    const refLists = new Set((await catalogRepo.listDiscriminators(tx)).filter((d) => d.resultType?.kind === "list<ref>").map((d) => d.code));
+    return { ...env, ...generalEnvOf(refs), refLists: (ref) => refLists.has(ref) };
   }
 
   /** 식 검사 재료 — 타입 조회 + 한정자 검사 문맥(담보 약관이면 문맥 담보 트리 · 구분자 레벨). */

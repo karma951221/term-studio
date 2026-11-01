@@ -13,7 +13,7 @@ import type { Clause } from "../clause/types";
 import type { RecheckEntry, Usage } from "../clause/reference";
 import type { Code, Coordinate, Id, Issue } from "../types";
 import { clauseInnerCodes, isRepeatSource, isTreeSource, treeLoopLevelsAt } from "./blockRepeat";
-import { articleRefsOf, coordinateOf, indexTree, type ArticleRefNode, type ClauseGate, type DocumentNode } from "./nodes";
+import { articleRefsOf, coordinateOf, currentElementRef, indexTree, type ArticleRefNode, type ClauseGate, type DocumentNode } from "./nodes";
 import { refKey, removedRefKeys } from "./pcode";
 
 export type DocRef =
@@ -56,6 +56,8 @@ export function collectRefs(doc: DocumentNode, base: Coordinate = {}): DocRef[] 
 
   /** 조 참조 하나 — 대상마다 한 줄 (좌표 refPath = 대상 열쇠). 조 참조 슬롯 · 함수조항 참조의 조 참조 인자 연결이 같이 쓴다. */
   const articleRefs = (n: Pick<ArticleRefNode, "targets" | "scope">, at: Coordinate): void => {
+    // 조 참조 목록 반복의 현재 원소는 대상 조가 없다 — 조립이 판정한 템플릿 조다 (ADR-0098 결정 2)
+    if (currentElementRef(n) !== undefined) return;
     for (const target of n.targets) {
       const values = target.restrict && "values" in target.restrict ? target.restrict.values : undefined;
       const keys = target.restrict && "keys" in target.restrict ? target.restrict.keys : undefined;
@@ -134,6 +136,8 @@ export function collectRefs(doc: DocumentNode, base: Coordinate = {}): DocRef[] 
       case "inlineFor": {
         const src = n.source;
         // 담보 트리 반복(세부보장마다 · 급부마다)은 폼 · 필터가 없다 — 반복 원천 간선이 없다 (ADR-0087)
+        // 조 참조 목록(준용예외) 원천은 그 구분자를 읽는다 — 요구 구분자 · 관계 간선 (함수조항 편집기의 인자 `arg.` 는 구분자가 아니다)
+        if (isRepeatSource(src) && src.kind === "refList" && !src.ref.startsWith("arg.")) out.push({ kind: "discriminator", code: src.ref, path: src.ref, via: "when", at: { ...at, refPath: src.ref } });
         if (!isRepeatSource(src) || isTreeSource(src) || src.kind === "refList") break;
         const field = (path: string, where?: Code) => out.push({ kind: "repeatSource", path, ...(where !== undefined ? { where } : {}), at: { ...at, refPath: path } });
         if (src.kind === "listOfCurrent") {

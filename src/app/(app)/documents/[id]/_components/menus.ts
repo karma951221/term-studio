@@ -537,7 +537,11 @@ function inlineSections(env: MenuEnv, at: InlineAt, tokens: Token[]): MenuSectio
   if (at.slot === "title") return [inlineInsertItems(at, tokens, { inInlineCond: false, newId: env.newId, title: true }), ...articleMenu(env, at.parentId)];
   const owner = env.ix.nodes.get(at.parentId);
   // 문장 안 반복의 본문 · 「비었을 때」 칸 — 넣기만(블록 조작은 그 반복이 선 문장의 주인 몫)
-  if (owner?.node.kind === "inlineFor") return [inlineInsertItems(at, tokens, { inInlineCond: owner.inInlineCond, newId: env.newId, inInlineFor: true, forDepth: owner.forDepth, ...(owner.inTitle ? { title: true } : {}) })];
+  if (owner?.node.kind === "inlineFor") {
+    // 조 참조 목록 반복(준용예외마다)이면 「조 참조 — 현재 조(…)」도 (ADR-0098 결정 2)
+    const current = currentArticleRefItems(env.ix, at, tokens, env.newId);
+    return [inlineInsertItems(at, tokens, { inInlineCond: owner.inInlineCond, newId: env.newId, inInlineFor: true, forDepth: owner.forDepth, ...(owner.inTitle ? { title: true } : {}) }), ...(current.length > 0 ? [current] : [])];
+  }
   return [inlineInsertItems(at, tokens, { inInlineCond: owner?.inInlineCond ?? false, newId: env.newId, inInlineFor: owner?.inInlineFor === true, forDepth: owner?.forDepth ?? 0 }), ...(owner ? blockMenu(env, at.parentId) : [])];
 }
 
