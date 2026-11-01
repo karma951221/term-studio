@@ -668,10 +668,6 @@ button:where(:not([data-slot])).danger:focus-visible {
   margin-bottom: 12px;
 }
 
-.ts-nav-toggle .ts-icon {
-  transform: rotate(180deg);
-}
-
 .ts-nav[data-collapsed] {
   flex-basis: 36px;
   width: 36px;
@@ -680,10 +676,6 @@ button:where(:not([data-slot])).danger:focus-visible {
 
 .ts-nav[data-collapsed] .ts-nav-head {
   justify-content: center;
-}
-
-.ts-nav[data-collapsed] .ts-nav-toggle .ts-icon {
-  transform: none;
 }
 
 /* 단계 묶음 — 홈의 열과 같은 구성. 제목은 작게, 묶음 사이는 여백으로만 가른다 */
@@ -2559,10 +2551,6 @@ input:where(:not([data-slot])).ts-option-title {
 
 .ts-searchbox {
   color: var(--ts-ink-2) !important;
-}
-
-.ts-searchbox input:where(:not([data-slot])) {
-  width: min(320px, 32vw);
 }
 
 /* 이력 기능 전까지의 기준일·미확정 — 잠긴 표시. 테두리를 지워 「고를 수 있는 것」에서 빼고,
@@ -6267,6 +6255,11 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
   width: 20px;
   height: 20px;
   background: var(--ts-surface);
+}
+
+/* 위의 면 색이 ghost 의 hover 바탕을 덮지 않게 — 눌릴 수 있음이 보이도록 */
+.ts-block-acts .ts-iconbtn:hover {
+  background: var(--ts-surface-2);
 }
 
 [data-block]:hover:not(:has([data-block]:hover)) > .ts-block-acts,

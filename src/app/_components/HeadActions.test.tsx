@@ -35,13 +35,12 @@ describe("HeadActions — 제목 줄 오른쪽 조작 줄", () => {
   });
 
   it("주 동작 저장은 주칠 테두리", () => {
-    expect(classOf(html, "저장")).toContain("border-mark");
+    expect(html).toMatch(/<button[^>]*data-variant="primary"[^>]*>저장</);
   });
 
   it("삭제 아이콘(danger)도 테두리 — 평소 뉴트럴, hover 에서만 error", () => {
     const del = renderToStaticMarkup(<HeadIconButton label="별표 삭제" icon={<svg />} danger />);
     expect(del).toContain("ts-iconbtn danger");
-    expect(del).toMatch(/\bborder\b/);
-    expect(del).toContain("hover:text-destructive");
+    expect(del).toMatch(/data-variant="destructive"/);
   });
 });

@@ -44,7 +44,7 @@ describe("EditShell — 버튼", () => {
     const save = screen.getByRole("button", { name: "저장" });
     expect(save.getAttribute("data-slot")).toBe("button");
     expect((save as HTMLButtonElement).disabled).toBe(true);
-    expect(save.className).toContain("text-mark");
+    expect(save.getAttribute("data-variant")).toBe("primary");
   });
 });
 
@@ -144,7 +144,7 @@ describe("EditShell — 저장 · 삭제 확인", () => {
     const dialog = await screen.findByRole("dialog");
     const run = screen.getByRole("button", { name: "삭제" });
     expect(run.getAttribute("data-slot")).toBe("button");
-    expect(run.className).toContain("hover:text-destructive");
+    expect(run.getAttribute("data-variant")).toBe("destructive");
     expect(dialog.textContent).toContain("골절진단비 삭제");
     await user.click(screen.getByRole("button", { name: "취소" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());

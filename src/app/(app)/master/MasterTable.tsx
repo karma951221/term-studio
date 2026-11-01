@@ -53,7 +53,7 @@ export function MasterTable({ rows, total, page, defined, q }: MasterTableProps)
             <label className="ts-searchbox">
               <IconSearch />
               <span className="sr-only">검색</span>
-              <Input type="search" name="q" defaultValue={q} placeholder="코드 · 표시명 · 폼" aria-label="코드 · 표시명 · 폼 검색" />
+              <Input type="search" name="q" className="w-[min(320px,32vw)]" defaultValue={q} placeholder="코드 · 표시명 · 폼" aria-label="코드 · 표시명 · 폼 검색" />
             </label>
             <Button type="submit">검색</Button>
           </>
