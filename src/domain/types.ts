@@ -81,6 +81,11 @@ export interface TableColumn {
   type: TableColumnType;
   /** `type: "enum"` 일 때 — 값 코드를 고르는 열거형. */
   enumCode?: Code;
+  /**
+   * 글 열의 칩 — 입력 폼 위 글자 버튼(`label`)을 누르면 커서 자리에 `text` 가 들어간다. 조건식 대신 칩 하나로 조립 때 바뀌는 어구를 쓴다
+   * (체증 구분의 「(최초)계약일」 — 기능/담보 §3.4, 2026-11-01).
+   */
+  chips?: readonly { label: string; text: string }[];
 }
 
 /**

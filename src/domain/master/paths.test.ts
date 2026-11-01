@@ -30,7 +30,7 @@ describe("마스터 경로 — 폼키.필드키", () => {
 
   it("MVP 정본 — 폼 12벌 · 필드 23자리, 선언 순서 — 담보 레벨은 특성 「가입금액」 하나(여는 폼, 2026-10-31), 급부 「정액표」는 마스터 소유", () => {
     expect(MASTER.map((f) => f.key)).toEqual([
-      "disclosure", "feature", "booklet", "waiver", "no_surrender", "conversion", "business_type", "insured_amount", "pay", "reduction", "exemption", "fixed_table",
+      "disclosure", "feature", "booklet", "waiver", "no_surrender", "conversion", "business_type", "insured_amount", "pay", "reduction", "exemption", "fixed_table", "escalation", "proviso",
     ]);
     expect(allMasterFields().map((r) => r.path)).toEqual([
       "disclosure.avg_rate",
@@ -42,6 +42,8 @@ describe("마스터 경로 — 폼키.필드키", () => {
       "reduction.periods", "reduction.after_rate", "reduction.new_only",
       "exemption.months", "exemption.age15_only", "exemption.new_only",
       "fixed_table.grid",
+      "escalation.steps",
+      "proviso.text",
     ]);
     expect(findForm("insured_amount")).toMatchObject({ level: "coverage", optional: true, system: true });
     expect(findForm("fixed_table")).toMatchObject({ level: "benefit", optional: true, system: true, owner: "master" });
@@ -75,12 +77,13 @@ describe("마스터 경로 — 폼키.필드키", () => {
     // 상품 레벨 — 공시이율 · 상품특성 (기본정보 › 상품정보, 2026-09-28) · 책자 (그룹 제목 표시, ADR-0090 결정 8)
     expect(formsOfLevel("product").map((f) => f.key)).toEqual(["disclosure", "feature", "booklet"]);
     expect(formsOfLevel("subCoverage")).toEqual([]);
-    expect(formsOfLevel("coverage").map((f) => f.key)).toEqual(["insured_amount"]);
+    expect(formsOfLevel("coverage").map((f) => f.key)).toEqual(["insured_amount", "proviso"]);
     expect(fieldsOfLevel("benefit").map((r) => r.path)).toEqual([
       "pay.rate",
       "reduction.periods", "reduction.after_rate", "reduction.new_only",
       "exemption.months", "exemption.age15_only", "exemption.new_only",
       "fixed_table.grid",
+      "escalation.steps",
     ]);
     expect(fieldsOfLevel("benefit", fixture).map((r) => r.path)).toEqual(["b.y", "b.z"]);
   });
@@ -134,8 +137,8 @@ describe("필드별 소유 — 마스터 소유 폼 (ADR-0097, 2026-10-31)", () 
   it("productOwnedMaster — 상품 소유 폼만 남긴 마스터 (스냅샷 완결성 · 복사의 재료)", () => {
     expect(productOwnedMaster(owned).map((f) => f.key)).toEqual(["pay"]);
   });
-  it("MVP 정본의 마스터 소유 폼은 정액표 하나 — 지급률 · 감액 · 면책 · 가입금액은 상품 소유", () => {
-    expect(productOwnedMaster().map((f) => f.key)).toEqual(MASTER.filter((f) => f.key !== "fixed_table").map((f) => f.key));
+  it("MVP 정본의 마스터 소유 폼은 유형 특성 셋(통합치료비 · 체증 · 단서문구) — 지급률 · 감액 · 면책 · 가입금액은 상품 소유", () => {
+    expect(productOwnedMaster().map((f) => f.key)).toEqual(MASTER.filter((f) => !["fixed_table", "escalation", "proviso"].includes(f.key)).map((f) => f.key));
     expect(isMasterOwnedPath("fixed_table.grid")).toBe(true);
     expect(isMasterOwnedPath("insured_amount.amounts")).toBe(false);
   });

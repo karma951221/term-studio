@@ -6092,6 +6092,10 @@ button:where(:not([data-slot])).ts-basic-remove:focus-visible { border-color: va
 .ts-table-input th { border: 1px solid var(--ts-rule); padding: 2px 6px; }
 .ts-table-input input:where(:not([data-slot])) { width: 6em; }
 .ts-table-hint { margin-left: 4px; font-size: 0.85em; }
+/* 글 열 칩 — 표 위 글자 버튼(체증 구분의 「(최초)계약일」, 2026-11-01) */
+.ts-table-chips { display: flex; gap: 4px; margin-bottom: 4px; }
+.ts-table-chip { height: 24px; padding: 0 8px; border: 1px solid var(--ts-rule); border-radius: 6px; background: var(--ts-paper); color: var(--ts-ink); font-size: 0.85em; cursor: pointer; }
+.ts-table-chip:hover { background: var(--ts-surface); }
 
 /* 정액표 격자 입력 (기능/담보 §3.4) */
 .ts-grid-input table { border-collapse: collapse; }

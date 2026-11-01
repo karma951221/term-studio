@@ -25,6 +25,12 @@ import type { FormFieldReader, MasterForm } from "./types";
 
 /** 열거형 「감액기간」 코드 — 감액 구간표의 경계 열이 이 열거형의 값 하나를 고른다 (기능/담보 §3.4 · 기능/열거형 §3.1, 2026-10-31). 시드가 만든다. */
 export const REDUCTION_PERIOD_ENUM = "E0010";
+
+/**
+ * 체증 구분 글의 칩 「(최초)계약일」 — 입력 폼 위 글자 버튼이 커서 자리에 이 글을 넣는다. 조건식은 넣지 않는다(기능/담보 §3.4, 2026-11-01).
+ * 조립이 그 상품담보가 갱신형이면 「최초계약일」, 아니면 「계약일」로 바꾼다(`resolveBaseDateChip`, coverage/traits.ts).
+ */
+export const BASE_DATE_CHIP = "〔(최초)계약일〕";
 /** 고지유형 E0005 값 코드 — 상품특성 조건부 칸의 조건. */
 export const NOTICE_KIND = { general: "V01", review: "V02", health: "V03" } as const;
 /** 계약형태 E0007 값 코드 — 독립특약이면 기본계약을 두지 않는다 (기능/상품 §3.1 · 2026-10-01). */
@@ -228,11 +234,52 @@ export const MASTER: readonly MasterForm[] = [
     description: "급부의 치료항목별 정액 — 글자 열 + 행 + 가입금액별 정액(원). 폼을 열지 않으면 정액표 없음. 정액형 지급금액 표가 이 격자로 표를 찍는다",
     fields: [{ key: "grid", label: "격자", system: true, type: { kind: "grid" }, description: "글자 열의 개수 · 머리 이름은 사용자가 정한다. 가입금액 열마다 정액을 다 채운다(공란 거부)" }],
   },
+  {
+    // 급부 「체증」 — 경과기간 · 진단후 연차에 따라 지급비율이 늘어나는 급부. 유형 특성이라 마스터 소유(ADR-0097).
+    // 표 구분자 「보험금 지급금액표」가 구분 수만큼 행을 늘리고 셀 = 지급률 × 비율 × 감액비율 (기능/담보 §3.4 · 기능/구분자 §3.7, 2026-11-01)
+    key: "escalation",
+    label: "체증",
+    level: "benefit",
+    optional: true,
+    system: true,
+    owner: "master",
+    description: "급부의 체증 구간 — 한 행 = 구분 하나 · 비율(배수). 행 순서 = 지급금액표의 행 순서. 폼을 열지 않으면 체증 없음",
+    fields: [
+      {
+        key: "steps",
+        label: "구간",
+        system: true,
+        type: {
+          kind: "table",
+          columns: [
+            { key: "label", label: "구분", type: "string", chips: [{ label: "(최초)계약일", text: BASE_DATE_CHIP }] },
+            { key: "ratio", label: "비율", type: "number" },
+          ],
+        },
+        description: "구분은 직접 적는다 — 「(최초)계약일」 칩은 상품담보가 갱신형이면 「최초계약일」, 아니면 「계약일」로 찍힌다. 비율은 1 · 1.2 · 1.5 처럼",
+      },
+    ],
+  },
+  {
+    // 담보 「단서문구」 — 지급금액표 감액 열 머리글 끝에 붙는 꼬리(주요치료비 「암구분별「통합암(유사암제외)」으로 진단확정시」). 유형 특성 → 마스터 소유
+    // (기능/구분자 §3.7 · 기능/담보 §3.3, 2026-11-01)
+    key: "proviso",
+    label: "단서문구",
+    level: "coverage",
+    optional: true,
+    system: true,
+    owner: "master",
+    description: "보험금 지급금액표의 감액 열 머리글 끝에 붙는 글 — 폼을 열지 않으면 꼬리 없이 찍힌다",
+    fields: [{ key: "text", label: "단서문구", system: true, type: { kind: "string" } }],
+  },
 ];
 
 /** 가입금액 값 자리 · 정액표 값 자리 — 정액형 동적표의 읽는 창구(`insuredAmounts` · `fixedGrid`, coverage/traits.ts). */
 export const INSURED_AMOUNT_FORM = "insured_amount";
 export const FIXED_TABLE_FORM = "fixed_table";
+/** 급부 「체증」 · 담보 「단서문구」 — 표 구분자의 읽는 창구(`escalationSteps` · `provisoText`, coverage/traits.ts). */
+export const ESCALATION_FORM = "escalation";
+export const PROVISO_FORM = "proviso";
 /** 새 정액표의 글자 열 기본 머리 (기능/담보 §3.4). */
 export const FIXED_GRID_DEFAULT_COLUMNS: readonly string[] = ["분류", "치료항목", "지급횟수"];
 

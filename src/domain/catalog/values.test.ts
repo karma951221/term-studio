@@ -80,7 +80,7 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
       "conversion.converts",
       "business_type.applies",
     ]);
-    expect(valueSlotsOf("coverage")).toEqual(["insured_amount.amounts"]); // 담보 레벨은 특성 「가입금액」 하나 (2026-10-31) — 보험금명은 2026-10-21 뺐다
+    expect(valueSlotsOf("coverage")).toEqual(["insured_amount.amounts", "proviso.text"]); // 담보 레벨은 특성 「가입금액」 하나 (2026-10-31) — 보험금명은 2026-10-21 뺐다
   });
 
   it("마스터가 비어 있는 레벨은 값 자리가 없다", () => {
@@ -95,6 +95,7 @@ describe("값 자리 — 노드 × 마스터 필드 (ADR-0037)", () => {
       "exemption.age15_only",
       "exemption.new_only",
       "fixed_table.grid",
+      "escalation.steps",
     ]);
   });
 

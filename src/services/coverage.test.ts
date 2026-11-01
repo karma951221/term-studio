@@ -134,7 +134,7 @@ describe("coverage 서비스 (PGlite)", () => {
     it("그 레벨 마스터 필드가 두 담보 모두의 폼에 그대로 뜬다 — 부착 조작이 없다 (담보 레벨은 특성 「가입금액」 한 자리, 2026-10-31)", async () => {
       for (const c of [accident, surgery]) {
         const form = unwrap(await svc.form(cov(c)));
-        expect(form.fields.map((f) => f.path)).toEqual(["insured_amount.amounts"]); // 보험금명(coverage_basic.claim_name)은 2026-10-21 뺐다
+        expect(form.fields.map((f) => f.path)).toEqual(["insured_amount.amounts", "proviso.text"]); // 보험금명(coverage_basic.claim_name)은 2026-10-21 뺐다
         expect(form.slots).toEqual({});
       }
     });
@@ -146,6 +146,7 @@ describe("coverage 서비스 (PGlite)", () => {
         "reduction.periods", "reduction.after_rate", "reduction.new_only",
         "exemption.months", "exemption.age15_only", "exemption.new_only",
         "fixed_table.grid",
+        "escalation.steps",
       ]);
     });
 

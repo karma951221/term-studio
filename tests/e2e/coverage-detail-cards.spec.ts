@@ -96,15 +96,15 @@ test(
       await expect(page.locator("button.ts-cov-remove")).toHaveCount(14); // 세부보장 7 + 급부 7
     });
 
-    await ev.action("담보카드#7", "첫 급부의 「특성 ⊕」 메뉴 — 감액 · 면책 · 통합치료비 중 면책을 고르면 면책 박스가 열리고 메뉴엔 감액 · 정액표만 남는다", async () => {
+    await ev.action("담보카드#7", "첫 급부의 「특성 ⊕」 메뉴 — 감액 · 면책 · 통합치료비 · 체증 중 면책을 고르면 면책 박스가 열리고 메뉴엔 감액 · 통합치료비 · 체증만 남는다", async () => {
       const firstBenefit = page.locator("section.ts-cov-card[data-level='benefit']").first();
       await firstBenefit.getByRole("button", { name: "특성 추가", exact: true }).click();
-      await expect(firstBenefit.getByRole("menuitem")).toHaveText(["감액", "면책", "통합치료비"]);
+      await expect(firstBenefit.getByRole("menuitem")).toHaveText(["감액", "면책", "통합치료비", "체증"]);
       await firstBenefit.getByRole("menuitem", { name: "면책", exact: true }).click();
       await expect(firstBenefit.getByRole("group", { name: "면책" })).toBeVisible();
       await expect(firstBenefit.locator('input[name="exemption.months"]')).toHaveCount(1);
       await firstBenefit.getByRole("button", { name: "특성 추가", exact: true }).click();
-      await expect(firstBenefit.getByRole("menuitem")).toHaveText(["감액", "통합치료비"]);
+      await expect(firstBenefit.getByRole("menuitem")).toHaveText(["감액", "통합치료비", "체증"]);
       await firstBenefit.getByRole("button", { name: "특성 추가", exact: true }).click();
     });
 

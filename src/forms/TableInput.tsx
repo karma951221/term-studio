@@ -4,8 +4,10 @@
  * `table` 필드 입력 — 첫 행 머리글 · 셀 타이핑 · 엑셀 붙여넣기(줄 → 행 · 탭 → 열) · 행 추가/삭제 (기능/담보 §3.4).
  * 초안은 셀 원문(`TableDraft`)이고 파싱 · 검사는 `formReducer`(parseTableDraft · validateSlotValue) 몫이다.
  * `enum` 열(감액기간)은 셀이 열거값 고르기(`<select>`) — 초안은 값 코드, 붙여넣은 표시 글자는 파서가 코드로 푼다 (2026-10-31).
+ * 칩이 있는 글 열(체증 구분의 「(최초)계약일」)은 표 위에 글자 버튼 — 누르면 그 열에서 마지막으로 커서를 둔 칸의 커서 자리에 칩 글이 들어간다.
+ * 커서를 둔 칸이 없으면 그 열의 마지막 행 끝에(행이 없으면 새 행) 붙인다 (기능/담보 §3.4, 2026-11-01).
  */
-import type { ClipboardEvent } from "react";
+import { useRef, type ClipboardEvent } from "react";
 
 import { formatPeriod, parseCell, pasteToDraft, type TableDraft } from "@/domain/master";
 import type { TableColumn } from "@/domain/types";
@@ -25,6 +27,8 @@ function hint(col: TableColumn, text: string): string | undefined {
 }
 
 export function TableInput({ id, field, onEdit, name }: InputProps) {
+  // 칩 — 그 열에서 마지막으로 커서를 둔 칸(행 · 열 · 커서 자리)
+  const caret = useRef<{ r: number; c: number; at: number } | undefined>(undefined);
   const type = field.view.type;
   if (type.kind !== "table") return null;
   const columns = type.columns;
@@ -52,10 +56,41 @@ export function TableInput({ id, field, onEdit, name }: InputProps) {
     set(next);
   };
   const addRow = () => set([...rows, columns.map(() => "")]);
+  const remember = (r: number, c: number) => (e: { currentTarget: HTMLInputElement }) => {
+    caret.current = { r, c, at: e.currentTarget.selectionStart ?? e.currentTarget.value.length };
+  };
+  const insertChip = (c: number, text: string) => {
+    const next = rows.length > 0 ? rows.map((row) => [...row]) : [columns.map(() => "")];
+    const last = caret.current && caret.current.c === c && caret.current.r < next.length ? caret.current : undefined;
+    const r = last ? last.r : next.length - 1;
+    while (next[r].length < columns.length) next[r].push("");
+    const cur = next[r][c] ?? "";
+    const at = last ? Math.min(last.at, cur.length) : cur.length;
+    next[r][c] = cur.slice(0, at) + text + cur.slice(at);
+    caret.current = { r, c, at: at + text.length };
+    set(next);
+  };
+  const chipColumns = columns.flatMap((col, c) => (col.chips ?? []).map((chip) => ({ c, col, chip })));
   const removeRow = (r: number) => set(rows.filter((_, i) => i !== r));
 
   return (
     <div className="ts-table-input" aria-labelledby={`${id}-label`}>
+      {chipColumns.length > 0 && (
+        <div className="ts-table-chips">
+          {chipColumns.map(({ c, col, chip }) => (
+            <button
+              key={`${col.key}-${chip.label}`}
+              type="button"
+              className="ts-table-chip"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertChip(c, chip.text)}
+              title={`${col.label} 칸의 커서 자리에 「${chip.label}」 넣기`}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      )}
       <table>
         <thead>
           <tr>
@@ -86,7 +121,18 @@ export function TableInput({ id, field, onEdit, name }: InputProps) {
                         {text !== "" && !options.some((o) => o.code === text) && <option value={text}>{`없는 값 ${text}`}</option>}
                       </select>
                     ) : (
-                      <input type="text" name={inputName} value={text} onChange={(e) => edit(r, c, e.target.value)} onPaste={onPaste(r, c)} aria-label={`${r + 1}행 ${col.label}`} />
+                      <input
+                        type="text"
+                        name={inputName}
+                        value={text}
+                        onChange={(e) => {
+                          edit(r, c, e.target.value);
+                          remember(r, c)(e);
+                        }}
+                        onSelect={col.chips ? remember(r, c) : undefined}
+                        onPaste={onPaste(r, c)}
+                        aria-label={`${r + 1}행 ${col.label}`}
+                      />
                     )}
                     {h && <span className="ts-muted ts-table-hint">{h}</span>}
                   </td>

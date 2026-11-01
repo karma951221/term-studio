@@ -128,7 +128,7 @@ describe("container — createServices 관통 (PGlite)", () => {
     const check = unwrap(await s.clause.checkReference("C0001", { kind: "coverage", id: death.id }));
     expect(check.missing).toEqual([]);
     expect(check.broken).toEqual([]);
-    expect(unwrap(await s.coverage.form({ level: "coverage", id: death.id })).fields.map((f) => f.path)).toEqual(["insured_amount.amounts"]); // 담보 레벨은 특성 「가입금액」 하나 (2026-10-31)
+    expect(unwrap(await s.coverage.form({ level: "coverage", id: death.id })).fields.map((f) => f.path)).toEqual(["insured_amount.amounts", "proviso.text"]); // 담보 레벨은 특성 「가입금액」 · 「단서문구」 (2026-10-31 · 2026-11-01)
     unwrap(await s.coverage.writeValue(editor, { level: "benefit", id: death.subCoverages[0].benefits[0].id }, "pay.rate", 80));
     // 옵션 미선택 참조는 저장 시점에 거부된다 (기능/함수조항 §3.2) — 게이트가 함수조항 정의로 검사
     const unselected = b.article("y", [b.clauseBlock("C0001", {})]);
