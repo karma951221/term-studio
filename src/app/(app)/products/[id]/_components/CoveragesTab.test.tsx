@@ -143,10 +143,22 @@ describe("상품담보 탭 — 편집", () => {
     expect(section(empty, "기본계약")).toMatch(/ 담보 추가<\/button>/);
   });
 
-  it("독립특약 상품 — 기본계약 표에는 「+ 담보 추가」 대신 「독립특약 상품은 기본계약을 두지 않습니다」", () => {
-    const s = section(render(true, { baseCoverages: [], standalone: true }), "기본계약");
-    expect(s).not.toMatch(/ 담보 추가<\/button>/);
-    expect(s).toContain("독립특약 상품은 기본계약을 두지 않습니다");
+  it("독립특약 상품 — 기본계약 표 없이 「보장조항」 표 하나(그룹 열 있음) · 추가 줄은 「보장조항에 담보 추가」", () => {
+    for (const editing of [false, true]) {
+      const h = render(editing, { baseCoverages: [], standalone: true });
+      expect(h).not.toContain('aria-label="기본계약"');
+      expect(h).not.toContain('aria-label="특별약관"');
+      expect(h).not.toContain("독립특약 상품은 기본계약을 두지 않습니다");
+      const s = section(h, "보장조항");
+      expect(s).toContain("<th");
+      expect(s).toContain("그룹");
+      expect(s).toContain("일반상해사망");
+      if (editing) expect(s).toContain('aria-label="보장조항에 담보 추가"');
+    }
+  });
+
+  it("독립특약 상품에 옛 기본계약 행이 남아 있으면 기본계약 표는 그대로 보인다(숨기지 않는다)", () => {
+    expect(render(false, { standalone: true })).toContain('aria-label="기본계약"');
   });
 
   it("「특약 그룹」 섹션 편집 — ▲▼ · 목록 끝 「+ 그룹」, 기본 그룹은 이름 입력 · 빼기가 없다", () => {
