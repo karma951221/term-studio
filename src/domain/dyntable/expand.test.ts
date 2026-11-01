@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import { plainConst } from "../clause/bind";
 import type { Inline } from "../clause/nodes";
-import { reductionBoundary, reductionPeriodEnumSeed, type ReductionBoundary } from "../coverage/traits";
+import { BASE_DATE_CHIP, reductionBoundary, reductionPeriodEnumSeed, type ReductionBoundary } from "../coverage/traits";
 import { evaluate, parse, type EvalContext } from "../expression";
 import { entered } from "../types";
 import { expandDynTable } from "./expand";
@@ -367,5 +367,78 @@ describe("동적표 펼침 — 규칙", () => {
     const t = expand(A, [], 비갱신);
     expect(lines(t, [])).toEqual(["[구 분 │ 지급금액]"]);
     expect(t.rows).toEqual([]);
+  });
+});
+
+describe("체증 행 — 보험금 지급금액표 (기능/구분자 §3.7, 2026-11-01)", () => {
+  /** 급부에 체증 구간 [구분, 비율] 을 붙인다. */
+  function withSteps(list: DynBenefit[], i: number, steps: [string, number][]): DynBenefit[] {
+    return list.map((b, k) => (k === i ? { ...b, escalation: steps.map(([label, ratio]) => ({ label, ratio })) } : b));
+  }
+  const expandR = (d: DynTable, list: DynBenefit[], renewable = false) =>
+    expandDynTable(d, { benefits: list, renewable }, 비갱신, deps, { document: "special", ownerId: "pc1" });
+
+  it("체증 급부는 구분 수만큼 행 — 행 머리 「급부명(구분)」 · 셀 = 지급률 × 체증 비율 × 감액비율 / 100, 열은 감액 구간뿐", () => {
+    const list = withSteps(benefits([{ sub: "2대질환 주요치료비", name: "2대질환 주요치료비", rate: 100, reduction: { periods: [["1년", 50]] } }]), 0, [
+      ["2대질환 진단후 1차 연도", 1],
+      ["2대질환 진단후 2차 연도", 1.2],
+    ]);
+    const t = expandR(A, list);
+    expect(t.issues).toEqual([]);
+    expect(lines(t, list)).toEqual([
+      "[구 분 │ 계약일부터 1년경과시점 전일 이전 │ 계약일부터 1년경과시점 이후]",
+      "[2대질환 주요치료비(2대질환 진단후 1차 연도) │ 보험가입금액의 50% │ 보험가입금액의 100%]",
+      "[2대질환 주요치료비(2대질환 진단후 2차 연도) │ 보험가입금액의 60% │ 보험가입금액의 120%]",
+    ]);
+    expect(t.rows.map((r) => r.benefitKeys)).toEqual([["G1"], ["G1"]]);
+  });
+
+  it("구분 안 칩 「(최초)계약일」 — 상품담보가 갱신형이면 최초계약일, 아니면 계약일", () => {
+    const list = withSteps(benefits([{ sub: "S", name: "간병인", rate: 100 }]), 0, [[`${BASE_DATE_CHIP}부터 5년경과시점 전일 이전`, 1]]);
+    expect(lines(expandR(R, list, true), list)[1]).toBe("[간병인(최초계약일부터 5년경과시점 전일 이전) │ 보험가입금액의 100%]");
+    expect(lines(expandR(R, list, false), list)[1]).toBe("[간병인(계약일부터 5년경과시점 전일 이전) │ 보험가입금액의 100%]");
+  });
+
+  it("체증 급부와 일반 급부가 섞여도 한 표 · 갱신표도 체증 행을 늘리고 열은 하나", () => {
+    const list = withSteps(
+      benefits([
+        { sub: "S", name: "일반", rate: 100, reduction: { periods: [["1년", 50]] } },
+        { sub: "S", name: "체증", rate: 100, reduction: { periods: [["1년", 50]] } },
+      ]),
+      1,
+      [
+        ["1차", 1],
+        ["2차", 1.5],
+      ],
+    );
+    expect(lines(expandR(A, list), list).slice(1)).toEqual([
+      "[일반 │ 보험가입금액의 50% │ 보험가입금액의 100%]",
+      "[체증(1차) │ 보험가입금액의 50% │ 보험가입금액의 100%]",
+      "[체증(2차) │ 보험가입금액의 75% │ 보험가입금액의 150%]",
+    ]);
+    expect(lines(expandR(R, list), list)).toEqual([
+      "[구 분 │ 지급금액]",
+      "[일반 │ 보험가입금액의 100%]",
+      "[체증(1차) │ 보험가입금액의 100%]",
+      "[체증(2차) │ 보험가입금액의 150%]",
+    ]);
+  });
+
+  it("셀 비율은 소수 한 자리 버림 — 30 × 1.15 × 50 / 100 = 17.25 → 17.2", () => {
+    const list = withSteps(benefits([{ sub: "S", name: "x", rate: 30, reduction: { periods: [["1년", 50]] } }]), 0, [["a", 1.15]]);
+    expect(lines(expandR(A, list), list)[1]).toBe("[x(a) │ 보험가입금액의 17.2% │ 보험가입금액의 34.5%]");
+  });
+
+  it("급부명 · 구분 · 값이 모두 같은 행은 한 행으로 묶는다", () => {
+    let list = benefits([
+      { sub: "S1", name: "주요치료비", rate: 100 },
+      { sub: "S2", name: "주요치료비", rate: 100 },
+    ]);
+    list = withSteps(withSteps(list, 0, [["1차", 1], ["2차", 1.2]]), 1, [["1차", 1], ["2차", 1.2]]);
+    const t = expandR(R, list);
+    expect(t.rows.map((r) => [r.name, r.benefitKeys])).toEqual([
+      ["주요치료비(1차)", ["G1", "G2"]],
+      ["주요치료비(2차)", ["G1", "G2"]],
+    ]);
   });
 });

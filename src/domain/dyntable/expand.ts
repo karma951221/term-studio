@@ -20,7 +20,7 @@
 import { rewriteInlines, type ConstFormatter } from "../clause/bind";
 import type { Inline, InlineBranch, SwitchCase } from "../clause/nodes";
 import { effectiveBindings, type Bindings } from "../clause/params";
-import type { ReductionBoundary } from "../coverage/traits";
+import { resolveBaseDateChip, type ReductionBoundary } from "../coverage/traits";
 import type { Coordinate, Id, Issue } from "../types";
 import { headerRegion } from "./regions";
 import { tableShape } from "./shape";
@@ -29,6 +29,8 @@ import { DYN_TABLE_SLOTS, isDynTableSlotRef, type DynBenefit, type DynTable, typ
 export interface DynTableInput {
   /** 그 담보의 급부 전부 — 담보 트리 순서(세부보장 순 → 급부 순). */
   benefits: DynBenefit[];
+  /** 그 상품담보가 갱신형인가 — 체증 구분 안 칩 「(최초)계약일」을 「최초계약일」 / 「계약일」로 (기능/구분자 §3.7). 없으면 아니오. */
+  renewable?: boolean;
 }
 
 export interface DynTableDeps {
@@ -61,7 +63,8 @@ export function boundaryUnion(benefits: readonly DynBenefit[]): ReductionBoundar
 
 /** 셀 비율 글 — 정수면 그대로, 아니면 소수 한 자리까지 자른다(반올림 없음). */
 export function formatRatio(payRate: number, reductionRate: number): string {
-  const scaled = Math.floor(payRate * reductionRate / 100 * 10 + 1e-9);
+  // 체증 비율(1.15 …)을 곱한 지급률은 부동소수 오차(34.49999…)를 품는다 — 백만분의 일에서 한 번 맞춘 뒤 버린다
+  const scaled = Math.floor(Math.round(payRate * reductionRate / 100 * 10 * 1e6) / 1e6 + 1e-9);
   const whole = Math.trunc(scaled / 10);
   const tenth = scaled % 10;
   return tenth === 0 ? String(whole) : `${whole}.${tenth}`;
@@ -90,6 +93,8 @@ export function instantiate(template: readonly Inline[], tag: (id: Id) => Id, sl
 
 interface Computed {
   benefit: DynBenefit;
+  /** 행 머리 — 급부명, 체증 행이면 「급부명(구분)」(칩은 기준일 낱말로 바꾼 뒤). 묶기의 열쇠다. */
+  name: string;
   /** 열마다 셀 비율 글. */
   ratios: string[];
 }
@@ -146,16 +151,19 @@ export function expandDynTable(def: DynTable, input: DynTableInput, bindings: Bi
   const header: Inline[][] = [[{ id: tagOf("h", 0)("rowHeader"), kind: "text", text: def.rowHeader }]];
   for (let j = 0; j < columns; j++) header.push(instantiate(headerTemplate(j), tagOf("h", j + 1), headerText(j)));
 
-  // 4. 셀 비율 — 급부마다 열마다
-  const computed: Computed[] = input.benefits.map((benefit) => {
+  // 4. 셀 비율 — 급부마다 열마다. 체증 급부는 구분마다 한 행(행 머리 「급부명(구분)」 · 지급률 × 체증 비율) — 기능/구분자 §3.7
+  const computed: Computed[] = input.benefits.flatMap((benefit) => {
     const payRate = benefit.payRate ?? DEFAULT_PAY_RATE;
     const reduction = split ? benefit.reduction : undefined;
-    return { benefit, ratios: Array.from({ length: columns }, (_, j) => formatRatio(payRate, reductionRateAt(reduction, boundaries, j))) };
+    const ratios = (rate: number) => Array.from({ length: columns }, (_, j) => formatRatio(rate, reductionRateAt(reduction, boundaries, j)));
+    const steps = benefit.escalation ?? [];
+    if (steps.length === 0) return [{ benefit, name: benefit.name, ratios: ratios(payRate) }];
+    return steps.map((s) => ({ benefit, name: `${benefit.name}(${resolveBaseDateChip(s.label, input.renewable === true)})`, ratios: ratios(payRate * s.ratio) }));
   });
 
-  // 5. 행 묶기 — 급부명이 같은 급부는 열마다 비율이 모두 같을 때만 한 행. 어느 열이든 다르면 그 급부명은 전부 따로(트리 순) + 경고
+  // 5. 행 묶기 — 행 머리(급부명 · 체증 구분)가 같은 급부는 열마다 비율이 모두 같을 때만 한 행. 어느 열이든 다르면 그 행 머리는 전부 따로(트리 순) + 경고
   const byName = new Map<string, Computed[]>();
-  for (const c of computed) byName.set(c.benefit.name, [...(byName.get(c.benefit.name) ?? []), c]);
+  for (const c of computed) byName.set(c.name, [...(byName.get(c.name) ?? []), c]);
   const conflicted = new Set<string>();
   for (const [name, group] of byName) {
     const head = group[0];
@@ -173,7 +181,7 @@ export function expandDynTable(def: DynTable, input: DynTableInput, bindings: Bi
   const rows: ExpandedDynTableRow[] = [];
   const rowOf = new Map<string, ExpandedDynTableRow>();
   for (const c of computed) {
-    const name = c.benefit.name;
+    const name = c.name;
     const merged = conflicted.has(name) ? undefined : rowOf.get(name);
     if (merged) {
       merged.benefitKeys.push(c.benefit.key);
