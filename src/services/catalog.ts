@@ -34,6 +34,7 @@ import {
   setDescription,
   setExpression,
   setResultType,
+  setCandidates,
   type CatalogContext,
   type Discriminator,
   type DiscriminatorResultType,
@@ -51,7 +52,7 @@ import {
 import { formatCoordinate } from "@/domain/coordinate";
 import type { ExprType } from "@/domain/expression";
 import { enumFieldReaders, enumValueListers, transitiveUsages, type RefEdge, type RefGraph } from "@/domain/refs";
-import type { Actor, AttachLevel, Code, Coordinate, FieldType, Issue, Result } from "@/domain/types";
+import type { Actor, AttachLevel, Code, Coordinate, FieldType, Id, Issue, Result } from "@/domain/types";
 import { mergeImpacts, ok, reject } from "@/domain/types";
 
 import * as repo from "@/db/repo/catalog";
@@ -109,6 +110,8 @@ export interface CatalogService {
   setExpression(actor: Actor, code: Code, expression: string, retype?: { resultType: DiscriminatorResultType | undefined }): Promise<Result<Discriminator>>;
   /** 결과 타입 바꾸기 — 현재 식의 추론 타입과 대조 (기능/구분자 §3.1). 필수라 비우기는 거부된다. */
   setResultType(actor: Actor, code: Code, resultType: DiscriminatorResultType): Promise<Result<Discriminator>>;
+  /** 준용예외 구분자의 후보 조 바꾸기 (ADR-0098 결정 1) — 결과 타입 「조 참조 목록」만. */
+  setCandidates(actor: Actor, code: Code, candidates: readonly Id[]): Promise<Result<Discriminator>>;
   /** 저장 전 식 검사 — 편집기가 미리 부르는 자리. 통과하면 추론된 결과 타입 (화면이 표시에 쓴다). */
   checkExpression(expression: string, level: AttachLevel): Promise<Result<ExprType>>;
   /**
@@ -328,6 +331,7 @@ export function createCatalogService(db: Db, deps: CatalogServiceDeps = {}): Cat
     setDescription: (actor, code, description) => edit(actor, code, (def) => setDescription(def, description)),
     setExpression: (actor, code, expression, retype) => edit(actor, code, (def, ctx) => setExpression(def, expression, ctx, retype)),
     setResultType: (actor, code, resultType) => edit(actor, code, (def, ctx) => setResultType(def, resultType, ctx)),
+    setCandidates: (actor, code, candidates) => edit(actor, code, (def) => setCandidates(def, candidates)),
 
     remove: (actor, code, opts = {}) =>
       db.transaction(async (tx) => {
