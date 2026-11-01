@@ -326,6 +326,15 @@ export interface Impact {
   mounts?: MountImpact[];
   /** 판정 변화 (ADR-0082 결정 11) — 판정이 바뀌는 조 · 회색이 되는 사본 · 다시 쓰이는 사본 · 깨지는 블록 지정 참조. 상품담보 탭 저장 · 보통약관 탭 저장(생략 기준이 바뀔 때)의 영향에 실린다. */
   judgment?: JudgmentImpact;
+  /** 문서 저장의 판정 변화 (ADR-0082 결정 11 · ADR-0098 결정 7) — 담보약관 · 보통약관 템플릿 저장이 그 문서를 쓰는 상품의 판정을 바꿀 때, 바뀐 상품마다 한 묶음. 비지 않을 때만. */
+  judgments?: ProductJudgmentImpact[];
+}
+
+/** 상품 하나의 판정 변화 — 문서 저장의 확인 카드는 상품마다 묶는다. */
+export interface ProductJudgmentImpact {
+  productId: Id;
+  productName: string;
+  judgment: JudgmentImpact;
 }
 
 /** 저장 전후 판정을 견준 결과 (ADR-0082 결정 11 · 기능/상품 §3.8) — `domain/product/judgment.ts` `judgmentImpact`. 줄의 이름은 템플릿 번호 「제N조(제목)」. */

@@ -29,3 +29,21 @@ export async function applyFrom(page: Page): Promise<void> {
   await editFoot(page, "적용").click();
   await expect(editFoot(page, "적용")).toBeDisabled();
 }
+
+/**
+ * 문면 편집기 〔저장〕 — 저장이 그 문서를 쓰는 상품의 판정을 바꾸면 확인 모달(「저장하면 아래 내용이 함께 바뀝니다」, ADR-0082 결정 11)이 선다.
+ * 서면 그 글을 돌려주고 〔바꾸고 저장〕으로 넘긴다. 읽기 모드(〔편집〕)로 돌아올 때까지 기다린다. 모달이 없었으면 undefined.
+ */
+export async function saveDocumentEdit(page: Page): Promise<string | undefined> {
+  await page.getByRole("button", { name: "저장", exact: true }).click();
+  const edit = page.getByRole("button", { name: "편집", exact: true });
+  const dialog = page.getByRole("dialog", { name: "저장하면 아래 내용이 함께 바뀝니다" });
+  await expect(edit.or(dialog)).toBeVisible({ timeout: 60_000 });
+  let text: string | undefined;
+  if (await dialog.isVisible()) {
+    text = (await dialog.textContent()) ?? "";
+    await dialog.getByRole("button", { name: "바꾸고 저장", exact: true }).click();
+  }
+  await expect(edit).toBeVisible({ timeout: 60_000 });
+  return text;
+}

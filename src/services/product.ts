@@ -88,7 +88,7 @@ import {
   type VerdictResult,
 } from "@/domain/product";
 import { CONTRACT_KIND_PATH, describeTraitDetachment, noticeAffixOf, findForm, findMasterField, formRuleIssues, formsOfLevel, isMasterOwnedPath, isStandaloneContract, productOwnedMaster, traitDetachments, type MasterForm } from "@/domain/master";
-import type { Actor, AttachLevel, Code, Coordinate, Id, Impact, Issue, Result, Value, ValueSlot } from "@/domain/types";
+import type { Actor, AttachLevel, Code, Coordinate, Id, Impact, Issue, ProductJudgmentImpact, Result, Value, ValueSlot } from "@/domain/types";
 import { entered, mergeImpacts, ok, reject } from "@/domain/types";
 
 import * as catalog from "@/db/repo/catalog";
@@ -306,6 +306,12 @@ export interface ProductService {
    * 다시 셈해 참조가 깨지는 상품 · 자리. 좌표는 상품(이름) · 가리키는 조(`articleId`) · 문구(`subjectName`) — 확인 카드 한 줄이 된다.
    */
   templateImpact(templateId: Id, tree: DocumentNode): Promise<Coordinate[]>;
+  /**
+   * 문서 저장의 판정 변화 (ADR-0082 결정 11 · ADR-0098 결정 7) — 그 문서를 쓰는 상품(담보약관 = 그 담보를 탑재한 상품 · 템플릿 = 그 템플릿을 고른 상품)마다
+   * 저장 전 판정을 읽고, 저장(`write` — 문서 서비스가 넘긴다)을 세이브포인트에서 해 본 뒤 다시 읽어 견주고 **늘 되돌린다**. 판정이 바뀐 상품만 돌려준다.
+   * 지금 열린 트랜잭션(문맥 Db) 안에서 불러야 한다. 쓰는 상품이 없으면 조립도 write 도 하지 않는다. 비용 = 쓰는 상품 수 × 조립 2번.
+   */
+  documentJudgment(target: { kind: "general"; documentId: Id } | { kind: "special"; coverageId: Id }, write: (tx: Db) => Promise<void>): Promise<ProductJudgmentImpact[]>;
   deleteProduct(actor: Actor, id: Id, opts?: Confirmable): Promise<Result<void>>;
   setProductValue(actor: Actor, id: Id, path: SlotPath, value: Value | undefined): Promise<Result<void>>;
   /** 한 제출의 값 여럿 — 전부 검사한 뒤 한 트랜잭션으로 쓴다. 하나라도 거부되면 아무것도 안 바뀐다. */
@@ -1487,6 +1493,34 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
           for (const i of issues) out.push({ document: "product", ownerId: p.id, ownerName: p.name, ...(i.at.articleId ? { articleId: i.at.articleId } : {}), subjectName: i.message });
         }
         return out;
+      }),
+    documentJudgment: (target, write) =>
+      db.transaction(async (tx) => {
+        const productIds =
+          target.kind === "general"
+            ? (await repo.listProducts(tx)).filter((p) => p.generalDocumentId === target.documentId).map((p) => p.id)
+            : [...new Set((await repo.listProductCoveragesOfCoverage(tx, target.coverageId)).map((pc) => pc.productId))];
+        const befores: { productId: Id; productName: string; was: NonNullable<Awaited<ReturnType<typeof judgmentOf>>> }[] = [];
+        for (const productId of productIds) {
+          const was = await judgmentOf(tx, productId);
+          if (was) befores.push({ productId, productName: (await repo.loadProduct(tx, productId))?.name ?? productId, was });
+        }
+        if (befores.length === 0) return [];
+        // 해 본 저장은 늘 되돌린다 — 실제 저장은 문서 서비스가 확인(또는 바뀐 것 없음) 뒤에 한다
+        return rollbackUnless(
+          tx,
+          async (probe) => {
+            await write(probe);
+            const out: ProductJudgmentImpact[] = [];
+            for (const { productId, productName, was } of befores) {
+              const after = await judgmentOf(probe, productId);
+              const judgment = after ? judgmentImpact(was.snapshot, after.snapshot, after.labelOf) : undefined;
+              if (judgment) out.push({ productId, productName, judgment });
+            }
+            return out;
+          },
+          () => false,
+        );
       }),
     generalDependents: (productId) =>
       db.transaction(async (tx) => {

@@ -53,7 +53,7 @@ import {
   type TreeEnv,
 } from "@/domain/document";
 import type { TypeResolver } from "@/domain/expression";
-import type { Actor, Code, Coordinate, Id, Impact, Issue, Result } from "@/domain/types";
+import type { Actor, Code, Coordinate, Id, Impact, Issue, ProductJudgmentImpact, Result } from "@/domain/types";
 import { ok, reject } from "@/domain/types";
 
 import * as catalogRepo from "@/db/repo/catalog";
@@ -89,6 +89,11 @@ export interface DocumentServiceDeps {
    * 참조 깨짐 자리. 확인 카드에 담보약관 조연결 깨짐(`brokenByRemoval`)과 함께 싣는다. 기본 없음(상품을 모른다).
    */
   productImpact?: (tx: Db, templateId: Id, tree: DocumentNode) => Promise<Coordinate[]>;
+  /**
+   * 문서 저장의 판정 변화 (ADR-0082 결정 11 · ADR-0098 결정 7) — 그 문서를 쓰는 상품마다 저장 전후 판정을 견준다(`product.documentJudgment`).
+   * 저장(`write`)을 넘기면 견주기가 세이브포인트에서 해 보고 되돌린다. 바뀐 상품이 있으면 확인 카드에 `judgments` 로 싣는다. 기본 없음(상품을 모른다).
+   */
+  judgment?: (tx: Db, target: { kind: "general"; documentId: Id } | { kind: "special"; coverageId: Id }, write: (tx: Db) => Promise<void>) => Promise<ProductJudgmentImpact[]>;
 }
 
 export interface Confirmable {
@@ -491,12 +496,16 @@ export function createDocumentService(db: Db, deps: DocumentServiceDeps = {}): D
           }
           const errors = blockingIssues(await validateDoc(tx, next, tree));
           if (errors.length > 0) return invalid(errors);
+          const write = (on: Db) => repo.saveDocumentAt(on, id, input.baseVersion, { tree: withCodes(tree), title: tree.title, generalDocumentId: generalDocumentId ?? null }, actor.userId);
           if (!input.confirm) {
             const broken = await brokenByRemoval(tx, id, removedIds(doc.tree, tree), removedRefKeys(doc.tree, tree));
             if (doc.kind === "general" && deps.productImpact) broken.push(...(await deps.productImpact(tx, id, tree)));
-            if (broken.length > 0) return reject({ reason: "needsConfirmation", impact: { valueRowsLost: 0, cascade: [], brokenRefs: broken } });
+            // 판정 변화 (ADR-0082 결정 11) — 저장을 견주기에 넘겨 해 보고 되돌린다. 막지 않는다: 바뀐 상품이 있으면 확인하고 저장한다
+            const target = doc.kind === "general" ? { kind: "general" as const, documentId: id } : doc.ownerId ? { kind: "special" as const, coverageId: doc.ownerId } : undefined;
+            const judgments = deps.judgment && target ? await deps.judgment(tx, target, async (probe) => void (await write(probe))) : [];
+            if (broken.length > 0 || judgments.length > 0) return reject({ reason: "needsConfirmation", impact: { valueRowsLost: 0, cascade: [], brokenRefs: broken, ...(judgments.length ? { judgments } : {}) } });
           }
-          const saved = await repo.saveDocumentAt(tx, id, input.baseVersion, { tree: withCodes(tree), title: tree.title, generalDocumentId: generalDocumentId ?? null }, actor.userId);
+          const saved = await write(tx);
           if (!saved) return reject({ reason: "conflict", what: "저장하는 사이에 다른 저장이 먼저 반영됐다" });
           return ok((await repo.loadDocument(tx, id))!);
         }),
