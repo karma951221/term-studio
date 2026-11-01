@@ -270,6 +270,17 @@ export function createDocumentService(db: Db, deps: DocumentServiceDeps = {}): D
       for (const clause of await clauseRepo.listClauses(tx)) {
         for (const r of clauseGeneralRefs(clause)) if (gone(r)) out.push({ document: "clause", ownerId: clause.code, ownerName: clause.label, nodePath: r.nodePath, refPath: refKey(r) });
       }
+      out.push(...(await candidateUsages(tx, removed)));
+    }
+    return out;
+  }
+
+  /** 준용예외 구분자(결과 타입 「조 참조 목록」)의 후보 중 `articleIds` 에 든 조 — 후보는 템플릿 조 id 다 (ADR-0098 결정 1). */
+  async function candidateUsages(tx: Db, articleIds: ReadonlySet<Id>): Promise<Coordinate[]> {
+    if (articleIds.size === 0) return [];
+    const out: Coordinate[] = [];
+    for (const def of await catalogRepo.listDiscriminators(tx)) {
+      for (const id of def.candidates ?? []) if (articleIds.has(id)) out.push({ document: "catalog", ownerId: def.code, ownerName: def.label, articleId: id, refPath: id });
     }
     return out;
   }
@@ -292,6 +303,7 @@ export function createDocumentService(db: Db, deps: DocumentServiceDeps = {}): D
         else if (r.kind === "article" && r.scope === "general" && articleIds.has(r.articleId)) out.push(r.at);
       }
     }
+    if (target.kind === "general") out.push(...(await candidateUsages(tx, articleIds)));
     return out;
   }
 
