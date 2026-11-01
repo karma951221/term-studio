@@ -34,6 +34,16 @@ describe("count(조 참조 목록)", () => {
     expect(checkCondition(ast("D0100 = 'x'"), resolve).ok).toBe(false);
   });
 
+  it("count 밖으로는 읽지 못한다 — 있음 · 비교 · 그대로 쓰기는 저장 오류 (B7)", () => {
+    for (const src of ["exist(D0100)", "notexist(D0100)", "D0100 = D0101", "D0100 ≠ D0101"]) {
+      const r = checkCondition(ast(src), resolve);
+      expect(r.ok, src).toBe(false);
+      if (!r.ok) expect(JSON.stringify(r.rejection), src).toContain("count");
+    }
+    const bare = checkTypes(ast("D0100"), resolve);
+    expect(bare.ok).toBe(false);
+  });
+
   it("값 = 그 문맥의 조 목록 — 개수는 원소 수", () => {
     const one = (ids: string[]): EvalContext => ({
       lookup: () => ({ kind: "slot", slot: entered(ids) }),
