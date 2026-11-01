@@ -362,8 +362,8 @@ export async function loadAlphaPlus(services: Services, actor: Actor): Promise<S
     code: string;
     name: string;
     benefitName: string;
-    /** 세부보장이 여럿인 담보 — 각 세부보장에 급부 1. 없으면 담보명 세부보장 1 + benefitName 급부 1. */
-    subCoverages?: { name: string; benefitName: string }[];
+    /** 세부보장이 여럿인 담보 — 각 세부보장에 급부 1. 없으면 담보명 세부보장 1 + benefitName 급부 1. `benefitValues` 는 그 세부보장 급부의 값(감액 — 행마다). */
+    subCoverages?: { name: string; benefitName: string; benefitValues?: { path: string; value: unknown }[] }[];
     coverageValues: { path: string; value: unknown }[];
     benefitValues: { path: string; value: unknown }[];
     /** 담보분류 — 열거형 「담보분류」(E0009) 값 코드, 필수 (ADR-0090). */
@@ -381,11 +381,14 @@ export async function loadAlphaPlus(services: Services, actor: Actor): Promise<S
       }),
     );
     expectCode(tree.code ?? "", specification.code);
-    for (const sub of rest) tree = unwrap(await services.coverage.addSubCoverage(actor, tree.id, sub));
+    for (const sub of rest) tree = unwrap(await services.coverage.addSubCoverage(actor, tree.id, { name: sub.name, benefitName: sub.benefitName }));
     coverageIds.set(specification.key, tree.id);
     const benefitId = tree.subCoverages[0].benefits[0].id;
     for (const entry of specification.coverageValues) unwrap(await services.coverage.writeValue(actor, { level: "coverage", id: tree.id }, entry.path, entry.value as Value));
     for (const entry of specification.benefitValues) unwrap(await services.coverage.writeValue(actor, { level: "benefit", id: benefitId }, entry.path, entry.value as Value));
+    for (const [i, sub] of (specification.subCoverages ?? []).entries()) {
+      for (const entry of sub.benefitValues ?? []) unwrap(await services.coverage.writeValue(actor, { level: "benefit", id: tree.subCoverages[i].benefits[0].id }, entry.path, entry.value as Value));
+    }
   }
 
   for (const kind of attributes) {

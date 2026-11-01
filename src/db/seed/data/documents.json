@@ -7666,88 +7666,18 @@
               "code": "P0100"
             },
             {
-              "id": "m6-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "m6-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "m6-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m6-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m6-a1-t1-r0c2-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m6-a1-t1-r1c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m6-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "최초계약일부터 90일경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m6-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "최초계약일부터 90일경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m6-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "질병으로 사망시"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m6-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 10%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m6-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "m6-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "m6-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -7798,48 +7728,18 @@
               "code": "P0400"
             },
             {
-              "id": "m6-a1-t3",
-              "kind": "table",
-              "columns": [
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "m6-a1-t3-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "m6-a1-t3-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m6-a1-t3-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m6-a1-t3-r1c0-x1",
-                        "kind": "text",
-                        "text": "질병으로 사망시"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m6-a1-t3-r1c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "m6-a1-t3-c-b",
+                  "when": "D0013 = true and D0005 = true",
+                  "children": [
+                    {
+                      "id": "m6-a1-t3",
+                      "kind": "tableRef",
+                      "code": "DT000002"
+                    }
                   ]
                 }
               ]
@@ -8096,88 +7996,18 @@
               "code": "P0100"
             },
             {
-              "id": "m7-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "m7-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "m7-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m7-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m7-a1-t1-r0c2-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m7-a1-t1-r1c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m7-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "최초계약일부터 1년경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m7-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "최초계약일부터 1년경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m7-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "질병으로 80%이상후유장해시"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m7-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m7-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "m7-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "m7-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -8245,48 +8075,18 @@
               "code": "P0400"
             },
             {
-              "id": "m7-a1-t3",
-              "kind": "table",
-              "columns": [
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "m7-a1-t3-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "m7-a1-t3-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m7-a1-t3-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m7-a1-t3-r1c0-x1",
-                        "kind": "text",
-                        "text": "질병으로 80%이상 후유장해 시"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m7-a1-t3-r1c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "m7-a1-t3-c-b",
+                  "when": "D0013 = true and D0005 = true",
+                  "children": [
+                    {
+                      "id": "m7-a1-t3",
+                      "kind": "tableRef",
+                      "code": "DT000002"
+                    }
                   ]
                 }
               ]
@@ -8443,302 +8243,18 @@
               "code": "P0100"
             },
             {
-              "id": "m8-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "m8-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r0c2-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r0c3-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t1-r1c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "최초계약일부터 90일경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "최초계약일부터 90일경과시점 이후 최초계약일부터 1년경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r1c3-x1",
-                        "kind": "text",
-                        "text": "최초계약일부터 1년경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "1종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "질병1종 수술비보장 보험가입금액의 10%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "질병1종 수술비보장 보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r2c3-x1",
-                        "kind": "text",
-                        "text": "질병1종 수술비보장 보험가입금액의 100%"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t1-r3c0-x1",
-                        "kind": "text",
-                        "text": "2종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r3c1-x1",
-                        "kind": "text",
-                        "text": "질병2종 수술비보장 보험가입금액의 10%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r3c2-x1",
-                        "kind": "text",
-                        "text": "질병2종 수술비보장 보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r3c3-x1",
-                        "kind": "text",
-                        "text": "질병2종 수술비보장 보험가입금액의 100%"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t1-r4c0-x1",
-                        "kind": "text",
-                        "text": "3종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r4c1-x1",
-                        "kind": "text",
-                        "text": "질병3종 수술비보장 보험가입금액의 10%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r4c2-x1",
-                        "kind": "text",
-                        "text": "질병3종 수술비보장 보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r4c3-x1",
-                        "kind": "text",
-                        "text": "질병3종 수술비보장 보험가입금액의 100%"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t1-r5c0-x1",
-                        "kind": "text",
-                        "text": "4종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r5c1-x1",
-                        "kind": "text",
-                        "text": "질병4종 수술비보장 보험가입금액의 10%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r5c2-x1",
-                        "kind": "text",
-                        "text": "질병4종 수술비보장 보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r5c3-x1",
-                        "kind": "text",
-                        "text": "질병4종 수술비보장 보험가입금액의 100%"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t1-r6c0-x1",
-                        "kind": "text",
-                        "text": "5종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r6c1-x1",
-                        "kind": "text",
-                        "text": "질병5종 수술비보장 보험가입금액의 10%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r6c2-x1",
-                        "kind": "text",
-                        "text": "질병5종 수술비보장 보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r6c3-x1",
-                        "kind": "text",
-                        "text": "질병5종 수술비보장 보험가입금액의 100%"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t1-r7c0-x1",
-                        "kind": "text",
-                        "text": "6종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r7c1-x1",
-                        "kind": "text",
-                        "text": "질병6종 수술비보장 보험가입금액의 10%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r7c2-x1",
-                        "kind": "text",
-                        "text": "질병6종 수술비보장 보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r7c3-x1",
-                        "kind": "text",
-                        "text": "질병6종 수술비보장 보험가입금액의 100%"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t1-r8c0-x1",
-                        "kind": "text",
-                        "text": "7종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r8c1-x1",
-                        "kind": "text",
-                        "text": "질병7종 수술비보장 보험가입금액의 10%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r8c2-x1",
-                        "kind": "text",
-                        "text": "질병7종 수술비보장 보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t1-r8c3-x1",
-                        "kind": "text",
-                        "text": "질병7종 수술비보장 보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "m8-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "m8-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -8794,156 +8310,18 @@
               "code": "P0300"
             },
             {
-              "id": "m8-a1-t2",
-              "kind": "table",
-              "columns": [
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "m8-a1-t2-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t2-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t2-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t2-r1c0-x1",
-                        "kind": "text",
-                        "text": "1종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t2-r1c1-x1",
-                        "kind": "text",
-                        "text": "질병1종 수술비보장 보험가입금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t2-r2c0-x1",
-                        "kind": "text",
-                        "text": "2종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t2-r2c1-x1",
-                        "kind": "text",
-                        "text": "질병2종 수술비보장 보험가입금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t2-r3c0-x1",
-                        "kind": "text",
-                        "text": "3종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t2-r3c1-x1",
-                        "kind": "text",
-                        "text": "질병3종 수술비보장 보험가입금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t2-r4c0-x1",
-                        "kind": "text",
-                        "text": "4종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t2-r4c1-x1",
-                        "kind": "text",
-                        "text": "질병4종 수술비보장 보험가입금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t2-r5c0-x1",
-                        "kind": "text",
-                        "text": "5종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t2-r5c1-x1",
-                        "kind": "text",
-                        "text": "질병5종 수술비보장 보험가입금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t2-r6c0-x1",
-                        "kind": "text",
-                        "text": "6종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t2-r6c1-x1",
-                        "kind": "text",
-                        "text": "질병6종 수술비보장 보험가입금액"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "m8-a1-t2-r7c0-x1",
-                        "kind": "text",
-                        "text": "7종수술"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "m8-a1-t2-r7c1-x1",
-                        "kind": "text",
-                        "text": "질병7종 수술비보장 보험가입금액"
-                      }
-                    ]
+                  "id": "m8-a1-t2-c-b",
+                  "when": "D0013 = true and D0005 = true",
+                  "children": [
+                    {
+                      "id": "m8-a1-t2",
+                      "kind": "tableRef",
+                      "code": "DT000002"
+                    }
                   ]
                 }
               ]
@@ -41262,76 +40640,18 @@
               "code": "P0100"
             },
             {
-              "id": "a7d20-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "a7d20-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d20-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d20-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    []
-                  ]
-                },
-                {
-                  "cells": [
-                    [],
-                    [
-                      {
-                        "id": "a7d20-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d20-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d20-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "희귀난치성 7대질환 진단시(단, 최초1회에 한하여 지급)"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d20-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d20-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "a7d20-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "a7d20-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -41640,76 +40960,18 @@
               "code": "P0100"
             },
             {
-              "id": "a7d21-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "a7d21-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d21-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d21-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    []
-                  ]
-                },
-                {
-                  "cells": [
-                    [],
-                    [
-                      {
-                        "id": "a7d21-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d21-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d21-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "뇌출혈 진단시(단, 최초1회에 한하여 지급)"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d21-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d21-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "a7d21-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "a7d21-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -55185,76 +54447,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d58r-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d58r-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d58r-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d58r-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d58r-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터1년경과시점 전일 이전"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d58r-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터1년경과시점 이후"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d58r-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "대상포진 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d58r-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d58r-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d58r-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d58r-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -55342,48 +54546,18 @@
                       "code": "P0500"
                     },
                     {
-                      "id": "a7d58r-a1-t4",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d58r-a1-t4-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d58r-a1-t4-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d58r-a1-t4-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d58r-a1-t4-r1c0-x1",
-                                "kind": "text",
-                                "text": "대상포진 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d58r-a1-t4-r1c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d58r-a1-t4-c-b",
+                          "when": "D0013 = true and D0005 = true",
+                          "children": [
+                            {
+                              "id": "a7d58r-a1-t4",
+                              "kind": "tableRef",
+                              "code": "DT000002"
+                            }
                           ]
                         }
                       ]
@@ -55560,76 +54734,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d58-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d58-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d58-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d58-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d58-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "계약일부터1년경과시점 전일 이전"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d58-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "계약일부터1년경과시점 이후"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d58-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "대상포진 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d58-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d58-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d58-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d58-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -56174,76 +55290,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d59r-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d59r-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d59r-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d59r-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d59r-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터1년경과시점 전일 이전"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d59r-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터1년경과시점 이후"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d59r-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "대상포진눈병 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d59r-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d59r-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d59r-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d59r-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -56331,48 +55389,18 @@
                       "code": "P0500"
                     },
                     {
-                      "id": "a7d59r-a1-t4",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d59r-a1-t4-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d59r-a1-t4-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d59r-a1-t4-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d59r-a1-t4-r1c0-x1",
-                                "kind": "text",
-                                "text": "대상포진눈병 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d59r-a1-t4-r1c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d59r-a1-t4-c-b",
+                          "when": "D0013 = true and D0005 = true",
+                          "children": [
+                            {
+                              "id": "a7d59r-a1-t4",
+                              "kind": "tableRef",
+                              "code": "DT000002"
+                            }
                           ]
                         }
                       ]
@@ -56549,76 +55577,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d59-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d59-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d59-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d59-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d59-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "계약일부터1년경과시점 전일 이전"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d59-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "계약일부터1년경과시점 이후"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d59-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "대상포진눈병 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d59-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d59-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d59-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d59-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -57202,76 +56172,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d60r-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d60r-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d60r-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d60r-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d60r-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터1년경과시점 전일 이전"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d60r-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터1년경과시점 이후"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d60r-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "통풍 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d60r-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d60r-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d60r-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d60r-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -57359,48 +56271,18 @@
                       "code": "P0500"
                     },
                     {
-                      "id": "a7d60r-a1-t4",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d60r-a1-t4-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d60r-a1-t4-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d60r-a1-t4-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d60r-a1-t4-r1c0-x1",
-                                "kind": "text",
-                                "text": "통풍 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d60r-a1-t4-r1c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d60r-a1-t4-c-b",
+                          "when": "D0013 = true and D0005 = true",
+                          "children": [
+                            {
+                              "id": "a7d60r-a1-t4",
+                              "kind": "tableRef",
+                              "code": "DT000002"
+                            }
                           ]
                         }
                       ]
@@ -57577,76 +56459,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d60-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d60-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d60-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d60-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d60-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "계약일부터1년경과시점 전일 이전"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d60-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "계약일부터1년경과시점 이후"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d60-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "통풍 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d60-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d60-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d60-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d60-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -58164,76 +56988,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d61r-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d61r-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d61r-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d61r-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d61r-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터1년경과시점 전일 이전"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d61r-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터1년경과시점 이후"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d61r-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "간경변증 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d61r-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d61r-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d61r-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d61r-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -58321,48 +57087,18 @@
                       "code": "P0500"
                     },
                     {
-                      "id": "a7d61r-a1-t4",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d61r-a1-t4-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d61r-a1-t4-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d61r-a1-t4-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d61r-a1-t4-r1c0-x1",
-                                "kind": "text",
-                                "text": "간경변증 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d61r-a1-t4-r1c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d61r-a1-t4-c-b",
+                          "when": "D0013 = true and D0005 = true",
+                          "children": [
+                            {
+                              "id": "a7d61r-a1-t4",
+                              "kind": "tableRef",
+                              "code": "DT000002"
+                            }
                           ]
                         }
                       ]
@@ -58456,76 +57192,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d61-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d61-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d61-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d61-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d61-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "계약일부터1년경과시점 전일 이전"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d61-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "계약일부터1년경과시점 이후"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d61-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "간경변증 진단시(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d61-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d61-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d61-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d61-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -58906,76 +57584,18 @@
               "code": "P0100"
             },
             {
-              "id": "a7d62-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "a7d62-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d62-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d62-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    []
-                  ]
-                },
-                {
-                  "cells": [
-                    [],
-                    [
-                      {
-                        "id": "a7d62-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d62-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d62-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "갑상선암(초기제외)진단시(단, 최초1회에 한하여 지급)"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d62-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d62-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "a7d62-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "a7d62-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -60695,76 +59315,18 @@
               "code": "P0100"
             },
             {
-              "id": "a7d67-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "a7d67-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d67-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d67-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    []
-                  ]
-                },
-                {
-                  "cells": [
-                    [],
-                    [
-                      {
-                        "id": "a7d67-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d67-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d67-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "갑상선암 및 기타피부암의 전이암 진단시(단, 최초1회에 한하여 지급)"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d67-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d67-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "a7d67-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "a7d67-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -65110,76 +63672,18 @@
               "code": "P0100"
             },
             {
-              "id": "a7d77-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "a7d77-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d77-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d77-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    []
-                  ]
-                },
-                {
-                  "cells": [
-                    [],
-                    [
-                      {
-                        "id": "a7d77-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d77-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d77-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "급성간염(A,B,C형)진단시(단, 최초1회에 한하여 지급)"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d77-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d77-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "a7d77-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "a7d77-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -65566,76 +64070,18 @@
               "code": "P0100"
             },
             {
-              "id": "a7d78-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "a7d78-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d78-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d78-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    []
-                  ]
-                },
-                {
-                  "cells": [
-                    [],
-                    [
-                      {
-                        "id": "a7d78-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d78-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d78-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "암특정재활치료시(급여,1일1회한,연간20회한)"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d78-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d78-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "a7d78-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "a7d78-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -66640,76 +65086,18 @@
               "code": "P0100"
             },
             {
-              "id": "a7d79-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "a7d79-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d79-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d79-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    []
-                  ]
-                },
-                {
-                  "cells": [
-                    [],
-                    [
-                      {
-                        "id": "a7d79-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d79-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d79-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "암특정통증완화치료시(급여,연간1회한)"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d79-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d79-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "a7d79-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "a7d79-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -68191,76 +66579,18 @@
               "code": "P0100"
             },
             {
-              "id": "a7d81-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "a7d81-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d81-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d81-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    []
-                  ]
-                },
-                {
-                  "cells": [
-                    [],
-                    [
-                      {
-                        "id": "a7d81-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d81-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d81-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "심근병증 진단시(단, 최초1회에 한하여 지급)"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d81-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d81-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "a7d81-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "a7d81-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -68595,76 +66925,18 @@
               "code": "P0100"
             },
             {
-              "id": "a7d82-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "a7d82-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d82-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d82-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    []
-                  ]
-                },
-                {
-                  "cells": [
-                    [],
-                    [
-                      {
-                        "id": "a7d82-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d82-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "계약일부터1년경과시점이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d82-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "갑상선기능저하증 진단시(단, 최초1회에 한하여 지급)"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d82-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d82-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "a7d82-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "a7d82-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -80692,76 +78964,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d108r-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d108r-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d108r-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d108r-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d108r-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터1년경과시점 전일 이전"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d108r-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터 1년경과시점 이후"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d108r-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "특정순환계질환진단비(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d108r-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d108r-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d108r-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d108r-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -80849,48 +79063,18 @@
                       "code": "P0500"
                     },
                     {
-                      "id": "a7d108r-a1-t4",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d108r-a1-t4-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d108r-a1-t4-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d108r-a1-t4-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d108r-a1-t4-r1c0-x1",
-                                "kind": "text",
-                                "text": "특정순환계질환진단비(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d108r-a1-t4-r1c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d108r-a1-t4-c-b",
+                          "when": "D0013 = true and D0005 = true",
+                          "children": [
+                            {
+                              "id": "a7d108r-a1-t4",
+                              "kind": "tableRef",
+                              "code": "DT000002"
+                            }
                           ]
                         }
                       ]
@@ -80984,76 +79168,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d108-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d108-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d108-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d108-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d108-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "계약일부터1년경과시점 전일 이전"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d108-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "계약일부터 1년경과시점 이후"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d108-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "특정순환계질환진단비(단, 최초1회에 한하여 지급)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d108-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d108-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%"
-                              }
-                            ]
+                          "id": "a7d108-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d108-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -89531,76 +87657,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d126r-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d126r-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d126r-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d126r-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d126r-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터 1년경과시점 전일 이전「2대질환」으로 진단확정 시"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d126r-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터 1년경과시점 이후「2대질환」으로 진단확정 시"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d126r-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "보험금 지급기간 동안「2대질환 주요치료」를 받은 경우(연간1회한, 10년간)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d126r-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%(보험금 지급기간 동안 적용)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d126r-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%(보험금 지급기간 동안 적용)"
-                              }
-                            ]
+                          "id": "a7d126r-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d126r-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -89663,48 +87731,18 @@
                       "code": "P0300"
                     },
                     {
-                      "id": "a7d126r-a1-t2",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d126r-a1-t2-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d126r-a1-t2-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d126r-a1-t2-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d126r-a1-t2-r1c0-x1",
-                                "kind": "text",
-                                "text": "보험금 지급기간 동안「2대질환 주요치료」를 받은 경우(연간1회한, 10년간)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d126r-a1-t2-r1c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%(보험금 지급기간 동안 적용)"
-                              }
-                            ]
+                          "id": "a7d126r-a1-t2-c-b",
+                          "when": "D0013 = true and D0005 = true",
+                          "children": [
+                            {
+                              "id": "a7d126r-a1-t2",
+                              "kind": "tableRef",
+                              "code": "DT000002"
+                            }
                           ]
                         }
                       ]
@@ -90020,76 +88058,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d126-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d126-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d126-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d126-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d126-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "계약일부터 1년경과시점 전일 이전「2대질환」으로 진단확정 시"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d126-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "계약일부터 1년경과시점 이후「2대질환」으로 진단확정 시"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d126-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "보험금 지급기간 동안「2대질환 주요치료」를 받은 경우(연간1회한, 10년간)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d126-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%(보험금 지급기간 동안 적용)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d126-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%(보험금 지급기간 동안 적용)"
-                              }
-                            ]
+                          "id": "a7d126-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d126-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -98853,76 +96833,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d130r-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d130r-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d130r-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d130r-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d130r-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터 1년경과시점 전일 이전「2대질환」으로 진단확정 시"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d130r-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "최초계약일부터 1년경과시점 이후「2대질환」으로 진단확정 시"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d130r-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "보험금 지급기간 동안 상급종합병원에서「2대질환 주요치료」를 받은 경우(연간1회한, 10년간)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d130r-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%(보험금 지급기간 동안 적용)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d130r-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%(보험금 지급기간 동안 적용)"
-                              }
-                            ]
+                          "id": "a7d130r-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d130r-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -98985,48 +96907,18 @@
                       "code": "P0300"
                     },
                     {
-                      "id": "a7d130r-a1-t2",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d130r-a1-t2-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d130r-a1-t2-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d130r-a1-t2-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d130r-a1-t2-r1c0-x1",
-                                "kind": "text",
-                                "text": "보험금 지급기간 동안상급종합병원에서「2대질환 주요치료」를 받은 경우(연간1회한, 10년간)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d130r-a1-t2-r1c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%(보험금 지급기간 동안 적용)"
-                              }
-                            ]
+                          "id": "a7d130r-a1-t2-c-b",
+                          "when": "D0013 = true and D0005 = true",
+                          "children": [
+                            {
+                              "id": "a7d130r-a1-t2",
+                              "kind": "tableRef",
+                              "code": "DT000002"
+                            }
                           ]
                         }
                       ]
@@ -99350,76 +97242,18 @@
                       "code": "P0100"
                     },
                     {
-                      "id": "a7d130-a1-t1",
-                      "kind": "table",
-                      "columns": [
-                        {},
-                        {},
-                        {}
-                      ],
-                      "rows": [
+                      "id": "a7d130-a1-t1-c",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "header": true,
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d130-a1-t1-r0c0-x1",
-                                "kind": "text",
-                                "text": "구분"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d130-a1-t1-r0c1-x1",
-                                "kind": "text",
-                                "text": "지급금액"
-                              }
-                            ],
-                            []
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [],
-                            [
-                              {
-                                "id": "a7d130-a1-t1-r1c1-x1",
-                                "kind": "text",
-                                "text": "계약일부터 1년경과시점 전일 이전「2대질환」으로 진단확정 시"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d130-a1-t1-r1c2-x1",
-                                "kind": "text",
-                                "text": "계약일부터 1년경과시점 이후「2대질환」으로 진단확정 시"
-                              }
-                            ]
-                          ]
-                        },
-                        {
-                          "cells": [
-                            [
-                              {
-                                "id": "a7d130-a1-t1-r2c0-x1",
-                                "kind": "text",
-                                "text": "보험금 지급기간 동안 상급종합병원에서「2대질환 주요치료」를 받은 경우(연간1회한, 10년간)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d130-a1-t1-r2c1-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 50%(보험금 지급기간 동안 적용)"
-                              }
-                            ],
-                            [
-                              {
-                                "id": "a7d130-a1-t1-r2c2-x1",
-                                "kind": "text",
-                                "text": "보험가입금액의 100%(보험금 지급기간 동안 적용)"
-                              }
-                            ]
+                          "id": "a7d130-a1-t1-c-b",
+                          "when": "D0013 = true",
+                          "children": [
+                            {
+                              "id": "a7d130-a1-t1",
+                              "kind": "tableRef",
+                              "code": "DT000001"
+                            }
                           ]
                         }
                       ]
@@ -137343,76 +135177,18 @@
               "code": "P0100"
             },
             {
-              "id": "a7d145-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "a7d145-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d145-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구 분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d145-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    []
-                  ]
-                },
-                {
-                  "cells": [
-                    [],
-                    [
-                      {
-                        "id": "a7d145-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "계약일부터 1년 경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d145-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "계약일부터 1년 경과시점 이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d145-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "항암중입자방사선치료시(단, 최초 1회에 한하여 지급)"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d145-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d145-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "a7d145-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "a7d145-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
@@ -173287,76 +171063,18 @@
               "code": "P0100"
             },
             {
-              "id": "a7d155-a1-t1",
-              "kind": "table",
-              "columns": [
-                {},
-                {},
-                {}
-              ],
-              "rows": [
+              "id": "a7d155-a1-t1-c",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "header": true,
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d155-a1-t1-r0c0-x1",
-                        "kind": "text",
-                        "text": "구 분"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d155-a1-t1-r0c1-x1",
-                        "kind": "text",
-                        "text": "지급금액"
-                      }
-                    ],
-                    []
-                  ]
-                },
-                {
-                  "cells": [
-                    [],
-                    [
-                      {
-                        "id": "a7d155-a1-t1-r1c1-x1",
-                        "kind": "text",
-                        "text": "계약일부터 1년 경과시점 전일 이전"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d155-a1-t1-r1c2-x1",
-                        "kind": "text",
-                        "text": "계약일부터 1년 경과시점이후"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "cells": [
-                    [
-                      {
-                        "id": "a7d155-a1-t1-r2c0-x1",
-                        "kind": "text",
-                        "text": "특정항암호르몬약물허가치료시(단, 연간 1회에한하여 지급)"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d155-a1-t1-r2c1-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 50%"
-                      }
-                    ],
-                    [
-                      {
-                        "id": "a7d155-a1-t1-r2c2-x1",
-                        "kind": "text",
-                        "text": "보험가입금액의 100%"
-                      }
-                    ]
+                  "id": "a7d155-a1-t1-c-b",
+                  "when": "D0013 = true",
+                  "children": [
+                    {
+                      "id": "a7d155-a1-t1",
+                      "kind": "tableRef",
+                      "code": "DT000001"
+                    }
                   ]
                 }
               ]
