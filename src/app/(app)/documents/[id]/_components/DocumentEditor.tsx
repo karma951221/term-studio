@@ -26,10 +26,7 @@ import { useRouter } from "next/navigation";
 
 import { Breadcrumb } from "@/app/_components/Breadcrumb";
 import { useItemEdit, useRestoredDraft } from "@/app/_components/ListDetailLayout";
-import { coordinateHref } from "@/app/_components/coordinateHref";
 import { DiscardDialog } from "@/app/_components/EditShell";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { IconClose, IconPanel } from "@/app/_components/icons";
 import { MoreMenu, type MoreMenuItem } from "@/app/_components/MoreMenu";
 import { HeadActions, HeadButton, HeadIconButton } from "@/app/_components/HeadActions";
@@ -37,7 +34,6 @@ import { DOC_TEMPLATE_LABEL } from "@/app/_lib/labels";
 import { describeRejection } from "@/app/_lib/rejection";
 import type { Discriminator, EnumDef } from "@/domain/catalog";
 import { switchValueLabeler, type Clause } from "@/domain/clause";
-import { formatCoordinate } from "@/domain/coordinate";
 import type { Coverage } from "@/domain/coverage";
 import {
   applyEdit,
@@ -84,6 +80,7 @@ import { refLabelOf } from "./condition/display";
 import type { ConditionContext } from "./condition/types";
 import { anchorOf, type Anchor, type CellAt, type DocCtx, type DocMode, type EditHandlers } from "./ctx";
 import { ArticleBody } from "./DocBody";
+import { DocumentSaveConfirm } from "./DocumentSaveConfirm";
 import { backspaceOps, enterOps, insertedChip, inlineListAt, moveSelectionOps, pasteGridOps } from "./editOps";
 import { caretFromPoint, tokensOf } from "./Inline";
 import { identityRuns, runsFromTokens, sameRuns, type Token } from "./inlineRuns";
@@ -1138,60 +1135,7 @@ export function DocumentEditor(props: EditorProps) {
           }}
         />
       ) : null}
-      {confirmSave ? (
-        <Dialog open onOpenChange={(open) => { if (!open && !pending) setConfirmSave(undefined); }}>
-          <DialogContent showCloseButton={false} aria-describedby={undefined} className="sm:max-w-[560px]">
-          <DialogTitle className="ts-confirm-title">저장하면 참조 {confirmSave.brokenRefs.length}건이 깨진다</DialogTitle>
-          {(() => {
-            // 상품 영향(ADR-0081 결정 3)은 상품별로 묶어 앞에 — 「이 템플릿을 쓰는 상품 N개에서 참조가 깨집니다」
-            const products = confirmSave.brokenRefs.filter((c) => c.document === "product");
-            const docs = confirmSave.brokenRefs.filter((c) => c.document !== "product");
-            const productCount = new Set(products.map((c) => c.ownerId)).size;
-            const line = (c: Coordinate, i: number) => {
-              const href = coordinateHref(c);
-              return (
-                <li key={i}>
-                  {formatCoordinate(c, { source: true })}
-                  {href && (
-                    <>
-                      {" "}
-                      ·{" "}
-                      <a href={href} target="_blank" rel="noreferrer">
-                        새 창에서 보기
-                      </a>
-                    </>
-                  )}
-                </li>
-              );
-            };
-            return (
-              <>
-                {products.length > 0 && (
-                  <>
-                    <p>이 템플릿을 쓰는 상품 {productCount}개에서 참조가 깨집니다 — 확인하면 저장되고, 그 상품은 보통약관 탭에서 가리키는 조를 사본으로 고친다(고치기 전까지 그 탭 저장은 거부된다).</p>
-                    <ul className="ts-confirm-loss">{products.map(line)}</ul>
-                  </>
-                )}
-                {docs.length > 0 && (
-                  <>
-                    <ul className="ts-confirm-loss">{docs.map(line)}</ul>
-                    <p className="ts-muted">지운 조를 가리키던 조연결 · 보통약관 조 참조는 깨진 참조가 된다.</p>
-                  </>
-                )}
-              </>
-            );
-          })()}
-          <DialogFooter className="ts-confirm-actions">
-            <Button onClick={() => setConfirmSave(undefined)} disabled={pending}>
-              취소
-            </Button>
-            <Button variant="destructive" onClick={() => save(true)} disabled={pending}>
-              참조 {confirmSave.brokenRefs.length}건 끊고 저장
-            </Button>
-          </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      ) : null}
+      {confirmSave ? <DocumentSaveConfirm impact={confirmSave} pending={pending} onCancel={() => setConfirmSave(undefined)} onConfirm={() => save(true)} /> : null}
     </div>
   );
 }
