@@ -42,11 +42,21 @@
   --font-mono: var(--mono);
 
   /* 떠 있는 요소(메뉴 · 대화상자 · 팝오버 · 툴팁 · 선택 목록)만 — 디자인원칙 §5 */
-  --shadow-float: 0 4px 16px rgb(26 24 21 / 0.08), 0 1px 3px rgb(26 24 21 / 0.06);
+  --shadow-float: var(--ts-shadow-float);
 }
 
 /* preflight 대신 — shadcn 위젯(data-slot) 범위에서만 브라우저 기본 모양을 지운다 */
 @layer base {
+  /* 떠 있는 그림자 — 다크에서는 어두운 바탕에 묻히지 않게 더 짙게 */
+  :root {
+    --ts-shadow-float: 0 4px 16px rgb(26 24 21 / 0.08), 0 1px 3px rgb(26 24 21 / 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ts-shadow-float: 0 4px 16px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
+    }
+  }
+
   [data-slot],
   [data-slot]::before,
   [data-slot]::after {
@@ -69,5 +79,15 @@
   a[data-slot] {
     color: inherit;
     text-decoration: none;
+  }
+
+  /* NativeSelect ▾ — 색은 --ts-ink-3 값을 따라 라이트 · 다크로 나눈다(배경 이미지는 var() 를 못 쓴다) */
+  select[data-slot="native-select"] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2377726a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+  @media (prefers-color-scheme: dark) {
+    select[data-slot="native-select"] {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239c968a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    }
   }
 }

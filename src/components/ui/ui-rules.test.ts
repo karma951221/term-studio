@@ -21,10 +21,6 @@ const EXPECTED = [
 const FLOATING = ["dialog.tsx", "dropdown-menu.tsx", "popover.tsx", "select.tsx", "tooltip.tsx"];
 
 describe("NativeSelect — cn(twMerge) 를 거쳐도 바탕색이 남는다", () => {
-  // 이 파일도 Tailwind 가 훑는다(@source "../") — 테스트 이름 · 문자열에 온전한 임의값 클래스를 쓰면 빌드 CSS 에 실린다.
-  // 그래서 클래스 이름은 조각을 이어 만든다.
-  const URL_PREFIX = "bg-" + "[url(";
-
   it("bg-transparent 가 class 에 있다 (위치 임의값을 바탕색으로 읽어 지우던 버그 — 밑줄 칸은 바탕이 투명)", () => {
     const html = renderToStaticMarkup(createElement(NativeSelect));
     const cls = html.match(/class="([^"]*)"/)?.[1]?.split(/\s+/) ?? [];
@@ -32,13 +28,12 @@ describe("NativeSelect — cn(twMerge) 를 거쳐도 바탕색이 남는다", ()
     expect(cls).toContain("bg-no-repeat");
   });
 
-  it("화살표 배경 이미지 클래스는 공백 · 따옴표 · 역슬래시 없는 한 토큰이다 — 공백은 class 를 쪼개고, 소스의 \\\" 는 Tailwind 가 그대로 읽어 깨진 url 을 낸다", () => {
+  it("▾ 화살표는 ui.css 가 라이트 · 다크 두 색으로 그린다 (class 에 하드코딩 색이 없다)", () => {
     const html = renderToStaticMarkup(createElement(NativeSelect));
-    const cls = html.match(/class="([^"]*)"/)?.[1]?.split(/\s+/) ?? [];
-    const url = cls.filter((c) => c.startsWith(URL_PREFIX));
-    expect(url).toHaveLength(1);
-    expect(url[0]).toMatch(/\)\]$/);
-    expect(url[0]).not.toMatch(/&quot;|&#x27;|["'\\]/);
+    expect(html).not.toMatch(/url\(|%2377726a/);
+    const css = readFileSync("src/app/ui.css", "utf8");
+    expect(css).toMatch(/select\[data-slot="native-select"\][\s\S]*?%2377726a/);
+    expect(css).toMatch(/prefers-color-scheme: dark[\s\S]*?select\[data-slot="native-select"\][\s\S]*?%239c968a/);
   });
 });
 
@@ -101,5 +96,23 @@ describe("shadcn 위젯 형태 규칙", () => {
 
   it.each(["button.tsx", "input.tsx", "textarea.tsx", "native-select.tsx"])("%s — data-slot 이 붙는다(레거시 가두기의 열쇠)", (f) => {
     expect(read(f)).toMatch(/data-slot="/);
+  });
+
+  it("table — border-collapse (preflight 없이 행 테두리가 갈라지지 않게)", () => {
+    expect(read("table.tsx")).toMatch(/\bborder-collapse\b/);
+  });
+
+  it.each(["checkbox.tsx", "switch.tsx", "select.tsx", "tabs.tsx"])("%s — 누르는 위젯은 cursor-pointer", (f) => {
+    expect(read(f)).toMatch(/\bcursor-pointer\b/);
+  });
+
+  it("dialog · popover 의 제목 · 설명은 브라우저 기본 여백(h2 · p)을 지운다", () => {
+    expect(read("dialog.tsx")).toMatch(/cn\("m-0 text-lg/);
+    expect(read("dialog.tsx")).toMatch(/cn\("m-0 text-\[13px\]/);
+    expect(read("popover.tsx")).toMatch(/cn\("m-0 text-muted-foreground"/);
+  });
+
+  it("badge destructive — text-white 하드코딩 없이 토큰", () => {
+    expect(read("badge.tsx")).not.toMatch(/\btext-white\b/);
   });
 });
