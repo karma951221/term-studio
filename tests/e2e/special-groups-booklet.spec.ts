@@ -70,9 +70,9 @@ test(
         await page.goto(`${url}?tab=coverages`);
         await page.waitForLoadState("networkidle");
         await page.getByRole("button", { name: "편집", exact: true }).click();
-        const specials = page.getByRole("region", { name: "특별약관", exact: true });
-        await specials.getByRole("button", { name: "특별약관에 담보 추가" }).click();
-        await pickCombo(specials.getByRole("combobox", { name: "담보 · 특별약관에 추가", exact: true }), { label: SURGERY });
+        const specials = page.getByRole("region", { name: "보장조항", exact: true }); // 독립특약 상품담보 탭은 「보장조항」 표 하나 (기능/상품 §4.5)
+        await specials.getByRole("button", { name: "보장조항에 담보 추가" }).click();
+        await pickCombo(specials.getByRole("combobox", { name: "담보 · 보장조항에 추가", exact: true }), { label: SURGERY });
         await specials.getByRole("button", { name: "추가", exact: true }).click();
 
         const groups = page.getByRole("region", { name: "특약 그룹", exact: true });

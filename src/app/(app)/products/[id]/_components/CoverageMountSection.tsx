@@ -75,6 +75,8 @@ export interface CoverageMountSectionProps {
   initialAddOpen?: boolean;
   /** 특별약관 표 「그룹」 칸 — 담보 id → 그룹 제목 (ADR-0090). 없으면 「—」. */
   groupLabel?: (coverageId: Id) => GroupCellLabel;
+  /** 표 제목 — 독립특약 상품의 특약 표는 「보장조항」(기능/상품 §4.5, 2026-11-01). 없으면 절 이름. */
+  titleOverride?: string;
 }
 
 const planLabel = (plans: readonly ProductPlan[], id: Id) => {
@@ -92,8 +94,8 @@ const planLabel = (plans: readonly ProductPlan[], id: Id) => {
  *   되돌리기, 더한 행은 빠진다). 바뀐 행에 「추가」 · 「변경」 · 「삭제」. 표 아래 「+ 담보 추가」 → 그 자리에 펼쳐지는 줄(담보 찾기 · 담보속성 → 추가 · 닫기).
  *   저장 거부는 그 행 아래에. 오른쪽에 떠 있던 탑재 폼은 없다 — 표와 겹쳤다(2026-10-04 사용자 QA).
  */
-export function CoverageMountSection({ productId, section, items, coverages, attributeKinds, plans, attachedPlans, suggestedNames, query = "", page, keepQuery = {}, edit, initialAddOpen = false, groupLabel }: CoverageMountSectionProps) {
-  const title = SECTION_TITLE[section];
+export function CoverageMountSection({ productId, section, items, coverages, attributeKinds, plans, attachedPlans, suggestedNames, query = "", page, keepQuery = {}, edit, initialAddOpen = false, groupLabel, titleOverride }: CoverageMountSectionProps) {
+  const title = titleOverride ?? SECTION_TITLE[section];
   const keys = MOUNT_QUERY_KEYS[section];
   const withGroup = section === "special";
   const byId = new Map(coverages.map((c) => [c.id, c]));

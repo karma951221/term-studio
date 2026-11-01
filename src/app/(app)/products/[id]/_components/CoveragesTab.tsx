@@ -131,6 +131,8 @@ export function CoveragesTab(props: CoveragesTabProps) {
   const current: CoveragesDraft = editing ? draft : saved;
   const groupLabel = (coverageId: Id): GroupCellLabel => groupCellLabel(current, ctx, categories, coverageId);
   const common = { productId, coverages, attributeKinds, plans, attachedPlans, suggestedNames, groupLabel };
+  // 독립특약 상품은 「보장조항」 표 하나 — 비어 있는 기본계약 표는 감춘다. 옛 기본계약 행이 남았으면 보여서 고칠 수 있게 (§4.5)
+  const hideBase = standalone && baseCoverages.length === 0 && !(editing && draft.rows.some((r) => r.section === "base"));
   const coverageName = (id: Id) => coverageById.get(id)?.name ?? draft.rows.find((r) => r.coverageId === id)?.coverageName ?? id;
   return (
     <div className="ts-coverages-tab">
@@ -147,19 +149,22 @@ export function CoveragesTab(props: CoveragesTabProps) {
         {baseCheck.ok && <IssueList issues={baseCheck.value.flatMap((chk) => chk.issues)} />}
       </div>
       <fieldset className="ts-coverages-body" disabled={pending || !!confirmation} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-        <CoverageMountSection
-          {...common}
-          section="base"
-          items={baseCoverages}
-          query={mountSearch.base.query}
-          page={mountSearch.base.page}
-          keepQuery={keep("special")}
-          {...(edit ? { edit } : {})}
-          initialAddOpen={initialAddOpen === "base"}
-        />
+        {!hideBase && (
+          <CoverageMountSection
+            {...common}
+            section="base"
+            items={baseCoverages}
+            query={mountSearch.base.query}
+            page={mountSearch.base.page}
+            keepQuery={keep("special")}
+            {...(edit ? { edit } : {})}
+            initialAddOpen={initialAddOpen === "base"}
+          />
+        )}
         <CoverageMountSection
           {...common}
           section="special"
+          {...(standalone ? { titleOverride: "보장조항" } : {})}
           items={specialCoverages}
           query={mountSearch.special.query}
           page={mountSearch.special.page}
