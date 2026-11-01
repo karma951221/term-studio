@@ -200,6 +200,34 @@ export function checkDependents(next: Discriminator, ctx: Pick<CatalogContext, "
   return issues;
 }
 
+// ───────────────────────────── 준용예외 구분자 ─────────────────────────────
+
+function uniqueIds(ids: readonly string[]): string[] {
+  return [...new Set(ids)];
+}
+
+/**
+ * 결과 타입 「조 참조 목록」(준용예외 구분자, 기능/구분자 §3.8 · ADR-0098 결정 1) — 식 대신 후보(템플릿 조)를 둔다.
+ * 값은 조립이 특약 · 블록(상품담보) 문맥마다 판정하므로 담보 레벨이다. 식을 쓰면 거부한다 — 범용 「계산 규칙」 칸은 두지 않는다.
+ */
+function checkRefList(input: { level: AttachLevel; expression: string; candidates?: readonly unknown[] }): Issue[] {
+  const out: Issue[] = [];
+  if (input.expression.trim() !== "") out.push(issue("typeMismatch", "「조 참조 목록」 구분자는 식을 쓰지 않습니다 — 후보 조를 고르면 값은 조립이 판정한다"));
+  if (input.level !== "coverage") out.push(issue("typeMismatch", "「조 참조 목록」 구분자는 담보 레벨이다 — 값이 특약 · 블록 문맥마다 다르다"));
+  if (input.candidates !== undefined && !input.candidates.every((c) => typeof c === "string" && c !== "")) out.push(issue("typeMismatch", "후보는 보통약관 템플릿 조 id 목록이어야 합니다"));
+  return out;
+}
+
+const REF_LIST_FIXED = "「조 참조 목록」 구분자는 식 · 결과 타입을 바꾸지 않습니다 — 후보 조만 고친다 (새 결과 타입이 필요하면 새로 만든다)";
+
+/** 후보 바꾸기 — 준용예외 구분자만 (ADR-0098 결정 1). 같은 조는 한 번(고른 순). */
+export function setCandidates(def: Discriminator, candidates: readonly string[]): Result<Discriminator> {
+  if (def.resultType?.kind !== "list<ref>") return invalid([issue("typeMismatch", "후보 조는 결과 타입 「조 참조 목록」(준용예외) 구분자만 둔다")]);
+  const issues = checkRefList({ level: def.level, expression: "", candidates });
+  if (issues.length > 0) return invalid(issues);
+  return ok({ ...def, candidates: uniqueIds(candidates) });
+}
+
 // ───────────────────────────── 생성 ─────────────────────────────
 
 /** 구분자 채번. 코드는 여기서 태어난다 — 입력에 code 는 없다. */
@@ -212,6 +240,14 @@ export async function createDiscriminator(
 
   const dup = findDuplicateLabel(input.label, input.level, ctx.existing);
   if (!dup.ok) return dup as Result<Discriminator>;
+
+  if (input.resultType?.kind === "list<ref>") {
+    const refIssues = checkRefList(input);
+    if (refIssues.length > 0) return invalid(refIssues);
+    const code = await allocateCode("discriminator", "", ctx.nextSeq);
+    return ok({ code, label: input.label, description: input.description ?? "", level: input.level, expression: "", resultType: input.resultType, candidates: uniqueIds(input.candidates ?? []) });
+  }
+  if (input.candidates !== undefined && input.candidates.length > 0) return invalid([issue("typeMismatch", "후보 조는 결과 타입 「조 참조 목록」(준용예외) 구분자만 둔다")]);
 
   const checked = expressionCheck(ctx)(input.expression, input.level);
   if (!checked.ok) return checked as Result<Discriminator>;
@@ -267,6 +303,7 @@ export function setExpression(
   retype?: { resultType: DiscriminatorResultType | undefined },
 ): Result<Discriminator> {
   const resultType = retype ? retype.resultType : def.resultType;
+  if (def.resultType?.kind === "list<ref>" || resultType?.kind === "list<ref>") return invalid([issue("typeMismatch", REF_LIST_FIXED)]);
   const checked = expressionCheck(ctx)(expression, def.level);
   if (!checked.ok) return checked as Result<Discriminator>;
   const typeIssues = checkDeclaredResultType(resultType, checked.value as ExprType, ctx.findEnum);
@@ -289,6 +326,7 @@ export function setResultType(
   ctx: Pick<CatalogContext, "checkExpression" | "catalog" | "findEnum">,
 ): Result<Discriminator> {
   if (!resultType) return invalid([issue("typeMismatch", "결과 타입을 고르세요")]);
+  if (def.resultType?.kind === "list<ref>" || resultType.kind === "list<ref>") return invalid([issue("typeMismatch", REF_LIST_FIXED)]);
   const enumIssues = checkResultTypeEnum(resultType, ctx.findEnum);
   if (enumIssues.length > 0) return invalid(enumIssues);
   const checked = expressionCheck(ctx)(def.expression, def.level);

@@ -65,7 +65,10 @@ export function valueFromInput(type: FieldType, raw: string): Value | undefined 
  * 종류 셀렉트의 선택지 — 결과 타입은 필수다 (2026-10-17). 생성 폼과 상세 편집이 같이 쓴다.
  * 값이 비었을 때(식이 아직 안 서 추론 기본값이 없다)만 맨 앞에 「고르세요」 자리를 둔다 — `resultTypeOptions`.
  */
-export const RESULT_TYPE_OPTIONS = TYPE_OPTIONS;
+/** 결과 타입 「조 참조 목록」 — 준용예외 구분자 전용(식 대신 후보 조, 기능/구분자 §3.8 · ADR-0098). */
+export const REF_LIST_KIND = "list<ref>";
+export const REF_LIST_LABEL = "조 참조 목록";
+export const RESULT_TYPE_OPTIONS: readonly { value: string; label: string }[] = [...TYPE_OPTIONS, { value: REF_LIST_KIND, label: `${REF_LIST_LABEL} (준용예외)` }];
 const RESULT_TYPE_PLACEHOLDER = { value: "", label: "고르세요" } as const;
 export function resultTypeOptions(kind: string): readonly { value: string; label: string }[] {
   return kind === "" ? [RESULT_TYPE_PLACEHOLDER, ...RESULT_TYPE_OPTIONS] : RESULT_TYPE_OPTIONS;
@@ -95,6 +98,7 @@ export interface ResultTypeForm {
  * 서비스가 `brokenRef` 로 거부하게 둔다 (`fieldTypeFrom` 과 다른 점).
  */
 export function resultTypeFromForm(kind: string, multi: boolean, enumCode: string): DiscriminatorResultType | undefined {
+  if (kind === REF_LIST_KIND) return { kind: "list<ref>" };
   if (!RESULT_TYPE_KINDS.has(kind)) return undefined;
   return resolveType(kind as Exclude<FieldTypeKind, "table">, multi, enumCode) as DiscriminatorResultType;
 }
@@ -102,12 +106,14 @@ export function resultTypeFromForm(kind: string, multi: boolean, enumCode: strin
 /** 명시 결과 타입 → 폼 입력 (역변환). `list<enum>` 은 종류 enum + 복수. */
 export function resultTypeToForm(t: DiscriminatorResultType | undefined): ResultTypeForm {
   if (!t) return { kind: "", multi: false, enumCode: "" };
+  if (t.kind === "list<ref>") return { kind: REF_LIST_KIND, multi: false, enumCode: "" };
   return { kind: baseKind(t.kind), multi: isMulti(t.kind), enumCode: "enumCode" in t ? t.enumCode : "" };
 }
 
 /** 읽기 표시 — `참거짓` · `목록값 · 해약환급금유형` · `목록값(복수) · …`. 결과 타입은 필수라 늘 있다 — 비면(이행 전 옛 행) `없음`. */
 export function resultTypeLabel(t: DiscriminatorResultType | undefined, enumLabel: (code: string) => string | undefined): string {
   if (!t) return "없음";
+  if (t.kind === "list<ref>") return REF_LIST_LABEL;
   const base = TYPE_LABEL[t.kind];
   return "enumCode" in t ? `${base} · ${enumLabel(t.enumCode) ?? t.enumCode}` : base;
 }
@@ -304,7 +310,8 @@ export function insertPanelData(master: MasterTree, defs: readonly Discriminator
   const catalog = new Map(defs.map((d) => [d.code, d]));
   const discriminators = defs.map((d) => {
     const type = discriminatorResultType(d, master, catalog);
-    return { code: d.code, label: d.label, level: d.level, ...(type ? { typeKind: type.kind } : {}) };
+    // 조 참조 목록(준용예외)은 식 패널의 재료가 아니다 — 식에서는 count 만 읽는다
+    return { code: d.code, label: d.label, level: d.level, ...(type && type.kind !== "list<ref>" ? { typeKind: type.kind } : {}) };
   });
   return { forms: [...forms.values()], discriminators };
 }

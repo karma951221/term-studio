@@ -75,7 +75,8 @@ function typeOf(env: SubstituteEnv, ref: ValueRef | OutputRef): FieldType | unde
   if (ref.kind === "builtin" || ref.kind === "output") return { kind: "string" };
   if (ref.kind === "discriminator") {
     const def = env.catalog.get(ref.code);
-    return def ? discriminatorResultType(def, env.master, env.catalog) : undefined;
+    const t = def ? discriminatorResultType(def, env.master, env.catalog) : undefined;
+    return t?.kind === "list<ref>" ? undefined : t; // 조 참조 목록은 글로 찍지 않는다 — 문장 안 반복의 원천으로만 (ADR-0098)
   }
   const field = findMasterField(refPath(ref), env.master);
   return field ? slotType(field.level, field.path, env.master) : undefined;

@@ -268,7 +268,7 @@ export function paramEntries(params: readonly ParamDef[], enums: readonly EnumCh
       // 조 참조 인자는 식에서 읽지 않는다 — 조건 · 슬롯 · 값별 분기 고르기에 나오지 않는다 (ADR-0083 결정 2)
       if (p.type.kind === "articleRef") return [];
       const out: CtxDiscriminator = { code: `arg.${p.name}`, label: `${p.name}(인자)`, level: "product", forms: [], param: true };
-      if (p.type.kind !== "planOptions") out.type = p.type;
+      if (p.type.kind !== "planOptions" && p.type.kind !== "list<ref>") out.type = p.type;
       if (p.type.kind === "enum" || p.type.kind === "list<enum>") {
         const code = p.type.enumCode;
         out.enumOptions = (enums.find((e) => e.code === code)?.values ?? []).map((v) => ({ code: v.code, label: v.label }));

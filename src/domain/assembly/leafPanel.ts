@@ -70,7 +70,8 @@ export function leafPanel(master: MasterBundle, product: ProductInput, productCo
     else {
       const parsed = parse(path ? `${code}@${path}` : code);
       const r = parsed.ok ? evaluate(parsed.value, { ...ctx, coordinate: at }) : undefined;
-      const f = r?.kind === "value" ? formatValue(r.value, def ? discriminatorResultType(def, input.master, defs) : undefined, enums, at) : undefined;
+      const t = def ? discriminatorResultType(def, input.master, defs) : undefined;
+      const f = r?.kind === "value" ? formatValue(r.value, t?.kind === "list<ref>" ? undefined : t, enums, at) : undefined;
       if (f?.ok) row.value = f.text;
       else if (f) {
         row.problem = "invalid";

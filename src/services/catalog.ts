@@ -46,6 +46,7 @@ import {
   type NewDiscriminator,
   type NewEnum,
   type NewEnumValue,
+  type RefListType,
 } from "@/domain/catalog";
 import { formatCoordinate } from "@/domain/coordinate";
 import type { ExprType } from "@/domain/expression";
@@ -175,7 +176,7 @@ export function createCatalogService(db: Db, deps: CatalogServiceDeps = {}): Cat
 
   const catalogAt = (def: Discriminator): Coordinate => ({ document: "catalog", ownerId: def.code, ownerName: def.label });
 
-  const sameFieldType = (a: FieldType | undefined, b: FieldType): boolean =>
+  const sameFieldType = (a: FieldType | RefListType | undefined, b: FieldType | RefListType): boolean =>
     a !== undefined && a.kind === b.kind && ("enumCode" in a ? a.enumCode : undefined) === ("enumCode" in b ? b.enumCode : undefined);
 
   /**

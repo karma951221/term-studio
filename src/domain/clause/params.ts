@@ -22,7 +22,7 @@ import type { Clause } from "./types";
 // ───────────────────────────── 타입 ─────────────────────────────
 
 /** 값 인자 타입 — 구분자 결과 타입(표 제외) 또는 세목 선택지 목록(폼 하나의 선택지들). 식에서 `arg.<이름>` 으로 읽는다. */
-export type ValueParamType = Exclude<FieldType, { kind: "table" }> | { kind: "planOptions"; form: Code };
+export type ValueParamType = Exclude<FieldType, { kind: "table" }> | { kind: "planOptions"; form: Code } | { kind: "list<ref>" };
 
 /** 인자 타입 — 값 인자 타입 또는 「조 참조」(ADR-0083 — 식에서 읽지 않는다). */
 export type ParamType = ValueParamType | { kind: "articleRef" };
@@ -139,6 +139,8 @@ export function describeParamType(t: ExprType | ParamType): string {
       return `${t.kind}<${t.enumCode}>`;
     case "planOptions":
       return `세목 선택지 목록<${t.form}>`;
+    case "list<ref>":
+      return "조 참조 목록";
     default:
       return t.kind;
   }
