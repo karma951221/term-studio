@@ -83,7 +83,7 @@ import { articleOptionOps, formSnapshot } from "./editTabRules";
 import { RefTargetTree } from "./RefTargetTree";
 import { connectorEnabled, pickedPreview, restrictShown, restrictSuffix } from "./refFields";
 import { keyChoicesFor, restrictHint, restrictMode, restrictOfForm, treeLoopChoicesFor, treeLoopsAt } from "./restrict";
-import { loopChoices, loopsAround, nodeTreeAt, repeatChoices, sourceOfValue, sourceValue, type RepeatChoice } from "./repeatSources";
+import { currentArticleRef, loopChoices, loopsAround, nodeTreeAt, refListRepeatOptions, repeatChoices, sourceOfValue, sourceValue, type RepeatChoice } from "./repeatSources";
 import { CaseControls } from "./SwitchControls";
 import { unassignedValues } from "./switchCases";
 
@@ -1123,7 +1123,7 @@ function InlineRepeatPopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec
   const node = editing?.kind === "inlineFor" ? editing : undefined;
   const placeId = node ? node.id : spec.kind === "repeatInline" ? ("tableId" in spec.at ? spec.at.tableId : spec.at.parentId) : undefined;
   const around = placeId !== undefined ? loopsAround(ix, placeId).filter((l) => l.id !== node?.id) : [];
-  const choices = repeatChoices({ ...(around.at(-1) ? { outer: around.at(-1)! } : {}), depth: around.length, ...(env.enumOf ? { enumOf: env.enumOf } : {}) });
+  const choices = repeatChoices({ ...(around.at(-1) ? { outer: around.at(-1)! } : {}), depth: around.length, ...(env.enumOf ? { enumOf: env.enumOf } : {}), ...refListRepeatOptions(env.condition) });
   const current = node && isRepeatSource(node.source) ? sourceValue(node.source) : "";
   const b = nodeBuilders(env.newId);
   const shell = useContext(ShellContext);
@@ -1226,6 +1226,8 @@ function InlineRepeatPopup({ env, spec, anchor, onClose }: { env: PopupEnv; spec
           const alias = str(fd, "alias");
           const outer = around.at(-1)?.source;
           const repeat = b.inlineFor(source, inlineRepeatBody(source, outer && isRepeatSource(outer) ? outer : undefined, b, env.enumOf), { connector, ...(alias ? { alias } : {}) });
+          // 조 참조 목록(준용예외마다)은 현재 원소 조 참조 하나로 시작한다 (ADR-0098 결정 2)
+          if (source.kind === "refList") repeat.children = [currentArticleRef(repeat.id, env.newId)];
           const list = inlineListAt(env.latest(), at);
           if (!list) return "문장 자리를 찾을 수 없다 — 다시 오른쪽 클릭한다.";
           return [{ type: "setInlines", at, runs: runsFromTokens(list, spec.tokens, env.newId, repeat) }];

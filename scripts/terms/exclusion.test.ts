@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Discriminator } from "../../src/domain/catalog/types";
 import type { ClauseRecord } from "./clauses";
-import { rewriteExclusions } from "./exclusion";
+import { rewriteDocumentExclusions, rewriteExclusions } from "./exclusion";
 
 const D = (code: string, candidates: string[]): Discriminator => ({ code, label: code, level: "coverage", expression: "", description: "", resultType: { kind: "list<ref>" }, candidates });
 const catalog = [D("D0013", ["g-a9", "g-a10", "g-a38"]), D("D0014", ["g-a9", "g-a10", "g-a27_1", "g-a27_2", "g-a38"])];
@@ -85,5 +85,47 @@ describe("준용규정 함수조항 — 수동 제외 조 목록 → 준용예�
   it("후보가 같은 준용예외 구분자가 카탈로그에 없으면 보고한다", () => {
     const c = clause([...head, ref("r", ["g-a5"]), { id: "t", kind: "text", text: "은 제외합니다." }]);
     expect(rewriteExclusions([c], catalog)[0]).toMatch(/g-a5/);
+  });
+});
+
+describe("담보약관 문면의 수동 제외 조 목록 → 준용예외 구분자 원천 + 조건 + 문장 안 반복 (ADR-0098 결정 2 · B5)", () => {
+  const gref = (id: string, ids: string[]) => ({ ...ref(id, ids), scope: "general" });
+  const doc = (children: unknown[]) => ({ id: "doc", kind: "document", title: "t", children: [{ id: "a", kind: "article", title: [], children: [{ id: "p", kind: "paragraph", code: "P0001", children }] }] });
+  const para = (d: { children: { children: { children: unknown[] }[] }[] }) => d.children[0].children[0];
+
+  it("보통약관 조 참조 목록이면 구분자 코드 원천 · count 조건 · 현재 원소 조 참조(빈 조 id) — 후보는 순서 · 중복과 무관하게 집합으로 맞댄다", () => {
+    const d = doc([{ id: "h", kind: "text", text: "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, " }, gref("r", ["g-a38", "g-a9", "g-a10", "g-a38"]), { id: "t", kind: "text", text: "은 제외합니다." }]);
+    expect(rewriteDocumentExclusions("doc-x", d, catalog)).toEqual([]);
+    expect(para(d as never).children).toEqual([
+      { id: "h", kind: "text", text: "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다." },
+      {
+        id: "r-if",
+        kind: "inlineCond",
+        branches: [
+          {
+            id: "r-if-b",
+            when: "count(D0013) > 0",
+            children: [
+              { id: "r-if-t", kind: "text", text: " 다만, " },
+              { id: "r-each", kind: "inlineFor", source: { kind: "refList", ref: "D0013" }, alias: "준용예외마다", connector: "및", children: [{ id: "r", kind: "articleRef", targets: [{ articleId: "", restrict: { current: "r-each" } }], scope: "general" }] },
+              { id: "t", kind: "text", text: "은 제외합니다." },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("이 문서 조 참조(「다만, 제N조에 따라 …」)는 건드리지 않는다", () => {
+    const children = [{ id: "h", kind: "text", text: "지급합니다. 다만, " }, { ...ref("r", ["a7-a5"]), scope: "self" }, { id: "t", kind: "text", text: "에 따라 지급한 경우에는 뺍니다." }];
+    const d = doc(structuredClone(children));
+    expect(rewriteDocumentExclusions("doc-x", d, catalog)).toEqual([]);
+    expect(para(d as never).children).toEqual(children);
+  });
+
+  it("후보가 맞는 구분자가 없으면 보고하고 그 문서는 그대로", () => {
+    const d = doc([{ id: "h", kind: "text", text: "따릅니다. 다만, " }, gref("r", ["g-a5"]), { id: "t", kind: "text", text: "은 제외합니다." }]);
+    expect(rewriteDocumentExclusions("doc-x", d, catalog)[0]).toMatch(/doc-x.*g-a5/);
+    expect(para(d as never).children[1]).toMatchObject({ kind: "articleRef" });
   });
 });

@@ -295,6 +295,18 @@ describe("문장 안 반복 넣기 (ADR-0088 결정 1 · 기능/문면 §4.3)", 
     expect(placeMenu(env(t), { kind: "inline", at: { parentId: item.id } }).flat().find((i) => i.label === "문장 안 반복…")?.refusal).toContain("한 단계");
   });
 
+  it("담보약관의 조 참조 목록 반복(준용예외마다) 본문 — 「조 참조 — 현재 조(…)」가 서고, 다른 반복 · 「비었을 때」 칸에는 없다 (ADR-0098 · B5)", () => {
+    const b = nodeBuilders(sequentialIds("x"));
+    const each = b.inlineFor({ kind: "refList", ref: "D0014" }, [], { connector: "및", alias: "준용예외마다" });
+    const plan = b.inlineFor({ kind: "planOptions", form: "waiver" }, [b.text("a")], { connector: "및" });
+    const t = b.document("D", [b.article("가", [b.paragraph([each, plan])])]);
+    const at = (parentId: string, slot?: "fallback") => placeMenu(env(t), { kind: "inline", at: { parentId, ...(slot ? { slot } : {}) } }).flat().map((i) => i.label);
+    expect(at(each.id)).toContain("조 참조 — 현재 조(준용예외마다)");
+    expect(at(each.id, "fallback")).not.toContain("조 참조 — 현재 조(준용예외마다)");
+    expect(at(plan.id).some((l) => l.startsWith("조 참조 — 현재 조"))).toBe(false);
+    expect(toolFor(DOCUMENT_TOOLS, "조 참조 — 현재 조(준용예외마다)")?.id).toBe("articleRef");
+  });
+
   it("문장 안 반복 칩의 메뉴 — 고치기(팝업) · 삭제", () => {
     const b = nodeBuilders(sequentialIds("x"));
     const inline = b.inlineFor({ kind: "planOptions", form: "waiver" }, [b.text("a")], { connector: "및" });

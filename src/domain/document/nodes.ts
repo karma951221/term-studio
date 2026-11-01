@@ -22,7 +22,7 @@ import type { ClauseMode } from "../clause/types";
 import { isParticlePreset, PARTICLE_PRESET_MESSAGE, type ParticleNode } from "./particles";
 import type { Bindings } from "../clause/params";
 import { documentCodeIssues, multiTarget, referenceKeys, refKey, refLabel } from "./pcode";
-import { checkRepeatSource, currentSlotIssues, enclosingLoops, inlineRepeatIssues, loopTypesAt, refTargetFactIssues, refTargetIssues, REPEAT_MAX_DEPTH, repeatedKeys, type RefTargetFact, type RepeatEnv, type RepeatSource } from "./blockRepeat";
+import { checkRepeatSource, currentSlotIssues, enclosingLoops, inlineRepeatIssues, isRepeatSource, loopTypesAt, refTargetFactIssues, refTargetIssues, REPEAT_MAX_DEPTH, repeatedKeys, type RefTargetFact, type RepeatEnv, type RepeatSource } from "./blockRepeat";
 import type { EnumDef } from "../catalog/types";
 import type { LoopElementType } from "../clause/params";
 import type { Clause } from "../clause/types";
@@ -889,6 +889,8 @@ export interface TreeEnv {
   master?: MasterTree;
   /** 열거형 정의 — 합집합 거름 필드 · 정의 조 교차 검사. 없으면 그 검사를 건너뛴다. */
   enumOf?: (code: Code) => EnumDef | undefined;
+  /** 조 참조 목록 원천(준용예외마다)을 여는가 · 그 이름이 조 참조 목록인가 — 담보약관 저장(구분자 카탈로그) · 함수조항 편집기(`arg.`) (ADR-0098 결정 2). */
+  refLists?: (ref: string) => boolean;
   /** 값별 분기(switch) 운반체를 싣는가 — 지금은 함수조항 편집기만 켠다(최종 결정 5 「지금은 함수조항 안에서만」). 없으면 저장 · 넣기 거부. */
   switches?: boolean;
   /** 이슈 좌표의 기본값 (document · ownerId 등). */
@@ -1039,7 +1041,7 @@ export function checkTableRef(node: TableRefNode, env: TreeEnv, at: Coordinate):
 }
 
 function repeatEnvOf(env: TreeEnv): RepeatEnv {
-  return { ...(env.master ? { master: env.master } : {}), ...(env.enumOf ? { enumOf: env.enumOf } : {}), hasCoverage: env.kind === "special" };
+  return { ...(env.master ? { master: env.master } : {}), ...(env.enumOf ? { enumOf: env.enumOf } : {}), hasCoverage: env.kind === "special", ...(env.refLists && env.kind !== "general" ? { refLists: env.refLists } : {}) };
 }
 
 /**
@@ -1060,6 +1062,14 @@ export function isDocumentWideRef(n: { targets: readonly unknown[]; connector?: 
   return n.targets.length === 0 && n.connector === undefined && (n.scope === undefined || n.scope === "general");
 }
 
+/** 조 참조 목록 반복의 현재 원소를 가리키는 조 참조(대상 조 없이 `restrict.current` 하나)면 그 반복 id. 편집 트리는 대상 조 id 를 빈 문자열로 운반한다. */
+export function currentElementRef(n: Pick<ArticleRefNode, "targets">): Id | undefined {
+  if (n.targets.length !== 1) return undefined;
+  const t = n.targets[0]!;
+  const current = (t.restrict as { current?: unknown } | undefined)?.current;
+  return !t.articleId && typeof current === "string" ? current : undefined;
+}
+
 /**
  * 조 참조 하나의 검사 — 대상 ≥1(문서 전체 참조는 0) · 연결어(둘 이상 · 여러 번호가 될 수 있는 대상) · 범위 · 대상 존재 · 값 한정 (기능/문면 §3.5).
  * 문면 조 참조 슬롯과 함수조항 참조의 조 참조 인자 연결(ADR-0083 결정 4 — 같은 모양 · 같은 규칙)이 같이 쓴다. `e` 는 그 자리(감싼 반복 · 조).
@@ -1067,6 +1077,12 @@ export function isDocumentWideRef(n: { targets: readonly unknown[]; connector?: 
 function articleRefIssues(n: Pick<ArticleRefNode, "targets" | "connector" | "scope">, e: NodeEntry, ix: TreeIndex, env: TreeEnv, at: Coordinate): Issue[] {
   const gate = env.clauseGate ?? PERMISSIVE_GATE;
   const one = (kind: Issue["kind"], message: string): Issue[] => [{ kind, message, at }];
+  // 조 참조 목록 반복의 현재 원소 — 대상 조 없이 「현재」만 (ADR-0098 결정 2). 원소마다 조 하나라 연결어가 없고, 대상은 조립이 판정한 템플릿 조다
+  const current = currentElementRef(n);
+  if (current !== undefined) {
+    const loop = enclosingLoops(ix, e).find((l) => l.id === current);
+    return loop && isRepeatSource(loop.source) && loop.source.kind === "refList" ? [] : one("structure", "현재 원소 조 참조는 그 조 참조 목록 반복 안에서만 씁니다 — 「준용예외마다」 반복 본문에 둔다");
+  }
   if (n.targets.length === 0) {
     // 문서 전체 참조 — 대응 보통약관 범위 · 대상 없음 · 연결어 없음. 조립이 출력 위치의 호칭(위치 호칭 — 「보통약관」 · 「제1절 일반조항」)을 찍는다 (기능/조립산출 §3.10)
     if (isDocumentWideRef(n) && env.kind !== "general") return [];

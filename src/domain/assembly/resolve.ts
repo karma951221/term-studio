@@ -447,8 +447,8 @@ class Walker {
     const out: RArticleRef["targets"] = [];
     for (const t of n.targets) {
       const r = t.restrict as { values?: unknown; current?: unknown; keys?: unknown } | undefined;
-      // 조 참조 목록 반복의 현재 원소 — 대상 조 없이 「현재」만: 그 원소(템플릿 조) 자체를 가리킨다 (ADR-0098 결정 2)
-      if (t.articleId === undefined && typeof r?.current === "string") {
+      // 조 참조 목록 반복의 현재 원소 — 대상 조 없이(문면 트리는 빈 조 id) 「현재」만: 그 원소(템플릿 조) 자체를 가리킨다 (ADR-0098 결정 2)
+      if (!t.articleId && typeof r?.current === "string") {
         const e = f.loops?.[r.current];
         if (e?.kind !== "article") return { ok: false, issue: { kind: "structure", message: `조 참조의 「현재」 반복 ${r.current} 이(가) 이 참조를 감싸지 않습니다 — 조 참조 목록 반복 안에서만 쓴다`, at } };
         out.push({ articleId: e.articleId });

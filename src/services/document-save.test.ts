@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { nodeBuilders, sequentialIds, type ArticleNode, type ClauseGate, type EditOp } from "@/domain/document";
 import type { Actor, Id, Result } from "@/domain/types";
 
+import { insertDiscriminator } from "@/db/repo/catalog";
 import { insertClause } from "@/db/repo/clause";
 import { createTestDb, type TestDb } from "@/db/test-utils";
 import { createDocumentService, type DocumentService } from "./document";
@@ -156,6 +157,36 @@ describe("document.save — 편집본 저장 (ADR-0074)", () => {
 
     const saved = unwrap(await svc.save(editor, g.id, { baseVersion: g1.version, ops: remove, confirm: true }));
     expect(saved.tree.children).toEqual([]);
+  });
+
+  it("준용예외 구분자의 후보 조를 지우는 템플릿 저장도 깨질 참조로 센다 — 구분자 좌표 (ADR-0098 · B7)", async () => {
+    const g = unwrap(await svc.createGeneral(editor, "후보를 가진 보통약관"));
+    const cand = b.article("계약 전 알릴 의무", []);
+    const other = b.article("목적", []);
+    const g1 = unwrap(await svc.save(editor, g.id, { baseVersion: 1, ops: [{ type: "insert", node: cand, at: { parentId: g.tree.id } }, { type: "insert", node: other, at: { parentId: g.tree.id } }] }));
+    await insertDiscriminator(t.db, { code: "D0900", label: "준용예외", level: "coverage", expression: "", description: "", resultType: { kind: "list<ref>" }, candidates: [cand.id] }, editor.userId);
+
+    // 후보 아닌 조는 묻지 않는다
+    const g2 = unwrap(await svc.save(editor, g.id, { baseVersion: g1.version, ops: [{ type: "remove", nodeId: other.id }] }));
+    const first = rejection(await svc.save(editor, g.id, { baseVersion: g2.version, ops: [{ type: "remove", nodeId: cand.id }] }));
+    expect(first.reason).toBe("needsConfirmation");
+    if (first.reason === "needsConfirmation") expect(first.impact.brokenRefs.map((c) => [c.document, c.ownerId])).toEqual([["catalog", "D0900"]]);
+    // 문서 쓰임에도 — 템플릿을 지우면 후보가 깨진다
+    expect((await svc.documentUsages(g.id)).map((c) => [c.document, c.ownerId])).toContainEqual(["catalog", "D0900"]);
+  });
+
+  it("담보약관 문면은 준용예외 구분자 원천의 문장 안 반복을 받는다 — 보통약관은 거부 (ADR-0098 · B5)", async () => {
+    await insertDiscriminator(t.db, { code: "D0901", label: "준용예외B", level: "coverage", expression: "", description: "", resultType: { kind: "list<ref>" }, candidates: [] }, editor.userId);
+    const tree = (id: string, ref: string) => {
+      const each = b.inlineFor({ kind: "refList", ref }, [], { connector: "및" });
+      each.children = [{ id: `${id}-cur`, kind: "articleRef", targets: [{ articleId: "", restrict: { current: each.id } }], scope: "general" }];
+      return b.article("준용규정", [b.paragraph([b.text("다만, "), each, b.text("은 제외합니다.")])]);
+    };
+    const s = unwrap(await svc.createSpecial(editor, "44444444-4444-4444-8444-444444444444", "준용 특약"));
+    unwrap(await svc.importTree(editor, s.id, { ...s.tree, children: [tree("a", "D0901")] }));
+    expect(rejection(await svc.importTree(editor, s.id, { ...s.tree, children: [tree("b", "D0001")] })).reason).toBe("invalid");
+    const g = unwrap(await svc.createGeneral(editor, "준용 보통약관"));
+    expect(rejection(await svc.importTree(editor, g.id, { ...g.tree, children: [tree("c", "D0901")] })).reason).toBe("invalid");
   });
 
   it("보통약관 템플릿 저장은 상품 영향도 보인다 (ADR-0081 결정 3) — 주입한 상품 영향을 같은 확인 카드에, 확인하면 저장", async () => {

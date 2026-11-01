@@ -230,3 +230,34 @@ describe("인라인 반복 — 담보 트리 원천은 범위 밖 (ADR-0088 결�
     expect(messages(validateTree(b2.document("d", [b2.article("a", [tree])]), special))).toEqual([expect.stringContaining("섞어 중첩")]);
   });
 });
+
+describe("조 참조 목록 원천 — 담보약관 문면의 준용예외마다 (ADR-0098 결정 2 · B5)", () => {
+  const refLists = (ref: string) => ref === "D0014";
+  const specialEnv: TreeEnv = { ...env, kind: "special", refLists };
+  /** 「다만, 〔[준용예외마다] 조 참조(현재)〕은 제외합니다.」 */
+  function exclusion(opts: { ref?: string; current?: string } = {}): DocumentNode {
+    const b = nodeBuilders(sequentialIds("x"));
+    const each = b.inlineFor({ kind: "refList", ref: opts.ref ?? "D0014" }, [], { connector: "및" });
+    each.children = [{ id: "cur", kind: "articleRef", targets: [{ articleId: "", restrict: { current: opts.current ?? each.id } }], scope: "general" }];
+    return b.document("d", [b.article("준용규정", [b.paragraph([b.text("다만, "), each, b.text("은 제외합니다.")])])]);
+  }
+
+  it("담보약관 · 조 참조 목록 구분자 원천 · 현재 원소 조 참조 = 통과", () => {
+    expect(messages(validateTree(exclusion(), specialEnv))).toEqual([]);
+  });
+
+  it("조 참조 목록 원천을 열지 않은 문서(보통약관)는 거부 · 모르는 구분자는 깨진 참조", () => {
+    expect(messages(validateTree(exclusion(), { ...env, kind: "general" })).join()).toContain("조 참조 목록");
+    expect(validateTree(exclusion({ ref: "D9999" }), specialEnv).map((i) => i.kind)).toContain("brokenRef");
+  });
+
+  it("현재 원소 조 참조는 그 조 참조 목록 반복 안에서만 — 엉뚱한 반복 id 는 거부", () => {
+    expect(messages(validateTree(exclusion({ current: "nope" }), specialEnv)).join()).toContain("조 참조 목록 반복 안에서만");
+  });
+
+  it("블록 반복의 원천으로는 쓰지 않는다 — 문장 안 반복만", () => {
+    const b = nodeBuilders(sequentialIds("y"));
+    const tree = b.document("d", [b.article("a", [b.forBlock({ kind: "refList", ref: "D0014" }, [b.paragraph([b.text("x")])])])]);
+    expect(messages(validateTree(tree, specialEnv)).join()).toContain("문장 안 반복");
+  });
+});

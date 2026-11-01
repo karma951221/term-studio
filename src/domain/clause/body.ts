@@ -607,7 +607,8 @@ export function analyzeBody(
     // 함수조항 본문은 작성위치를 직접 읽는다(인자 없이 — ADR-0089 · 기능/함수조항 §3.3). 보통약관에 넣으면 그 문서 검사가 막는다
     const clauseCtx = { params: paramTypes, locals: (n: string) => lc.types.get(n), ...(opts.enums ? { enums: opts.enums } : {}), planField: planFieldType(), output: true };
     for (const e of exprs) {
-      if (tainted.has(e)) continue;
+      // 반복 원천(조 참조 목록 인자)은 위에서 인자 타입으로 검사했다 — 식 자리가 아니라 count 밖 읽기 금지에 걸리지 않는다
+      if (tainted.has(e) || e.role === "repeat") continue;
       const at = { ...base, nodePath: e.path };
       const r = checkTypes(e.expr, resolveType, { coordinate: at, ...clauseCtx, ...(e.role === "condition" ? { expect: "boolean" as const } : {}) });
       if (!r.ok && r.rejection.reason === "invalid") {

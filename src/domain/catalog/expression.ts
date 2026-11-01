@@ -56,11 +56,13 @@ export interface DiscriminatorExpressionOptions {
  * 참조한 구분자의 식 자체가 안 맞으면(문법 · 타입) 그 구분자의 타입도 모름이다.
  */
 function resultTypeOf(
-  def: { code?: Code; expression: string },
+  def: { code?: Code; expression: string; resultType?: DiscriminatorResultType },
   master: MasterTree | undefined,
   catalog: DiscriminatorCatalog | undefined,
   visiting: ReadonlySet<Code>,
 ): ExprType | undefined {
+  // 준용예외 구분자는 식이 없다 — 선언 타입 「조 참조 목록」 그대로 (ADR-0098 결정 1, 읽는 쪽은 count 만)
+  if (def.resultType?.kind === "list<ref>") return def.resultType;
   if (def.code !== undefined && visiting.has(def.code)) return undefined;
   const parsed = parse(def.expression);
   if (!parsed.ok) return undefined;

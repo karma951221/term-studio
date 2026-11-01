@@ -64,6 +64,8 @@ export interface CheckOptions {
 
 // ───────────────────────────── 검사 ─────────────────────────────
 
+const REF_LIST_ONLY_COUNT = (path: string): string => `조 참조 목록 ${path} 는 식에서 count(${path}) 로만 읽습니다 — 원소 수 말고는 조립이 판정한 값이라 비교 · 있음 검사에 쓰지 않는다`;
+
 const BOOLEAN: ExprType = { kind: "boolean" };
 const NUMBER: ExprType = { kind: "number" };
 
@@ -336,7 +338,13 @@ export function checkTypes(
           );
           return undefined;
         }
-        return typeOfRef(e.ref);
+        const t = typeOfRef(e.ref);
+        // 조 참조 목록(준용예외)은 count 로만 읽는다 — 비교 · 그대로 쓰기는 저장 오류 (ADR-0098 결정 2)
+        if (t?.kind === "list<ref>") {
+          report("typeMismatch", REF_LIST_ONLY_COUNT(refPath(e.ref)), e.ref);
+          return undefined;
+        }
+        return t;
       }
 
       case "not": {
@@ -388,6 +396,10 @@ export function checkTypes(
         }
         const t = typeOfRef(e.ref);
         if (t === undefined) return undefined;
+        if (t.kind === "list<ref>" && e.op !== "count") {
+          report("typeMismatch", REF_LIST_ONLY_COUNT(refPath(e.ref)), e.ref);
+          return undefined;
+        }
         switch (e.op) {
           case "exist":
           case "notexist":

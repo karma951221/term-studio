@@ -51,6 +51,21 @@ describe("인자 표 칸 값 (기능/함수조항 §4.3)", () => {
       ["arg.종들", undefined, true],
     ]);
   });
+
+  it("조 참조 목록 인자 타입 — 칸 값 왕복 · 이름 · 기본 연결 후보는 준용예외 구분자(조 참조 목록)만 (ADR-0098 · B6)", () => {
+    const t = { kind: "list<ref>" as const };
+    expect(typeOfValue(typeValue(t))).toEqual(t);
+    expect(typeLabel(t, enums, forms)).toBe("조 참조 목록");
+    const withRef = [...discriminators, { code: "D0014", label: "준용예외", level: "coverage" as const, forms: [], refList: true as const }];
+    expect(bindingOptions(t, withRef, enums, forms, true).map((o) => o.value)).toEqual(["d:D0014"]);
+    expect(bindingOptions({ kind: "boolean" }, withRef, enums, forms, false).map((o) => o.value)).toEqual(["d:D0001"]);
+  });
+
+  it("조 참조 목록 인자는 타입 없이 refList 표시 — 조건 · 슬롯이 아니라 문장 안 반복 원천 후보 (ADR-0098 · B6)", () => {
+    const [e] = paramEntries([{ name: "준용예외", type: { kind: "list<ref>" } }], enums);
+    expect(e).toMatchObject({ code: "arg.준용예외", param: true, refList: true });
+    expect(e.type).toBeUndefined();
+  });
 });
 
 describe("인자 추가 줄의 이름 검사 (2026-10-01)", () => {

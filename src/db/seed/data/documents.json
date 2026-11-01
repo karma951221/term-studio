@@ -7872,32 +7872,54 @@
                 {
                   "id": "m6-a4-p1-x3",
                   "kind": "text",
-                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
+                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                 },
                 {
-                  "id": "m6-a4-p1-x1",
-                  "kind": "articleRef",
-                  "targets": [
+                  "id": "m6-a4-p1-x1-if",
+                  "kind": "inlineCond",
+                  "branches": [
                     {
-                      "articleId": "g-a5"
-                    },
-                    {
-                      "articleId": "g-a9"
-                    },
-                    {
-                      "articleId": "g-a10"
-                    },
-                    {
-                      "articleId": "g-a38"
+                      "id": "m6-a4-p1-x1-if-b",
+                      "when": "count(D0016) > 0",
+                      "children": [
+                        {
+                          "id": "m6-a4-p1-x1-if-t",
+                          "kind": "text",
+                          "text": " 다만, "
+                        },
+                        {
+                          "id": "m6-a4-p1-x1-each",
+                          "kind": "inlineFor",
+                          "source": {
+                            "kind": "refList",
+                            "ref": "D0016"
+                          },
+                          "alias": "준용예외마다",
+                          "connector": "및",
+                          "children": [
+                            {
+                              "id": "m6-a4-p1-x1",
+                              "kind": "articleRef",
+                              "targets": [
+                                {
+                                  "articleId": "",
+                                  "restrict": {
+                                    "current": "m6-a4-p1-x1-each"
+                                  }
+                                }
+                              ],
+                              "scope": "general"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "m6-a4-p1-x4",
+                          "kind": "text",
+                          "text": "은 제외합니다."
+                        }
+                      ]
                     }
-                  ],
-                  "connector": "및",
-                  "scope": "general"
-                },
-                {
-                  "id": "m6-a4-p1-x4",
-                  "kind": "text",
-                  "text": "은 제외합니다."
+                  ]
                 },
                 {
                   "id": "m6-a4-p1-x2-if-waiver",
@@ -18546,79 +18568,158 @@
           ],
           "children": [
             {
-              "id": "a7i13-a24-p1",
-              "kind": "paragraph",
-              "children": [
+              "id": "a7i13-a24-p1-x",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "id": "a7i13-a24-p1-x3",
-                  "kind": "text",
-                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                },
-                {
-                  "id": "a7i13-a24-p1-x1",
-                  "kind": "articleRef",
-                  "targets": [
+                  "id": "a7i13-a24-p1-x2-if-waiver-b-x",
+                  "when": "D0002 = true",
+                  "children": [
                     {
-                      "articleId": "g-a9"
-                    },
-                    {
-                      "articleId": "g-a10"
-                    },
-                    {
-                      "articleId": "g-a38"
-                    }
-                  ],
-                  "connector": "및",
-                  "scope": "general"
-                },
-                {
-                  "id": "a7i13-a24-p1-x2-if-waiver",
-                  "kind": "inlineCond",
-                  "branches": [
-                    {
-                      "id": "a7i13-a24-p1-x2-if-waiver-b",
-                      "when": "D0002 = true",
+                      "id": "a7i13-a24-p1-b",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7i13-a24-p1-x4-w",
+                          "id": "a7i13-a24-p1-x3-b",
                           "kind": "text",
-                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                         },
                         {
-                          "id": "a7i13-a24-p1-x2",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7i13-a24-p1-x1-b-if",
+                          "kind": "inlineCond",
+                          "branches": [
                             {
-                              "articleId": "g-a27_1"
-                            },
-                            {
-                              "articleId": "g-a27_2"
+                              "id": "a7i13-a24-p1-x1-b-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7i13-a24-p1-x1-b-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7i13-a24-p1-x1-b-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7i13-a24-p1-x1-b",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7i13-a24-p1-x1-b-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7i13-a24-p1-x4-w-b",
+                                  "kind": "text",
+                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                },
+                                {
+                                  "id": "a7i13-a24-p1-x2-b",
+                                  "kind": "articleRef",
+                                  "targets": [
+                                    {
+                                      "articleId": "g-a27_1"
+                                    },
+                                    {
+                                      "articleId": "g-a27_2"
+                                    }
+                                  ],
+                                  "connector": "및",
+                                  "scope": "general"
+                                },
+                                {
+                                  "id": "a7i13-a24-p1-x5-w-b",
+                                  "kind": "text",
+                                  "text": "도 제외합니다."
+                                }
+                              ]
                             }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7i13-a24-p1-x5-w",
-                          "kind": "text",
-                          "text": "도 제외합니다."
+                          ]
                         }
-                      ]
-                    },
+                      ],
+                      "code": "P0100"
+                    }
+                  ]
+                },
+                {
+                  "id": "a7i13-a24-p1-x2-if-waiver-else-x",
+                  "children": [
                     {
-                      "id": "a7i13-a24-p1-x2-if-waiver-else",
+                      "id": "a7i13-a24-p1-else",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7i13-a24-p1-x2-if-waiver-else-t",
+                          "id": "a7i13-a24-p1-x3-else",
                           "kind": "text",
-                          "text": "은 제외합니다."
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                        },
+                        {
+                          "id": "a7i13-a24-p1-x1-else-if",
+                          "kind": "inlineCond",
+                          "branches": [
+                            {
+                              "id": "a7i13-a24-p1-x1-else-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7i13-a24-p1-x1-else-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7i13-a24-p1-x1-else-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7i13-a24-p1-x1-else",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7i13-a24-p1-x1-else-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7i13-a24-p1-x2-if-waiver-else-t-else",
+                                  "kind": "text",
+                                  "text": "은 제외합니다."
+                                }
+                              ]
+                            }
+                          ]
                         }
-                      ]
+                      ],
+                      "code": "P0100"
                     }
                   ]
                 }
-              ],
-              "code": "P0100"
+              ]
             }
           ]
         }
@@ -21809,79 +21910,158 @@
           ],
           "children": [
             {
-              "id": "a7i25-a5-p1",
-              "kind": "paragraph",
-              "children": [
+              "id": "a7i25-a5-p1-x",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "id": "a7i25-a5-p1-x3",
-                  "kind": "text",
-                  "text": "이 특별약관에 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                },
-                {
-                  "id": "a7i25-a5-p1-x1",
-                  "kind": "articleRef",
-                  "targets": [
+                  "id": "a7i25-a5-p1-x2-if-waiver-b-x",
+                  "when": "D0002 = true",
+                  "children": [
                     {
-                      "articleId": "g-a9"
-                    },
-                    {
-                      "articleId": "g-a10"
-                    },
-                    {
-                      "articleId": "g-a38"
-                    }
-                  ],
-                  "connector": "및",
-                  "scope": "general"
-                },
-                {
-                  "id": "a7i25-a5-p1-x2-if-waiver",
-                  "kind": "inlineCond",
-                  "branches": [
-                    {
-                      "id": "a7i25-a5-p1-x2-if-waiver-b",
-                      "when": "D0002 = true",
+                      "id": "a7i25-a5-p1-b",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7i25-a5-p1-x4-w",
+                          "id": "a7i25-a5-p1-x3-b",
                           "kind": "text",
-                          "text": "은 제외하며, 보통약관 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                          "text": "이 특별약관에 정하지 않은 사항은 보통약관을 따릅니다."
                         },
                         {
-                          "id": "a7i25-a5-p1-x2",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7i25-a5-p1-x1-b-if",
+                          "kind": "inlineCond",
+                          "branches": [
                             {
-                              "articleId": "g-a27_1"
-                            },
-                            {
-                              "articleId": "g-a27_2"
+                              "id": "a7i25-a5-p1-x1-b-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7i25-a5-p1-x1-b-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7i25-a5-p1-x1-b-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7i25-a5-p1-x1-b",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7i25-a5-p1-x1-b-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7i25-a5-p1-x4-w-b",
+                                  "kind": "text",
+                                  "text": "은 제외하며, 보통약관 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                },
+                                {
+                                  "id": "a7i25-a5-p1-x2-b",
+                                  "kind": "articleRef",
+                                  "targets": [
+                                    {
+                                      "articleId": "g-a27_1"
+                                    },
+                                    {
+                                      "articleId": "g-a27_2"
+                                    }
+                                  ],
+                                  "connector": "및",
+                                  "scope": "general"
+                                },
+                                {
+                                  "id": "a7i25-a5-p1-x5-w-b",
+                                  "kind": "text",
+                                  "text": "도 제외합니다."
+                                }
+                              ]
                             }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7i25-a5-p1-x5-w",
-                          "kind": "text",
-                          "text": "도 제외합니다."
+                          ]
                         }
-                      ]
-                    },
+                      ],
+                      "code": "P0100"
+                    }
+                  ]
+                },
+                {
+                  "id": "a7i25-a5-p1-x2-if-waiver-else-x",
+                  "children": [
                     {
-                      "id": "a7i25-a5-p1-x2-if-waiver-else",
+                      "id": "a7i25-a5-p1-else",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7i25-a5-p1-x2-if-waiver-else-t",
+                          "id": "a7i25-a5-p1-x3-else",
                           "kind": "text",
-                          "text": "은 제외합니다."
+                          "text": "이 특별약관에 정하지 않은 사항은 보통약관을 따릅니다."
+                        },
+                        {
+                          "id": "a7i25-a5-p1-x1-else-if",
+                          "kind": "inlineCond",
+                          "branches": [
+                            {
+                              "id": "a7i25-a5-p1-x1-else-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7i25-a5-p1-x1-else-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7i25-a5-p1-x1-else-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7i25-a5-p1-x1-else",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7i25-a5-p1-x1-else-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7i25-a5-p1-x2-if-waiver-else-t-else",
+                                  "kind": "text",
+                                  "text": "은 제외합니다."
+                                }
+                              ]
+                            }
+                          ]
                         }
-                      ]
+                      ],
+                      "code": "P0100"
                     }
                   ]
                 }
-              ],
-              "code": "P0100"
+              ]
             }
           ]
         }
@@ -34004,29 +34184,54 @@
                 {
                   "id": "a7i62-a6-p1-x3",
                   "kind": "text",
-                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
+                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                 },
                 {
-                  "id": "a7i62-a6-p1-x1",
-                  "kind": "articleRef",
-                  "targets": [
+                  "id": "a7i62-a6-p1-x1-if",
+                  "kind": "inlineCond",
+                  "branches": [
                     {
-                      "articleId": "g-a9"
-                    },
-                    {
-                      "articleId": "g-a10"
-                    },
-                    {
-                      "articleId": "g-a38"
+                      "id": "a7i62-a6-p1-x1-if-b",
+                      "when": "count(D0014) > 0",
+                      "children": [
+                        {
+                          "id": "a7i62-a6-p1-x1-if-t",
+                          "kind": "text",
+                          "text": " 다만, "
+                        },
+                        {
+                          "id": "a7i62-a6-p1-x1-each",
+                          "kind": "inlineFor",
+                          "source": {
+                            "kind": "refList",
+                            "ref": "D0014"
+                          },
+                          "alias": "준용예외마다",
+                          "connector": "및",
+                          "children": [
+                            {
+                              "id": "a7i62-a6-p1-x1",
+                              "kind": "articleRef",
+                              "targets": [
+                                {
+                                  "articleId": "",
+                                  "restrict": {
+                                    "current": "a7i62-a6-p1-x1-each"
+                                  }
+                                }
+                              ],
+                              "scope": "general"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "a7i62-a6-p1-x4",
+                          "kind": "text",
+                          "text": "은 제외합니다."
+                        }
+                      ]
                     }
-                  ],
-                  "connector": "및",
-                  "scope": "general"
-                },
-                {
-                  "id": "a7i62-a6-p1-x4",
-                  "kind": "text",
-                  "text": "은 제외합니다."
+                  ]
                 },
                 {
                   "id": "a7i62-a6-p1-x2-if-waiver",
@@ -34596,79 +34801,158 @@
           ],
           "children": [
             {
-              "id": "a7i63-a9-p1",
-              "kind": "paragraph",
-              "children": [
+              "id": "a7i63-a9-p1-x",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "id": "a7i63-a9-p1-x3",
-                  "kind": "text",
-                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                },
-                {
-                  "id": "a7i63-a9-p1-x1",
-                  "kind": "articleRef",
-                  "targets": [
+                  "id": "a7i63-a9-p1-x2-if-waiver-b-x",
+                  "when": "D0002 = true",
+                  "children": [
                     {
-                      "articleId": "g-a9"
-                    },
-                    {
-                      "articleId": "g-a10"
-                    },
-                    {
-                      "articleId": "g-a38"
-                    }
-                  ],
-                  "connector": "및",
-                  "scope": "general"
-                },
-                {
-                  "id": "a7i63-a9-p1-x2-if-waiver",
-                  "kind": "inlineCond",
-                  "branches": [
-                    {
-                      "id": "a7i63-a9-p1-x2-if-waiver-b",
-                      "when": "D0002 = true",
+                      "id": "a7i63-a9-p1-b",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7i63-a9-p1-x4-w",
+                          "id": "a7i63-a9-p1-x3-b",
                           "kind": "text",
-                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                         },
                         {
-                          "id": "a7i63-a9-p1-x2",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7i63-a9-p1-x1-b-if",
+                          "kind": "inlineCond",
+                          "branches": [
                             {
-                              "articleId": "g-a27_1"
-                            },
-                            {
-                              "articleId": "g-a27_2"
+                              "id": "a7i63-a9-p1-x1-b-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7i63-a9-p1-x1-b-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7i63-a9-p1-x1-b-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7i63-a9-p1-x1-b",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7i63-a9-p1-x1-b-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7i63-a9-p1-x4-w-b",
+                                  "kind": "text",
+                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                },
+                                {
+                                  "id": "a7i63-a9-p1-x2-b",
+                                  "kind": "articleRef",
+                                  "targets": [
+                                    {
+                                      "articleId": "g-a27_1"
+                                    },
+                                    {
+                                      "articleId": "g-a27_2"
+                                    }
+                                  ],
+                                  "connector": "및",
+                                  "scope": "general"
+                                },
+                                {
+                                  "id": "a7i63-a9-p1-x5-w-b",
+                                  "kind": "text",
+                                  "text": "도 제외합니다."
+                                }
+                              ]
                             }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7i63-a9-p1-x5-w",
-                          "kind": "text",
-                          "text": "도 제외합니다."
+                          ]
                         }
-                      ]
-                    },
+                      ],
+                      "code": "P0100"
+                    }
+                  ]
+                },
+                {
+                  "id": "a7i63-a9-p1-x2-if-waiver-else-x",
+                  "children": [
                     {
-                      "id": "a7i63-a9-p1-x2-if-waiver-else",
+                      "id": "a7i63-a9-p1-else",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7i63-a9-p1-x2-if-waiver-else-t",
+                          "id": "a7i63-a9-p1-x3-else",
                           "kind": "text",
-                          "text": "은 제외합니다."
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                        },
+                        {
+                          "id": "a7i63-a9-p1-x1-else-if",
+                          "kind": "inlineCond",
+                          "branches": [
+                            {
+                              "id": "a7i63-a9-p1-x1-else-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7i63-a9-p1-x1-else-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7i63-a9-p1-x1-else-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7i63-a9-p1-x1-else",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7i63-a9-p1-x1-else-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7i63-a9-p1-x2-if-waiver-else-t-else",
+                                  "kind": "text",
+                                  "text": "은 제외합니다."
+                                }
+                              ]
+                            }
+                          ]
                         }
-                      ]
+                      ],
+                      "code": "P0100"
                     }
                   ]
                 }
-              ],
-              "code": "P0100"
+              ]
             }
           ]
         }
@@ -56002,41 +56286,54 @@
                         {
                           "id": "a7d59r-a8-p1-x2",
                           "kind": "text",
-                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                         },
                         {
-                          "id": "a7d59r-a8-p1-x1",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d59r-a8-p1-x1-if",
+                          "kind": "inlineCond",
+                          "branches": [
                             {
-                              "articleId": "g-a5"
-                            },
-                            {
-                              "articleId": "g-a9"
-                            },
-                            {
-                              "articleId": "g-a10"
-                            },
-                            {
-                              "articleId": "g-a38"
-                            },
-                            {
-                              "articleId": "g-a27_1"
-                            },
-                            {
-                              "articleId": "g-a27_2"
-                            },
-                            {
-                              "articleId": "g-a38"
+                              "id": "a7d59r-a8-p1-x1-if-b",
+                              "when": "count(D0018) > 0",
+                              "children": [
+                                {
+                                  "id": "a7d59r-a8-p1-x1-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7d59r-a8-p1-x1-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0018"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7d59r-a8-p1-x1",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7d59r-a8-p1-x1-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7d59r-a8-p1-x3",
+                                  "kind": "text",
+                                  "text": "은 제외합니다."
+                                }
+                              ]
                             }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d59r-a8-p1-x3",
-                          "kind": "text",
-                          "text": "은 제외합니다."
+                          ]
                         }
                       ],
                       "code": "P0100"
@@ -70274,79 +70571,158 @@
           ],
           "children": [
             {
-              "id": "a7d88-a7-p1",
-              "kind": "paragraph",
-              "children": [
+              "id": "a7d88-a7-p1-x",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "id": "a7d88-a7-p1-x3",
-                  "kind": "text",
-                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                },
-                {
-                  "id": "a7d88-a7-p1-x1",
-                  "kind": "articleRef",
-                  "targets": [
+                  "id": "a7d88-a7-p1-x2-if-waiver-b-x",
+                  "when": "D0002 = true",
+                  "children": [
                     {
-                      "articleId": "g-a9"
-                    },
-                    {
-                      "articleId": "g-a10"
-                    },
-                    {
-                      "articleId": "g-a38"
-                    }
-                  ],
-                  "connector": "및",
-                  "scope": "general"
-                },
-                {
-                  "id": "a7d88-a7-p1-x2-if-waiver",
-                  "kind": "inlineCond",
-                  "branches": [
-                    {
-                      "id": "a7d88-a7-p1-x2-if-waiver-b",
-                      "when": "D0002 = true",
+                      "id": "a7d88-a7-p1-b",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7d88-a7-p1-x4-w",
+                          "id": "a7d88-a7-p1-x3-b",
                           "kind": "text",
-                          "text": " 제외하며, 보통약관 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                         },
                         {
-                          "id": "a7d88-a7-p1-x2",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d88-a7-p1-x1-b-if",
+                          "kind": "inlineCond",
+                          "branches": [
                             {
-                              "articleId": "g-a27_1"
-                            },
-                            {
-                              "articleId": "g-a27_2"
+                              "id": "a7d88-a7-p1-x1-b-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7d88-a7-p1-x1-b-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7d88-a7-p1-x1-b-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7d88-a7-p1-x1-b",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7d88-a7-p1-x1-b-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7d88-a7-p1-x4-w-b",
+                                  "kind": "text",
+                                  "text": " 제외하며, 보통약관 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                },
+                                {
+                                  "id": "a7d88-a7-p1-x2-b",
+                                  "kind": "articleRef",
+                                  "targets": [
+                                    {
+                                      "articleId": "g-a27_1"
+                                    },
+                                    {
+                                      "articleId": "g-a27_2"
+                                    }
+                                  ],
+                                  "connector": "및",
+                                  "scope": "general"
+                                },
+                                {
+                                  "id": "a7d88-a7-p1-x5-w-b",
+                                  "kind": "text",
+                                  "text": "도 제외합니다."
+                                }
+                              ]
                             }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d88-a7-p1-x5-w",
-                          "kind": "text",
-                          "text": "도 제외합니다."
+                          ]
                         }
-                      ]
-                    },
+                      ],
+                      "code": "P0100"
+                    }
+                  ]
+                },
+                {
+                  "id": "a7d88-a7-p1-x2-if-waiver-else-x",
+                  "children": [
                     {
-                      "id": "a7d88-a7-p1-x2-if-waiver-else",
+                      "id": "a7d88-a7-p1-else",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7d88-a7-p1-x2-if-waiver-else-t",
+                          "id": "a7d88-a7-p1-x3-else",
                           "kind": "text",
-                          "text": " 제외합니다."
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                        },
+                        {
+                          "id": "a7d88-a7-p1-x1-else-if",
+                          "kind": "inlineCond",
+                          "branches": [
+                            {
+                              "id": "a7d88-a7-p1-x1-else-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7d88-a7-p1-x1-else-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7d88-a7-p1-x1-else-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7d88-a7-p1-x1-else",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7d88-a7-p1-x1-else-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7d88-a7-p1-x2-if-waiver-else-t-else",
+                                  "kind": "text",
+                                  "text": " 제외합니다."
+                                }
+                              ]
+                            }
+                          ]
                         }
-                      ]
+                      ],
+                      "code": "P0100"
                     }
                   ]
                 }
-              ],
-              "code": "P0100"
+              ]
             }
           ]
         }
@@ -135710,79 +136086,158 @@
           ],
           "children": [
             {
-              "id": "a7d145-a10-p1",
-              "kind": "paragraph",
-              "children": [
+              "id": "a7d145-a10-p1-x",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "id": "a7d145-a10-p1-x3",
-                  "kind": "text",
-                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                },
-                {
-                  "id": "a7d145-a10-p1-x1",
-                  "kind": "articleRef",
-                  "targets": [
+                  "id": "a7d145-a10-p1-x2-if-waiver-b-x",
+                  "when": "D0002 = true",
+                  "children": [
                     {
-                      "articleId": "g-a9"
-                    },
-                    {
-                      "articleId": "g-a10"
-                    },
-                    {
-                      "articleId": "g-a38"
-                    }
-                  ],
-                  "connector": "및",
-                  "scope": "general"
-                },
-                {
-                  "id": "a7d145-a10-p1-x2-if-waiver",
-                  "kind": "inlineCond",
-                  "branches": [
-                    {
-                      "id": "a7d145-a10-p1-x2-if-waiver-b",
-                      "when": "D0002 = true",
+                      "id": "a7d145-a10-p1-b",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7d145-a10-p1-x4-w",
+                          "id": "a7d145-a10-p1-x3-b",
                           "kind": "text",
-                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                         },
                         {
-                          "id": "a7d145-a10-p1-x2",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d145-a10-p1-x1-b-if",
+                          "kind": "inlineCond",
+                          "branches": [
                             {
-                              "articleId": "g-a27_1"
-                            },
-                            {
-                              "articleId": "g-a27_2"
+                              "id": "a7d145-a10-p1-x1-b-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7d145-a10-p1-x1-b-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7d145-a10-p1-x1-b-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7d145-a10-p1-x1-b",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7d145-a10-p1-x1-b-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7d145-a10-p1-x4-w-b",
+                                  "kind": "text",
+                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                },
+                                {
+                                  "id": "a7d145-a10-p1-x2-b",
+                                  "kind": "articleRef",
+                                  "targets": [
+                                    {
+                                      "articleId": "g-a27_1"
+                                    },
+                                    {
+                                      "articleId": "g-a27_2"
+                                    }
+                                  ],
+                                  "connector": "및",
+                                  "scope": "general"
+                                },
+                                {
+                                  "id": "a7d145-a10-p1-x5-w-b",
+                                  "kind": "text",
+                                  "text": "도 제외합니다."
+                                }
+                              ]
                             }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d145-a10-p1-x5-w",
-                          "kind": "text",
-                          "text": "도 제외합니다."
+                          ]
                         }
-                      ]
-                    },
+                      ],
+                      "code": "P0100"
+                    }
+                  ]
+                },
+                {
+                  "id": "a7d145-a10-p1-x2-if-waiver-else-x",
+                  "children": [
                     {
-                      "id": "a7d145-a10-p1-x2-if-waiver-else",
+                      "id": "a7d145-a10-p1-else",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7d145-a10-p1-x2-if-waiver-else-t",
+                          "id": "a7d145-a10-p1-x3-else",
                           "kind": "text",
-                          "text": "은 제외합니다."
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                        },
+                        {
+                          "id": "a7d145-a10-p1-x1-else-if",
+                          "kind": "inlineCond",
+                          "branches": [
+                            {
+                              "id": "a7d145-a10-p1-x1-else-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7d145-a10-p1-x1-else-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7d145-a10-p1-x1-else-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7d145-a10-p1-x1-else",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7d145-a10-p1-x1-else-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7d145-a10-p1-x2-if-waiver-else-t-else",
+                                  "kind": "text",
+                                  "text": "은 제외합니다."
+                                }
+                              ]
+                            }
+                          ]
                         }
-                      ]
+                      ],
+                      "code": "P0100"
                     }
                   ]
                 }
-              ],
-              "code": "P0100"
+              ]
             }
           ]
         }
@@ -188167,79 +188622,158 @@
           ],
           "children": [
             {
-              "id": "a7d162-a9-p1",
-              "kind": "paragraph",
-              "children": [
+              "id": "a7d162-a9-p1-x",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "id": "a7d162-a9-p1-x3",
-                  "kind": "text",
-                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                },
-                {
-                  "id": "a7d162-a9-p1-x1",
-                  "kind": "articleRef",
-                  "targets": [
+                  "id": "a7d162-a9-p1-x2-if-waiver-b-x",
+                  "when": "D0002 = true",
+                  "children": [
                     {
-                      "articleId": "g-a9"
-                    },
-                    {
-                      "articleId": "g-a10"
-                    },
-                    {
-                      "articleId": "g-a38"
-                    }
-                  ],
-                  "connector": "및",
-                  "scope": "general"
-                },
-                {
-                  "id": "a7d162-a9-p1-x2-if-waiver",
-                  "kind": "inlineCond",
-                  "branches": [
-                    {
-                      "id": "a7d162-a9-p1-x2-if-waiver-b",
-                      "when": "D0002 = true",
+                      "id": "a7d162-a9-p1-b",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7d162-a9-p1-x4-w",
+                          "id": "a7d162-a9-p1-x3-b",
                           "kind": "text",
-                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                         },
                         {
-                          "id": "a7d162-a9-p1-x2",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d162-a9-p1-x1-b-if",
+                          "kind": "inlineCond",
+                          "branches": [
                             {
-                              "articleId": "g-a27_1"
-                            },
-                            {
-                              "articleId": "g-a27_2"
+                              "id": "a7d162-a9-p1-x1-b-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7d162-a9-p1-x1-b-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7d162-a9-p1-x1-b-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7d162-a9-p1-x1-b",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7d162-a9-p1-x1-b-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7d162-a9-p1-x4-w-b",
+                                  "kind": "text",
+                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                },
+                                {
+                                  "id": "a7d162-a9-p1-x2-b",
+                                  "kind": "articleRef",
+                                  "targets": [
+                                    {
+                                      "articleId": "g-a27_1"
+                                    },
+                                    {
+                                      "articleId": "g-a27_2"
+                                    }
+                                  ],
+                                  "connector": "및",
+                                  "scope": "general"
+                                },
+                                {
+                                  "id": "a7d162-a9-p1-x5-w-b",
+                                  "kind": "text",
+                                  "text": "도 제외합니다."
+                                }
+                              ]
                             }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d162-a9-p1-x5-w",
-                          "kind": "text",
-                          "text": "도 제외합니다."
+                          ]
                         }
-                      ]
-                    },
+                      ],
+                      "code": "P0100"
+                    }
+                  ]
+                },
+                {
+                  "id": "a7d162-a9-p1-x2-if-waiver-else-x",
+                  "children": [
                     {
-                      "id": "a7d162-a9-p1-x2-if-waiver-else",
+                      "id": "a7d162-a9-p1-else",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7d162-a9-p1-x2-if-waiver-else-t",
+                          "id": "a7d162-a9-p1-x3-else",
                           "kind": "text",
-                          "text": "은 제외합니다."
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                        },
+                        {
+                          "id": "a7d162-a9-p1-x1-else-if",
+                          "kind": "inlineCond",
+                          "branches": [
+                            {
+                              "id": "a7d162-a9-p1-x1-else-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7d162-a9-p1-x1-else-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7d162-a9-p1-x1-else-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7d162-a9-p1-x1-else",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7d162-a9-p1-x1-else-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7d162-a9-p1-x2-if-waiver-else-t-else",
+                                  "kind": "text",
+                                  "text": "은 제외합니다."
+                                }
+                              ]
+                            }
+                          ]
                         }
-                      ]
+                      ],
+                      "code": "P0100"
                     }
                   ]
                 }
-              ],
-              "code": "P0100"
+              ]
             }
           ]
         }
@@ -190413,79 +190947,158 @@
                   ],
                   "children": [
                     {
-                      "id": "a7d163-a7-p1",
-                      "kind": "paragraph",
-                      "children": [
+                      "id": "a7d163-a7-p1-x",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "id": "a7d163-a7-p1-x3",
-                          "kind": "text",
-                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                        },
-                        {
-                          "id": "a7d163-a7-p1-x1",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d163-a7-p1-x2-if-waiver-b-x",
+                          "when": "D0002 = true",
+                          "children": [
                             {
-                              "articleId": "g-a9"
-                            },
-                            {
-                              "articleId": "g-a10"
-                            },
-                            {
-                              "articleId": "g-a38"
-                            }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d163-a7-p1-x2-if-waiver",
-                          "kind": "inlineCond",
-                          "branches": [
-                            {
-                              "id": "a7d163-a7-p1-x2-if-waiver-b",
-                              "when": "D0002 = true",
+                              "id": "a7d163-a7-p1-b",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d163-a7-p1-x4-w",
+                                  "id": "a7d163-a7-p1-x3-b",
                                   "kind": "text",
-                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                                 },
                                 {
-                                  "id": "a7d163-a7-p1-x2",
-                                  "kind": "articleRef",
-                                  "targets": [
+                                  "id": "a7d163-a7-p1-x1-b-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
                                     {
-                                      "articleId": "g-a27_1"
-                                    },
-                                    {
-                                      "articleId": "g-a27_2"
+                                      "id": "a7d163-a7-p1-x1-b-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d163-a7-p1-x1-b-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d163-a7-p1-x1-b-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d163-a7-p1-x1-b",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d163-a7-p1-x1-b-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d163-a7-p1-x4-w-b",
+                                          "kind": "text",
+                                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                        },
+                                        {
+                                          "id": "a7d163-a7-p1-x2-b",
+                                          "kind": "articleRef",
+                                          "targets": [
+                                            {
+                                              "articleId": "g-a27_1"
+                                            },
+                                            {
+                                              "articleId": "g-a27_2"
+                                            }
+                                          ],
+                                          "connector": "및",
+                                          "scope": "general"
+                                        },
+                                        {
+                                          "id": "a7d163-a7-p1-x5-w-b",
+                                          "kind": "text",
+                                          "text": "도 제외합니다."
+                                        }
+                                      ]
                                     }
-                                  ],
-                                  "connector": "및",
-                                  "scope": "general"
-                                },
-                                {
-                                  "id": "a7d163-a7-p1-x5-w",
-                                  "kind": "text",
-                                  "text": "도 제외합니다."
+                                  ]
                                 }
-                              ]
-                            },
+                              ],
+                              "code": "P0100"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "a7d163-a7-p1-x2-if-waiver-else-x",
+                          "children": [
                             {
-                              "id": "a7d163-a7-p1-x2-if-waiver-else",
+                              "id": "a7d163-a7-p1-else",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d163-a7-p1-x2-if-waiver-else-t",
+                                  "id": "a7d163-a7-p1-x3-else",
                                   "kind": "text",
-                                  "text": "은 제외합니다."
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                                },
+                                {
+                                  "id": "a7d163-a7-p1-x1-else-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
+                                    {
+                                      "id": "a7d163-a7-p1-x1-else-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d163-a7-p1-x1-else-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d163-a7-p1-x1-else-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d163-a7-p1-x1-else",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d163-a7-p1-x1-else-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d163-a7-p1-x2-if-waiver-else-t-else",
+                                          "kind": "text",
+                                          "text": "은 제외합니다."
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
-                              ]
+                              ],
+                              "code": "P0100"
                             }
                           ]
                         }
-                      ],
-                      "code": "P0100"
+                      ]
                     }
                   ]
                 }
@@ -191347,79 +191960,158 @@
                   ],
                   "children": [
                     {
-                      "id": "a7d165-a7-p1",
-                      "kind": "paragraph",
-                      "children": [
+                      "id": "a7d165-a7-p1-x",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "id": "a7d165-a7-p1-x3",
-                          "kind": "text",
-                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                        },
-                        {
-                          "id": "a7d165-a7-p1-x1",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d165-a7-p1-x2-if-waiver-b-x",
+                          "when": "D0002 = true",
+                          "children": [
                             {
-                              "articleId": "g-a9"
-                            },
-                            {
-                              "articleId": "g-a10"
-                            },
-                            {
-                              "articleId": "g-a38"
-                            }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d165-a7-p1-x2-if-waiver",
-                          "kind": "inlineCond",
-                          "branches": [
-                            {
-                              "id": "a7d165-a7-p1-x2-if-waiver-b",
-                              "when": "D0002 = true",
+                              "id": "a7d165-a7-p1-b",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d165-a7-p1-x4-w",
+                                  "id": "a7d165-a7-p1-x3-b",
                                   "kind": "text",
-                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                                 },
                                 {
-                                  "id": "a7d165-a7-p1-x2",
-                                  "kind": "articleRef",
-                                  "targets": [
+                                  "id": "a7d165-a7-p1-x1-b-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
                                     {
-                                      "articleId": "g-a27_1"
-                                    },
-                                    {
-                                      "articleId": "g-a27_2"
+                                      "id": "a7d165-a7-p1-x1-b-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d165-a7-p1-x1-b-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d165-a7-p1-x1-b-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d165-a7-p1-x1-b",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d165-a7-p1-x1-b-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d165-a7-p1-x4-w-b",
+                                          "kind": "text",
+                                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                        },
+                                        {
+                                          "id": "a7d165-a7-p1-x2-b",
+                                          "kind": "articleRef",
+                                          "targets": [
+                                            {
+                                              "articleId": "g-a27_1"
+                                            },
+                                            {
+                                              "articleId": "g-a27_2"
+                                            }
+                                          ],
+                                          "connector": "및",
+                                          "scope": "general"
+                                        },
+                                        {
+                                          "id": "a7d165-a7-p1-x5-w-b",
+                                          "kind": "text",
+                                          "text": "도 제외합니다."
+                                        }
+                                      ]
                                     }
-                                  ],
-                                  "connector": "및",
-                                  "scope": "general"
-                                },
-                                {
-                                  "id": "a7d165-a7-p1-x5-w",
-                                  "kind": "text",
-                                  "text": "도 제외합니다."
+                                  ]
                                 }
-                              ]
-                            },
+                              ],
+                              "code": "P0100"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "a7d165-a7-p1-x2-if-waiver-else-x",
+                          "children": [
                             {
-                              "id": "a7d165-a7-p1-x2-if-waiver-else",
+                              "id": "a7d165-a7-p1-else",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d165-a7-p1-x2-if-waiver-else-t",
+                                  "id": "a7d165-a7-p1-x3-else",
                                   "kind": "text",
-                                  "text": "은 제외합니다."
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                                },
+                                {
+                                  "id": "a7d165-a7-p1-x1-else-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
+                                    {
+                                      "id": "a7d165-a7-p1-x1-else-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d165-a7-p1-x1-else-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d165-a7-p1-x1-else-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d165-a7-p1-x1-else",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d165-a7-p1-x1-else-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d165-a7-p1-x2-if-waiver-else-t-else",
+                                          "kind": "text",
+                                          "text": "은 제외합니다."
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
-                              ]
+                              ],
+                              "code": "P0100"
                             }
                           ]
                         }
-                      ],
-                      "code": "P0100"
+                      ]
                     }
                   ]
                 }
@@ -192335,79 +193027,158 @@
                   ],
                   "children": [
                     {
-                      "id": "a7d166-a7-p1",
-                      "kind": "paragraph",
-                      "children": [
+                      "id": "a7d166-a7-p1-x",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "id": "a7d166-a7-p1-x3",
-                          "kind": "text",
-                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                        },
-                        {
-                          "id": "a7d166-a7-p1-x1",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d166-a7-p1-x2-if-waiver-b-x",
+                          "when": "D0002 = true",
+                          "children": [
                             {
-                              "articleId": "g-a9"
-                            },
-                            {
-                              "articleId": "g-a10"
-                            },
-                            {
-                              "articleId": "g-a38"
-                            }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d166-a7-p1-x2-if-waiver",
-                          "kind": "inlineCond",
-                          "branches": [
-                            {
-                              "id": "a7d166-a7-p1-x2-if-waiver-b",
-                              "when": "D0002 = true",
+                              "id": "a7d166-a7-p1-b",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d166-a7-p1-x4-w",
+                                  "id": "a7d166-a7-p1-x3-b",
                                   "kind": "text",
-                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                                 },
                                 {
-                                  "id": "a7d166-a7-p1-x2",
-                                  "kind": "articleRef",
-                                  "targets": [
+                                  "id": "a7d166-a7-p1-x1-b-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
                                     {
-                                      "articleId": "g-a27_1"
-                                    },
-                                    {
-                                      "articleId": "g-a27_2"
+                                      "id": "a7d166-a7-p1-x1-b-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d166-a7-p1-x1-b-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d166-a7-p1-x1-b-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d166-a7-p1-x1-b",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d166-a7-p1-x1-b-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d166-a7-p1-x4-w-b",
+                                          "kind": "text",
+                                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                        },
+                                        {
+                                          "id": "a7d166-a7-p1-x2-b",
+                                          "kind": "articleRef",
+                                          "targets": [
+                                            {
+                                              "articleId": "g-a27_1"
+                                            },
+                                            {
+                                              "articleId": "g-a27_2"
+                                            }
+                                          ],
+                                          "connector": "및",
+                                          "scope": "general"
+                                        },
+                                        {
+                                          "id": "a7d166-a7-p1-x5-w-b",
+                                          "kind": "text",
+                                          "text": "도 제외합니다."
+                                        }
+                                      ]
                                     }
-                                  ],
-                                  "connector": "및",
-                                  "scope": "general"
-                                },
-                                {
-                                  "id": "a7d166-a7-p1-x5-w",
-                                  "kind": "text",
-                                  "text": "도 제외합니다."
+                                  ]
                                 }
-                              ]
-                            },
+                              ],
+                              "code": "P0100"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "a7d166-a7-p1-x2-if-waiver-else-x",
+                          "children": [
                             {
-                              "id": "a7d166-a7-p1-x2-if-waiver-else",
+                              "id": "a7d166-a7-p1-else",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d166-a7-p1-x2-if-waiver-else-t",
+                                  "id": "a7d166-a7-p1-x3-else",
                                   "kind": "text",
-                                  "text": "은 제외합니다."
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                                },
+                                {
+                                  "id": "a7d166-a7-p1-x1-else-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
+                                    {
+                                      "id": "a7d166-a7-p1-x1-else-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d166-a7-p1-x1-else-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d166-a7-p1-x1-else-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d166-a7-p1-x1-else",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d166-a7-p1-x1-else-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d166-a7-p1-x2-if-waiver-else-t-else",
+                                          "kind": "text",
+                                          "text": "은 제외합니다."
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
-                              ]
+                              ],
+                              "code": "P0100"
                             }
                           ]
                         }
-                      ],
-                      "code": "P0100"
+                      ]
                     }
                   ]
                 }
@@ -192681,79 +193452,158 @@
                   ],
                   "children": [
                     {
-                      "id": "a7d167-a7-p1",
-                      "kind": "paragraph",
-                      "children": [
+                      "id": "a7d167-a7-p1-x",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "id": "a7d167-a7-p1-x3",
-                          "kind": "text",
-                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                        },
-                        {
-                          "id": "a7d167-a7-p1-x1",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d167-a7-p1-x2-if-waiver-b-x",
+                          "when": "D0002 = true",
+                          "children": [
                             {
-                              "articleId": "g-a9"
-                            },
-                            {
-                              "articleId": "g-a10"
-                            },
-                            {
-                              "articleId": "g-a38"
-                            }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d167-a7-p1-x2-if-waiver",
-                          "kind": "inlineCond",
-                          "branches": [
-                            {
-                              "id": "a7d167-a7-p1-x2-if-waiver-b",
-                              "when": "D0002 = true",
+                              "id": "a7d167-a7-p1-b",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d167-a7-p1-x4-w",
+                                  "id": "a7d167-a7-p1-x3-b",
                                   "kind": "text",
-                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                                 },
                                 {
-                                  "id": "a7d167-a7-p1-x2",
-                                  "kind": "articleRef",
-                                  "targets": [
+                                  "id": "a7d167-a7-p1-x1-b-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
                                     {
-                                      "articleId": "g-a27_1"
-                                    },
-                                    {
-                                      "articleId": "g-a27_2"
+                                      "id": "a7d167-a7-p1-x1-b-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d167-a7-p1-x1-b-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d167-a7-p1-x1-b-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d167-a7-p1-x1-b",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d167-a7-p1-x1-b-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d167-a7-p1-x4-w-b",
+                                          "kind": "text",
+                                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                        },
+                                        {
+                                          "id": "a7d167-a7-p1-x2-b",
+                                          "kind": "articleRef",
+                                          "targets": [
+                                            {
+                                              "articleId": "g-a27_1"
+                                            },
+                                            {
+                                              "articleId": "g-a27_2"
+                                            }
+                                          ],
+                                          "connector": "및",
+                                          "scope": "general"
+                                        },
+                                        {
+                                          "id": "a7d167-a7-p1-x5-w-b",
+                                          "kind": "text",
+                                          "text": "도 제외합니다."
+                                        }
+                                      ]
                                     }
-                                  ],
-                                  "connector": "및",
-                                  "scope": "general"
-                                },
-                                {
-                                  "id": "a7d167-a7-p1-x5-w",
-                                  "kind": "text",
-                                  "text": "도 제외합니다."
+                                  ]
                                 }
-                              ]
-                            },
+                              ],
+                              "code": "P0100"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "a7d167-a7-p1-x2-if-waiver-else-x",
+                          "children": [
                             {
-                              "id": "a7d167-a7-p1-x2-if-waiver-else",
+                              "id": "a7d167-a7-p1-else",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d167-a7-p1-x2-if-waiver-else-t",
+                                  "id": "a7d167-a7-p1-x3-else",
                                   "kind": "text",
-                                  "text": "은 제외합니다."
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                                },
+                                {
+                                  "id": "a7d167-a7-p1-x1-else-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
+                                    {
+                                      "id": "a7d167-a7-p1-x1-else-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d167-a7-p1-x1-else-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d167-a7-p1-x1-else-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d167-a7-p1-x1-else",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d167-a7-p1-x1-else-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d167-a7-p1-x2-if-waiver-else-t-else",
+                                          "kind": "text",
+                                          "text": "은 제외합니다."
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
-                              ]
+                              ],
+                              "code": "P0100"
                             }
                           ]
                         }
-                      ],
-                      "code": "P0100"
+                      ]
                     }
                   ]
                 }
@@ -193081,79 +193931,158 @@
                   ],
                   "children": [
                     {
-                      "id": "a7d168-a7-p1",
-                      "kind": "paragraph",
-                      "children": [
+                      "id": "a7d168-a7-p1-x",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "id": "a7d168-a7-p1-x3",
-                          "kind": "text",
-                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                        },
-                        {
-                          "id": "a7d168-a7-p1-x1",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d168-a7-p1-x2-if-waiver-b-x",
+                          "when": "D0002 = true",
+                          "children": [
                             {
-                              "articleId": "g-a9"
-                            },
-                            {
-                              "articleId": "g-a10"
-                            },
-                            {
-                              "articleId": "g-a38"
-                            }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d168-a7-p1-x2-if-waiver",
-                          "kind": "inlineCond",
-                          "branches": [
-                            {
-                              "id": "a7d168-a7-p1-x2-if-waiver-b",
-                              "when": "D0002 = true",
+                              "id": "a7d168-a7-p1-b",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d168-a7-p1-x4-w",
+                                  "id": "a7d168-a7-p1-x3-b",
                                   "kind": "text",
-                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                                 },
                                 {
-                                  "id": "a7d168-a7-p1-x2",
-                                  "kind": "articleRef",
-                                  "targets": [
+                                  "id": "a7d168-a7-p1-x1-b-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
                                     {
-                                      "articleId": "g-a27_1"
-                                    },
-                                    {
-                                      "articleId": "g-a27_2"
+                                      "id": "a7d168-a7-p1-x1-b-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d168-a7-p1-x1-b-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d168-a7-p1-x1-b-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d168-a7-p1-x1-b",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d168-a7-p1-x1-b-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d168-a7-p1-x4-w-b",
+                                          "kind": "text",
+                                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                        },
+                                        {
+                                          "id": "a7d168-a7-p1-x2-b",
+                                          "kind": "articleRef",
+                                          "targets": [
+                                            {
+                                              "articleId": "g-a27_1"
+                                            },
+                                            {
+                                              "articleId": "g-a27_2"
+                                            }
+                                          ],
+                                          "connector": "및",
+                                          "scope": "general"
+                                        },
+                                        {
+                                          "id": "a7d168-a7-p1-x5-w-b",
+                                          "kind": "text",
+                                          "text": "도 제외합니다."
+                                        }
+                                      ]
                                     }
-                                  ],
-                                  "connector": "및",
-                                  "scope": "general"
-                                },
-                                {
-                                  "id": "a7d168-a7-p1-x5-w",
-                                  "kind": "text",
-                                  "text": "도 제외합니다."
+                                  ]
                                 }
-                              ]
-                            },
+                              ],
+                              "code": "P0100"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "a7d168-a7-p1-x2-if-waiver-else-x",
+                          "children": [
                             {
-                              "id": "a7d168-a7-p1-x2-if-waiver-else",
+                              "id": "a7d168-a7-p1-else",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d168-a7-p1-x2-if-waiver-else-t",
+                                  "id": "a7d168-a7-p1-x3-else",
                                   "kind": "text",
-                                  "text": "은 제외합니다."
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                                },
+                                {
+                                  "id": "a7d168-a7-p1-x1-else-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
+                                    {
+                                      "id": "a7d168-a7-p1-x1-else-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d168-a7-p1-x1-else-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d168-a7-p1-x1-else-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d168-a7-p1-x1-else",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d168-a7-p1-x1-else-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d168-a7-p1-x2-if-waiver-else-t-else",
+                                          "kind": "text",
+                                          "text": "은 제외합니다."
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
-                              ]
+                              ],
+                              "code": "P0100"
                             }
                           ]
                         }
-                      ],
-                      "code": "P0100"
+                      ]
                     }
                   ]
                 }
@@ -193797,79 +194726,158 @@
                   ],
                   "children": [
                     {
-                      "id": "a7d173-a6-p1",
-                      "kind": "paragraph",
-                      "children": [
+                      "id": "a7d173-a6-p1-x",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "id": "a7d173-a6-p1-x3",
-                          "kind": "text",
-                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                        },
-                        {
-                          "id": "a7d173-a6-p1-x1",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d173-a6-p1-x2-if-waiver-b-x",
+                          "when": "D0002 = true",
+                          "children": [
                             {
-                              "articleId": "g-a9"
-                            },
-                            {
-                              "articleId": "g-a10"
-                            },
-                            {
-                              "articleId": "g-a38"
-                            }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d173-a6-p1-x2-if-waiver",
-                          "kind": "inlineCond",
-                          "branches": [
-                            {
-                              "id": "a7d173-a6-p1-x2-if-waiver-b",
-                              "when": "D0002 = true",
+                              "id": "a7d173-a6-p1-b",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d173-a6-p1-x4-w",
+                                  "id": "a7d173-a6-p1-x3-b",
                                   "kind": "text",
-                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                                 },
                                 {
-                                  "id": "a7d173-a6-p1-x2",
-                                  "kind": "articleRef",
-                                  "targets": [
+                                  "id": "a7d173-a6-p1-x1-b-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
                                     {
-                                      "articleId": "g-a27_1"
-                                    },
-                                    {
-                                      "articleId": "g-a27_2"
+                                      "id": "a7d173-a6-p1-x1-b-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d173-a6-p1-x1-b-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d173-a6-p1-x1-b-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d173-a6-p1-x1-b",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d173-a6-p1-x1-b-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d173-a6-p1-x4-w-b",
+                                          "kind": "text",
+                                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                        },
+                                        {
+                                          "id": "a7d173-a6-p1-x2-b",
+                                          "kind": "articleRef",
+                                          "targets": [
+                                            {
+                                              "articleId": "g-a27_1"
+                                            },
+                                            {
+                                              "articleId": "g-a27_2"
+                                            }
+                                          ],
+                                          "connector": "및",
+                                          "scope": "general"
+                                        },
+                                        {
+                                          "id": "a7d173-a6-p1-x5-w-b",
+                                          "kind": "text",
+                                          "text": "도 제외합니다."
+                                        }
+                                      ]
                                     }
-                                  ],
-                                  "connector": "및",
-                                  "scope": "general"
-                                },
-                                {
-                                  "id": "a7d173-a6-p1-x5-w",
-                                  "kind": "text",
-                                  "text": "도 제외합니다."
+                                  ]
                                 }
-                              ]
-                            },
+                              ],
+                              "code": "P0100"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "a7d173-a6-p1-x2-if-waiver-else-x",
+                          "children": [
                             {
-                              "id": "a7d173-a6-p1-x2-if-waiver-else",
+                              "id": "a7d173-a6-p1-else",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d173-a6-p1-x2-if-waiver-else-t",
+                                  "id": "a7d173-a6-p1-x3-else",
                                   "kind": "text",
-                                  "text": "은 제외합니다."
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                                },
+                                {
+                                  "id": "a7d173-a6-p1-x1-else-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
+                                    {
+                                      "id": "a7d173-a6-p1-x1-else-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d173-a6-p1-x1-else-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d173-a6-p1-x1-else-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d173-a6-p1-x1-else",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d173-a6-p1-x1-else-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d173-a6-p1-x2-if-waiver-else-t-else",
+                                          "kind": "text",
+                                          "text": "은 제외합니다."
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
-                              ]
+                              ],
+                              "code": "P0100"
                             }
                           ]
                         }
-                      ],
-                      "code": "P0100"
+                      ]
                     }
                   ]
                 }
@@ -194782,79 +195790,158 @@
                   ],
                   "children": [
                     {
-                      "id": "a7d175-a6-p1",
-                      "kind": "paragraph",
-                      "children": [
+                      "id": "a7d175-a6-p1-x",
+                      "kind": "condBlock",
+                      "branches": [
                         {
-                          "id": "a7d175-a6-p1-x3",
-                          "kind": "text",
-                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                        },
-                        {
-                          "id": "a7d175-a6-p1-x1",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d175-a6-p1-x2-if-waiver-b-x",
+                          "when": "D0002 = true",
+                          "children": [
                             {
-                              "articleId": "g-a9"
-                            },
-                            {
-                              "articleId": "g-a10"
-                            },
-                            {
-                              "articleId": "g-a38"
-                            }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d175-a6-p1-x2-if-waiver",
-                          "kind": "inlineCond",
-                          "branches": [
-                            {
-                              "id": "a7d175-a6-p1-x2-if-waiver-b",
-                              "when": "D0002 = true",
+                              "id": "a7d175-a6-p1-b",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d175-a6-p1-x4-w",
+                                  "id": "a7d175-a6-p1-x3-b",
                                   "kind": "text",
-                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                                 },
                                 {
-                                  "id": "a7d175-a6-p1-x2",
-                                  "kind": "articleRef",
-                                  "targets": [
+                                  "id": "a7d175-a6-p1-x1-b-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
                                     {
-                                      "articleId": "g-a27_1"
-                                    },
-                                    {
-                                      "articleId": "g-a27_2"
+                                      "id": "a7d175-a6-p1-x1-b-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d175-a6-p1-x1-b-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d175-a6-p1-x1-b-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d175-a6-p1-x1-b",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d175-a6-p1-x1-b-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d175-a6-p1-x4-w-b",
+                                          "kind": "text",
+                                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                        },
+                                        {
+                                          "id": "a7d175-a6-p1-x2-b",
+                                          "kind": "articleRef",
+                                          "targets": [
+                                            {
+                                              "articleId": "g-a27_1"
+                                            },
+                                            {
+                                              "articleId": "g-a27_2"
+                                            }
+                                          ],
+                                          "connector": "및",
+                                          "scope": "general"
+                                        },
+                                        {
+                                          "id": "a7d175-a6-p1-x5-w-b",
+                                          "kind": "text",
+                                          "text": "도 제외합니다."
+                                        }
+                                      ]
                                     }
-                                  ],
-                                  "connector": "및",
-                                  "scope": "general"
-                                },
-                                {
-                                  "id": "a7d175-a6-p1-x5-w",
-                                  "kind": "text",
-                                  "text": "도 제외합니다."
+                                  ]
                                 }
-                              ]
-                            },
+                              ],
+                              "code": "P0100"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "a7d175-a6-p1-x2-if-waiver-else-x",
+                          "children": [
                             {
-                              "id": "a7d175-a6-p1-x2-if-waiver-else",
+                              "id": "a7d175-a6-p1-else",
+                              "kind": "paragraph",
                               "children": [
                                 {
-                                  "id": "a7d175-a6-p1-x2-if-waiver-else-t",
+                                  "id": "a7d175-a6-p1-x3-else",
                                   "kind": "text",
-                                  "text": "은 제외합니다."
+                                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                                },
+                                {
+                                  "id": "a7d175-a6-p1-x1-else-if",
+                                  "kind": "inlineCond",
+                                  "branches": [
+                                    {
+                                      "id": "a7d175-a6-p1-x1-else-if-b",
+                                      "when": "count(D0014) > 0",
+                                      "children": [
+                                        {
+                                          "id": "a7d175-a6-p1-x1-else-if-t",
+                                          "kind": "text",
+                                          "text": " 다만, "
+                                        },
+                                        {
+                                          "id": "a7d175-a6-p1-x1-else-each",
+                                          "kind": "inlineFor",
+                                          "source": {
+                                            "kind": "refList",
+                                            "ref": "D0014"
+                                          },
+                                          "alias": "준용예외마다",
+                                          "connector": "및",
+                                          "children": [
+                                            {
+                                              "id": "a7d175-a6-p1-x1-else",
+                                              "kind": "articleRef",
+                                              "targets": [
+                                                {
+                                                  "articleId": "",
+                                                  "restrict": {
+                                                    "current": "a7d175-a6-p1-x1-else-each"
+                                                  }
+                                                }
+                                              ],
+                                              "scope": "general"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "a7d175-a6-p1-x2-if-waiver-else-t-else",
+                                          "kind": "text",
+                                          "text": "은 제외합니다."
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
-                              ]
+                              ],
+                              "code": "P0100"
                             }
                           ]
                         }
-                      ],
-                      "code": "P0100"
+                      ]
                     }
                   ]
                 }
@@ -202444,79 +203531,158 @@
           ],
           "children": [
             {
-              "id": "a7d179-a6-p1",
-              "kind": "paragraph",
-              "children": [
+              "id": "a7d179-a6-p1-x",
+              "kind": "condBlock",
+              "branches": [
                 {
-                  "id": "a7d179-a6-p1-x3",
-                  "kind": "text",
-                  "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, "
-                },
-                {
-                  "id": "a7d179-a6-p1-x1",
-                  "kind": "articleRef",
-                  "targets": [
+                  "id": "a7d179-a6-p1-x2-if-waiver-b-x",
+                  "when": "D0002 = true",
+                  "children": [
                     {
-                      "articleId": "g-a9"
-                    },
-                    {
-                      "articleId": "g-a10"
-                    },
-                    {
-                      "articleId": "g-a38"
-                    }
-                  ],
-                  "connector": "및",
-                  "scope": "general"
-                },
-                {
-                  "id": "a7d179-a6-p1-x2-if-waiver",
-                  "kind": "inlineCond",
-                  "branches": [
-                    {
-                      "id": "a7d179-a6-p1-x2-if-waiver-b",
-                      "when": "D0002 = true",
+                      "id": "a7d179-a6-p1-b",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7d179-a6-p1-x4-w",
+                          "id": "a7d179-a6-p1-x3-b",
                           "kind": "text",
-                          "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
                         },
                         {
-                          "id": "a7d179-a6-p1-x2",
-                          "kind": "articleRef",
-                          "targets": [
+                          "id": "a7d179-a6-p1-x1-b-if",
+                          "kind": "inlineCond",
+                          "branches": [
                             {
-                              "articleId": "g-a27_1"
-                            },
-                            {
-                              "articleId": "g-a27_2"
+                              "id": "a7d179-a6-p1-x1-b-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7d179-a6-p1-x1-b-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7d179-a6-p1-x1-b-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7d179-a6-p1-x1-b",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7d179-a6-p1-x1-b-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7d179-a6-p1-x4-w-b",
+                                  "kind": "text",
+                                  "text": "은 제외하며, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                },
+                                {
+                                  "id": "a7d179-a6-p1-x2-b",
+                                  "kind": "articleRef",
+                                  "targets": [
+                                    {
+                                      "articleId": "g-a27_1"
+                                    },
+                                    {
+                                      "articleId": "g-a27_2"
+                                    }
+                                  ],
+                                  "connector": "및",
+                                  "scope": "general"
+                                },
+                                {
+                                  "id": "a7d179-a6-p1-x5-w-b",
+                                  "kind": "text",
+                                  "text": "도 제외합니다."
+                                }
+                              ]
                             }
-                          ],
-                          "connector": "및",
-                          "scope": "general"
-                        },
-                        {
-                          "id": "a7d179-a6-p1-x5-w",
-                          "kind": "text",
-                          "text": "도 제외합니다."
+                          ]
                         }
-                      ]
-                    },
+                      ],
+                      "code": "P0100"
+                    }
+                  ]
+                },
+                {
+                  "id": "a7d179-a6-p1-x2-if-waiver-else-x",
+                  "children": [
                     {
-                      "id": "a7d179-a6-p1-x2-if-waiver-else",
+                      "id": "a7d179-a6-p1-else",
+                      "kind": "paragraph",
                       "children": [
                         {
-                          "id": "a7d179-a6-p1-x2-if-waiver-else-t",
+                          "id": "a7d179-a6-p1-x3-else",
                           "kind": "text",
-                          "text": "은 제외합니다."
+                          "text": "이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다."
+                        },
+                        {
+                          "id": "a7d179-a6-p1-x1-else-if",
+                          "kind": "inlineCond",
+                          "branches": [
+                            {
+                              "id": "a7d179-a6-p1-x1-else-if-b",
+                              "when": "count(D0014) > 0",
+                              "children": [
+                                {
+                                  "id": "a7d179-a6-p1-x1-else-if-t",
+                                  "kind": "text",
+                                  "text": " 다만, "
+                                },
+                                {
+                                  "id": "a7d179-a6-p1-x1-else-each",
+                                  "kind": "inlineFor",
+                                  "source": {
+                                    "kind": "refList",
+                                    "ref": "D0014"
+                                  },
+                                  "alias": "준용예외마다",
+                                  "connector": "및",
+                                  "children": [
+                                    {
+                                      "id": "a7d179-a6-p1-x1-else",
+                                      "kind": "articleRef",
+                                      "targets": [
+                                        {
+                                          "articleId": "",
+                                          "restrict": {
+                                            "current": "a7d179-a6-p1-x1-else-each"
+                                          }
+                                        }
+                                      ],
+                                      "scope": "general"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "a7d179-a6-p1-x2-if-waiver-else-t-else",
+                                  "kind": "text",
+                                  "text": "은 제외합니다."
+                                }
+                              ]
+                            }
+                          ]
                         }
-                      ]
+                      ],
+                      "code": "P0100"
                     }
                   ]
                 }
-              ],
-              "code": "P0100"
+              ]
             }
           ]
         }

@@ -151,7 +151,7 @@ export const DOC_TOOLS: ToolGroup[] = [
     tools: [
       { id: "slot", label: "슬롯", icon: "slot", short: "슬롯", title: "슬롯 넣기 — 커서 자리에 구분자 값이 찍힐 자리", match: oneOf("치환 슬롯…") },
       // 상품 조 사본(절 형태)에서는 「블록 지정 참조…」도 함께 — 둘이면 고르기 목록 (ADR-0082 결정 12)
-      { id: "articleRef", label: "조 참조", icon: "link", short: "참조", title: "조 참조 넣기 — 커서 자리에 다른 조 · 항 · 호 번호", match: oneOf("조 참조…", "블록 지정 참조…"), multi: true },
+      { id: "articleRef", label: "조 참조", icon: "link", short: "참조", title: "조 참조 넣기 — 커서 자리에 다른 조 · 항 · 호 번호", match: (l) => oneOf("조 참조…", "블록 지정 참조…")(l) || l.startsWith("조 참조 — 현재 조("), multi: true },
       { id: "appendixRef", label: "별표 참조", icon: "attach", short: "별표", title: "별표 참조 넣기 — 커서 자리에 <별표> 번호", match: oneOf("별표 참조…") },
       { id: "particle", label: "조사", icon: "particle", short: "조사", title: "조사 넣기 — 커서 자리에, 앞 글자 받침에 따라 을/를처럼 바뀌는 조사", match: (l) => l.startsWith("조사 — "), multi: true },
       {
@@ -211,7 +211,7 @@ export const DOC_TOOLS: ToolGroup[] = [
 ];
 
 /** 함수조항 본문에 없는 도구 — 함수조항 툴바에서 빠진다 (기능/함수조항 §4.3). 조 · 관 · 함수조항은 남고 잠긴다(사유 tooltip). */
-const CLAUSE_HIDDEN = new Set<ToolId>(["table", "structKey", "repeat", "link", "joinMode", "forBlock", "forFallback", "inlineFor", "tableRef"]);
+const CLAUSE_HIDDEN = new Set<ToolId>(["table", "structKey", "repeat", "link", "joinMode", "forBlock", "forFallback", "tableRef"]);
 
 export const CLAUSE_TOOLS: ToolGroup[] = DOC_TOOLS.map((g) => ({ ...g, tools: g.tools.filter((t) => !CLAUSE_HIDDEN.has(t.id)) })).filter((g) => g.tools.length > 0);
 

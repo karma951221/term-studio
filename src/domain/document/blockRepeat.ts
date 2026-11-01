@@ -97,6 +97,11 @@ export interface RepeatEnv {
   enumOf?: (code: Code) => EnumDef | undefined;
   /** 문맥 담보가 있는 문서(담보약관)인가 — 담보 트리 원천의 허용. */
   hasCoverage?: boolean;
+  /**
+   * 조 참조 목록 원천(준용예외마다)을 여는 자리 — 담보약관 템플릿(준용예외 구분자 코드) · 함수조항 편집기(조 참조 목록 인자 `arg.<이름>`).
+   * 그 이름이 조 참조 목록인지 답한다. 없으면 그 원천은 거부 (ADR-0098 결정 2 · 5 — 보통약관에는 값이 없다).
+   */
+  refLists?: (ref: string) => boolean;
 }
 
 function listFieldEnum(form: Code, field: Code, master: MasterTree): Code | undefined {
@@ -193,9 +198,15 @@ export function checkRepeatSource(node: RepeatNode, outers: readonly RepeatNode[
   const source: unknown = node.source;
   const fail = (kind: Issue["kind"], message: string, refPath?: string): Issue[] => [{ kind, message, at: { ...at, ...(refPath !== undefined ? { refPath } : {}) } }];
   if (!isRepeatSource(source)) return fail("structure", `${node.kind === "inlineFor" ? "문장 안 반복" : "반복 블록"}의 원천을 고른다 — 세목 선택지 · 바깥 반복의 현재 원소의 목록 · 목록값의 합집합`);
-  // 조 참조 목록(준용예외) 반복은 준용규정 함수조항의 문장 안 반복으로만 연다 (ADR-0098 결정 2) — 함수조항 본문 검사(clause/body.ts)가 본다
-  if (source.kind === "refList") return fail("structure", "조 참조 목록(준용예외) 반복은 함수조항 본문의 문장 안 반복에서만 씁니다 — 준용규정 함수조항에 쓴다", source.ref);
   const outer = outers.at(-1);
+  // 조 참조 목록(준용예외) 반복 — 담보약관 · 함수조항의 문장 안 반복, 반복 밖에서만 (ADR-0098 결정 2). 함수조항 저장은 본문 검사(clause/body.ts)가 본다
+  if (source.kind === "refList") {
+    if (!env.refLists) return fail("structure", "조 참조 목록(준용예외) 반복은 담보약관 템플릿 · 함수조항에서만 씁니다 — 보통약관에는 준용예외 값이 없습니다", source.ref);
+    if (node.kind !== "inlineFor") return fail("structure", "조 참조 목록(준용예외) 반복은 문장 안 반복으로만 씁니다 — 「다만, 〔준용예외마다〕은 제외합니다」", source.ref);
+    if (outer) return fail("structure", "조 참조 목록(준용예외) 반복은 다른 반복 안에 두지 않습니다", source.ref);
+    if (!env.refLists(source.ref)) return fail("brokenRef", `반복 원천 ${source.ref} 은(는) 조 참조 목록(준용예외) 구분자가 아닙니다`, source.ref);
+    return [];
+  }
   if (outer && isRepeatSource(outer.source) && isTreeSource(outer.source) !== isTreeSource(source)) {
     return fail("structure", "담보 트리 반복과 세목 반복은 섞어 중첩하지 않습니다 — 한 단계 중첩은 같은 계열 안에서만(종 › 사유, 세부보장 › 급부). 종에 따라 갈리는 문장은 조건식으로 쓴다 (ADR-0087 결정 5)");
   }

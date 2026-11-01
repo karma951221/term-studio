@@ -12,10 +12,11 @@
 import type { Box, DocumentNode, EditOp, IdSource, InlineAt, NodeKind, Position, TreeIndex } from "@/domain/document";
 import type { AttachLevel, Id } from "@/domain/types";
 
-import { allowedIn, boxPickLabel, isCodedKind, nodeBuilders, PARTICLE_PRESETS, repeatLevels as repeatLevelsOf } from "@/domain/document";
+import { allowedIn, boxPickLabel, isCodedKind, nodeBuilders, PARTICLE_PRESETS, repeatLabel, repeatLevels as repeatLevelsOf } from "@/domain/document";
 
 import { afterOf, emptyNode, inlineListAt, moveOps, removeChipOps, selectionRange, siblingPlace, unwrapOps, wrapOps, wrapRangeOps } from "./editOps";
 import { runsFromTokens, type Token } from "./inlineRuns";
+import { currentArticleRef, enclosingRefList } from "./repeatSources";
 
 /** 문장 안에 팝업으로 넣는 칩 종류 (문장 안 조건은 팝업 없이 곧바로 선다 — `inlineCondItem`). */
 /** `blockRef` — 블록 지정 참조(상품 조 사본 전용 — 조 편집 패널이 `withBlockRefItems` 로만 더한다, ADR-0082 결정 12). */
@@ -474,6 +475,29 @@ export function inlineInsertItems(
   return items;
 }
 
+/**
+ * 조 참조 목록 반복(준용예외마다) 본문 안의 「조 참조 — 현재 조(…)」 — 커서 자리에 반복의 현재 원소를 가리키는 조 참조 칩 (ADR-0098 결정 2).
+ * 감싼 조 참조 목록 반복이 없거나 「비었을 때」 칸이면 없음.
+ */
+export function currentArticleRefItems(ix: TreeIndex, at: InlineAt, tokens: Token[], newId: IdSource): MenuItem[] {
+  if ("tableId" in at) return [];
+  const loop = enclosingRefList(ix, at.parentId, at.slot);
+  if (!loop) return [];
+  const name = loop.alias ?? repeatLabel(loop.source);
+  return [
+    {
+      label: `조 참조 — 현재 조(${name})`,
+      action: {
+        do: "ops",
+        ops: (tree): EditOp[] => {
+          const list = inlineListAt(tree, at);
+          return list ? [{ type: "setInlines", at, runs: runsFromTokens(list, tokens, newId, currentArticleRef(loop.id, newId)) }] : [];
+        },
+      },
+    },
+  ];
+}
+
 /** 문장 안 반복 안에서 잠그는 사유 — 한 겹만 (ADR-0088 결정 1). */
 export const INLINE_REPEAT_NESTED = "문장 안 반복 안에는 문장 안 반복을 둘 수 없다 — 한 겹만";
 /** 반복 블록 두 겹 안에서 잠그는 사유 — 블록 반복 한 단계 중첩에 같이 센다. */
@@ -513,7 +537,11 @@ function inlineSections(env: MenuEnv, at: InlineAt, tokens: Token[]): MenuSectio
   if (at.slot === "title") return [inlineInsertItems(at, tokens, { inInlineCond: false, newId: env.newId, title: true }), ...articleMenu(env, at.parentId)];
   const owner = env.ix.nodes.get(at.parentId);
   // 문장 안 반복의 본문 · 「비었을 때」 칸 — 넣기만(블록 조작은 그 반복이 선 문장의 주인 몫)
-  if (owner?.node.kind === "inlineFor") return [inlineInsertItems(at, tokens, { inInlineCond: owner.inInlineCond, newId: env.newId, inInlineFor: true, forDepth: owner.forDepth, ...(owner.inTitle ? { title: true } : {}) })];
+  if (owner?.node.kind === "inlineFor") {
+    // 조 참조 목록 반복(준용예외마다)이면 「조 참조 — 현재 조(…)」도 (ADR-0098 결정 2)
+    const current = currentArticleRefItems(env.ix, at, tokens, env.newId);
+    return [inlineInsertItems(at, tokens, { inInlineCond: owner.inInlineCond, newId: env.newId, inInlineFor: true, forDepth: owner.forDepth, ...(owner.inTitle ? { title: true } : {}) }), ...(current.length > 0 ? [current] : [])];
+  }
   return [inlineInsertItems(at, tokens, { inInlineCond: owner?.inInlineCond ?? false, newId: env.newId, inInlineFor: owner?.inInlineFor === true, forDepth: owner?.forDepth ?? 0 }), ...(owner ? blockMenu(env, at.parentId) : [])];
 }
 

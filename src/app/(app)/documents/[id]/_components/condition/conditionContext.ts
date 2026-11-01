@@ -51,6 +51,7 @@ export function buildConditionContext(input: {
     const forms = [...formsRead(d, byCode, master)];
     const out: CtxDiscriminator = { code: d.code, label: d.label, level: d.level, forms };
     if (type && type.kind !== "list<ref>") out.type = type; // 조 참조 목록은 조건 · 슬롯 고르기에 서지 않는다 — 문장 안 반복의 원천 (ADR-0098)
+    if (type?.kind === "list<ref>") out.refList = true;
     if (type && (type.kind === "enum" || type.kind === "list<enum>")) {
       out.enumOptions = [...(enumOf(type.enumCode)?.values ?? [])].sort((a, b) => a.order - b.order).map((v) => ({ code: v.code, label: v.label }));
     }

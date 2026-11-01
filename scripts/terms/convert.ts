@@ -32,7 +32,7 @@ import { boxSites, planBoxes, replaceBox, type BoxPlan } from "./boxes";
 import { CLAIM_CATALOG_ENTRY, CLAIM_SLOT, inlineClaimNames } from "./claim";
 import type { Discriminator } from "../../src/domain/catalog/types";
 import { applyClauseUse, articleRefParamsOf, guardApplicationOutput, INNER_TARGETS, positionApplicationHead, clauseFromSource, inlineBody, optionCode, parameterize, placeOptions, reId, valueCode, type ClauseRecord } from "./clauses";
-import { rewriteExclusions } from "./exclusion";
+import { rewriteDocumentExclusions, rewriteExclusions } from "./exclusion";
 import { articlesDeep, canonicalArticle, claimOf, collapseRenewal, coverageNameOf, localPaths, mergeRenewal, textNodesOf, wordClusters } from "./auto";
 import { APPENDED_CLAUSE_KEYS, APPENDICES, CLAUSES, GENERAL_TEMPLATE, PRODUCTS, RENEWAL, SEED_DIR, type ClauseUse, type ProductTerms, type SlotOverlay, type SpecialSpec } from "./config";
 import { parseTerms, type ParsedArticle, type ParsedDoc } from "./parse";
@@ -308,12 +308,19 @@ function applySlots(built: Built, slots: SlotOverlay[], report: string[]): void 
   }
 }
 
+/** 준용예외 구분자(결과 타입 「조 참조 목록」) 코드 — 담보약관 문장 안 반복의 원천 검사 (손으로 적는 시드 discriminators.json). */
+let refListCache: Set<string> | undefined;
+function refListCodes(): Set<string> {
+  refListCache ??= new Set((JSON.parse(readFileSync(path.join(root, SEED_DIR, "discriminators.json"), "utf8")) as Discriminator[]).filter((d) => d.resultType?.kind === "list<ref>").map((d) => d.code));
+  return refListCache;
+}
+
 function validate(tree: DocumentNode, kind: "general" | "special", generalTree?: DocumentNode): string[] {
   const generalIds = new Set<Id>();
   if (generalTree) for (const e of indexTree(generalTree).nodes.values()) if (e.node.kind === "article") generalIds.add(e.node.id);
   const issues = validateTree(tree, {
     kind,
-    ...(kind === "special" ? { generalArticleIds: generalIds, generalReferenceKeys: generalTree ? referenceKeysOf(generalTree) : new Set<string>() } : {}),
+    ...(kind === "special" ? { generalArticleIds: generalIds, generalReferenceKeys: generalTree ? referenceKeysOf(generalTree) : new Set<string>(), refLists: (ref: string) => refListCodes().has(ref) } : {}),
     appendixExists: (code) => APPENDICES.some((a) => a.code === code),
   });
   return issues.map((i) => `${i.kind}: ${i.message} @ ${(i.at.nodePath ?? []).join("/")}`);
@@ -571,6 +578,8 @@ function main(): void {
   for (const d of documents) {
     const p = perGeneral.get(d.general)!;
     d.tree = remapIds(d.tree, p.idMap, p.codeMap);
+    // 문면에 직접 쓴 준용규정의 수동 제외 조 목록도 준용예외 구분자로 (ADR-0098 결정 2 · 함수조항과 같은 규칙) — 대상이 템플릿 조 id 로 모인 뒤
+    issues.push(...rewriteDocumentExclusions(d.code, d.tree, catalog));
     // 담보약관은 상품의 최종 보통약관(템플릿 + 조 사본)을 가리킨다 — 사본에만 있는 자리(PZ)도 그 상품에서는 있다
     issues.push(...validate(d.tree, "special", applyArticleCopies(template, p.copies.map((a) => ({ articleId: a.id, article: a })))).map((l) => `${d.code}: ${l}`));
     d.general = GENERAL_TEMPLATE.code;

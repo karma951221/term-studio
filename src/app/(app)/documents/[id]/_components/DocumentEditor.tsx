@@ -256,17 +256,19 @@ export function DocumentEditor(props: EditorProps) {
   );
   const appendixCodes = useMemo(() => new Set(props.appendices.map((a) => a.code)), [props.appendices]);
   const boxByCode = useMemo(() => new Map(props.boxes.map((x) => [x.code, x] as const)), [props.boxes]);
+  /** 준용예외 구분자 — 담보약관 문장 안 반복의 조 참조 목록 원천 (ADR-0098 결정 2, 서버 저장 검사와 같은 판단). */
+  const refListCodes = useMemo(() => new Set(props.discriminators.filter((d) => d.resultType?.kind === "list<ref>").map((d) => d.code)), [props.discriminators]);
   /** 보통약관 캐시 → 편집 환경. 렌더는 상태의 캐시로, 명령 적용은 방금 받은 것까지 든 ref 의 캐시로 만든다. */
   const makeEditEnv = useCallback(
     (cache: Readonly<Record<Id, GeneralForEdit>>): EditEnv => ({
-      env: { kind: doc.kind, appendixExists: (c: Code) => appendixCodes.has(c), boxExists: (c: Code) => boxByCode.has(c), clauseGate: gate, enumOf: (c: Code) => enumByCode.get(c), coordinate },
+      env: { kind: doc.kind, appendixExists: (c: Code) => appendixCodes.has(c), boxExists: (c: Code) => boxByCode.has(c), clauseGate: gate, enumOf: (c: Code) => enumByCode.get(c), coordinate, ...(doc.kind === "special" ? { refLists: (ref: string) => refListCodes.has(ref) } : {}) },
       generalRefs: (id: Id) => {
         const g = cache[id];
         // 대상 사실(안쪽 코드 · 값 한정 열거형)은 서버 저장 검사와 같은 함수조항 게이트로 짓는다 — 명령마다 부르므로 트리 · 게이트마다 한 번
         return g ? cachedGeneralRefs(g.tree, gate) : undefined;
       },
     }),
-    [doc.kind, appendixCodes, boxByCode, gate, enumByCode, coordinate],
+    [doc.kind, appendixCodes, boxByCode, gate, enumByCode, coordinate, refListCodes],
   );
   // 읽기 모드는 서버가 방금 넘긴 대응 보통약관이 기준이다 (편집 중에는 편집 시작 때 받은 것 · 새로 고른 것)
   const renderCache = useMemo(() => (mode === "read" && props.general ? { ...generalCache, [props.general.id]: props.general } : generalCache), [mode, props.general, generalCache]);

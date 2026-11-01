@@ -166,3 +166,47 @@ describe("판정 기록 → 출처 패널 (결정 7)", () => {
     expect(other.exclusions).toBeUndefined();
   });
 });
+
+describe("담보약관 문면에 직접 쓴 준용예외 반복 (B5) — 함수조항 없이 구분자 원천 · 현재 원소 조 참조", () => {
+  /** 「이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다.〔IF count(D0100) > 0〕 다만, 〔[D0100마다] 현재 조〕은 제외합니다.〔END〕」 — 문면 트리 모양(대상 조 id 빈 문자열). */
+  const direct: ArticleNode = {
+    id: "s-art-direct",
+    kind: "article",
+    title: titleNodes("준용규정", "s-art-direct"),
+    children: [
+      {
+        id: "s-direct-p",
+        kind: "paragraph",
+        children: [
+          { id: "s-d-t1", kind: "text", text: "이 특별약관에서 정하지 않은 사항은 " },
+          { id: "s-d-doc", kind: "articleRef", targets: [], scope: "general" },
+          { id: "s-d-t2", kind: "text", text: "을 따릅니다." },
+          {
+            id: "s-d-if",
+            kind: "inlineCond",
+            branches: [
+              {
+                id: "s-d-if-b",
+                when: "count(D0100) > 0",
+                children: [
+                  { id: "s-d-t3", kind: "text", text: " 다만, " },
+                  { id: "s-d-each", kind: "inlineFor", source: { kind: "refList", ref: "D0100" }, connector: "및", children: [{ id: "s-d-ref", kind: "articleRef", targets: [{ articleId: "", restrict: { current: "s-d-each" } }], scope: "general" }] },
+                  { id: "s-d-t4", kind: "text", text: "은 제외합니다." },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  } as unknown as ArticleNode;
+
+  it("함수조항으로 쓴 것과 같은 글 — 판정 값 · 한 덩어리 조 참조 · 빈 값이면 조건으로 빠진다", () => {
+    const input = withExclusion(["g-art-disability", "g-art-def"], (x) => ({ ...x, specialDocuments: new Map([...x.specialDocuments, ["cov-death", { ...alphaDeathDocument(), children: [...alphaDeathDocument().children, direct] }]]) }));
+    const b = run(input);
+    expect(application(special(b, "pc-basic"))).toBe("이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다. 다만, 보통약관 제1조(용어의 정의) 및 제5조(장해의 분류)은 제외합니다.");
+    expect(b.issues.filter((i) => i.severity !== "warning")).toEqual([]);
+    const none = run(withExclusion([], (x) => ({ ...x, specialDocuments: new Map([...x.specialDocuments, ["cov-death", { ...alphaDeathDocument(), children: [...alphaDeathDocument().children, direct] }]]) })));
+    expect(application(special(none, "pc-basic"))).toBe("이 특별약관에서 정하지 않은 사항은 보통약관을 따릅니다.");
+  });
+});

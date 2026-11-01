@@ -683,7 +683,8 @@ describe("★ 실물 재현 변형 — 납입면제 없는 상품은 납입면�
       const file = fixtureOf.get(doc.title);
       expect(file, `${doc.title} 의 픽스처`).toBeDefined();
       // 나열의 연결어는 보지 않는다 — 원문이 연결어를 섞어 쓴 나열(「… 및 제38조, 제27조의1, 제27조의2 및 제38조」)은 참조 하나로 찍혀 쉼표 · 「및」이 달라진다
-      const joint = (x: string) => x.replace(/, | 및 /g, "·");
+      // 원문이 같은 조를 두 번 적은 나열(갱신형 대상포진눈병 — 「… 제38조(중도인출), … 및 제38조(중도인출)」)은 준용예외 구분자가 한 번만 찍는다(ADR-0098 — 알려진 차이)
+      const joint = (x: string) => x.replace(/, | 및 /g, "·").replace(/(제N조\([^)]*\))·\1(?=[^·]*$|·)/g, "$1");
       expect(joint(head(lines)), doc.title).toBe(joint(withoutWaiver(head(source("알파2607", file!)))));
       if (head(lines).includes("다만,")) expect(head(lines), doc.title).toMatch(/제외합니다\.?$/);
       expect(referenceNumberIssues(lines, general), doc.title).toEqual([]);

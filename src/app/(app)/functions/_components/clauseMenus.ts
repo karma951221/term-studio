@@ -12,7 +12,7 @@
  * - 함수조항 본문에 없는 것(표 · 옛 문면 박스 · 행 반복 · 조연결 · 구조 표기 · 호/목 자리의 조건 블록)은 싣지 않는다.
  *   정적 마스터 박스(박스 참조)는 잎이라 싣는다 — 항 자리 · 호 뒤 (기능/박스 §3.2).
  */
-import { blockMenu, chipMenu, condBlockItem, condMenu, inlineInsertItems, type MenuEnv, type MenuItem, type MenuSections, type Place } from "@/app/(app)/documents/[id]/_components/menus";
+import { blockMenu, chipMenu, condBlockItem, condMenu, currentArticleRefItems, inlineInsertItems, type MenuEnv, type MenuItem, type MenuSections, type Place } from "@/app/(app)/documents/[id]/_components/menus";
 import { afterOf, emptyNode, inlineListAt } from "@/app/(app)/documents/[id]/_components/editOps";
 import { unassignedValues, type SwitchSubject } from "@/app/(app)/documents/[id]/_components/switchCases";
 import { runsFromTokens, type Token } from "@/app/(app)/documents/[id]/_components/inlineRuns";
@@ -41,6 +41,7 @@ export const REFUSE = {
   article: "함수조항에는 조 · 관을 둘 수 없다 — 조는 늘 사용처(약관 템플릿) 소유다.",
   clauseRef: "함수조항 안에 함수조항 참조를 둘 수 없다 — 중첩 금지.",
   switchSubject: "값별 분기의 대상이 없다 — 인자 표에 목록값(열거형) 인자를 먼저 선언한다(내부 변수도 된다).",
+  refList: "함수조항의 문장 안 반복은 조 참조 목록 인자(준용예외)마다만 — 인자 표에 타입 「조 참조 목록」 인자를 먼저 선언한다.",
 } as const;
 
 /** 그 자리의 첫 칸 — 항 · 호 · 목 중 설 수 있는 것 하나. */
@@ -115,7 +116,7 @@ export function refusing(label: string, message: string, onRefuse: (message: str
   };
 }
 
-const DROPPED_POPUPS = new Set(["newTable", "tableProps", "repeat", "repeatBlock", "repeatInline", "link", "docTitle", "general", "tableRef"]);
+const DROPPED_POPUPS = new Set(["newTable", "tableProps", "repeat", "repeatBlock", "link", "docTitle", "general", "tableRef"]);
 const DROPPED_NODES = new Set(["table", "box", "article", "section", "forBlock"]);
 
 /** 문면 메뉴 항목 하나를 함수조항 자리로 — 그대로 · 거부 자리로 바꿈 · 뺌(undefined). */
@@ -128,6 +129,8 @@ function adapt(item: MenuItem, env: ClauseMenuEnv, onRefuse: (message: string) =
     if (p.kind === "clauseBlock") return p.fit ? undefined : refusing(item.label.replace(/\((조 단위|호|목)\) /, " 참조 "), REFUSE.clauseRef, onRefuse);
     if (p.kind === "insertInline" && p.what === "clauseInlineRef") return refusing(item.label, REFUSE.clauseRef, onRefuse);
     if (p.kind === "insertInline" && p.what === "structKey") return undefined;
+    // 문장 안 반복은 조 참조 목록 인자 원천만 (ADR-0098 결정 2) — 인자가 없으면 사유를 보이는 거부 자리. 한 겹 · 제목 잠금은 문면 사유 그대로
+    if (p.kind === "repeatInline" && !item.refusal && (env.refLists ?? []).length === 0) return refusing(item.label, REFUSE.refList, onRefuse);
     return item;
   }
   // 조건 블록은 유형의 목록 자리에만 선다 — 「항」은 항 자리, 「호」는 호 목록, 「목」은 목 목록 (clause/nodes.ts)
@@ -153,6 +156,8 @@ export interface ClauseMenuEnv extends MenuEnv {
   options: readonly { code: string; label: string }[];
   /** 값별 분기 대상 후보 — 목록값 인자 · 내부 변수. 없으면 「값별 분기 넣기」가 거부 자리. */
   switchSubjects?: readonly SwitchSubject[];
+  /** 조 참조 목록 인자(`arg.<이름>`) — 문장 안 반복의 원천 후보. 없으면 「문장 안 반복…」이 거부 자리 (ADR-0098 결정 2). */
+  refLists?: readonly { code: string; label: string }[];
   onRefuse: (message: string) => void;
 }
 
@@ -204,6 +209,8 @@ export function clauseInlineMenu(env: ClauseMenuEnv, at: InlineAt, tokens: Token
   const insert = adaptAll([inlineInsertItems(at, tokens, { inInlineCond, newId: env.newId })], env, env.onRefuse);
   // 문장 안 값별 분기 — 문장 안 조건과 같은 제약(그 안에 두지 않는다, 최종 결정 5)
   if (!inInlineCond) insert.push([inlineSwitchItem(env, at, tokens)]);
+  const current = currentArticleRefItems(env.ix, at, tokens, env.newId);
+  if (current.length > 0) insert.push(current);
   const options = optionInsertItems(at, tokens, env.options, env.newId);
   const block = env.mode !== "inline" && owner ? clauseBlockMenu(env, at.parentId) : [];
   return [...insert, ...(options.length > 0 ? [options] : []), ...block];

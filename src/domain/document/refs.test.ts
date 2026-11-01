@@ -238,3 +238,16 @@ describe("참조 그래프 — 블록 반복의 「비었을 때」 칸 안 (ADR
     expect(refs.flatMap((r) => (r.kind === "repeatSource" && r.at.nodePath?.at(-1) === inner.id ? [r.path] : []))).toEqual(["waiver.reasons"]);
   });
 });
+
+describe("조 참조 목록 반복(준용예외마다) — 원천은 구분자 쓰임 · 현재 원소 조 참조는 조 참조가 아니다 (ADR-0098 · B5)", () => {
+  it("원천 구분자는 요구 구분자에 들고, 대상 조 없는 현재 원소 조 참조는 보통약관 조 참조로 세지 않는다", () => {
+    const b = nodeBuilders(sequentialIds("r"));
+    const each = b.inlineFor({ kind: "refList", ref: "D0014" }, [], { connector: "및" });
+    each.children = [{ id: "cur", kind: "articleRef", targets: [{ articleId: "", restrict: { current: each.id } }], scope: "general" }];
+    const doc = b.document("d", [b.article("준용규정", [b.paragraph([b.text("다만, "), each, b.text("은 제외합니다.")])])]);
+    const refs = collectRefs(doc);
+    expect(refs.filter((r) => r.kind === "article")).toEqual([]);
+    expect(refs.filter((r) => r.kind === "discriminator").map((r) => r.kind === "discriminator" && r.code)).toEqual(["D0014"]);
+    expect(requiredDiscriminators(doc)).toEqual(["D0014"]);
+  });
+});

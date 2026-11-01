@@ -3,7 +3,35 @@ import { describe, expect, it } from "vitest";
 import type { EnumDef } from "@/domain/catalog";
 import { indexTree, nodeBuilders, sequentialIds, type ForBlockNode } from "@/domain/document";
 
-import { currentPlanOf, currentValueOf, loopChoices, loopsAround, repeatChoices, sourceOfValue, sourceValue } from "./repeatSources";
+import { currentArticleRef, currentPlanOf, currentValueOf, enclosingRefList, loopChoices, loopsAround, repeatChoices, sourceOfValue, sourceValue } from "./repeatSources";
+
+describe("조 참조 목록 원천 — 준용예외마다 (ADR-0098 결정 2 · B6)", () => {
+  const refLists = [{ code: "arg.준용예외", label: "준용예외(인자)" }];
+
+  it("함수조항(refListOnly) — 원천 후보는 조 참조 목록 인자뿐, 반복 안이면 없다", () => {
+    const choices = repeatChoices({ depth: 0, refLists, refListOnly: true });
+    expect(choices.map((c) => [c.label, c.source])).toEqual([["준용예외마다", { kind: "refList", ref: "arg.준용예외" }]]);
+    expect(repeatChoices({ depth: 1, refLists, refListOnly: true })).toEqual([]);
+  });
+
+  it("문면 — 반복 밖이면 다른 원천 뒤에 조 참조 목록 구분자 후보가 붙는다", () => {
+    const choices = repeatChoices({ depth: 0, refLists: [{ code: "D0014", label: "준용예외(A)" }] });
+    expect(choices.at(-1)).toMatchObject({ label: "준용예외(A)마다", source: { kind: "refList", ref: "D0014" } });
+    expect(repeatChoices({ depth: 0 }).some((c) => c.source.kind === "refList")).toBe(false);
+  });
+
+  it("현재 조 참조 — 대상 조 없이 반복의 현재 원소를 가리키는 조 참조 칩, 감싼 조 참조 목록 반복을 찾는다(「비었을 때」 칸은 아님)", () => {
+    const b = nodeBuilders(sequentialIds("r"));
+    const repeat = b.inlineFor({ kind: "refList", ref: "arg.준용예외" }, [], { connector: "및", alias: "준용예외마다" });
+    expect(currentArticleRef(repeat.id, sequentialIds("x"))).toEqual({ id: "x1", kind: "articleRef", targets: [{ articleId: "", restrict: { current: repeat.id } }], scope: "general" });
+    const para = b.paragraph([b.text("다만, "), repeat]);
+    const tree = { id: "doc", kind: "document" as const, title: "t", children: [b.article("준용", [para])] };
+    const ix = indexTree(tree);
+    expect(enclosingRefList(ix, repeat.id)?.id).toBe(repeat.id);
+    expect(enclosingRefList(ix, repeat.id, "fallback")).toBeUndefined();
+    expect(enclosingRefList(ix, para.id)).toBeUndefined();
+  });
+});
 
 const E0001: EnumDef = {
   code: "E0001",

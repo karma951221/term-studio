@@ -65,6 +65,7 @@ function TypeSelect({ label, param, onChange, enums, forms }: { label: string; p
         </option>
       ))}
       <option value="articleRef">조 참조</option>
+      <option value="list<ref>">조 참조 목록 (준용예외)</option>
     </NativeSelect>
   );
 }

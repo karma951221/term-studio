@@ -57,4 +57,13 @@ describe("준용예외 구분자 — 정의 = 후보", () => {
   it("결과 타입은 선언 그대로 — 식에서 추론하지 않는다", () => {
     expect(discriminatorResultType(준용예외)).toEqual({ kind: "list<ref>" });
   });
+
+  it("다른 구분자 식은 준용예외를 count 로만 읽는다 — 있음 · 비교는 저장 오류 (B7)", async () => {
+    const catalog = new Map([[준용예외.code, 준용예외]]);
+    const good = await createDiscriminator({ label: "준용예외있음", level: "coverage", expression: "count(D0100) > 0", resultType: { kind: "boolean" } }, ctx({ catalog }));
+    expect(good.ok).toBe(true);
+    const bad = await createDiscriminator({ label: "준용예외있음2", level: "coverage", expression: "exist(D0100)", resultType: { kind: "boolean" } }, ctx({ catalog }));
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(JSON.stringify(bad.rejection)).toContain("count(D0100)");
+  });
 });

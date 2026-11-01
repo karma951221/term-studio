@@ -162,3 +162,39 @@ describe("문장 안 값별 분기 메뉴 (최종 결정 5)", () => {
     expect(labels(clauseInlineMenu({ ...e, tree: r.value.state.tree, ix }, { parentId: caseId }, [{ caret: true }]))).not.toContain("문장 안 값별 분기");
   });
 });
+
+describe("조 참조 목록 인자의 문장 안 반복 넣기 (ADR-0098 결정 2 · B6)", () => {
+  function refEnv(refLists: { code: string; label: string }[]): ClauseMenuEnv {
+    const tree = clauseBodyToTree("block", [
+      {
+        id: "p1",
+        kind: "paragraph",
+        children: [
+          { id: "t", kind: "text", text: "다만, " },
+          { id: "each", kind: "inlineFor", source: { kind: "refList", ref: "arg.준용예외" }, alias: "준용예외마다", connector: "및", children: [{ id: "cur", kind: "articleRef", targets: [{ restrict: { current: "each" } }] }] },
+        ],
+      },
+    ]);
+    return { tree, ix: indexTree(tree), docKind: "special", newId: sequentialIds("n"), mode: "block", options: [], refLists, onRefuse: vi.fn() };
+  }
+
+  it("조 참조 목록 인자가 있으면 「문장 안 반복…」이 열린다 — 없으면 사유를 보이는 거부 자리", () => {
+    const at = { parentId: "p1" };
+    const open = find(clauseInlineMenu(refEnv([{ code: "arg.준용예외", label: "준용예외(인자)" }]), at, [{ caret: true }]), "문장 안 반복…")!;
+    expect(open.refusal).toBeUndefined();
+    expect(open.action).toMatchObject({ do: "popup", popup: { kind: "repeatInline" } });
+    const locked = find(clauseInlineMenu(refEnv([]), at, [{ caret: true }]), "문장 안 반복…")!;
+    expect(locked.refusal).toBe(REFUSE.refList);
+  });
+
+  it("조 참조 목록 반복 본문 안 — 「조 참조 — 현재 조(준용예외마다)」가 커서 자리에 현재 원소 조 참조를 끼운다", () => {
+    const e = refEnv([{ code: "arg.준용예외", label: "준용예외(인자)" }]);
+    const sections = clauseInlineMenu(e, { parentId: "each" }, [{ caret: true }]);
+    const item = find(sections, "조 참조 — 현재 조(준용예외마다)")!;
+    const ops = item.action.do === "ops" && typeof item.action.ops === "function" ? item.action.ops(e.tree) : [];
+    expect(ops[0]).toMatchObject({ type: "setInlines", at: { parentId: "each" }, runs: [{ node: { kind: "articleRef", targets: [{ articleId: "", restrict: { current: "each" } }] } }] });
+    // 「비었을 때」 칸 · 반복 밖에는 없다
+    expect(labels(clauseInlineMenu(e, { parentId: "each", slot: "fallback" }, [{ caret: true }]))).not.toContain("조 참조 — 현재 조(준용예외마다)");
+    expect(labels(clauseInlineMenu(e, { parentId: "p1" }, [{ caret: true }]))).not.toContain("조 참조 — 현재 조(준용예외마다)");
+  });
+});
