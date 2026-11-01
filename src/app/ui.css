@@ -28,6 +28,7 @@
   --color-accent-foreground: var(--ts-ink);
   --color-destructive: var(--ts-error);
   --color-destructive-bg: var(--ts-error-bg);
+  --color-ink-2: var(--ts-ink-2);
   --color-mark: var(--ts-mark);
   --color-mark-bg: var(--ts-mark-bg);
   --color-border: var(--ts-rule);
