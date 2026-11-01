@@ -9,7 +9,9 @@ import type { Actor, Id, Result } from "@/domain/types";
 import { insertDiscriminator } from "@/db/repo/catalog";
 import { insertClause } from "@/db/repo/clause";
 import { createTestDb, type TestDb } from "@/db/test-utils";
+import * as documentRepo from "@/db/repo/document";
 import { createDocumentService, type DocumentService } from "./document";
+import { rollbackUnless } from "./txContext";
 import { foldTitle, titleNodes } from "@/domain/document/title";
 
 const editor: Actor = { userId: "00000000-0000-4000-8000-000000000002", role: "editor" };
@@ -210,6 +212,49 @@ describe("document.save — 편집본 저장 (ADR-0074)", () => {
     const s = unwrap(await withProducts.createSpecial(editor, "33333333-3333-4333-8333-333333333333", "특약"));
     unwrap(await withProducts.save(editor, s.id, { baseVersion: 1, ops: [{ type: "insert", node: b.article("x", []), at: { parentId: s.tree.id } }] }));
     expect(seen).toHaveLength(1); // 확인한 저장 · 담보약관 저장은 다시 묻지 않는다
+  });
+
+  it("담보약관 · 템플릿 저장의 판정 변화 (ADR-0082 결정 11 · ADR-0098 결정 7) — 주입한 견주기에 저장을 넘겨 해 보게 하고, 바뀐 상품이 있으면 확인 카드(judgments) · 확인하면 묻지 않고 저장 · 없으면 그대로 저장", async () => {
+    const JUDGMENT = { verdicts: [], grayed: [], revived: [], brokenRefs: [], exclusions: [{ productCoverageId: "pc1", label: "상품 A · 골절진단", added: [{ articleId: "g9", label: "제9조(중도인출)" }], removed: [] }] };
+    const calls: { target: unknown; titleInProbe: string | undefined }[] = [];
+    let changed = true;
+    const withJudgment = createDocumentService(t.db, {
+      clauseGate: async () => gate,
+      newId: sequentialIds("srv-j"),
+      judgment: async (tx, target, write) => {
+        // 견주기 가짜 — 넘긴 저장을 세이브포인트에서 해 보고 문서를 읽은 뒤 되돌린다(실물은 product.documentJudgment)
+        const titleInProbe = await rollbackUnless(
+          tx,
+          async (probe) => {
+            await write(probe);
+            return (await documentRepo.listDocumentRecords(probe)).find((d) => d.title === "판정 변화 특약 2")?.title;
+          },
+          () => false,
+        );
+        calls.push({ target, titleInProbe });
+        return changed ? [{ productId: "prod-a", productName: "상품 A", judgment: JUDGMENT }] : [];
+      },
+    });
+    const covJ = "4a4a4a4a-4a4a-4a4a-8a4a-4a4a4a4a4a4a";
+    const s = unwrap(await withJudgment.createSpecial(editor, covJ, "판정 변화 특약"));
+    const rename: EditOp[] = [{ type: "setTitle", nodeId: s.tree.id, title: "판정 변화 특약 2" }];
+    const first = rejection(await withJudgment.save(editor, s.id, { baseVersion: 1, ops: rename }));
+    expect(first.reason).toBe("needsConfirmation");
+    if (first.reason === "needsConfirmation") {
+      expect(first.impact.brokenRefs).toEqual([]);
+      expect(first.impact.judgments).toEqual([{ productId: "prod-a", productName: "상품 A", judgment: JUDGMENT }]);
+    }
+    // 견주기는 담보 기준으로 묻고, 넘긴 write 는 새 트리를 쓴다 — 1차는 아무것도 남기지 않는다
+    expect(calls).toEqual([{ target: { kind: "special", coverageId: covJ }, titleInProbe: "판정 변화 특약 2" }]);
+    expect((await withJudgment.get(s.id))?.version).toBe(1);
+    // 확인하면 다시 묻지 않고 저장
+    expect(unwrap(await withJudgment.save(editor, s.id, { baseVersion: 1, ops: rename, confirm: true })).version).toBe(2);
+    expect(calls).toHaveLength(1);
+    // 바뀐 상품이 없으면 묻지 않고 저장 · 템플릿은 템플릿 기준으로 묻는다
+    changed = false;
+    const g = unwrap(await withJudgment.createGeneral(editor, "판정 변화 보통약관"));
+    expect(unwrap(await withJudgment.save(editor, g.id, { baseVersion: 1, ops: [{ type: "insert", node: b.article("새 조", []), at: { parentId: g.tree.id } }] })).version).toBe(2);
+    expect(calls[1]?.target).toEqual({ kind: "general", documentId: g.id });
   });
 
   it("템플릿에 PZ 코드는 저장이 거부한다 — 상품 조 사본 전용 (ADR-0081 결정 4) · 상품 사본 검사(validateTree)는 받는다", async () => {

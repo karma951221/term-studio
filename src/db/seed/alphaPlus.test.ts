@@ -401,6 +401,32 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     expect(await services.product.listBaseContractIds(product.id)).toEqual(before);
     expect(await services.catalog.list()).toEqual(defs);
   });
+
+  it("담보약관 저장이 준용예외를 바꾸면 확인 카드에 「상품 · 특약 — 준용예외에 제N조 빠짐」 (ADR-0082 결정 11 · ADR-0098 결정 7) — 1차는 되돌리고, 확인하면 저장", async () => {
+    // 일반상해사망보장 특별약관은 조연결이 없다 — 첫 조를 템플릿 g-a9(준용예외 후보)에 이으면 그 특약(기본 · 추가 두 탑재)에 g-a9 가 「있음」이 되어 빠진다
+    const product = (await services.product.listProducts()).find((p) => p.name === ALPHA_PLUS_PRODUCT_NAME)!;
+    const special = (await services.document.list("special")).find((d) => d.title === "일반상해사망보장 특별약관")!;
+    const doc = (await services.document.get(special.id))!;
+    const first = doc.tree.children.find((c) => c.kind === "article")!;
+    const ops = [{ type: "link" as const, articleId: first.id, linkedArticleId: "g-a9" }];
+    const r = await services.document.save(admin, doc.id, { baseVersion: doc.version, ops });
+    if (r.ok || r.rejection.reason !== "needsConfirmation") throw new Error(`기대: needsConfirmation, 실제: ${JSON.stringify(r)}`);
+    const impacts = r.rejection.impact.judgments ?? [];
+    // 이 담보를 탑재한 상품마다 한 묶음 — 알파Plus 둘(준용예외) · 표본 기본계약 2개(절 형태 판정도 바뀐다)
+    expect(impacts.map((i) => i.productName)).toEqual([ALPHA_PLUS_PRODUCT_NAME, `${ALPHA_PLUS_PRODUCT_NAME}2607`, "표본 — 기본계약 2개(주계약)"]);
+    expect(impacts[0]!.judgment.exclusions?.map((x) => [x.label, x.added.length, x.removed.map((a) => a.articleId)])).toEqual([
+      [`${ALPHA_PLUS_PRODUCT_NAME} · 일반상해사망보장`, 0, ["g-a9"]],
+      [`${ALPHA_PLUS_PRODUCT_NAME} · 일반상해사망보장 추가`, 0, ["g-a9"]],
+    ]);
+    expect(impacts[2]!.judgment.verdicts.map((v) => `${v.before} → ${v.after}`)).toEqual(["마스터 → 특칙 1/2"]);
+    expect(impacts[0]!.judgment.exclusions?.[0]?.removed[0]?.label).toMatch(/^제\d+조\(/);
+    // 1차는 아무것도 쓰지 않는다
+    expect((await services.document.get(doc.id))?.version).toBe(doc.version);
+    const saved = await services.document.save(admin, doc.id, { baseVersion: doc.version, ops, confirm: true });
+    expect(saved.ok && saved.value.version).toBe(doc.version + 1);
+    const preview = await services.assembly.preview(product.id);
+    expect(preview.ok && preview.value.exclusions?.some((x) => x.name.startsWith("일반상해사망보장") && x.value.includes("g-a9"))).toBe(false);
+  });
 });
 
 /**

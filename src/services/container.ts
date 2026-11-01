@@ -8,6 +8,7 @@
  * - clause   ← UsageSource = `clauseUsageSource` (참조 문서)
  * - document ← ClauseGate = 함수조항 정의(존재·요구 구분자·옵션 검증) · TypeResolver = 카탈로그 정의 + 담보속성 유효값 ·
  *              productImpact = product.templateImpact (템플릿 저장의 상품 영향 — ADR-0081) ·
+ *              judgment = product.documentJudgment (담보약관 · 템플릿 저장의 판정 변화 — ADR-0082 결정 11) ·
  *              UsageSource = `documentUsageSource` (상품 템플릿 · 담보 문서 연결 · 옵션 오버라이드 · 함수조항의 별표 참조)
  * - product  ← CoverageMasterSource = coverage.get (구조적 상위집합) · GeneralDocumentGate = document.get 이 general 인가 ·
  *              (+ `dependents` = 템플릿을 가리키는 담보약관 · 함수조항 참조 — ADR-0081) ·
@@ -149,6 +150,8 @@ export function createServices(root: Db, opts: ContainerOptions = {}): Services 
     newId,
     // 템플릿 저장의 상품 영향 — product 가 document 를 게이트로 보므로 지연 참조 (ADR-0081 결정 3)
     productImpact: (_tx, templateId, tree) => services.product.templateImpact(templateId, tree),
+    // 문서 저장의 판정 변화 — 그 문서를 쓰는 상품마다 저장을 세이브포인트에서 해 보고 판정을 견준다 (ADR-0082 결정 11 · ADR-0098 결정 7)
+    judgment: (_tx, target, write) => services.product.documentJudgment(target, write),
   });
   const product = createProductService(db, {
     coverageMaster: { tree: (id) => services.coverage.get(id) },
