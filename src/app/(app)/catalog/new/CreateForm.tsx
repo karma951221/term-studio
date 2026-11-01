@@ -30,6 +30,8 @@ import { InsertPanel } from "../_components/InsertPanel";
 import { InspectButton, InspectionResult, type InspectionState } from "../_components/InspectionPanel";
 import { useAutoResultType } from "../_components/useAutoResultType";
 import { inspectInputFrom, RESULT_TYPE_HINT, resultTypeOptions, type InsertPanelData } from "../lib";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const FORM_ID = "create-discriminator";
 
@@ -96,7 +98,7 @@ export function CreateForm({
         <div className="ts-l2-main">
           <form id={FORM_ID} action={action} className="ts-create-form">
             <FormRow label={NAME_LABEL.discriminator} htmlFor="new-label">
-              <input id="new-label" type="text" name="label" required autoFocus />
+              <Input id="new-label" type="text" name="label" required autoFocus />
             </FormRow>
 
             {/* 레벨은 채번 뒤 못 고친다 — 식의 참조 규칙이 레벨에 매여 있다 (ADR-0037). */}
@@ -110,9 +112,9 @@ export function CreateForm({
 
             {/* 결과 타입은 필수 — 식의 추론 타입이 기본값, 저장 시 추론 타입과 대조돼 다르면 거부된다 (기능/구분자 §3.1). */}
             <FormRow label={FIELD_LABEL.resultType} htmlFor="new-result-type" info={RESULT_TYPE_HINT}>
-              <select id="new-result-type" name="resultTypeKind" required value={resultTypeKind} onChange={(event) => setResultTypeKind(event.target.value)}>
+              <NativeSelect id="new-result-type" name="resultTypeKind" required value={resultTypeKind} onChange={(event) => setResultTypeKind(event.target.value)}>
                 {resultTypeOptions(resultTypeKind).map((option) => <option key={option.value} value={option.value} disabled={option.value === ""}>{option.label}</option>)}
-              </select>
+              </NativeSelect>
               {resultTypeKind === "enum" ? (
                 <>
                   <Toggle

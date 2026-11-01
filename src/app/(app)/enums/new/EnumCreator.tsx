@@ -8,12 +8,13 @@ import { ENUMS_MENU, menuCrumb } from "@/app/_lib/menu";
 import { createEnumEditAction } from "../edit-actions";
 import type { EnumEditData } from "../edit-types";
 import { BasicSection, duplicateValueCodes, FieldsEditor, ValuesEditor } from "../[code]/EnumTables";
+import { Input } from "@/components/ui/input";
 
 /** 이름 칸 — 목록 검색어가 넘어왔고 아직 그대로면 「제안」 배지. */
 function NameRow({ suggested }: { suggested: string }) {
   const name = useEditField<string>("label");
   return <FormRow label={NAME_LABEL.enum} htmlFor="enum-label">
-    <input id="enum-label" value={name.value} onChange={(event) => name.setValue(event.target.value)} autoFocus className="ts-field-direct" />
+    <Input id="enum-label" value={name.value} onChange={(event) => name.setValue(event.target.value)} autoFocus className="ts-field-direct" />
     {suggested && name.value === suggested ? <span className="ts-badge proposed">{FIELD_LABEL.suggested}</span> : null}
   </FormRow>;
 }

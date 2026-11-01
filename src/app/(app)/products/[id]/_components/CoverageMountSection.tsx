@@ -13,6 +13,9 @@ import type { Id } from "@/domain/types";
 
 import { filterMountRows, mountRows, withGroupStarts, type ProductTab } from "../../lib";
 import { addRowProblem, rowStatus, type CoverageDraftRow, type CoveragesDraft, type CoveragesDraftAction } from "./coveragesDraft";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /**
  * 기본계약 · 특약 두 절의 구조는 같다 (ADR-0021) — 둘 다 상품담보 탭에 선다. 제목은 옛 상품모델링 화면의 말을 따른다
@@ -257,7 +260,7 @@ function EditRow({ row, status, groupStart, codeCell, attributes, groupCell, pla
         <td className="col-fixed-md">{attributes === "—" ? <span className="ts-muted">—</span> : attributes}</td>
         <td className="col-flex">
           <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-            <input
+            <Input
               type="text"
               value={row.name}
               disabled={removed}
@@ -280,14 +283,14 @@ function EditRow({ row, status, groupStart, codeCell, attributes, groupCell, pla
             ))}
             {!removed && (
               <>
-                <select value={pick} onChange={(e) => setPick(e.target.value)} style={{ maxWidth: 150 }} aria-label={`세목 조합 · ${label}`} disabled={free.length === 0}>
+                <NativeSelect value={pick} onChange={(e) => setPick(e.target.value)} style={{ maxWidth: 150 }} aria-label={`세목 조합 · ${label}`} disabled={free.length === 0}>
                   <option value="">{plans.length === 0 ? "조합 없음" : free.length === 0 ? "모두 부착됨" : "— 조합 —"}</option>
                   {free.map((p) => (
                     <option key={p.id} value={p.id}>
                       {planCombinationLabel(p.options)}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
                 <IconButton
                   label={`세목 부착 · ${label}`}
                   icon={<IconPlus />}
@@ -310,9 +313,9 @@ function EditRow({ row, status, groupStart, codeCell, attributes, groupCell, pla
               </>
             )}
             {removed ? (
-              <button type="button" className="ts-linklike" onClick={() => dispatch({ type: "restore", key: row.key })} aria-label={`탑재 해제 되돌리기 · ${label}`}>
+              <Button variant="link" type="button" onClick={() => dispatch({ type: "restore", key: row.key })} aria-label={`탑재 해제 되돌리기 · ${label}`}>
                 <IconRevert /> 되돌리기
-              </button>
+              </Button>
             ) : (
               <IconButton danger label={`탑재 해제 · ${label}`} icon={<IconTrash />} onClick={() => dispatch({ type: "remove", key: row.key })} />
             )}
@@ -348,9 +351,9 @@ function AddRow({ section, title, kinds, edit, coverages, initialOpen }: { secti
   };
   if (!open) {
     return (
-      <button type="button" className="ts-linklike" onClick={() => setOpen(true)} aria-label={`${title}에 담보 추가`}>
+      <Button variant="link" type="button" onClick={() => setOpen(true)} aria-label={`${title}에 담보 추가`}>
         <IconPlus /> 담보 추가
-      </button>
+      </Button>
     );
   }
   const attributes: AttributeSelection[] = Object.entries(attrs)
@@ -371,31 +374,31 @@ function AddRow({ section, title, kinds, edit, coverages, initialOpen }: { secti
         onChange={(value, option) => setCoverage(value ? { id: value, code: option?.hint ?? coverages.get(value)?.code, name: option?.label ?? coverages.get(value)?.name ?? value } : undefined)}
       />
       {kinds.map((k) => (
-        <select key={k.code} aria-label={`${k.label} · ${title}에 추가`} value={attrs[k.code] ?? ""} onChange={(e) => setAttrs((cur) => ({ ...cur, [k.code]: e.target.value }))}>
+        <NativeSelect key={k.code} aria-label={`${k.label} · ${title}에 추가`} value={attrs[k.code] ?? ""} onChange={(e) => setAttrs((cur) => ({ ...cur, [k.code]: e.target.value }))}>
           <option value="">{k.label} —</option>
           {k.values.map((v) => (
             <option key={v.code} value={v.code}>
               {v.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       ))}
       {name && <span className="ts-muted">상품담보명: {name}</span>}
-      <button
-        type="button"
-        className="primary"
-        onClick={() => {
-          setTried(true);
-          if (problem || !coverage) return;
-          edit.dispatch({ type: "add", row: { section, coverageId: coverage.id, coverageCode: coverage.code, coverageName: coverage.name, attributes, name } });
-          close();
-        }}
-      >
+      <Button variant="primary"
+ type="button"
+ 
+ onClick={() => {
+ setTried(true);
+ if (problem || !coverage) return;
+ edit.dispatch({ type: "add", row: { section, coverageId: coverage.id, coverageCode: coverage.code, coverageName: coverage.name, attributes, name } });
+ close();
+ }}
+ >
         추가
-      </button>
-      <button type="button" onClick={close}>
+      </Button>
+      <Button type="button" onClick={close}>
         닫기
-      </button>
+      </Button>
       {(tried || (coverage && problem && problem !== "담보를 고르세요")) && problem && (
         <span className="ts-form-error" role="alert">
           {problem}

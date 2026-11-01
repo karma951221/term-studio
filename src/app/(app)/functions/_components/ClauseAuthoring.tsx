@@ -96,6 +96,7 @@ import { ParamsPane } from "./ParamsPane";
 import { PresetsPane } from "./PresetsPane";
 import { originsOf, renamesFrom, trackOrigins } from "./renames";
 import { TrialPane } from "./TrialPane";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export interface ClauseAuthoringProps {
   /** 없으면 생성 화면(`/functions/new`). */
@@ -1147,13 +1148,13 @@ function OptionSlotForm({ env, nodeId, options, onClose }: { env: PopupEnv; node
       >
         <div className="ts-form-row">
           <label htmlFor="pop-option">옵션</label>
-          <select id="pop-option" name="option" defaultValue={current}>
+          <NativeSelect id="pop-option" name="option" defaultValue={current}>
             {options.map((o) => (
               <option key={o.code} value={o.code}>
                 {o.label || "이름 없는 옵션"}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         <p className="ts-muted">사용처가 고른 선택지의 문구가 이 자리에 들어간다. 선택지는 「인자 · 옵션」 탭의 옵션 목록에서 고친다.</p>
       </PopForm>

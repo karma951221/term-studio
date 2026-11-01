@@ -19,6 +19,9 @@ import type { CtxDiscriminator } from "@/app/(app)/documents/[id]/_components/co
 
 import type { ClauseEditOption, ClauseEditPreset } from "../edit-types";
 import { bindingLabel, bindingOfValue, bindingOptions, bindingValue, constBindingOfText, constInputOf, constTextOf, type EnumChoice, type PlanFormChoice } from "./params";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const NOTE = "인자 연결 · 옵션 선택을 이름 붙여 둔 조합 — 사용처는 넣기 목록의 프리셋 줄을 눌러 그 조합으로 넣는다. 사용처는 프리셋 값을 덮어쓰지 않는다.";
 
@@ -57,7 +60,7 @@ function ConstField({ param, binding, label, onBinding }: { param: ParamDef; bin
   if (!direct) return null;
   return (
     <>
-      <input
+      <Input
         className="ts-arg-const"
         aria-label={`${label} — 인자 ${param.name} 상수 직접 입력`}
         inputMode={direct.inputMode}
@@ -152,7 +155,7 @@ export function PresetsPane({
       {editing ? (
         <div className="ts-param-add">
           <div className="ts-param-grid">
-            <input
+            <Input
               ref={nameRef}
               className="ts-field-direct"
               aria-label="새 프리셋 이름"
@@ -191,35 +194,35 @@ export function PresetsPane({
                 {editing ? (
                   <>
                     <IconButton icon={<IconMinusCircle />} danger label={`프리셋 삭제 · ${label}`} onClick={() => (used > 0 ? setConfirming(p.code) : remove(p))} />
-                    <input className="ts-field-direct" aria-label={`프리셋 ${i + 1} 이름`} value={p.name} onChange={(e) => patch(p.code, { ...p, name: e.target.value })} />
+                    <Input className="ts-field-direct" aria-label={`프리셋 ${i + 1} 이름`} value={p.name} onChange={(e) => patch(p.code, { ...p, name: e.target.value })} />
                     {confirming === p.code ? (
                       <p className="ts-preset-confirm" role="alert">
                         사용처 {used}곳이 직접 연결로 바뀝니다 — 저장하면 그 자리에 이 프리셋 값이 그대로 남는다.{" "}
-                        <button type="button" className="ts-linklike" onClick={() => remove(p)}>
+                        <Button variant="link" type="button" onClick={() => remove(p)}>
                           빼기
-                        </button>{" "}
-                        <button type="button" className="ts-linklike" onClick={() => setConfirming(undefined)}>
+                        </Button>{" "}
+                        <Button variant="link" type="button" onClick={() => setConfirming(undefined)}>
                           취소
-                        </button>
+                        </Button>
                       </p>
                     ) : null}
                     {options.map((o, oi) => (
                       <label key={o.code} className="ts-preset-row">
                         <span className="ts-option-caption">{o.label.trim() || `옵션 ${oi + 1}`}</span>
-                        <select aria-label={`${label} — 옵션 ${o.label.trim() || oi + 1}`} value={p.options[o.code] ?? ""} onChange={(e) => patch(p.code, { ...p, options: { ...p.options, [o.code]: e.target.value } })}>
+                        <NativeSelect aria-label={`${label} — 옵션 ${o.label.trim() || oi + 1}`} value={p.options[o.code] ?? ""} onChange={(e) => patch(p.code, { ...p, options: { ...p.options, [o.code]: e.target.value } })}>
                           <option value="">— 미선택 —</option>
                           {o.values.map((v) => (
                             <option key={v.code} value={v.code}>
                               {v.label}
                             </option>
                           ))}
-                        </select>
+                        </NativeSelect>
                       </label>
                     ))}
                     {valueParams.map((param) => (
                       <label key={param.name} className="ts-preset-row">
                         <span className="ts-option-caption">인자 {param.name}</span>
-                        <select aria-label={`${label} — 인자 ${param.name}`} value={presetArgValue(p, param.name, param)} onChange={(e) => patch(p.code, withPresetArg(p, param, e.target.value))}>
+                        <NativeSelect aria-label={`${label} — 인자 ${param.name}`} value={presetArgValue(p, param.name, param)} onChange={(e) => patch(p.code, withPresetArg(p, param, e.target.value))}>
                           <option value="">{param.default ? `기본 연결 — ${bindingLabel(param.default, param.type, discriminators, enums, forms)}` : "— 비었음 —"}</option>
                           {!param.default && <option value={FROM_USAGE}>{FROM_USAGE_LABEL}</option>}
                           {bindingOptions(param.type, discriminators, enums.filter((e) => "enumCode" in param.type && e.code === param.type.enumCode), forms, true).map((o) => (
@@ -227,7 +230,7 @@ export function PresetsPane({
                               {o.label}
                             </option>
                           ))}
-                        </select>
+                        </NativeSelect>
                         <ConstField param={param} binding={p.bindings[param.name]} label={label} onBinding={(b) => patch(p.code, withPresetBinding(p, param, b))} />
                       </label>
                     ))}

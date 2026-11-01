@@ -28,6 +28,11 @@ import { saveProductBasicAction } from "../../actions";
 import { basicDraftDirty, newPlanFormState, planCellShown, savedPlanFormState } from "../../lib";
 import { useProductEdit } from "./ProductEdit";
 import { SaveConfirmDialog } from "./SaveConfirmDialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Checkbox } from "@/components/ui/checkbox";
+
 
 type OptionDraft = Omit<ProductBasicInput["options"][number], "values">;
 type Confirmation = Extract<EditOutcome, { ok: "confirm" }>;
@@ -371,7 +376,7 @@ export function BasicTab(props: BasicTabProps) {
                     상품명
                   </label>
                   <div className="ts-form-control ts-basic-name-control">
-                    <input
+                    <Input
                       id={`${idBase}-name`}
                       aria-label="상품명"
                       type="text"
@@ -424,17 +429,17 @@ export function BasicTab(props: BasicTabProps) {
           <div className="ts-basic-plans-head">
             <h3>세목</h3>
             <div className="ts-basic-tabs" role="tablist" aria-label="세목">
-              <button type="button" role="tab" id="definitions-tab" aria-selected={subTab === "definitions"} aria-controls="definitions-panel" onClick={() => setSubTab("definitions")}>
+              <Button type="button" role="tab" id="definitions-tab" aria-selected={subTab === "definitions"} aria-controls="definitions-panel" onClick={() => setSubTab("definitions")}>
                 보험종목 정의
-              </button>
-              <button type="button" role="tab" id="combinations-tab" aria-selected={subTab === "combinations"} aria-controls="combinations-panel" onClick={() => setSubTab("combinations")}>
+              </Button>
+              <Button type="button" role="tab" id="combinations-tab" aria-selected={subTab === "combinations"} aria-controls="combinations-panel" onClick={() => setSubTab("combinations")}>
                 종·형 조합
-              </button>
+              </Button>
             </div>
             {editing && subTab === "definitions" && selected.length > 0 && (
-              <button type="button" className="ts-basic-remove" onClick={removeSelected}>
+              <Button type="button" variant="destructive" className="ml-auto" onClick={removeSelected}>
                 선택 삭제
-              </button>
+              </Button>
             )}
           </div>
 
@@ -468,7 +473,7 @@ export function BasicTab(props: BasicTabProps) {
                   <section key={option.id} id={`plan-option-${option.id}`} className={classes} data-plan-option={option.id} aria-label={shownName ? planOptionLabel(option) : `${axisLabel(option)} 새 보험종목`}>
                     <div className="ts-basic-card-head">
                       {editing && (
-                        <input type="checkbox" aria-label={`${shownName || `${axisLabel(option)} 카드`} 선택`} checked={selected.includes(option.id)} onChange={(e) => toggleSelected(option.id, e.target.checked)} />
+                        <Checkbox aria-label={`${shownName || `${axisLabel(option)} 카드`} 선택`} checked={selected.includes(option.id)} onCheckedChange={(c) => toggleSelected(option.id, c === true)} />
                       )}
                       <span className="ts-basic-card-key">{axisLabel(option)}</span>
                       <span className={shownName ? "ts-basic-card-name" : "ts-basic-card-name ts-muted"}>{shownName || "이름 없음"}</span>
@@ -482,11 +487,11 @@ export function BasicTab(props: BasicTabProps) {
                               종·형
                             </label>
                             <div className="ts-form-control ts-basic-card-axis">
-                              <select id={`${ctl}-axis`} aria-label="종·형 구분" value={option.axis} disabled={!option.isNew} onChange={(e) => updateOption(option.id, { axis: e.target.value as PlanAxis })}>
+                              <NativeSelect id={`${ctl}-axis`} aria-label="종·형 구분" value={option.axis} disabled={!option.isNew} onChange={(e) => updateOption(option.id, { axis: e.target.value as PlanAxis })}>
                                 <option value="type">종</option>
                                 <option value="form">형</option>
-                              </select>
-                              <input
+                              </NativeSelect>
+                              <Input
                                 aria-label="번호"
                                 type="number"
                                 min={1}
@@ -509,7 +514,7 @@ export function BasicTab(props: BasicTabProps) {
                               보험종목명
                             </label>
                             <div className="ts-form-control">
-                              <input id={`${ctl}-name`} aria-label="보험종목명" type="text" required placeholder="보험료납입면제미적용형" value={option.name} aria-invalid={optionNameMissing || undefined} onChange={(e) => updateOption(option.id, { name: e.target.value })} />
+                              <Input id={`${ctl}-name`} aria-label="보험종목명" type="text" required placeholder="보험료납입면제미적용형" value={option.name} aria-invalid={optionNameMissing || undefined} onChange={(e) => updateOption(option.id, { name: e.target.value })} />
                               {optionNameMissing && (
                                 <span className="ts-form-error" role="alert">
                                   이름을 입력해 주세요
@@ -523,13 +528,13 @@ export function BasicTab(props: BasicTabProps) {
                                 세목유형
                               </label>
                               <div className="ts-form-control">
-                                <select id={`${ctl}-type`} aria-label="세목유형" value={option.planTypeCode} disabled={!option.isNew} onChange={(e) => changePlanType(option.id, e.target.value)}>
+                                <NativeSelect id={`${ctl}-type`} aria-label="세목유형" value={option.planTypeCode} disabled={!option.isNew} onChange={(e) => changePlanType(option.id, e.target.value)}>
                                   {planTypeForms.map((t) => (
                                     <option key={t.code} value={t.code}>
                                       {t.label}
                                     </option>
                                   ))}
-                                </select>
+                                </NativeSelect>
                               </div>
                             </div>
                           )}
@@ -542,9 +547,9 @@ export function BasicTab(props: BasicTabProps) {
                 );
               })}
               {editing && (
-                <button type="button" className="ts-cov-add-tile ts-basic-add" onClick={addOption} disabled={!planTypeForms.length}>
+                <Button type="button" className="ts-cov-add-tile ts-basic-add" onClick={addOption} disabled={!planTypeForms.length}>
                   <IconPlus /> 보험종목 추가
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -588,7 +593,7 @@ export function BasicTab(props: BasicTabProps) {
                           <li key={key} data-plan-combination={key} data-label={label} className={used ? undefined : "is-unused"}>
                             {editing ? (
                               <label>
-                                <input type="checkbox" aria-label={`${label} 사용`} checked={used} onChange={(e) => toggleCombination(ids, e.target.checked)} />
+                                <Checkbox aria-label={`${label} 사용`} checked={used} onCheckedChange={(c) => toggleCombination(ids, c === true)} />
                                 {text}
                               </label>
                             ) : (

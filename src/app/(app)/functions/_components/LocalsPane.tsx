@@ -19,6 +19,8 @@ import { ExpressionInput, useExpressionInsert } from "@/app/(app)/catalog/_compo
 
 import { localInsertGroups, type LocalInsertGroup } from "./locals";
 import type { EnumChoice } from "./params";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const NOTE = "인자를 가공한 이름 — 본문과 뒤의 내부 변수가 읽는다(앞에 선언한 것만). 개수 연산은 없다. 편집 중이면 표 아래 넣기 패널에서 더블클릭으로 식 칸 커서 자리에 넣는다.";
 
@@ -53,9 +55,9 @@ function LocalInsertPanel({ groups, target, onInsert }: { groups: readonly Local
       </p>
       <div className="ts-basic-tabs" role="tablist" aria-label="넣기">
         {groups.map((g) => (
-          <button key={g.group} type="button" role="tab" id={`local-insert-tab-${g.group}`} aria-selected={tab === g.group} aria-controls="local-insert-body" onClick={() => setTab(g.group)}>
+          <Button key={g.group} type="button" role="tab" id={`local-insert-tab-${g.group}`} aria-selected={tab === g.group} aria-controls="local-insert-body" onClick={() => setTab(g.group)}>
             {g.group}
-          </button>
+          </Button>
         ))}
       </div>
       <div role="tabpanel" id="local-insert-body" aria-labelledby={`local-insert-tab-${tab}`} className="ts-insert-body">
@@ -65,21 +67,21 @@ function LocalInsertPanel({ groups, target, onInsert }: { groups: readonly Local
           <ul className={`ts-insert-list${tab === "연산" ? " ts-insert-operators" : ""}`}>
             {current.items.map((item) => (
               <li key={item.text}>
-                <button
-                  type="button"
-                  className="ts-insert-item"
-                  title={`${item.hint} — 더블클릭으로 넣기: ${item.text}`}
-                  onDoubleClick={() => onInsert(item.text, item.caret)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      onInsert(item.text, item.caret);
-                    }
-                  }}
-                >
+                <Button
+ type="button"
+ variant="ghost" className="ts-insert-item h-auto whitespace-normal text-foreground"
+ title={`${item.hint} — 더블클릭으로 넣기: ${item.text}`}
+ onDoubleClick={() => onInsert(item.text, item.caret)}
+ onKeyDown={(e) => {
+ if (e.key === "Enter") {
+ e.preventDefault();
+ onInsert(item.text, item.caret);
+ }
+ }}
+ >
                   <span className="ts-mono">{item.label}</span>
                   <span className="ts-insert-detail">{item.hint}</span>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -136,7 +138,7 @@ export function LocalsPane({
                   {editing ? (
                     <>
                       <td>
-                        <input className="ts-field-direct" aria-label={`내부 변수 ${n} 이름`} placeholder="예: 암있음" value={l.name} onChange={(e) => patch(i, { ...l, name: e.target.value })} onFocus={() => setActive(i)} />
+                        <Input className="ts-field-direct" aria-label={`내부 변수 ${n} 이름`} placeholder="예: 암있음" value={l.name} onChange={(e) => patch(i, { ...l, name: e.target.value })} onFocus={() => setActive(i)} />
                       </td>
                       <td>
                         <ExprCell value={l.expr} n={n} onChange={(expr) => patch(i, { ...l, expr })} onFocus={() => setActive(i)} register={register} />
@@ -158,9 +160,9 @@ export function LocalsPane({
         </table>
       )}
       {editing ? (
-        <button type="button" className="ts-cov-add-tile ts-option-add" onClick={() => onChange([...locals, { name: "", expr: "" }])}>
+        <Button type="button" className="ts-cov-add-tile ts-option-add" onClick={() => onChange([...locals, { name: "", expr: "" }])}>
           <IconPlus /> 내부 변수 추가
-        </button>
+        </Button>
       ) : null}
       {editing && locals.length > 0 ? (
         <LocalInsertPanel

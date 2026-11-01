@@ -17,6 +17,7 @@ import { InfoTip } from "@/app/_components/InfoTip";
 import { JOIN_MODE_LABEL, type LinkColumn, type LinkRow } from "../../verdictView";
 import { useProductEdit } from "./ProductEdit";
 import { PartialLinkIcon } from "./VerdictMarks";
+import { Button } from "@/components/ui/button";
 
 const LinkStatusContext = createContext<{ open: boolean; toggle: () => void } | null>(null);
 
@@ -30,9 +31,9 @@ export function LinkStatusButton() {
   const ctx = useContext(LinkStatusContext);
   if (!ctx) return null;
   return (
-    <button type="button" className="ts-terms-template-change" aria-expanded={ctx.open} aria-controls="ts-link-status" onClick={ctx.toggle}>
+    <Button type="button" className="ts-terms-template-change" aria-expanded={ctx.open} aria-controls="ts-link-status" onClick={ctx.toggle}>
       조연결 현황
-    </button>
+    </Button>
   );
 }
 

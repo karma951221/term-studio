@@ -25,6 +25,7 @@ import type { ArticleMark } from "../../verdictView";
 import { useGeneralEdit } from "./GeneralEdit";
 import { selectArticleOnClick } from "./tocNav";
 import { VerdictMarks } from "./VerdictMarks";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /** 목차 한 묶음(관) — 번호 · 제목 표기는 서버가 템플릿 번호로 만들어 준다. */
 export interface TocSection {
@@ -66,11 +67,11 @@ const OMIT_MODE_MARK: Record<ArticleOmitMode, string> = { exact: "같을 때만"
 function OmitModeCell({ mode, templateMode, editing, label, onChange }: { mode: ArticleOmitMode | undefined; templateMode: ArticleOmitMode; editing: boolean; label: string; onChange: (mode: ArticleOmitMode | "template") => void }) {
   if (editing) {
     return (
-      <select aria-label={`생략 기준 · ${label}`} title={OMIT_MODE_TOC_INFO} value={mode ?? "template"} onChange={(e) => onChange(e.target.value as ArticleOmitMode | "template")}>
+      <NativeSelect aria-label={`생략 기준 · ${label}`} title={OMIT_MODE_TOC_INFO} value={mode ?? "template"} onChange={(e) => onChange(e.target.value as ArticleOmitMode | "template")}>
         <option value="template">템플릿대로({OMIT_MODE_SHORT[templateMode]})</option>
         <option value="exact">{OMIT_MODE_LABEL.exact}</option>
         <option value="contained">{OMIT_MODE_LABEL.contained}</option>
-      </select>
+      </NativeSelect>
     );
   }
   if (!mode || mode === templateMode) return null;
