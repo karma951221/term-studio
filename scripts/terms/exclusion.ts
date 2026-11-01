@@ -111,7 +111,7 @@ export function rewriteExclusions(clauses: ClauseRecord[], catalog: readonly Dis
             when: `count(arg.${name}) > 0`,
             children: [
               { id: `${ref.id}-if-t`, kind: "text", text: ` ${LEAD}` },
-              { id: each, kind: "inlineFor", source: { kind: "refList", ref: `arg.${name}` }, connector: ref.connector ?? "및", children: [{ id: ref.id, kind: "articleRef", targets: [{ restrict: { current: each } }] }] } as unknown as Node,
+              { id: each, kind: "inlineFor", source: { kind: "refList", ref: `arg.${name}` }, alias: "준용예외마다", connector: ref.connector ?? "및", children: [{ id: ref.id, kind: "articleRef", targets: [{ restrict: { current: each } }] }] } as unknown as Node,
               ...inside,
             ],
           },

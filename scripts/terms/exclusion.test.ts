@@ -40,7 +40,7 @@ describe("준용규정 함수조항 — 수동 제외 조 목록 → 준용예�
             when: "count(arg.준용예외) > 0",
             children: [
               { id: "r-if-t", kind: "text", text: " 다만, " },
-              { id: "r-each", kind: "inlineFor", source: { kind: "refList", ref: "arg.준용예외" }, connector: "및", children: [{ id: "r", kind: "articleRef", targets: [{ restrict: { current: "r-each" } }] }] },
+              { id: "r-each", kind: "inlineFor", source: { kind: "refList", ref: "arg.준용예외" }, alias: "준용예외마다", connector: "및", children: [{ id: "r", kind: "articleRef", targets: [{ restrict: { current: "r-each" } }] }] },
               { id: "t", kind: "text", text: "은 제외합니다." },
             ],
           },

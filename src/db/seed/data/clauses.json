@@ -5978,6 +5978,7 @@
                                       "kind": "refList",
                                       "ref": "arg.준용예외"
                                     },
+                                    "alias": "준용예외마다",
                                     "connector": "및",
                                     "children": [
                                       {
@@ -6082,6 +6083,7 @@
                                       "kind": "refList",
                                       "ref": "arg.준용예외2"
                                     },
+                                    "alias": "준용예외마다",
                                     "connector": "및",
                                     "children": [
                                       {
@@ -6203,6 +6205,7 @@
                                       "kind": "refList",
                                       "ref": "arg.준용예외2"
                                     },
+                                    "alias": "준용예외마다",
                                     "connector": "및",
                                     "children": [
                                       {
@@ -6358,6 +6361,7 @@
                               "kind": "refList",
                               "ref": "arg.준용예외"
                             },
+                            "alias": "준용예외마다",
                             "connector": "및",
                             "children": [
                               {
@@ -6586,6 +6590,7 @@
                                       "kind": "refList",
                                       "ref": "arg.준용예외"
                                     },
+                                    "alias": "준용예외마다",
                                     "connector": "및",
                                     "children": [
                                       {
@@ -6707,6 +6712,7 @@
                                       "kind": "refList",
                                       "ref": "arg.준용예외"
                                     },
+                                    "alias": "준용예외마다",
                                     "connector": "및",
                                     "children": [
                                       {
@@ -11433,6 +11439,7 @@
                                       "kind": "refList",
                                       "ref": "arg.준용예외"
                                     },
+                                    "alias": "준용예외마다",
                                     "connector": "및",
                                     "children": [
                                       {
@@ -11554,6 +11561,7 @@
                                       "kind": "refList",
                                       "ref": "arg.준용예외"
                                     },
+                                    "alias": "준용예외마다",
                                     "connector": "및",
                                     "children": [
                                       {
@@ -13298,6 +13306,7 @@
                               "kind": "refList",
                               "ref": "arg.준용예외"
                             },
+                            "alias": "준용예외마다",
                             "connector": "및",
                             "children": [
                               {
@@ -22161,6 +22170,7 @@
                               "kind": "refList",
                               "ref": "arg.준용예외"
                             },
+                            "alias": "준용예외마다",
                             "connector": "및",
                             "children": [
                               {
