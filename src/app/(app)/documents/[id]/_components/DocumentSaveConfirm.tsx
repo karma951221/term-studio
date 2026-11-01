@@ -6,6 +6,7 @@
  * - 깨질 참조 (ADR-0072 결정 6 · ADR-0081 결정 3) — 지운 조를 가리키던 다른 문서의 조연결 · 보통약관 조 참조, 템플릿을 쓰는 상품의 참조 깨짐(상품별로 앞에).
  * - 판정 변화 (ADR-0082 결정 11 · ADR-0098 결정 7) — 담보약관 · 보통약관 템플릿 저장이 그 문서를 쓰는 상품의 판정을 바꾸면 상품마다 한 묶음.
  *   줄은 상품담보 탭 확인 모달과 같다(`JudgmentLines` — 판정이 바뀌는 조 · 사본 · 깨지는 블록 지정 참조 · 특약 조 판정 · 「상품 · 특약 — 준용예외에 제N조 추가 / 빠짐」).
+ * 상품이 많으면 창이 길어진다 — 화면 85% 에서 창 안을 스크롤한다.
  * 제목 · 주 버튼은 깨질 참조가 있으면 「참조 N건」, 판정 변화만이면 상품담보 탭 모달과 같은 「저장하면 아래 내용이 함께 바뀝니다」 · 〔바꾸고 저장〕.
  */
 import { coordinateHref } from "@/app/_components/coordinateHref";
@@ -41,7 +42,7 @@ export function DocumentSaveConfirm({ impact, pending, onCancel, onConfirm }: { 
   };
   return (
     <Dialog open onOpenChange={(open) => { if (!open && !pending) onCancel(); }}>
-      <DialogContent showCloseButton={false} aria-describedby={undefined} className="sm:max-w-[560px]">
+      <DialogContent showCloseButton={false} aria-describedby={undefined} className="max-h-[85vh] overflow-y-auto sm:max-w-[560px]">
         <DialogTitle className="ts-confirm-title">{broken > 0 ? `저장하면 참조 ${broken}건이 깨진다` : "저장하면 아래 내용이 함께 바뀝니다"}</DialogTitle>
         {products.length > 0 && (
           <>
