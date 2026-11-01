@@ -12,6 +12,7 @@ import type { DocumentNode } from "@/domain/document";
 import type { Id } from "@/domain/types";
 
 import type { PreviewSelection } from "./previewSelection";
+import { Button } from "@/components/ui/button";
 
 const PROBLEM: Record<NonNullable<LeafRow["problem"]>, string> = { notEntered: "미입력", brokenKey: "끊어진 키", unbound: "연결이 빈 인자", invalid: "찍을 수 없는 값" };
 
@@ -35,9 +36,9 @@ export function LeafRows({ rows, go }: { rows: readonly LeafRow[]; go: (nodeId: 
             {r.message && <span className="ts-muted"> — {r.message}</span>}
             {r.problem && <div className="ts-issue-at">{formatCoordinate(r.at)}</div>}
             {r.problem && nodeId && (
-              <button type="button" className="ts-doc-pick" onClick={() => go(nodeId)}>
+              <Button type="button" variant="text" onClick={() => go(nodeId)}>
                 고칠 자리로
-              </button>
+              </Button>
             )}
           </li>
         );

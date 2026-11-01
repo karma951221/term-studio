@@ -10,7 +10,7 @@
  * - 반복 · 동적표: 원소(행 · 정액형은 표) 탭 — 결과에서 누른 원소 · 칸이 처음부터 골라진다. 원소 0개는 회색 문구 + 「비었을 때」 칸.
  * 회색(`is-dim`)은 안 탄 가지 · 평가하지 않은 자리의 안쪽 전부다. 원본 자리 id 는 `overlay.ts` 규칙(§3.4 와 같은 체계).
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 
 import { findTableDiscriminator } from "@/domain/dyntable/system";
 import type { ClauseDecision, ConditionDecision, DecisionRecord, DynTableDecision, RepeatDecision, SourceView, SwitchDecision } from "@/domain/assembly";
@@ -19,6 +19,7 @@ import { particlePreset } from "@/domain/document/particles";
 
 import { IconFx, IconLink } from "../icons";
 import { argText, BRANCH_OUTCOME_LABEL, clauseScope, dynRowForNode, elementForNode, elementScope, exprText, keyOf, links, readsText, ROOT_SCOPE, slotText, type ExprAt, type Scope } from "./overlay";
+import { Button } from "@/components/ui/button";
 
 export interface OverlayCtx {
   view: SourceView;
@@ -300,13 +301,18 @@ export function CondView({ node, ctx, inline = false }: { node: CondNode; ctx: O
 
 type RepeatNode = Extract<BlockNode, { kind: "forBlock" }> | Extract<InlineNode, { kind: "inlineFor" }> | Extract<BlockNode, { kind: "table" }>;
 
+/** 원본 탭 한 칸 — 고른 칸은 마크색 테두리 · 굵은 글자. */
+export function SrcTab({ selected, ...props }: { selected: boolean } & Omit<ComponentProps<typeof Button>, "variant" | "size" | "role">) {
+  return <Button type="button" role="tab" aria-selected={selected} size="xs" className="h-6 px-2 text-xs text-ink-2 aria-selected:border-mark aria-selected:font-bold aria-selected:text-mark" {...props} />;
+}
+
 function Tabs({ items, selected, onSelect, label }: { items: { id: string; label: string }[]; selected: string | undefined; onSelect: (id: string) => void; label: string }) {
   return (
     <span className="ts-src-tabs" role="tablist" aria-label={label}>
       {items.map((it) => (
-        <button key={it.id} type="button" role="tab" aria-selected={it.id === selected} className={it.id === selected ? "ts-src-tab is-active" : "ts-src-tab"} onClick={() => onSelect(it.id)}>
+        <SrcTab key={it.id} selected={it.id === selected} onClick={() => onSelect(it.id)}>
           {it.label}
-        </button>
+        </SrcTab>
       ))}
     </span>
   );
@@ -364,9 +370,9 @@ export function ClauseCall({ node, ctx, inline = false }: { node: CallNode; ctx:
   return (
     <Spot ctx={ctx} id={node.id} as={inline ? "span" : "div"} className={inline ? "ts-src-call is-inline" : "ts-src-call"}>
       <Tag className="ts-src-call-line">
-        <button type="button" className="ts-src-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)} title={`${open ? "접기" : "펼치기"} · 함수조항 ${def?.label ?? node.clauseCode}`} aria-label={`${open ? "접기" : "펼치기"} · 함수조항 ${def?.label ?? node.clauseCode}`}>
+        <Button type="button" variant="ghost" size="icon-sm" className="align-middle text-ink-2" aria-expanded={open} onClick={() => setOpen((v) => !v)} title={`${open ? "접기" : "펼치기"} · 함수조항 ${def?.label ?? node.clauseCode}`} aria-label={`${open ? "접기" : "펼치기"} · 함수조항 ${def?.label ?? node.clauseCode}`}>
           <IconFx />
-        </button>
+        </Button>
         <b>{def?.label ?? node.clauseCode}</b> <span className="ts-muted">{node.clauseCode}</span>
         <GoLink href={links.clause(node.clauseCode)} label={`함수조항 정의 열기 · ${def?.label ?? node.clauseCode}`} />
         {call?.preset && <span className="ts-src-reads"> · 프리셋 {call.preset}</span>}

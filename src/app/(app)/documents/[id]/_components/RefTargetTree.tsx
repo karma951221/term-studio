@@ -19,6 +19,9 @@ import { matchOption, tokensOf } from "@/app/_components/comboModel";
 
 import { codeTag, referenceAncestorIds, referenceChunkLabel, referenceOutline, refKey, refTargetOf, type ReferenceOutlineNode, type ReferenceTarget } from "@/domain/document";
 import type { Id } from "@/domain/types";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 
 export interface RefTargetScope {
   key: string;
@@ -167,14 +170,14 @@ export function RefTargetTree({
           style={{ paddingLeft: depth * 16 }}
         >
           {expandable ? (
-            <button type="button" className="ts-ref-fold" tabIndex={-1} aria-label={`${n.label} ${rowOpen ? "접기" : "펴기"}`} onClick={() => toggleOpen(n.id)}>
+            <Button type="button" variant="ghost" className="ts-ref-fold w-[18px] flex-none rounded-none px-0 py-0.5 text-muted-foreground hover:bg-transparent hover:text-foreground" tabIndex={-1} aria-label={`${n.label} ${rowOpen ? "접기" : "펴기"}`} onClick={() => toggleOpen(n.id)}>
               {rowOpen ? "▾" : "▸"}
-            </button>
+            </Button>
           ) : (
-            <span className="ts-ref-fold" aria-hidden />
+            <span className="w-[18px] flex-none" aria-hidden />
           )}
           <label className="ts-ref-pick">
-            <input type="checkbox" checked={selected.has(n.id)} onChange={() => toggleSelected(n.id)} />
+            <Checkbox checked={selected.has(n.id)} onCheckedChange={() => toggleSelected(n.id)} />
             <Highlight text={n.label} query={query} />
           </label>
           {hidden > 0 && <span className="ts-ref-hidden">고름 {hidden}</span>}
@@ -202,18 +205,18 @@ export function RefTargetTree({
             return (
               <li key={n.id} className="ts-ref-chip">
                 <span className="ts-ref-chip-text">{label}</span>
-                <button type="button" className="ts-ref-chip-x" aria-label={`${label} 빼기`} title="빼기" onClick={() => toggleSelected(n.id)}>
+                <Button type="button" variant="ghost" size="icon-sm" className="size-[18px] flex-none rounded-full text-[10px] leading-none" aria-label={`${label} 빼기`} title="빼기" onClick={() => toggleSelected(n.id)}>
                   ✕
-                </button>
+                </Button>
               </li>
             );
           })}
         </ul>
       )}
       {!empty && (
-        <input
+        <Input
           type="search"
-          className="ts-ref-search"
+          className="min-h-[30px] border-border px-2"
           aria-label="참조 대상 검색"
           aria-controls={id}
           placeholder="조 번호 · 제목으로 찾기"

@@ -18,7 +18,7 @@ import { foldTitle } from "@/domain/document/title";
 import { IconButton, IconClose, IconLink, IconPanel } from "../icons";
 import { indexDecisions } from "./overlay";
 import { links } from "./overlay";
-import { Blocks, DecisionList, GoLink, Inlines, rootCtx } from "./OverlayTree";
+import { Blocks, DecisionList, GoLink, Inlines, rootCtx, SrcTab } from "./OverlayTree";
 
 export type SourcePanelContent = { state: "ok"; view: SourceView } | { state: "stale" } | { state: "notRun" } | { state: "error"; message: string };
 
@@ -145,9 +145,9 @@ function Loaded({ view, focus, close }: { view: SourceView; focus?: string; clos
       {view.sources.length > 1 && (
         <div className="ts-src-tabs" role="tablist" aria-label="블록">
           {view.sources.map((s, i) => (
-            <button key={i} type="button" role="tab" aria-selected={i === tab} className={i === tab ? "ts-src-tab is-active" : "ts-src-tab"} onClick={() => setTab(i)}>
+            <SrcTab key={i} selected={i === tab} onClick={() => setTab(i)}>
               {s.tabLabel}
-            </button>
+            </SrcTab>
           ))}
         </div>
       )}

@@ -23,6 +23,7 @@ import { OP_LABEL, addRow, ctxCodeOf, headOf, opsOf, pickerGroups, qualifiedLabe
 import type { ConditionContext, CtxAttribute, CtxDiscriminator } from "./types";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Button } from "@/components/ui/button";
 
 /** 값 칸 — 좌변 타입대로. 우변이 구분자 참조면 칩 + 비우기. 담보속성이면 유효값 목록(있음 · 없음은 값 없음). */
 function ValueInput({
@@ -75,9 +76,9 @@ function ValueInput({
     return (
       <span className="ts-cond-value-ref">
         {refText(row.right.ref)}
-        <button type="button" className="ts-cond-x" aria-label={`${label} 비우기`} onClick={() => onChange(undefined, true)}>
+        <Button type="button" variant="ghost" className="h-auto px-0.5 py-0" aria-label={`${label} 비우기`} onClick={() => onChange(undefined, true)}>
           ⓧ
-        </button>
+        </Button>
       </span>
     );
   }
@@ -90,6 +91,7 @@ function ValueInput({
     }
   };
   const kind = def?.type?.kind;
+  // value="" — 좌변을 고르면 같은 자리의 아래 <Input value=…> 로 DOM 이 이어진다. 처음부터 제어 칸이어야 「비제어 → 제어」 경고가 없다
   if (!row.left || !kind) return <Input type="text" className="ts-cond-value" aria-label={label} placeholder="값" disabled />;
   switch (kind) {
     case "boolean":
@@ -228,9 +230,9 @@ export function CondRows({
             title="줄로 풀 수 없는 식(괄호 중첩 · not · 집계 직접 사용) — 읽기 전용. 고치려면 줄로 다시 만든다 (ADR-0066 결정 8)"
             value={model.source}
           />
-          <button type="button" className="ts-cond-mini" onClick={() => update({ kind: "rows", rows: emptyRows() }, true)}>
+          <Button type="button" size="xs" onClick={() => update({ kind: "rows", rows: emptyRows() }, true)}>
             줄로 다시 만들기
-          </button>
+          </Button>
           {tools}
         </div>
       </div>

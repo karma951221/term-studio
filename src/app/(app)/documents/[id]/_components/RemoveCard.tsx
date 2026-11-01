@@ -91,9 +91,9 @@ export function RemoveCard({
                   {b.what}
                   {b.articleId ? ` · ${titleOf(b.articleId) ?? "조"}` : ""}{" "}
                   {b.articleId && (
-                    <button type="button" className="ts-doc-pick" onClick={() => onGo(b.articleId!)}>
+                    <Button type="button" variant="text" onClick={() => onGo(b.articleId!)}>
                       그 자리로
-                    </button>
+                    </Button>
                   )}
                 </li>
               ))}

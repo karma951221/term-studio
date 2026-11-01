@@ -347,9 +347,9 @@ function ListPanel({
   return (
     <aside className="ts-ld-panel" data-ld-keep aria-label={`${menu.title} 목록`}>
       <div className="ts-ld-panel-head">
-        <button type="button" className="ts-ld-panel-title" title="목록 펼치기 — 상세를 닫고 전체 목록으로" onClick={onExpandList}>
+        <Button type="button" variant="bare" className="ts-ld-panel-title min-w-0 flex-1 overflow-hidden text-[15px] font-bold text-ellipsis whitespace-nowrap text-foreground" title="목록 펼치기 — 상세를 닫고 전체 목록으로" onClick={onExpandList}>
           {menu.title}
-        </button>
+        </Button>
         <IconButton framed label="패널 접기" aria-expanded icon={<PanelLeftClose className="size-4" />} onClick={onCollapse} />
       </div>
       <Input className="ts-ld-search" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={menu.items.some((i) => i.code) ? "코드 · 이름" : "이름"} aria-label={`${menu.title} 찾기`} />

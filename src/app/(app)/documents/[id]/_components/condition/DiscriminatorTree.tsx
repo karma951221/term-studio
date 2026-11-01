@@ -16,6 +16,7 @@ import { ATTACH_LEVEL_LABEL } from "@/domain/types";
 
 import { nodeHead } from "./rows";
 import type { ConditionContext, CtxDiscriminator, CtxNode } from "./types";
+import { Button } from "@/components/ui/button";
 
 function matches(text: string, query: string): boolean {
   return text.toLowerCase().includes(query.toLowerCase());
@@ -67,13 +68,14 @@ export function DiscriminatorTree({
           <ul className="ts-cond-tree-leaves">
             {leaves.map((d) => (
               <li key={d.code}>
-                <button
+                <Button
                   type="button"
-                  className="ts-cond-tree-leaf"
+                  variant="bare"
+                  className="px-1 py-px text-ink-2"
                   onDoubleClick={() => onPick(node.level === "coverage" ? { kind: "discriminator", code: d.code } : { kind: "discriminator", code: d.code, node: { path: node.keyPath! } })}
                 >
                   {d.label}
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -109,9 +111,9 @@ export function DiscriminatorTree({
               <ul className="ts-cond-tree-leaves">
                 {g.leaves.map((d) => (
                   <li key={d.code}>
-                    <button type="button" className="ts-cond-tree-leaf" aria-label={`${row.label ?? "현재 행"} ${d.label}`} onDoubleClick={() => onPick({ kind: "discriminator", code: d.code })}>
+                    <Button type="button" variant="bare" className="px-1 py-px text-ink-2" aria-label={`${row.label ?? "현재 행"} ${d.label}`} onDoubleClick={() => onPick({ kind: "discriminator", code: d.code })}>
                       {d.label}
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>

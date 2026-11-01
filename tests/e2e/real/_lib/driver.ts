@@ -234,7 +234,7 @@ export class Editor {
         if (!labels) throw new Error(`조 참조 대상 ${key} 가 이 문서 고르기 트리에 없다`);
         rowId = await this.resolveSelfRow(tree, labels);
       }
-      const box = tree.locator(`[data-ref-row="${rowId}"]`).first().locator(":scope > .ts-ref-pick input[type=checkbox]");
+      const box = tree.locator(`[data-ref-row="${rowId}"]`).first().locator(":scope > .ts-ref-pick [role=checkbox]");
       await box.check();
     }
     if (node.targets.length >= 2) await d.locator(`input[type=radio][name$="connector"][value="${node.connector}"]`).check();

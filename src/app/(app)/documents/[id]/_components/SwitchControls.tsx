@@ -9,6 +9,8 @@ import type { EditOp } from "@/domain/document";
 
 import { sortValues, switchValueLabel, unassignedValues, type SwitchSubject } from "./switchCases";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface CaseLike {
   id: string;
@@ -38,9 +40,9 @@ export function CaseControls({ subject, branch, branches, apply, reserve = false
       {values.map((v) => (
         <span key={v} className={`ts-switch-chip${subject && !known.has(v) ? " is-missing" : ""}`}>
           {caseValueLabel(subject, v)}
-          <button type="button" className="ts-switch-chip-x" aria-label={`값 ${caseValueLabel(subject, v)} 빼기`} onClick={() => set(values.filter((x) => x !== v))}>
+          <Button type="button" variant="ghost" className="h-[18px] px-1 text-xs leading-[18px]" aria-label={`값 ${caseValueLabel(subject, v)} 빼기`} onClick={() => set(values.filter((x) => x !== v))}>
             ×
-          </button>
+          </Button>
         </span>
       ))}
       {values.length === 0 && <span className="ts-cond-issue">값 없음 — 값을 고른다</span>}
@@ -55,7 +57,7 @@ export function CaseControls({ subject, branch, branches, apply, reserve = false
         </NativeSelect>
       )}
       <label className="ts-switch-empty" title={hasBody && !branch.empty ? "본문을 지운 뒤 켠다 — 「문구 없음」 칸은 본문이 없다" : "이 칸은 아무것도 내지 않는다"}>
-        <input type="checkbox" checked={branch.empty === true} disabled={hasBody && !branch.empty} onChange={(e) => set(values, e.target.checked)} /> {SWITCH_WORD.empty}
+        <Checkbox checked={branch.empty === true} disabled={hasBody && !branch.empty} onCheckedChange={(on) => set(values, on === true)} /> {SWITCH_WORD.empty}
       </label>
       {(reserve || (!branch.empty && !hasBody)) && (
         <span className="ts-cond-issue" style={!branch.empty && !hasBody ? undefined : { visibility: "hidden" }} aria-hidden={!branch.empty && !hasBody ? undefined : true}>

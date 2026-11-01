@@ -18,6 +18,8 @@ import { formatCoordinate } from "@/domain/coordinate";
 import type { Id, Issue } from "@/domain/types";
 
 import { panelTabsFor, type PanelTab } from "./editTabRules";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export interface PanelData {
   /** 편집본(읽기 모드면 원본)의 저장 검증 — 경고 포함. */
@@ -62,14 +64,14 @@ export function DraftIssues({ go, issues, fixCode }: { go: (nodeId: Id) => void;
             {severity === "warning" && <span className="ts-muted"> · 저장을 막지 않는 경고</span>}
             <div className="ts-issue-at">{formatCoordinate(issue.at)}</div>
             {nodeId && (
-              <button type="button" className="ts-doc-pick" onClick={() => go(nodeId)}>
+              <Button type="button" variant="text" onClick={() => go(nodeId)}>
                 고칠 자리로
-              </button>
+              </Button>
             )}
             {nodeId && fixCode?.ids.has(nodeId) && (
-              <button
+              <Button
                 type="button"
-                className="ts-doc-pick"
+                variant="text"
                 onClick={(e) => {
                   // 그 자리를 가운데에 열고(고칠 자리로와 같은 길) 그 아래에 코드 수정 창
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -78,7 +80,7 @@ export function DraftIssues({ go, issues, fixCode }: { go: (nodeId: Id) => void;
                 }}
               >
                 코드 수정
-              </button>
+              </Button>
             )}
           </li>
         );
@@ -100,18 +102,27 @@ export function SidePanel({ docKind, editing, data, tab, onTab, edit }: { docKin
   const shown = tabs.includes(tab) ? tab : "preview";
   return (
     <aside className="ts-l3-side" id="ts-l3-side">
-      <div className="ts-basic-tabs ts-side-tabs" role="tablist" aria-label="우측 패널">
-        {tabs.map((key) => (
-          <button key={key} type="button" role="tab" id={`ts-side-tab-${key}`} aria-selected={shown === key} aria-controls={`ts-side-panel-${key}`} onClick={() => onTab(key)}>
-            {key === "issues" ? `검증 ${data.issues.length}` : TAB_LABEL[key]}
-            {key === "edit" && edit?.dirty && (
-              <span className="ts-side-tab-dot" role="img" aria-label="적용하지 않은 변경">
-                ●
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* 패널 본문은 아래 role=tabpanel 들이 hidden 으로 갈린다 — Tabs 는 탭 줄(roving 키보드 · aria)만 맡는다 */}
+      <Tabs value={shown} onValueChange={(key) => onTab(key as PanelTab)} className="block">
+        <TabsList aria-label="우측 패널" className="-mt-1 mb-3 h-8 max-w-full gap-0.5 rounded-md border border-input bg-card p-0.5">
+          {tabs.map((key) => (
+            <TabsTrigger
+              key={key}
+              value={key}
+              id={`ts-side-tab-${key}`}
+              aria-controls={`ts-side-panel-${key}`}
+              className="h-full flex-none rounded-sm px-3 py-0 text-muted-foreground after:hidden hover:bg-accent hover:text-foreground data-[state=active]:bg-accent data-[state=active]:font-bold data-[state=active]:text-foreground data-[state=active]:shadow-[inset_0_0_0_1px_var(--color-input)]"
+            >
+              {key === "issues" ? `검증 ${data.issues.length}` : TAB_LABEL[key]}
+              {key === "edit" && edit?.dirty && (
+                <span className="ts-side-tab-dot" role="img" aria-label="적용하지 않은 변경">
+                  ●
+                </span>
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
       {edit && editing && (
         <div role="tabpanel" id="ts-side-panel-edit" aria-labelledby="ts-side-tab-edit" className="ts-side-edit" hidden={shown !== "edit"}>
           {edit.content}
