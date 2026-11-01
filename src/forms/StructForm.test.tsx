@@ -575,9 +575,8 @@ describe("StructForm — 선택 필드 (면책여부 · 지급률, 2026-09-27)",
     const html = renderToStaticMarkup(<StructForm model={modelOf()} embedded flat />);
     expect(html).not.toContain('name="pay.exempt"');
     expect(html).not.toContain('name="pay.rate"');
-    const buttons = tagsWith(html, 'class="ts-form-optional-btn"');
-    expect(buttons.some((t) => t.includes('title="면책여부 추가"'))).toBe(true);
-    expect(buttons.some((t) => t.includes('title="지급률 추가"'))).toBe(true);
+    expect(tagsWith(html, 'title="면책여부 추가"')).toHaveLength(1);
+    expect(tagsWith(html, 'title="지급률 추가"')).toHaveLength(1);
     expect(tagsWith(html, 'aria-label="특성 추가"')).toHaveLength(1);
   });
 

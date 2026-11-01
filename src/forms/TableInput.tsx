@@ -7,6 +7,11 @@
  */
 import type { ClipboardEvent } from "react";
 
+import { IconButton, IconMinusCircle } from "@/app/_components/icons";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPeriod, parseCell, pasteToDraft, type TableDraft } from "@/domain/master";
 import type { TableColumn } from "@/domain/types";
 
@@ -56,27 +61,29 @@ export function TableInput({ id, field, onEdit, name }: InputProps) {
 
   return (
     <div className="ts-table-input" aria-labelledby={`${id}-label`}>
-      <table>
-        <thead>
-          <tr>
+      <Table className="w-auto">
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
             {columns.map((col) => (
-              <th key={col.key}>{col.label}</th>
+              <TableHead key={col.key} className="border border-border">
+                {col.label}
+              </TableHead>
             ))}
-            <th aria-label="행 삭제" />
-          </tr>
-        </thead>
-        <tbody>
+            <TableHead aria-label="행 삭제" className="border border-border" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((row, r) => (
-            <tr key={r}>
+            <TableRow key={r}>
               {columns.map((col, c) => {
                 const text = row[c] ?? "";
                 const h = hint(col, text);
                 const options = col.type === "enum" ? (field.view.columnEnums?.[col.key]?.options ?? []) : undefined;
                 const inputName = `${name ?? field.view.path}[${r}][${col.key}]`;
                 return (
-                  <td key={col.key}>
+                  <TableCell key={col.key} className="border border-border">
                     {options ? (
-                      <select name={inputName} value={text} onChange={(e) => edit(r, c, e.target.value)} aria-label={`${r + 1}행 ${col.label}`}>
+                      <NativeSelect className="w-auto min-w-28" name={inputName} value={text} onChange={(e) => edit(r, c, e.target.value)} aria-label={`${r + 1}행 ${col.label}`}>
                         <option value="">— 고르세요 —</option>
                         {options.map((o) => (
                           <option key={o.code} value={o.code}>
@@ -84,26 +91,24 @@ export function TableInput({ id, field, onEdit, name }: InputProps) {
                           </option>
                         ))}
                         {text !== "" && !options.some((o) => o.code === text) && <option value={text}>{`없는 값 ${text}`}</option>}
-                      </select>
+                      </NativeSelect>
                     ) : (
-                      <input type="text" name={inputName} value={text} onChange={(e) => edit(r, c, e.target.value)} onPaste={onPaste(r, c)} aria-label={`${r + 1}행 ${col.label}`} />
+                      <Input type="text" className="w-24" name={inputName} value={text} onChange={(e) => edit(r, c, e.target.value)} onPaste={onPaste(r, c)} aria-label={`${r + 1}행 ${col.label}`} />
                     )}
-                    {h && <span className="ts-muted ts-table-hint">{h}</span>}
-                  </td>
+                    {h && <span className="ts-muted ml-1 text-[0.85em]">{h}</span>}
+                  </TableCell>
                 );
               })}
-              <td>
-                <button type="button" onClick={() => removeRow(r)} aria-label={`${r + 1}행 삭제`}>
-                  ⊖
-                </button>
-              </td>
-            </tr>
+              <TableCell className="border border-border">
+                <IconButton size="sm" danger icon={<IconMinusCircle />} label={`${r + 1}행 삭제`} onClick={() => removeRow(r)} />
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-      <button type="button" onClick={addRow}>
+        </TableBody>
+      </Table>
+      <Button type="button" className="mt-1" onClick={addRow}>
         + 행
-      </button>
+      </Button>
       <p className="ts-muted">{columns.some((c) => c.type === "period") ? "셀에 포커스를 두고 붙여넣으면 줄은 행, 탭은 열로 들어간다. 기간은 3M · 1Y." : "셀에 포커스를 두고 붙여넣으면 줄은 행, 탭은 열로 들어간다. 고르는 칸은 표시 글자(1년)로 맞춘다."}</p>
     </div>
   );

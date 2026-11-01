@@ -8,9 +8,23 @@
  * 제어형(EditShell 의 Field)과 비제어형(서버 액션에 formData 로 실려 가는 생성 폼)을 같이 받는다.
  * 어느 쪽이든 `name`·`value` 를 단 진짜 input 이라 폼 제출에 그대로 실린다.
  */
-import { Fragment, useState } from "react";
+import { Fragment, useState, type ComponentProps } from "react";
+
+import { cn } from "@/lib/utils";
 
 import { InfoTip } from "./InfoTip";
+
+/** 네이티브 라디오에 위젯 모양만 — 폼 제출 · 키보드 · E2E 가 그대로다. 라벨(<label>) 안에서 쓴다. */
+export function RadioDot({ className, ...props }: Omit<ComponentProps<"input">, "type">) {
+  return (
+    <input
+      type="radio"
+      data-slot="radio-native"
+      className={cn("relative size-4 shrink-0 cursor-pointer appearance-none rounded-full border border-input bg-card outline-none transition-colors duration-150 checked:border-mark checked:before:absolute checked:before:inset-[3px] checked:before:rounded-full checked:before:bg-mark focus-visible:ring-[3px] focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-60", className)}
+      {...props}
+    />
+  );
+}
 
 export interface RadioOption {
   value: string | boolean;
@@ -47,10 +61,7 @@ export function RadioGroup({
       {options.map((option) => (
         <Fragment key={String(option.value)}>
           <label className="ts-form-radio">
-            <input
-              type="radio"
-              data-slot="radio-native"
-              className="relative size-4 shrink-0 cursor-pointer appearance-none rounded-full border border-input bg-card outline-none transition-colors duration-150 checked:border-mark checked:before:absolute checked:before:inset-[3px] checked:before:rounded-full checked:before:bg-mark focus-visible:ring-[3px] focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-60"
+            <RadioDot
               name={name}
               value={String(option.value)}
               checked={current === option.value}
