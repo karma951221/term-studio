@@ -9,6 +9,8 @@ import type { Discriminator } from "../catalog/types";
 import type { ArticleNode, DocumentNode } from "../document/nodes";
 import { titleNodes } from "../document/title";
 import { assemble, assembleSpecial } from "./booklet";
+import { explainArticle } from "./explain";
+import { buildSourceView } from "./sourceView";
 import { alphaDeathDocument, alphaPlusFixture } from "./fixture";
 import type { AssemblyInput, Booklet, RenderedDoc, RenderedInline } from "./types";
 
@@ -139,5 +141,28 @@ describe("절 형태 — 위임 조는 특약에 늘 · 블록은 후보만", ()
     const plain = { ...input, specialDocuments: new Map([...input.specialDocuments, ["cov-death", alphaDeathDocument()]]) };
     const b = run(plain);
     expect(application(special(b, "pc-addon"))).toBe("이 특별약관에서 정하지 않은 사항은 보통약관 제1절 일반조항을 따릅니다. 다만, 보통약관 제1절 일반조항 제2조(보험금의 지급사유)은 제외합니다.");
+  });
+});
+
+describe("판정 기록 → 출처 패널 (결정 7)", () => {
+  it("준용예외를 읽는 조(준용규정)의 패널 재료에 조마다 넣음 / 안 넣음 · 갈래 · 사유를 싣는다", () => {
+    const input = withExclusion(["g-art-def", "g-art-refund"]);
+    const b = run(input);
+    const target = { document: "special" as const, productCoverageId: "pc-basic", articleId: "s-art-application" };
+    const view = buildSourceView(input, input, explainArticle(input, input, target), b);
+    expect(view.exclusions).toEqual([
+      {
+        code: "D0100",
+        label: "준용예외",
+        context: "special",
+        rows: [
+          { articleId: "g-art-def", label: "제1조(용어의 정의)", included: true, branch: "대치 형태 — 보통약관에 있음" },
+          { articleId: "g-art-refund", label: "제6조(해약환급금)", included: false, branch: "대치 형태 — 보통약관에 있음", reason: "특약에 그 조가 있음(조연결)" },
+        ],
+      },
+    ]);
+    // 준용예외를 읽지 않는 조에는 없다
+    const other = buildSourceView(input, input, explainArticle(input, input, { ...target, articleId: "s-art-lapse" }), b);
+    expect(other.exclusions).toBeUndefined();
   });
 });
