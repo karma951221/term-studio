@@ -20,6 +20,7 @@ import { VERDICT_WORD, verdictText } from "../product/judgment";
 import type { ProductCoverageSnapshot } from "../product/types";
 import type { Code, Id } from "../types";
 import { explainRun, type ArticleExplanation, type ArticleSource, type ExplainTarget } from "./explain";
+import type { ExclusionJudgment, ExclusionReason } from "./exclusion";
 import type { Booklet, ErrorNode, MasterBundle, ProductInput, RenderedArticle, RenderedDoc, RenderedInline, RenderedStatic, SpecialPreview } from "./types";
 
 /** 원본 하나의 그릴 재료 — `explanation.sources` 와 같은 순. */
@@ -72,6 +73,31 @@ export interface SourceView {
   verdict?: string;
   /** 읽은 값 소유자(스냅샷 노드 id) → 상품담보 id — 「값」 바로가기의 목적지. */
   readOwners: Record<Id, Id>;
+  /**
+   * 준용예외 판정 근거 (ADR-0098 결정 7) — 이 조가 준용예외(조 참조 목록 인자를 받는 함수조항)를 읽으면 그 상품담보의 판정 기록.
+   * 조마다 결과 표기 · 넣음 / 안 넣음 · 갈래 · 사유. 읽지 않으면 없다.
+   */
+  exclusions?: SourceViewExclusion[];
+}
+
+export interface SourceViewExclusion {
+  code: Code;
+  label: string;
+  context: "special" | "block";
+  rows: { articleId: Id; label: string; included: boolean; branch: string; reason?: string }[];
+}
+
+const EXCLUSION_BRANCH: Record<ExclusionJudgment["branch"], string> = {
+  single: "대치 형태 — 보통약관에 있음",
+  content: "① 제1절에 내용이 찍힘",
+  delegated: "② 위임",
+  absent: "③ 최종 트리에 없음",
+};
+
+function exclusionReason(r: ExclusionReason, context: "special" | "block"): string {
+  if (r === "hasArticle") return `${context === "block" ? "블록" : "특약"}에 그 조가 있음(조연결)`;
+  if (r === "notInTree") return "이 상품 보통약관에 없음(조건 · 노출 끔 · 빈 조)";
+  return "블록은 위임 조를 넣지 않음 — 블록이 자기 조를 갖는다";
 }
 
 // ───────────────────────────── 결과 자리 ─────────────────────────────
@@ -184,7 +210,7 @@ function clauseCodesIn(json: string): Set<Code> {
 }
 
 /** 출처 패널 재료를 짓는다 — 결정적 · 순수. `booklet` 은 지금 보여 주는 그 결과(글 조각 · 결과 자리의 재료). */
-export function buildSourceView(master: MasterBundle, product: ProductInput, explanation: ArticleExplanation, booklet: Pick<Booklet, "general" | "specials" | "blocks" | "form">): SourceView {
+export function buildSourceView(master: MasterBundle, product: ProductInput, explanation: ArticleExplanation, booklet: Pick<Booklet, "general" | "specials" | "blocks" | "form"> & Partial<Pick<Booklet, "exclusions">>): SourceView {
   const target = explanation.target;
   const located = locateRendered(booklet, target);
   const generalArticles = articlesOf(booklet.general);
@@ -278,6 +304,25 @@ export function buildSourceView(master: MasterBundle, product: ProductInput, exp
   const fs = explanation.firstSection;
   const verdict = fs && fs.result !== "master" ? verdictText(fs) : undefined;
 
+  // 준용예외 판정 근거 — 조 참조 목록 인자를 받는 함수조항(준용규정)을 부르는 조만 (ADR-0098 결정 7)
+  const readsExclusion = Object.keys(clauses).some((code) => clauseOf.get(code)?.params?.some((p) => p.type.kind === "list<ref>"));
+  const pcId = target.document === "special" ? target.productCoverageId : undefined;
+  const records = readsExclusion && pcId !== undefined ? (booklet.exclusions ?? []).filter((r) => r.productCoverageId === pcId) : [];
+  const templateDoc = product.product.generalDocumentId === undefined ? undefined : master.generalDocuments.get(product.product.generalDocumentId);
+  const templateTitle = (id: Id) => {
+    const a = templateDoc ? modelArticles(templateDoc.children).find((x) => x.id === id) : undefined;
+    return a ? `「${foldTitle(a.title)}」` : id;
+  };
+  const exclusions: SourceViewExclusion[] = records.map((r) => ({
+    code: r.code,
+    label: master.catalog.find((d) => d.code === r.code)?.label ?? r.code,
+    context: r.context,
+    rows: r.judgments.map((j) => {
+      const rendered = generalArticles.find((a) => a.id === j.articleId);
+      return { articleId: j.articleId, label: rendered ? articleLabel(rendered) : templateTitle(j.articleId), included: j.included, branch: EXCLUSION_BRANCH[j.branch], ...(j.reason ? { reason: exclusionReason(j.reason, r.context) } : {}) };
+    }),
+  }));
+
   // 결과에 없는 조의 자리 — 원본 조 명
   const fallbackTitle = sources[0]?.article ? `「${foldTitle(sources[0].article.title)}」` : "";
   const place = located.article ? located.place : [located.place, fallbackTitle].filter((x) => x !== "").join(" › ");
@@ -296,6 +341,7 @@ export function buildSourceView(master: MasterBundle, product: ProductInput, exp
     ...(linkedLabel ? { linkedLabel: articleLabel(linkedLabel) } : {}),
     ...(verdict ? { verdict } : {}),
     readOwners,
+    ...(exclusions.length > 0 ? { exclusions } : {}),
   };
 }
 
@@ -309,7 +355,7 @@ export function liveSourceView(master: MasterBundle, product: ProductInput, targ
 }
 
 /** 특약 한 건 미리보기(`assembleSpecial`)를 책자 모양으로 — 생략 자리(`omissionSlots`) · 결과 자리 문구가 책자와 같게. 블록이면 제2절에 둔다. */
-export function specialAsBooklet(preview: SpecialPreview): Pick<Booklet, "form" | "general" | "specials" | "blocks" | "omitted" | "firstSection"> {
+export function specialAsBooklet(preview: SpecialPreview): Pick<Booklet, "form" | "general" | "specials" | "blocks" | "omitted" | "firstSection" | "exclusions"> {
   const group = [{ id: preview.block ? "block" : "special", docs: [preview.doc] }];
   return {
     form: preview.form,
@@ -318,5 +364,6 @@ export function specialAsBooklet(preview: SpecialPreview): Pick<Booklet, "form" 
     blocks: preview.block ? group : [],
     omitted: preview.omitted,
     ...(preview.firstSection ? { firstSection: preview.firstSection } : {}),
+    ...(preview.exclusions ? { exclusions: preview.exclusions } : {}),
   };
 }

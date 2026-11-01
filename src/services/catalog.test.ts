@@ -274,6 +274,18 @@ describe("catalog 서비스 (PGlite)", () => {
     });
   });
 
+  describe("준용예외 구분자 — 결과 타입 「조 참조 목록」 · 후보 (ADR-0098 결정 1)", () => {
+    it("후보 조로 채번 · 저장 · 조회하고, 후보만 고친다", async () => {
+      const def = unwrap(await svc.create(editor, { label: "준용예외", level: "coverage", expression: "", resultType: { kind: "list<ref>" }, candidates: ["g-a9", "g-a10"] }));
+      expect(def).toMatchObject({ resultType: { kind: "list<ref>" }, candidates: ["g-a9", "g-a10"], expression: "" });
+      expect(await svc.get(def.code)).toEqual(def);
+      const next = unwrap(await svc.setCandidates(editor, def.code, ["g-a38"]));
+      expect(next.candidates).toEqual(["g-a38"]);
+      expect((await svc.get(def.code))?.candidates).toEqual(["g-a38"]);
+      expect((await svc.setExpression(editor, def.code, "true")).ok).toBe(false);
+    });
+  });
+
   describe("기타 비파괴 변경", () => {
     it("설명 · enum 표시명 · enum 값 순서", async () => {
       const def = unwrap(await svc.setDescription(editor, "D0004", "설명"));

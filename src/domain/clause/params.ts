@@ -22,7 +22,7 @@ import type { Clause } from "./types";
 // ───────────────────────────── 타입 ─────────────────────────────
 
 /** 값 인자 타입 — 구분자 결과 타입(표 제외) 또는 세목 선택지 목록(폼 하나의 선택지들). 식에서 `arg.<이름>` 으로 읽는다. */
-export type ValueParamType = Exclude<FieldType, { kind: "table" }> | { kind: "planOptions"; form: Code };
+export type ValueParamType = Exclude<FieldType, { kind: "table" }> | { kind: "planOptions"; form: Code } | { kind: "list<ref>" };
 
 /** 인자 타입 — 값 인자 타입 또는 「조 참조」(ADR-0083 — 식에서 읽지 않는다). */
 export type ParamType = ValueParamType | { kind: "articleRef" };
@@ -96,14 +96,15 @@ export interface BindingEnv {
 }
 
 /** 반복의 현재 원소 타입 — 세목 선택지 원천이면 종(세목 선택지 목록<폼> 인자에 댄다), 목록값 원천이면 열거값. */
-export type LoopElementType = { kind: "planOptions"; form: Code } | { kind: "enum"; enumCode: Code } | { kind: "coverageNode"; level: "subCoverage" | "benefit" };
+export type LoopElementType = { kind: "planOptions"; form: Code } | { kind: "enum"; enumCode: Code } | { kind: "coverageNode"; level: "subCoverage" | "benefit" } | { kind: "article" };
 
 function describeElement(t: LoopElementType): string {
   if (t.kind === "coverageNode") return t.level === "subCoverage" ? "현재 세부보장(노드)" : "현재 급부(노드)";
+  if (t.kind === "article") return "현재 조(보통약관 템플릿 조)";
   return t.kind === "planOptions" ? `종(세목 선택지 ${t.form})` : `열거값 enum<${t.enumCode}>`;
 }
 
-const MODE_TYPES = new Set(["boolean", "string", "number", "date", "enum", "list<enum>", "planOptions", "articleRef"]);
+const MODE_TYPES = new Set(["boolean", "string", "number", "date", "enum", "list<enum>", "planOptions", "articleRef", "list<ref>"]);
 const IDENT = /^[A-Za-z_ㄱ-ㆎ가-힣][A-Za-z0-9_ㄱ-ㆎ가-힣]*$/;
 const RESERVED = new Set(RESERVED_WORDS);
 
@@ -139,6 +140,8 @@ export function describeParamType(t: ExprType | ParamType): string {
       return `${t.kind}<${t.enumCode}>`;
     case "planOptions":
       return `세목 선택지 목록<${t.form}>`;
+    case "list<ref>":
+      return "조 참조 목록";
     default:
       return t.kind;
   }
@@ -209,7 +212,7 @@ export function checkBinding(param: ParamDef, binding: Binding, env: BindingEnv,
       const here = refAt(`arg.${param.name}`);
       if (!element) return [{ kind: "structure", message: `${head} — 반복 밖에서 반복의 현재 원소를 연결했습니다 — 그 반복 블록 안에서만 댈 수 있습니다`, at: here }];
       // 노드는 값이 아니다 — 값 연결은 키 경로 · 「현재 …」 구분자 연결(Phase 4)로 한다
-      if (element.kind === "coverageNode" || !sameType(element, param.type)) {
+      if (element.kind === "coverageNode" || element.kind === "article" || !sameType(element, param.type)) {
         return [{ kind: "typeMismatch", message: `${head} — 반복의 현재 원소는 ${describeElement(element)} 라 인자 타입 ${describeParamType(param.type)} 과 다릅니다`, at: here }];
       }
       return [];

@@ -8,7 +8,7 @@
 import { and, asc, eq, notInArray, sql } from "drizzle-orm";
 
 import type { CodeKind, NextSeq } from "@/domain/catalog/codes";
-import type { Discriminator, EnumDef, EnumValueDef } from "@/domain/catalog/types";
+import type { Discriminator, DiscriminatorResultType, EnumDef, EnumValueDef } from "@/domain/catalog/types";
 import type { AttachLevel, Code, Id } from "@/domain/types";
 
 import { codeSequences, discriminators, enumValues, enums } from "../schema";
@@ -42,7 +42,16 @@ type DiscriminatorRow = typeof discriminators.$inferSelect;
 type EnumRow = typeof enums.$inferSelect;
 type EnumValueRow = typeof enumValues.$inferSelect;
 
+/**
+ * 준용예외 구분자의 후보는 결과 타입 열(jsonb)에 함께 싣는다 — `{ kind: "list<ref>", candidates }` (ADR-0098 결정 1).
+ * 「조 참조 목록」 구분자만 가진 값이라 열을 따로 두지 않는다(마이그레이션 없음). 도메인은 `resultType` · `candidates` 로 갈라 읽는다.
+ */
 function toDiscriminator(row: DiscriminatorRow): Discriminator {
+  const stored = row.resultType as DiscriminatorResultType & { candidates?: unknown };
+  if (stored?.kind === "list<ref>") {
+    const candidates = Array.isArray(stored.candidates) ? stored.candidates.filter((c): c is string => typeof c === "string") : [];
+    return { code: row.code, label: row.label, description: row.description, level: row.level as AttachLevel, expression: row.expression, resultType: { kind: "list<ref>" }, candidates };
+  }
   return {
     code: row.code,
     label: row.label,
@@ -60,8 +69,8 @@ function toRow(def: Discriminator) {
     description: def.description,
     level: def.level,
     expression: def.expression,
-    // 서비스가 비면 거부한다(필수) — 열도 NOT NULL 이라 여기까지 비어 오면 DB 가 막는다
-    resultType: def.resultType!,
+    // 서비스가 비면 거부한다(필수) — 열도 NOT NULL 이라 여기까지 비어 오면 DB 가 막는다. 준용예외 구분자는 후보를 함께 싣는다
+    resultType: (def.resultType?.kind === "list<ref>" ? { kind: "list<ref>", candidates: def.candidates ?? [] } : def.resultType!) as DiscriminatorResultType,
   };
 }
 

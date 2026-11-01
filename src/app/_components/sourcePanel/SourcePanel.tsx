@@ -59,6 +59,39 @@ function PairsTable({ pairs, contained }: { pairs: readonly OmissionPair[]; cont
   );
 }
 
+/** 준용예외 판정 근거 (ADR-0098 결정 7) — 구분자 하나의 조마다 넣음 / 안 넣음 · 갈래 · 사유. */
+function ExclusionTable({ exclusion }: { exclusion: NonNullable<SourceView["exclusions"]>[number] }) {
+  return (
+    <section className="ts-src-note" aria-label={`${exclusion.label} 판정`}>
+      <p className="ts-src-label">
+        {exclusion.label} 판정 — {exclusion.context === "block" ? "블록(후보만)" : "특약"}
+      </p>
+      {exclusion.rows.length === 0 ? (
+        <p className="ts-muted">판정할 조 없음 — 이 상품 보통약관에 후보 조가 없습니다.</p>
+      ) : (
+        <table className="ts-table ts-src-pairs">
+          <thead>
+            <tr>
+              <th>보통약관 조</th>
+              <th>결과</th>
+              <th>갈래 · 사유</th>
+            </tr>
+          </thead>
+          <tbody>
+            {exclusion.rows.map((r) => (
+              <tr key={r.articleId}>
+                <td>{r.label}</td>
+                <td>{r.included ? <span className="ts-badge">넣음</span> : <span className="ts-muted">안 넣음</span>}</td>
+                <td>{r.reason ? `${r.branch} · ${r.reason}` : r.branch}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
 export function SourcePanel({ content, focus, onClose, rerun }: SourcePanelProps) {
   const close = <IconButton label="출처 패널 닫기" icon={<IconClose />} onClick={onClose} className="ts-src-close" />;
   if (content.state !== "ok") {
@@ -148,6 +181,7 @@ function Loaded({ view, focus, close }: { view: SourceView; focus?: string; clos
         </section>
       )}
       {e.omission?.disposition === "applied" && e.status === "shown" && <p className="ts-src-note">준용 — 보통약관 {view.linkedLabel ?? "조"}를 준용하는 문구로 남았습니다.</p>}
+      {view.exclusions?.map((x) => <ExclusionTable key={x.code} exclusion={x} />)}
 
       {sv?.article ? (
         <div className="ts-src-body ts-doc">

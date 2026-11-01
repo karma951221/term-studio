@@ -23,7 +23,9 @@ export type ExprType =
   | FieldType
   | { kind: "attribute"; validValues?: Code[] }
   /** 세목 선택지 목록 — 함수조항 인자 타입 (최종 결정 2). 비교 · 조건 자리에 서지 않는다 — 가공은 내부 변수의 연산 몫. */
-  | { kind: "planOptions"; form: Code };
+  | { kind: "planOptions"; form: Code }
+  /** 조 참조 목록 — 준용예외 구분자의 결과 타입 (ADR-0098 결정 1). 식에서는 `count` 만 · 문면에서는 문장 안 반복의 원천으로 읽는다. */
+  | { kind: "list<ref>" };
 
 /** 참조 → 타입. undefined 면 존재하지 않는 참조(brokenRef). 인자(`arg.X`)는 여기로 오지 않는다 — `CheckOptions.params` 가 푼다. */
 export type TypeResolver = (ref: Ref) => ExprType | undefined;
@@ -375,12 +377,13 @@ export function checkTypes(
       }
 
       case "aggregate": {
-        if (e.op === "count" && options.params) {
-          report("typeMismatch", "함수조항 식에는 개수 연산(count)이 없습니다 — 목록은 있음 · 비었음 · 거르기로 가공한다", e.ref);
-          return undefined;
-        }
         if (e.ref.kind === "output") {
           if (outputAllowed(e.ref)) report("typeMismatch", `작성위치 ${refPath(e.ref)} 는 집계할 수 없습니다`, e.ref);
+          return undefined;
+        }
+        // 조 참조 목록(준용예외)의 개수는 함수조항에서도 쓴다 — `count(arg.준용예외) > 0` (ADR-0098 결정 2)
+        if (e.op === "count" && options.params && (e.ref.kind !== "param" || options.params(e.ref.name)?.kind !== "list<ref>")) {
+          report("typeMismatch", "함수조항 식에는 개수 연산(count)이 없습니다 — 목록은 있음 · 비었음 · 거르기로 가공한다", e.ref);
           return undefined;
         }
         const t = typeOfRef(e.ref);

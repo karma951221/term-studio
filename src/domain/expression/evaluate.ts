@@ -299,8 +299,11 @@ function aggregate(ctx: EvalContext, op: AggregateOp, ref: ValueRef): EvalResult
     case "count": {
       const distinct = new Set<string>();
       for (const v of values) {
+        // 조 참조 목록(준용예외 구분자)은 원소를 센다 — 다른 목록은 타입 검사가 막는다 (ADR-0098 결정 2)
         if (Array.isArray(v)) {
-          return error(ctx, "typeMismatch", `count 의 경로 ${refPath(ref)} 값이 list 입니다`, ref);
+          if (v.some((x) => typeof x !== "string")) return error(ctx, "typeMismatch", `count 의 경로 ${refPath(ref)} 값이 list 입니다`, ref);
+          for (const x of v) distinct.add(`ref:${String(x)}`);
+          continue;
         }
         distinct.add(`${typeof v}:${String(v)}`);
       }

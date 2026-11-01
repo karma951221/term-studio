@@ -267,7 +267,7 @@ function addDiscriminator(b: Builder, def: Discriminator, catalog: ReadonlyMap<C
   // 결과 타입이 enum 이면 `구분자 = 'V02'` 리터럴에서 enum 값 간선을 낼 수 있다 — 명시 타입이 있으면 그것,
   // 없으면 식에서 추론한다 (기능/구분자 §3.1). 구분자 참조는 카탈로그로 푼다 (기능/구분자 §3.2)
   const type = discriminatorResultType(def, master, catalog);
-  const e = type ? enumOf(type) : undefined;
+  const e = type && type.kind !== "list<ref>" ? enumOf(type) : undefined;
   if (e !== undefined) b.enumSlots.set(def.code, e);
 }
 

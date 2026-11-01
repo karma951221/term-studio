@@ -35,6 +35,7 @@ import { assemblyCopyLocks, buildContexts, generalCoordinate, generalDocumentOf,
 import { ensureApplicationArticle } from "./application";
 import { blockHeads } from "./blockHeads";
 import { authoredEmptyArticleIds, dropEmptyArticles } from "./emptyArticle";
+import { judgeExclusions, type ArticleState } from "./exclusion";
 import { baseKey, replaceGeneralWithBase } from "./base";
 import { effectiveOmitRules, judgeOmission } from "./omission";
 import type { RefPosition } from "./position";
@@ -43,6 +44,7 @@ import { resolveDocument, type ExplainHooks } from "./resolve";
 import { firstSectionRecords, planFirstSection, raisedArticles, treatBlock, type SectionBlock, type SectionEnv, type SectionPlan } from "./firstSection";
 import { blockCoordinate, fillDelegation, FIRST_SECTION_COORDINATE, type FormPlan, type JoinOption, planForm, withDelegation } from "./section";
 import { substituteSlots } from "./substitute";
+import type { ExclusionRecord } from "./types";
 import type { AssemblyCoverage, AssemblyInput, Booklet, FirstSectionRecord, PendingBranch, BookletAppendix, BookletForm, MasterBundle, NumberedDoc, OmissionRecord, ProductInput, RArticle, RenderedDoc, RenderedGroup, SInline, SpecialPreview, SubstitutedDoc, UndocumentedCoverage } from "./types";
 import { articlesOf, mapArticles } from "./walk";
 
@@ -141,6 +143,8 @@ interface Shared {
   blocked: Map<string, Id>;
   /** 설명 모드의 고리 (ADR-0092 결정 3) — 일반 조립엔 없다(결정 노드를 기록하지 않는다). */
   explain?: ExplainHooks;
+  /** 준용예외 판정 기록 — 특약 · 블록을 해소하기 전에 판정한 순서 (ADR-0098 결정 7). */
+  exclusions: ExclusionRecord[];
 }
 
 /** 막힌 분기 원인 오류의 열쇠 — 해소 뒤 단계가 덧붙이는 번호 · 절 · 원천은 넣지 않는다(같은 오류를 해소 때와 책자에서 짝짓는다). */
@@ -160,6 +164,7 @@ function pendingOf(issues: readonly Issue[], s: Shared): PendingBranch[] {
 function shared(input: AssemblyInput, explain?: ExplainHooks): Shared {
   return {
     blocked: new Map(),
+    exclusions: [],
     ...(explain ? { explain } : {}),
     clauses: new Map(input.clauses.map((c) => [c.code, c])),
     boxes: new Map((input.boxes ?? []).map((x) => [x.code, x])),
@@ -387,16 +392,67 @@ function sectionEnv(input: AssemblyInput, contexts: AssemblyContexts, s: Shared)
   };
 }
 
+// ───────────────────────────── 준용예외 (ADR-0098) ─────────────────────────────
+
+/** 판정의 바탕 — 이 상품 보통약관 조 순서 · 조마다의 상태(대치 형태에 생김 · ① 제1절에 찍힘 · ② 위임 · ③ 없음). */
+interface ExclusionBasis {
+  order: readonly Id[];
+  state: (articleId: Id) => ArticleState;
+}
+
+/** 이 상품 보통약관(템플릿 + 사본)의 조 순서. */
+function generalOrder(input: AssemblyInput): Id[] {
+  const general = generalTree(input);
+  return general ? [...masterArticles(general.master).keys()] : [];
+}
+
+/**
+ * 특약의 판정 바탕 — 실제로 찍힌 보통약관(대치 형태) · 제1절(절 형태)과 견준다. 대치 형태는 찍혔으면 「대치 형태에 생김」,
+ * 절 형태는 위임된 조면 ②, 찍혔으면 ①. 최종 트리에 없으면 ③.
+ */
+function specialBasis(input: AssemblyInput, general: Built | undefined, form: FormPlan): ExclusionBasis {
+  const present = new Set(general ? articlesOf(general.numbered.doc).map((a) => a.id) : []);
+  const sectioned = form.form === "sectioned";
+  return {
+    order: generalOrder(input),
+    state: (id) => (!present.has(id) ? "absent" : !sectioned ? "single" : general?.delegated?.has(id) ? "delegated" : "content"),
+  };
+}
+
+/** 문면이 조연결한 템플릿 조 — 「특약에 그 조가 있다」의 정본 (ADR-0098 결정 3). 조 자리(관 · 조건 블록 가지 안 포함)의 조. */
+function linkedArticleIds(doc: DocumentNode): Set<Id> {
+  return new Set(collectArticles(doc.children, []).flatMap((a) => (a.linkedArticleId ? [a.linkedArticleId] : [])));
+}
+
+/**
+ * 준용예외 구분자마다 그 특약 · 블록의 값을 판정해 문맥에 채운다 — 문서를 해소하기 **전에**(조건 `count(준용예외)` · 문장 안 반복이 그 값을 읽는다).
+ * 판정 기록은 조립 실행의 모음에 싣는다. 준용예외 구분자가 없으면 아무것도 하지 않는다.
+ */
+function judgeExclusionsFor(input: AssemblyInput, s: Shared, ctx: AssemblyContext, c: AssemblyCoverage, doc: DocumentNode, basis: ExclusionBasis, context: "special" | "block"): void {
+  const defs = [...s.catalog.values()].filter((d) => d.resultType?.kind === "list<ref>");
+  if (defs.length === 0) return;
+  const linked = linkedArticleIds(doc);
+  for (const def of defs) {
+    const r = judgeExclusions({ candidates: def.candidates ?? [], order: basis.order, state: basis.state, linked, context });
+    ctx.refLists?.set(def.code, r.value);
+    s.exclusions.push({ productCoverageId: c.snapshot.id, name: c.snapshot.name, code: def.code, context, value: r.value, judgments: r.judgments });
+  }
+}
+
 function buildSpecial(input: AssemblyInput, contexts: AssemblyContexts, s: Shared, c: AssemblyCoverage, general: Built | undefined, position: SpecialPosition): Built | undefined {
   const doc = input.specialDocuments.get(c.snapshot.coverageId);
   const ctx = contexts.specials.get(c.snapshot.id);
   if (!doc || !ctx) return undefined;
+  const form = planForm(input);
+  judgeExclusionsFor(input, s, ctx, c, doc, specialBasis(input, general, form), "special");
   const prepared = prepare(doc, ctx, s, {
     coordinate: specialCoordinate(c),
     ...prepareCoordinates(input, doc, c),
     title: specialTitle(c.snapshot.name),
   });
-  const withApplication = ensureApplicationArticle(prepared.doc, position);
+  // 최소형은 ② 위임 조만 싣는다 (ADR-0098 결정 6) — 위임은 절 형태의 제1절에만 있다
+  const delegatedOrder = general?.delegated ? generalOrder(input).filter((id) => general.delegated!.has(id) && articlesOf(general.numbered.doc).some((a) => a.id === id)) : [];
+  const withApplication = ensureApplicationArticle(prepared.doc, position, delegatedOrder);
   // 기본계약 2+ 면 실제로 찍힌 제1절과 견주고, 위임된 조에 연결한 조는 판정 없이 통째 (ADR-0082 결정 4)
   // 생략 기준은 템플릿 원본 → 상품 표 (ADR-0093 결정 3) — 사본의 속성은 읽지 않는다(준용하기와 같은 결)
   const template = input.product.generalDocumentId === undefined ? undefined : input.generalDocuments.get(input.product.generalDocumentId);
@@ -538,10 +594,12 @@ interface PreparedBlock {
  * 블록 하나 — 블록 문맥(작성위치 = 블록)으로 해소하고 블록 빈 조를 뺀다. 조가 하나도 안 남으면 블록이 아니다(ADR-0082 결정 2).
  * 블록 조는 특약 조 판정(ADR-0020)을 타지 않는다 — 제1절 판정 결과(결정 6)만 블록 조를 생략 · 분리한다(`treatBlock`).
  */
-function prepareBlock(input: AssemblyInput, contexts: AssemblyContexts, s: Shared, c: AssemblyCoverage, standalone: boolean): PreparedBlock | undefined {
+function prepareBlock(input: AssemblyInput, contexts: AssemblyContexts, s: Shared, c: AssemblyCoverage, standalone: boolean, basis: ExclusionBasis): PreparedBlock | undefined {
   const doc = input.specialDocuments.get(c.snapshot.coverageId);
   const ctx = contexts.specials.get(c.snapshot.id);
   if (!doc || !ctx) return undefined;
+  // 블록은 후보 판정만 — 제1절에 찍힐 조(최종 트리에 있는 조)인데 블록에 연결 조가 없으면 넣는다 (ADR-0098 결정 4)
+  judgeExclusionsFor(input, s, ctx, c, doc, basis, "block");
   // 블록 제목 — 독립특약 「{상품담보명} 특별약관」, 주계약 기본계약 2+ 는 상품담보명 (기능/조립산출 §3.8)
   const title = standalone ? specialTitle(c.snapshot.name) : c.snapshot.name;
   const prepared = prepare(doc, ctx, s, { coordinate: specialCoordinate(c), ...prepareCoordinates(input, doc, c), title });
@@ -572,12 +630,14 @@ interface SectionedBuild {
  */
 function buildSectioned(input: AssemblyInput, contexts: AssemblyContexts, s: Shared, form: Extract<FormPlan, { form: "sectioned" }>): SectionedBuild {
   const placed = placeBlocks(input, form.candidates);
+  // 제1절 판정의 문맥(최종 트리에 있는 조)은 블록과 무관하다 — 블록의 준용예외 판정이 먼저 읽는다
+  const env = sectionEnv(input, contexts, s);
+  const blockBasis: ExclusionBasis = { order: env.order, state: (id) => (env.present.has(id) ? "content" : "absent") };
   const prepared = placed.groups
-    .map((g) => ({ ...g, blocks: g.members.flatMap((c) => prepareBlock(input, contexts, s, c, form.standalone) ?? []) }))
+    .map((g) => ({ ...g, blocks: g.members.flatMap((c) => prepareBlock(input, contexts, s, c, form.standalone, blockBasis) ?? []) }))
     .filter((g) => g.blocks.length > 0);
   // 복합 블록 판별은 후속 기획(조립산출 §5) — 지금은 늘 아니다
   const sectionBlocks: SectionBlock[] = prepared.flatMap((g) => g.blocks.map((b) => ({ c: b.c, doc: b.doc, composite: false })));
-  const env = sectionEnv(input, contexts, s);
   const plan = planFirstSection(sectionBlocks, env);
   const general = buildFirstSection(input, contexts, s, plan, raisedArticles(plan, sectionBlocks));
   const sectionBlockOf = new Map(sectionBlocks.map((b) => [b.c.snapshot.id, b]));
@@ -785,6 +845,7 @@ export function runAssembly(master: MasterBundle, product: ProductInput, opts: {
     baseContracts: placement.baseContracts,
     trace: contexts.traces,
     ...(sectioned ? { firstSection: sectioned.firstSection } : {}),
+    ...(s.exclusions.length > 0 ? { exclusions: s.exclusions } : {}),
     pending: pendingOf(issues, s),
   };
   return { booklet, replaced: general?.replaced ?? new Map() };
@@ -844,6 +905,7 @@ export function assembleSpecial(master: MasterBundle, product: ProductInput, pro
     form: form.form,
     ...(block ? { block: true as const } : {}),
     ...(sectioned ? { firstSection: sectioned.firstSection } : {}),
+    ...(s.exclusions.some((x) => x.productCoverageId === productCoverageId) ? { exclusions: s.exclusions.filter((x) => x.productCoverageId === productCoverageId) } : {}),
   });
 }
 

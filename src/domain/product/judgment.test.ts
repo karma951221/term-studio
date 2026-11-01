@@ -108,3 +108,19 @@ describe("특약 조 판정 (ADR-0093 결정 6) — 생략 기준이 바꾸는 �
     expect(judgmentImpact(before, before, label)).toBeUndefined();
   });
 });
+
+describe("준용예외 (ADR-0098 결정 7) — 저장 전후 준용예외 값 견주기", () => {
+  const label = (id: string) => `제${id.slice(3)}조`;
+  const snap = (value: string[], pcs = [{ productCoverageId: "pc1", name: "암진단" }]) =>
+    judgmentSnapshot({ locks: new Map(), copyIds: [], blockRefIssues: [], productName: "알파", exclusions: pcs.map((p) => ({ ...p, code: "D0013", value })) });
+
+  it("특약마다 추가 · 빠진 조를 「상품 · 특약 — 준용예외에 제N조 추가 / 빠짐」 한 줄로", () => {
+    const impact = judgmentImpact(snap(["g-a9", "g-a10"]), snap(["g-a9", "g-a38"]), label);
+    expect(impact?.exclusions).toEqual([{ productCoverageId: "pc1", label: "알파 · 암진단", added: [{ articleId: "g-a38", label: "제38조" }], removed: [{ articleId: "g-a10", label: "제10조" }] }]);
+    expect(judgmentImpact(snap(["g-a9"]), snap(["g-a9"]), label)).toBeUndefined();
+  });
+
+  it("탑재 · 해제로 생기거나 사라진 특약은 견주지 않는다", () => {
+    expect(judgmentImpact(snap(["g-a9"], []), snap(["g-a9", "g-a10"]), label)).toBeUndefined();
+  });
+});

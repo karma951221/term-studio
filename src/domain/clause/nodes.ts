@@ -8,7 +8,7 @@
  *   item 본문 = `ItemBodyNode[]` (호 목록 — 조건 블록 가지 안도 호 목록) · subitem 본문 = `SubitemBodyNode[]` (목 목록). 빈 목록도 된다.
  * - 인라인 종류: `text · slot · inlineCond · articleRef · appendixRef · optionSlot · particle`.
  *   **함수조항 참조(clauseInlineRef · clauseBlockRef)는 없다** — 중첩 금지(MVP, 기능/함수조항 §3.1).
- *   반복(forBlock · inlineFor)도 MVP 이후라 없다.
+ *   반복은 블록 반복(forBlock)이 없고, 문장 안 반복(inlineFor)은 **조 참조 목록 인자 원천만** 연다 — 준용규정의 준용예외 문장(ADR-0098 결정 2).
  * - 블록 종류: `paragraph(항) · condBlock(조건 블록) · bulletList(글머리 목록) · boxRef(정적 마스터 박스 참조)`. 조(article)는 항상 사용처 소유라 없다.
  *   박스 참조는 잎이라 중첩 금지에 걸리지 않는다 — 항 자리와 항의 호 목록 자리(호 뒤)에 선다 (최종 결정 6 · 9).
  *   글머리 목록은 항 자리와 항의 호 목록 자리(호 뒤)에 선다 — 항목(bullet)은 한 줄 문장, 목록 안 조건 블록은 없다(문면보다 좁다).
@@ -28,7 +28,8 @@
  */
 
 import type { ParticleNode } from "../document/particles";
-import type { Code, Id, ReferenceConnector, RefRestrict, WorkMark } from "../types";
+import type { RefListRepeatSource } from "../document/blockRepeat";
+import type { Code, Id, InlineRepeatConnector, ReferenceConnector, RefRestrict, WorkMark } from "../types";
 
 // ───────────────────────────── 인라인 ─────────────────────────────
 
@@ -129,11 +130,27 @@ export interface InlineSwitchNode {
   cases: SwitchCase<Inline>[];
 }
 
+/**
+ * 문장 안 반복 — 함수조항에서는 **조 참조 목록 인자**(`arg.<이름>`, 타입 「조 참조 목록」)만 원천으로 쓴다 (ADR-0098 결정 2 — 준용예외).
+ * 문면의 인라인 반복(document/nodes.ts `InlineForNode`, ADR-0088)과 같은 모양 · 같은 잇기(쉼표 + 마지막 앞 연결어, 기본값 없음) · 같은 「비었을 때」 칸.
+ * 본문의 조 참조는 현재 원소(템플릿 조)를 `{ restrict: { current: 이 반복 id } }` 로 가리킨다 — 대상 조 없이. 한 겹만(안에 문장 안 반복 없음).
+ */
+export interface InlineForNode {
+  id: Id;
+  kind: "inlineFor";
+  source: RefListRepeatSource;
+  alias?: string;
+  connector?: InlineRepeatConnector;
+  children: Inline[];
+  fallback?: Inline[];
+}
+
 export type Inline =
   | TextNode
   | SlotNode
   | InlineCondNode
   | InlineSwitchNode
+  | InlineForNode
   | ArticleRefNode
   | AppendixRefNode
   | OptionSlotNode
@@ -288,6 +305,7 @@ export const INLINE_KINDS: readonly InlineKind[] = [
   "slot",
   "inlineCond",
   "inlineSwitch",
+  "inlineFor",
   "articleRef",
   "appendixRef",
   "optionSlot",

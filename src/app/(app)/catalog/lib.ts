@@ -8,8 +8,11 @@ import { checkDiscriminatorExpression, discriminatorResultType, type Discriminat
 import type { Discriminator, DiscriminatorResultType } from "@/domain/catalog/types";
 import type { ExprType } from "@/domain/expression";
 import { allMasterFields, levelDepth, masterFieldFullLabel, type MasterTree } from "@/domain/master";
-import type { AttachLevel, Code, FieldType, FieldTypeKind, Issue, Value } from "@/domain/types";
+import type { AttachLevel, Code, FieldType, FieldTypeKind, Id, Issue, Value } from "@/domain/types";
 import type { InspectInput } from "@/services/catalog";
+import { indexTree, type DocumentNode } from "@/domain/document/nodes";
+import { articleRefLabel, numberTree } from "@/domain/document/numbering";
+import { foldTitle } from "@/domain/document/title";
 
 export function str(fd: FormData, key: string): string {
   return String(fd.get(key) ?? "").trim();
@@ -65,7 +68,10 @@ export function valueFromInput(type: FieldType, raw: string): Value | undefined 
  * 종류 셀렉트의 선택지 — 결과 타입은 필수다 (2026-10-17). 생성 폼과 상세 편집이 같이 쓴다.
  * 값이 비었을 때(식이 아직 안 서 추론 기본값이 없다)만 맨 앞에 「고르세요」 자리를 둔다 — `resultTypeOptions`.
  */
-export const RESULT_TYPE_OPTIONS = TYPE_OPTIONS;
+/** 결과 타입 「조 참조 목록」 — 준용예외 구분자 전용(식 대신 후보 조, 기능/구분자 §3.8 · ADR-0098). */
+export const REF_LIST_KIND = "list<ref>";
+export const REF_LIST_LABEL = "조 참조 목록";
+export const RESULT_TYPE_OPTIONS: readonly { value: string; label: string }[] = [...TYPE_OPTIONS, { value: REF_LIST_KIND, label: `${REF_LIST_LABEL} (준용예외)` }];
 const RESULT_TYPE_PLACEHOLDER = { value: "", label: "고르세요" } as const;
 export function resultTypeOptions(kind: string): readonly { value: string; label: string }[] {
   return kind === "" ? [RESULT_TYPE_PLACEHOLDER, ...RESULT_TYPE_OPTIONS] : RESULT_TYPE_OPTIONS;
@@ -95,6 +101,7 @@ export interface ResultTypeForm {
  * 서비스가 `brokenRef` 로 거부하게 둔다 (`fieldTypeFrom` 과 다른 점).
  */
 export function resultTypeFromForm(kind: string, multi: boolean, enumCode: string): DiscriminatorResultType | undefined {
+  if (kind === REF_LIST_KIND) return { kind: "list<ref>" };
   if (!RESULT_TYPE_KINDS.has(kind)) return undefined;
   return resolveType(kind as Exclude<FieldTypeKind, "table">, multi, enumCode) as DiscriminatorResultType;
 }
@@ -102,12 +109,14 @@ export function resultTypeFromForm(kind: string, multi: boolean, enumCode: strin
 /** 명시 결과 타입 → 폼 입력 (역변환). `list<enum>` 은 종류 enum + 복수. */
 export function resultTypeToForm(t: DiscriminatorResultType | undefined): ResultTypeForm {
   if (!t) return { kind: "", multi: false, enumCode: "" };
+  if (t.kind === "list<ref>") return { kind: REF_LIST_KIND, multi: false, enumCode: "" };
   return { kind: baseKind(t.kind), multi: isMulti(t.kind), enumCode: "enumCode" in t ? t.enumCode : "" };
 }
 
 /** 읽기 표시 — `참거짓` · `목록값 · 해약환급금유형` · `목록값(복수) · …`. 결과 타입은 필수라 늘 있다 — 비면(이행 전 옛 행) `없음`. */
 export function resultTypeLabel(t: DiscriminatorResultType | undefined, enumLabel: (code: string) => string | undefined): string {
   if (!t) return "없음";
+  if (t.kind === "list<ref>") return REF_LIST_LABEL;
   const base = TYPE_LABEL[t.kind];
   return "enumCode" in t ? `${base} · ${enumLabel(t.enumCode) ?? t.enumCode}` : base;
 }
@@ -304,7 +313,35 @@ export function insertPanelData(master: MasterTree, defs: readonly Discriminator
   const catalog = new Map(defs.map((d) => [d.code, d]));
   const discriminators = defs.map((d) => {
     const type = discriminatorResultType(d, master, catalog);
-    return { code: d.code, label: d.label, level: d.level, ...(type ? { typeKind: type.kind } : {}) };
+    // 조 참조 목록(준용예외)은 식 패널의 재료가 아니다 — 식에서는 count 만 읽는다
+    return { code: d.code, label: d.label, level: d.level, ...(type && type.kind !== "list<ref>" ? { typeKind: type.kind } : {}) };
   });
   return { forms: [...forms.values()], discriminators };
+}
+
+// ───────────────────────────── 준용예외 구분자 — 후보 칸 (ADR-0098 결정 1) ─────────────────────────────
+
+/** 후보 칸의 템플릿 한 묶음 — 템플릿의 조를 문서 순 「제N조(제목)」으로. */
+export interface CandidateGroup {
+  id: Id;
+  title: string;
+  articles: { id: Id; label: string }[];
+}
+
+/**
+ * 보통약관 템플릿들 → 후보 칸 재료. 후보는 여러 템플릿의 조를 담을 수 있다 — 담보 문면 한 벌이 템플릿이 다른 상품에 그대로 탑재된다(ADR-0098 결정 1).
+ * 번호는 템플릿의 계산 번호(조건 조 포함)다 — 상품마다 최종 번호는 조립이 찍는다.
+ */
+export function candidateGroups(generals: readonly { id: Id; title: string; tree: DocumentNode }[]): CandidateGroup[] {
+  return generals.map((g) => {
+    const numbers = numberTree(g.tree);
+    const ix = indexTree(g.tree);
+    const articles = [...numbers]
+      .filter(([, n]) => n.kind === "article")
+      .flatMap(([id, n]) => {
+        const node = ix.nodes.get(id)?.node;
+        return node?.kind === "article" ? [{ id, label: articleRefLabel(n.n, foldTitle(node.title)) }] : [];
+      });
+    return { id: g.id, title: g.title, articles };
+  });
 }

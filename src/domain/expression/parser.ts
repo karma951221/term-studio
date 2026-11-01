@@ -349,7 +349,8 @@ class Parser {
         );
       }
       this.next();
-      if (ref.kind === "param" || ref.kind === "local") {
+      // 인자의 count 는 조 참조 목록(준용예외) 인자만 — 타입 검사가 가린다 (ADR-0098 결정 2)
+      if (ref.kind === "local" || (ref.kind === "param" && op !== "count")) {
         throw new SyntaxFailure(`${refPath(ref)} 는 집계할 수 없습니다 — 집계 범위는 사용처 구조라 인자 · 내부 변수가 아니다`, t.pos);
       }
       if (ref.kind === "attr" && op !== "exist" && op !== "notexist") {

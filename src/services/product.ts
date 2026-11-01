@@ -121,6 +121,8 @@ export interface ProductServiceDeps {
       | {
           firstSection?: readonly { articleId: Id; result: VerdictResult; k: number; n: number }[];
           omitted: readonly { productCoverageId: Id; productCoverageName: string; articleId: Id; articleTitle: string; disposition: OmissionDisposition }[];
+          /** 준용예외 기록 (ADR-0098 결정 7) — 특약 · 블록 × 준용예외 구분자의 값. */
+          exclusions?: readonly { productCoverageId: Id; name: string; code: string; value: readonly Id[] }[];
         }
       | undefined
     >;
@@ -616,7 +618,7 @@ export function createProductService(db: Db, deps: ProductServiceDeps = {}): Pro
     };
     const snapshot = judgmentSnapshot({
       ...(records ? { records } : {}),
-      ...(booklet ? { omitted: booklet.omitted } : {}),
+      ...(booklet ? { omitted: booklet.omitted, exclusions: booklet.exclusions ?? [], productName: p.name } : {}),
       locks,
       copyIds: copies.map((c) => c.articleId),
       // 회색 사본은 쓰이지 않아 그 안의 참조도 깨지지 않는다 (ADR-0082 결정 10)

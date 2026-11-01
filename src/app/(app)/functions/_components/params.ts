@@ -159,7 +159,7 @@ export function bindingOptions(
   if (t.kind === "articleRef") return []; // 조 참조 인자 — 대상 트리로 고른다 · 기본 연결 없음 (ADR-0083)
   // 반복의 현재 원소 — 원소 타입이 인자 타입과 같은 감싼 반복만 (종 → 세목 선택지 목록<폼> · 열거값 → enum<E>)
   const current = loops
-    .filter((l) => l.type.kind !== "coverageNode" && (l.type.kind === "planOptions" ? t.kind === "planOptions" && t.form === l.type.form : t.kind === "enum" && t.enumCode === l.type.enumCode))
+    .filter((l) => l.type.kind !== "coverageNode" && l.type.kind !== "article" && (l.type.kind === "planOptions" ? t.kind === "planOptions" && t.form === l.type.form : t.kind === "enum" && t.enumCode === l.type.enumCode))
     .map((l) => ({ value: `r:${l.id}`, label: l.label, group: "반복" }));
   if (t.kind === "planOptions") {
     const form = forms.find((f) => f.key === t.form);
@@ -268,7 +268,7 @@ export function paramEntries(params: readonly ParamDef[], enums: readonly EnumCh
       // 조 참조 인자는 식에서 읽지 않는다 — 조건 · 슬롯 · 값별 분기 고르기에 나오지 않는다 (ADR-0083 결정 2)
       if (p.type.kind === "articleRef") return [];
       const out: CtxDiscriminator = { code: `arg.${p.name}`, label: `${p.name}(인자)`, level: "product", forms: [], param: true };
-      if (p.type.kind !== "planOptions") out.type = p.type;
+      if (p.type.kind !== "planOptions" && p.type.kind !== "list<ref>") out.type = p.type;
       if (p.type.kind === "enum" || p.type.kind === "list<enum>") {
         const code = p.type.enumCode;
         out.enumOptions = (enums.find((e) => e.code === code)?.values ?? []).map((v) => ({ code: v.code, label: v.label }));

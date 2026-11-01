@@ -4,6 +4,7 @@ import { ATTACH_LEVELS, type AttachLevel } from "@/domain/types";
 import { getServices } from "@/lib/services";
 
 import { createDiscriminatorAction } from "../actions";
+import { candidateGroupsOfGenerals } from "../generals";
 import { insertPanelData } from "../lib";
 import { CreateForm } from "./CreateForm";
 
@@ -16,9 +17,9 @@ export default async function NewCatalogPage({ searchParams }: { searchParams: P
   const { error, level = DEFAULT_LEVEL } = await searchParams;
   const initialLevel = ATTACH_LEVELS.includes(level as AttachLevel) ? (level as AttachLevel) : DEFAULT_LEVEL;
   const services = getServices();
-  const [enums, defs] = await Promise.all([services.catalog.listEnums(), services.catalog.list()]);
+  const [enums, defs, generals] = await Promise.all([services.catalog.listEnums(), services.catalog.list(), candidateGroupsOfGenerals()]);
   // 넣기 패널 재료 — 마스터 필드 트리와 구분자 목록 (기능/구분자 §4.3). 생성은 자기 코드가 없어 제외할 것이 없다.
   const panel = insertPanelData(MASTER, defs);
 
-  return <CreateForm action={createDiscriminatorAction} banner={<ErrorBanner message={error} />} initialLevel={initialLevel} enums={enums} panel={panel} catalog={defs} />;
+  return <CreateForm action={createDiscriminatorAction} banner={<ErrorBanner message={error} />} initialLevel={initialLevel} enums={enums} panel={panel} catalog={defs} candidateGroups={generals} />;
 }

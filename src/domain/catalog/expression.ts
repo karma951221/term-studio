@@ -31,7 +31,7 @@ import {
 } from "../types";
 import { findMasterField, levelDepth, masterFieldFullLabel, type MasterTree } from "../master";
 import { isTableDiscriminatorCode } from "../dyntable/codes";
-import type { Discriminator, DiscriminatorResultType } from "./types";
+import type { Discriminator, DiscriminatorResultType, RefListType } from "./types";
 
 /** 담보속성 유효값 조회 — 주면 `attr.X = '값'` 의 리터럴을 유효값 목록으로 검사한다 (ADR-0015). */
 export type AttributeValues = (kindCode: string) => string[] | undefined;
@@ -318,7 +318,7 @@ export function discriminatorResultType(
   def: { code?: Code; level: AttachLevel; expression: string; resultType?: DiscriminatorResultType },
   master?: MasterTree,
   catalog?: DiscriminatorCatalog,
-): FieldType | undefined {
+): FieldType | RefListType | undefined {
   if (def.resultType) return def.resultType;
   const type = resultTypeOf(def, master, catalog, new Set());
   return type === undefined || type.kind === "attribute" || type.kind === "planOptions" ? undefined : type;

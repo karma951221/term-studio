@@ -12,13 +12,25 @@
  *
  * 코드는 시스템 채번 · 불변 — 생성 입력(New*)에는 code 필드가 없다 (타입으로 강제).
  */
-import type { AttachLevel, Code, FieldType } from "../types";
+import type { AttachLevel, Code, FieldType, Id } from "../types";
 
 /**
  * 구분자 결과 타입으로 쓸 수 있는 타입 (기능/구분자 §3.1) —
  * string · number · boolean · date · enum · list<enum>. `table` 은 값 자리 전용이라 뺀다.
  */
-export type DiscriminatorResultType = Exclude<FieldType, { kind: "table" }>;
+export type DiscriminatorResultType = Exclude<FieldType, { kind: "table" }> | RefListType;
+
+/**
+ * 결과 타입 「조 참조 목록」 (기능/구분자 §3.8 · ADR-0098 결정 1) — 준용예외 구분자 전용. 원소 = 보통약관 템플릿 조 id.
+ * 식이 없다 — 정의는 후보(`Discriminator.candidates`), 값은 조립이 특약 · 블록 문맥마다 판정한 조 목록이다.
+ */
+export type RefListType = { kind: "list<ref>" };
+export const REF_LIST_TYPE: RefListType = { kind: "list<ref>" };
+
+/** 준용예외 구분자인가 — 결과 타입 「조 참조 목록」. */
+export function isRefListDiscriminator(def: { resultType?: DiscriminatorResultType }): boolean {
+  return def.resultType?.kind === "list<ref>";
+}
 
 export interface Discriminator {
   /** 자동 채번 코드 (`D0001`). 불변. 문면이 참조하는 이름이다. */
@@ -36,6 +48,11 @@ export interface Discriminator {
    * 없으면 읽는 쪽(`discriminatorResultType`)이 추론 타입으로 푼다.
    */
   resultType?: DiscriminatorResultType;
+  /**
+   * 후보 (준용예외 구분자만 — 결과 타입 「조 참조 목록」, ADR-0098 결정 1) — 작성자가 고른 보통약관 템플릿 조 id(여러 템플릿 가능, 고른 순).
+   * 조립은 그 상품 템플릿의 조만 본다. 다른 결과 타입에는 없다.
+   */
+  candidates?: Id[];
 }
 
 /** enum 정의 — enum 자체도 코드+표시명 (D-P1-7). */
@@ -85,6 +102,8 @@ export interface NewDiscriminator {
   description?: string;
   /** 결과 타입 (기능/구분자 §3.1) — **필수** (2026-10-17). 식의 추론 타입과 같아야 한다 — 저장 검사가 대조한다. */
   resultType: DiscriminatorResultType;
+  /** 후보 — 결과 타입 「조 참조 목록」일 때만 (ADR-0098 결정 1). */
+  candidates?: Id[];
 }
 
 export interface NewEnumValue {

@@ -190,7 +190,14 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
       ["D0012", "15세 이상만 면책 있음", "coverage", "any(D0011)"],
       // 표 구분자 「보험금 지급금액표」를 감싸는 조건 (기능/구분자 §3.7, ADR-0099 — 2026-11-01)
       ["D0013", "감액 있음", "coverage", "exist(reduction.periods)"],
+      // 준용예외 — 결과 타입 「조 참조 목록」, 식 없음 · 정의 = 후보 템플릿 조 (ADR-0098 결정 1). 준용규정 함수조항의 후보 묶음마다 하나
+      ["D0014", "준용예외", "coverage", ""],
+      ["D0015", "준용예외(갱신형)", "coverage", ""],
+      ["D0016", "준용예외(질병)", "coverage", ""],
+      ["D0017", "준용예외(세부규정 포함)", "coverage", ""],
+      ["D0018", "준용예외(질병 · 납입면제)", "coverage", ""],
     ]);
+    expect(defs.find((d) => d.code === "D0014")).toMatchObject({ resultType: { kind: "list<ref>" }, candidates: ["g-a9", "g-a10", "g-a38"] });
   });
 
   it("함수조항 60건 — 조 · 여러 항(두 곳 이상이 되풀이) 36 + 납입면제 함수조항 21(호 1 · 사유별 정의 13 · 역할 7) + 문구 「기준일 문구」 + 알파Plus2607 질병 특약 둘(맨 뒤) · 박스는 함수조항이 아니라 정적 마스터 142 (알파플러스_모델명세 §4 · §6 · 메리츠_모델명세 §4)", async () => {
@@ -284,8 +291,12 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     expect(boxes.filter((b) => b.title === "계약 전 알릴 의무").map((b) => b.code)).toEqual(["BX000054"]);
     // 알파Plus 준용규정은 담보속성(갱신유형)을 읽는다 — 담보속성은 함수조항이 직접 읽는다 — 요구 참조는 저장 때 식에서 뽑는다 (기능/함수조항 §3.3).
     // 「1종 … 납입면제 조도 제외」 문장은 「납입면제 있음」 인자(기본 연결 D0002)로 가른다 — 납입면제 없는 상품이면 빠진다
-    expect((await services.clause.get(byLabel("준용규정(알파Plus)").code))?.required).toEqual({ discriminators: ["D0002"], attributes: ["A0001"] });
-    expect(byLabel("준용규정(통합간편)").params?.map((p) => [p.name, p.default])).toEqual([["납입면제_있음", { kind: "discriminator", code: "D0002" }]]);
+    // 「다만, … 은 제외합니다」 목록은 준용예외 구분자 인자(갱신형 가지 · 비갱신 가지)로 — 조립이 판정한다 (ADR-0098 결정 2)
+    expect((await services.clause.get(byLabel("준용규정(알파Plus)").code))?.required).toEqual({ discriminators: ["D0015", "D0002", "D0014"], attributes: ["A0001"] });
+    expect(byLabel("준용규정(통합간편)").params?.map((p) => [p.name, p.default])).toEqual([
+      ["납입면제_있음", { kind: "discriminator", code: "D0002" }],
+      ["준용예외", { kind: "discriminator", code: "D0014" }],
+    ]);
     // 준용규정 함수조항은 작성위치 = 대치이면 빈 출력 (ADR-0089 결정 5) — 자동 묶음이 만든 판까지 전부 작성위치를 읽는다
     const applications = list.filter((c) => c.label.startsWith("준용규정"));
     expect(applications.length).toBeGreaterThanOrEqual(7);

@@ -345,6 +345,7 @@ class Walker {
   elementLabel(e: RepeatElement): string {
     if (e.kind === "planOption") return this.ctx.plans?.options.find((o) => o.id === e.id)?.name ?? e.id;
     if (e.kind === "enumValue") return this.env.enums?.get(e.enumCode)?.values.find((v) => v.code === e.code)?.label ?? e.code;
+    if (e.kind === "article") return e.articleId; // 조 참조 목록 원소 — 화면은 조 id 를 이 상품 번호로 푼다(출처 패널)
     const rows = this.ctx.rows;
     for (const sub of rows?.providers.coverage?.children(rows.root) ?? []) {
       if (sub.id === e.id) return sub.name;
@@ -363,6 +364,14 @@ class Walker {
       ...(this.env.master ? { master: this.env.master } : {}),
       ...(this.ctx.rows ? { rows: this.ctx.rows } : {}),
       explain: (reason, where) => this.ctx.explainUndetermined(reason, where),
+      // 조 참조 목록(준용예외) — 원천 식(인자 연결이 바꿔 쓴 구분자 코드)을 그 자리 문맥에서 평가한 조 목록 (ADR-0098 결정 2)
+      refList: (ref) => {
+        const r = this.evalRaw(ref, { ...at, refPath: ref }, this.evalOf(f));
+        if (r.kind === "error") return { ok: false, issue: r.issue };
+        return Array.isArray(r.value) && r.value.every((x) => typeof x === "string")
+          ? { ok: true, value: r.value as string[] }
+          : { ok: false, issue: { kind: "typeMismatch", message: `문장 안 반복의 원천 ${ref} 이(가) 조 참조 목록이 아닙니다`, at: { ...at, refPath: ref } } };
+      },
     }, at);
   }
 
@@ -437,9 +446,16 @@ class Walker {
   refTargets(n: { targets: readonly { articleId?: Id; code?: Code; innerCode?: Code; restrict?: unknown }[] }, f: Frame, at: Coordinate, map: (t: { articleId?: Id; code?: Code }) => { articleId: Id; code?: Code }): { ok: true; targets: RArticleRef["targets"] } | { ok: false; issue: Issue } {
     const out: RArticleRef["targets"] = [];
     for (const t of n.targets) {
+      const r = t.restrict as { values?: unknown; current?: unknown; keys?: unknown } | undefined;
+      // 조 참조 목록 반복의 현재 원소 — 대상 조 없이 「현재」만: 그 원소(템플릿 조) 자체를 가리킨다 (ADR-0098 결정 2)
+      if (t.articleId === undefined && typeof r?.current === "string") {
+        const e = f.loops?.[r.current];
+        if (e?.kind !== "article") return { ok: false, issue: { kind: "structure", message: `조 참조의 「현재」 반복 ${r.current} 이(가) 이 참조를 감싸지 않습니다 — 조 참조 목록 반복 안에서만 쓴다`, at } };
+        out.push({ articleId: e.articleId });
+        continue;
+      }
       const base = map(t);
       const target: RArticleRef["targets"][number] = { ...base, ...(t.innerCode !== undefined ? { innerCode: t.innerCode } : {}) };
-      const r = t.restrict as { values?: unknown; current?: unknown; keys?: unknown } | undefined;
       if (r !== undefined) {
         if (Array.isArray(r.values)) target.values = r.values.filter((v): v is string => typeof v === "string");
         else if (Array.isArray(r.keys)) target.keys = r.keys.filter((v): v is string => typeof v === "string");
@@ -700,7 +716,7 @@ class Walker {
     const e = f.loops?.[loop];
     if (!e) return undefined;
     if (e.kind === "enumValue") return { kind: "enum", code: e.code };
-    if (e.kind === "coverageNode") return undefined; // 노드는 값 인자에 대지 않는다
+    if (e.kind === "coverageNode" || e.kind === "article") return undefined; // 노드 · 조는 값 인자에 대지 않는다
     const ctx = this.ctx.plans?.context(e.id);
     return ctx ? { kind: "options", form: e.form, contexts: [ctx] } : undefined;
   }
@@ -756,7 +772,8 @@ class Walker {
       case "inlineSwitch":
         return this.switchOf(n, f, true, (children, g) => this.inlines(children as AnyInline[], g));
       case "inlineFor":
-        return this.inlineRepeat(n, f);
+        // 함수조항의 문장 안 반복(조 참조 목록 원천 — ADR-0098)도 문면 인라인 반복과 같은 모양이다
+        return this.inlineRepeat(n as InlineForNode, f);
       case "clauseInlineRef":
         return this.call(n, ["inline"], f, (r) => this.inlines(r.body as ClauseInline[], { ...f, path: [...f.path, n.id], clause: n.clauseCode }));
       case "optionSlot":

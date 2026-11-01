@@ -12,7 +12,7 @@ import { discriminatorResultType } from "../catalog/expression";
 import { missingValueMessage, slotType } from "../catalog/values";
 import { evaluate, parse, refPath, type OutputRef, type ValueRef } from "../expression";
 import { findMasterField, type MasterTree } from "../master";
-import { inlineRepeatSeparator, type Code, type Coordinate, type FieldType, type Issue, type Value } from "../types";
+import { inlineRepeatSeparator, isReferenceConnector, type Code, type Coordinate, type FieldType, type Issue, type Value } from "../types";
 import type { AssemblyContext } from "./context";
 import type { ErrorNode, LoopTag, RArticle, RBulletList, RInline, RInlineRepeat, RItem, RParagraph, ResolvedDoc, RStatic, RSubitem, SInline, SubstitutedDoc } from "./types";
 import { mapArticles } from "./walk";
@@ -75,7 +75,8 @@ function typeOf(env: SubstituteEnv, ref: ValueRef | OutputRef): FieldType | unde
   if (ref.kind === "builtin" || ref.kind === "output") return { kind: "string" };
   if (ref.kind === "discriminator") {
     const def = env.catalog.get(ref.code);
-    return def ? discriminatorResultType(def, env.master, env.catalog) : undefined;
+    const t = def ? discriminatorResultType(def, env.master, env.catalog) : undefined;
+    return t?.kind === "list<ref>" ? undefined : t; // 조 참조 목록은 글로 찍지 않는다 — 문장 안 반복의 원천으로만 (ADR-0098)
   }
   const field = findMasterField(refPath(ref), env.master);
   return field ? slotType(field.level, field.path, env.master) : undefined;
@@ -157,6 +158,8 @@ class Substituter {
       seen.add(key);
       return true;
     });
+    const merged = mergedArticleRefs(n, kept);
+    if (merged) return [merged];
     return kept.flatMap((e, i) => (i === 0 ? e : [{ kind: "text" as const, id: `${n.id}~sep${i}`, text: inlineRepeatSeparator(n.connector ?? ",", i, kept.length) }, ...e]));
   }
 
@@ -257,6 +260,23 @@ function foldedKey(list: readonly SInline[]): string | undefined {
     else key += `\u0000a:${JSON.stringify([n.targets, n.within ?? null, n.connector ?? null, n.scope])}\u0000`;
   }
   return key;
+}
+
+/**
+ * 원소마다 조 참조 하나뿐인 인라인 반복 → 조 참조 한 덩어리 (ADR-0098 결정 2 — 준용예외 「〔[준용예외마다] 조 참조(현재)〕」).
+ * 원소를 따로 이으면 「보통약관 제9조(…), 보통약관 제10조(…) …」처럼 덩어리 머리가 원소마다 서므로, 대상을 모아 조 참조 하나로 찍는다 —
+ * 수동 제외 조 목록 항(「보통약관 제9조(…), 제10조(…) 및 제38조(…)」)과 같은 렌더(덩어리 머리 한 번 · 연결어 · 구간)다.
+ * 범위가 다르거나 연결어가 「쉼표만」이거나 원소에 다른 노드가 섞이면 하지 않는다(보통 잇기).
+ */
+function mergedArticleRefs(n: RInlineRepeat, kept: readonly SInline[][]): SInline | undefined {
+  if (kept.length === 0) return undefined;
+  const refs = kept.map((e) => (e.length === 1 && e[0]!.kind === "articleRef" ? e[0] : undefined));
+  if (refs.some((r) => r === undefined)) return undefined;
+  const list = refs as Extract<SInline, { kind: "articleRef" }>[];
+  const scope = list[0]!.scope;
+  if (list.some((r) => r.scope !== scope || r.targets.length !== 1)) return undefined;
+  if (list.length > 1 && !isReferenceConnector(n.connector)) return undefined;
+  return { kind: "articleRef", id: n.id, targets: list.map((r) => r.targets[0]!), ...(list.length > 1 && isReferenceConnector(n.connector) ? { connector: n.connector } : {}), scope, at: list[0]!.at };
 }
 
 /** 참조 열쇠 · 반복 원소 표지 · 블록 묶음 (`Keyed`) — 단계를 건너도 그대로 싣는다. */

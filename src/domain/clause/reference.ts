@@ -136,8 +136,18 @@ export function expandClause(clause: Clause, selection: OptionSelection, refNode
       case "inlineSwitch":
         // 값별 분기는 칸째 두고(고르는 것은 사용처 문맥) id 만 유일화한다
         return [{ ...n, id: nid(scope + n.id), cases: n.cases.map((k) => ({ ...k, id: nid(scope + k.id), children: inlines(k.children, scope) })) }];
+      case "inlineFor":
+        // 조 참조 목록 반복 (ADR-0098) — id 를 유일화하고, 본문 조 참조의 「현재」도 같은 id 로 (아래 articleRef)
+        return [{ ...n, id: nid(scope + n.id), children: inlines(n.children, scope), ...(n.fallback ? { fallback: inlines(n.fallback, scope) } : {}) }];
       case "articleRef": {
-        if (n.scope !== "param") return [{ ...n, id: nid(scope + n.id) }];
+        if (n.scope !== "param") {
+          // 반복의 현재 원소 한정은 반복 노드 id 를 가리킨다 — 반복 id 를 유일화한 것과 같이 바꾼다
+          const targets = n.targets.map((t) => {
+            const current = (t.restrict as { current?: unknown } | undefined)?.current;
+            return typeof current === "string" ? { ...t, restrict: { current: nid(scope + current) } } : t;
+          });
+          return [{ ...n, id: nid(scope + n.id), targets }];
+        }
         const name = n.targets[0]?.param ?? "";
         const b = bindings?.[name];
         if (b?.kind !== "articleRef") {

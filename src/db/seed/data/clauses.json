@@ -5900,168 +5900,342 @@
             "when": "builtin.output ≠ 'replace'",
             "children": [
               {
-                "id": "c-alpha-application-n1",
-                "kind": "paragraph",
-                "children": [
+                "id": "c-alpha-application-n1-x",
+                "kind": "condBlock",
+                "branches": [
                   {
-                    "id": "c-alpha-application-n2-h1",
-                    "kind": "text",
-                    "text": "이 "
-                  },
-                  {
-                    "id": "c-alpha-application-n2-h2",
-                    "kind": "inlineCond",
-                    "branches": [
+                    "id": "c-alpha-application-n4-x",
+                    "when": "exist(attr.A0001) and attr.A0001 = '2'",
+                    "children": [
                       {
-                        "id": "c-alpha-application-n2-h2-b",
-                        "when": "builtin.output = 'block'",
+                        "id": "c-alpha-application-n1-n4",
+                        "kind": "paragraph",
                         "children": [
                           {
-                            "id": "c-alpha-application-n2-h2-b-t",
+                            "id": "c-alpha-application-n2-h1-n4",
                             "kind": "text",
-                            "text": "보장조항에서"
-                          }
-                        ]
-                      },
-                      {
-                        "id": "c-alpha-application-n2-h2-e",
-                        "children": [
+                            "text": "이 "
+                          },
                           {
-                            "id": "c-alpha-application-n2-h2-e-t",
+                            "id": "c-alpha-application-n2-h2-n4",
+                            "kind": "inlineCond",
+                            "branches": [
+                              {
+                                "id": "c-alpha-application-n2-h2-b-n4",
+                                "when": "builtin.output = 'block'",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-n2-h2-b-t-n4",
+                                    "kind": "text",
+                                    "text": "보장조항에서"
+                                  }
+                                ]
+                              },
+                              {
+                                "id": "c-alpha-application-n2-h2-e-n4",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-n2-h2-e-t-n4",
+                                    "kind": "text",
+                                    "text": "특별약관에서"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "id": "c-alpha-application-n2-h3-n4",
                             "kind": "text",
-                            "text": "특별약관에서"
+                            "text": " 정하지 않은 사항은 "
+                          },
+                          {
+                            "id": "c-alpha-application-n2-h4-n4",
+                            "kind": "articleRef",
+                            "targets": []
+                          },
+                          {
+                            "id": "c-alpha-application-n2-n4",
+                            "kind": "text",
+                            "text": "을 따릅니다."
+                          },
+                          {
+                            "id": "c-alpha-application-n5-n4-if",
+                            "kind": "inlineCond",
+                            "branches": [
+                              {
+                                "id": "c-alpha-application-n5-n4-if-b",
+                                "when": "count(arg.준용예외) > 0",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-n5-n4-if-t",
+                                    "kind": "text",
+                                    "text": " 다만, "
+                                  },
+                                  {
+                                    "id": "c-alpha-application-n5-n4-each",
+                                    "kind": "inlineFor",
+                                    "source": {
+                                      "kind": "refList",
+                                      "ref": "arg.준용예외"
+                                    },
+                                    "alias": "준용예외마다",
+                                    "connector": "및",
+                                    "children": [
+                                      {
+                                        "id": "c-alpha-application-n5-n4",
+                                        "kind": "articleRef",
+                                        "targets": [
+                                          {
+                                            "restrict": {
+                                              "current": "c-alpha-application-n5-n4-each"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "id": "c-alpha-application-n6-n4",
+                                    "kind": "text",
+                                    "text": "은 제외합니다."
+                                  }
+                                ]
+                              }
+                            ]
                           }
-                        ]
+                        ],
+                        "code": "P0100"
                       }
                     ]
                   },
                   {
-                    "id": "c-alpha-application-n2-h3",
-                    "kind": "text",
-                    "text": " 정하지 않은 사항은 "
-                  },
-                  {
-                    "id": "c-alpha-application-n2-h4",
-                    "kind": "articleRef",
-                    "targets": []
-                  },
-                  {
-                    "id": "c-alpha-application-n2",
-                    "kind": "text",
-                    "text": "을 따릅니다. 다만, "
-                  },
-                  {
-                    "id": "c-alpha-application-n3",
-                    "kind": "inlineCond",
-                    "branches": [
+                    "id": "c-alpha-application-n7-x",
+                    "when": "arg.납입면제_있음 = true",
+                    "children": [
                       {
-                        "id": "c-alpha-application-n4",
-                        "when": "exist(attr.A0001) and attr.A0001 = '2'",
+                        "id": "c-alpha-application-n1-n7",
+                        "kind": "paragraph",
                         "children": [
                           {
-                            "id": "c-alpha-application-n5",
-                            "kind": "articleRef",
-                            "targets": [
-                              {
-                                "articleId": "g-a9"
-                              },
-                              {
-                                "articleId": "g-a10"
-                              },
-                              {
-                                "articleId": "g-a27_1"
-                              },
-                              {
-                                "articleId": "g-a27_2"
-                              },
-                              {
-                                "articleId": "g-a38"
-                              }
-                            ],
-                            "connector": "및"
-                          },
-                          {
-                            "id": "c-alpha-application-n6",
+                            "id": "c-alpha-application-n2-h1-n7",
                             "kind": "text",
-                            "text": "은 제외합니다."
-                          }
-                        ]
-                      },
-                      {
-                        "id": "c-alpha-application-n7",
-                        "children": [
+                            "text": "이 "
+                          },
                           {
-                            "id": "c-alpha-application-n8",
-                            "kind": "articleRef",
-                            "targets": [
+                            "id": "c-alpha-application-n2-h2-n7",
+                            "kind": "inlineCond",
+                            "branches": [
                               {
-                                "articleId": "g-a9"
+                                "id": "c-alpha-application-n2-h2-b-n7",
+                                "when": "builtin.output = 'block'",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-n2-h2-b-t-n7",
+                                    "kind": "text",
+                                    "text": "보장조항에서"
+                                  }
+                                ]
                               },
                               {
-                                "articleId": "g-a10"
-                              },
-                              {
-                                "articleId": "g-a38"
+                                "id": "c-alpha-application-n2-h2-e-n7",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-n2-h2-e-t-n7",
+                                    "kind": "text",
+                                    "text": "특별약관에서"
+                                  }
+                                ]
                               }
-                            ],
-                            "connector": "및"
+                            ]
                           },
                           {
-                            "id": "c-alpha-application-n9",
+                            "id": "c-alpha-application-n2-h3-n7",
                             "kind": "text",
-                            "text": "은 제외하며, 보통약관 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                            "text": " 정하지 않은 사항은 "
                           },
                           {
-                            "id": "c-alpha-application-n10",
+                            "id": "c-alpha-application-n2-h4-n7",
                             "kind": "articleRef",
-                            "targets": [
-                              {
-                                "articleId": "g-a27_1"
-                              },
-                              {
-                                "articleId": "g-a27_2"
-                              }
-                            ],
-                            "connector": "및"
+                            "targets": []
                           },
                           {
-                            "id": "c-alpha-application-n11",
+                            "id": "c-alpha-application-n2-n7",
                             "kind": "text",
-                            "text": "도 제외합니다."
+                            "text": "을 따릅니다."
+                          },
+                          {
+                            "id": "c-alpha-application-n8-n7-if",
+                            "kind": "inlineCond",
+                            "branches": [
+                              {
+                                "id": "c-alpha-application-n8-n7-if-b",
+                                "when": "count(arg.준용예외2) > 0",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-n8-n7-if-t",
+                                    "kind": "text",
+                                    "text": " 다만, "
+                                  },
+                                  {
+                                    "id": "c-alpha-application-n8-n7-each",
+                                    "kind": "inlineFor",
+                                    "source": {
+                                      "kind": "refList",
+                                      "ref": "arg.준용예외2"
+                                    },
+                                    "alias": "준용예외마다",
+                                    "connector": "및",
+                                    "children": [
+                                      {
+                                        "id": "c-alpha-application-n8-n7",
+                                        "kind": "articleRef",
+                                        "targets": [
+                                          {
+                                            "restrict": {
+                                              "current": "c-alpha-application-n8-n7-each"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "id": "c-alpha-application-n9-n7",
+                                    "kind": "text",
+                                    "text": "은 제외하며, 보통약관 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  },
+                                  {
+                                    "id": "c-alpha-application-n10-n7",
+                                    "kind": "articleRef",
+                                    "targets": [
+                                      {
+                                        "articleId": "g-a27_1"
+                                      },
+                                      {
+                                        "articleId": "g-a27_2"
+                                      }
+                                    ],
+                                    "connector": "및"
+                                  },
+                                  {
+                                    "id": "c-alpha-application-n11-n7",
+                                    "kind": "text",
+                                    "text": "도 제외합니다."
+                                  }
+                                ]
+                              }
+                            ]
                           }
                         ],
-                        "when": "arg.납입면제_있음 = true"
-                      },
+                        "code": "P0100"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c-alpha-application-n7-else-x",
+                    "children": [
                       {
-                        "id": "c-alpha-application-n7-else",
+                        "id": "c-alpha-application-n1-else",
+                        "kind": "paragraph",
                         "children": [
                           {
-                            "id": "c-alpha-application-n8-else",
-                            "kind": "articleRef",
-                            "targets": [
-                              {
-                                "articleId": "g-a9"
-                              },
-                              {
-                                "articleId": "g-a10"
-                              },
-                              {
-                                "articleId": "g-a38"
-                              }
-                            ],
-                            "connector": "및"
+                            "id": "c-alpha-application-n2-h1-else",
+                            "kind": "text",
+                            "text": "이 "
                           },
                           {
-                            "id": "c-alpha-application-n7-else-t",
+                            "id": "c-alpha-application-n2-h2-else",
+                            "kind": "inlineCond",
+                            "branches": [
+                              {
+                                "id": "c-alpha-application-n2-h2-b-else",
+                                "when": "builtin.output = 'block'",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-n2-h2-b-t-else",
+                                    "kind": "text",
+                                    "text": "보장조항에서"
+                                  }
+                                ]
+                              },
+                              {
+                                "id": "c-alpha-application-n2-h2-e-else",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-n2-h2-e-t-else",
+                                    "kind": "text",
+                                    "text": "특별약관에서"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "id": "c-alpha-application-n2-h3-else",
                             "kind": "text",
-                            "text": "은 제외합니다."
+                            "text": " 정하지 않은 사항은 "
+                          },
+                          {
+                            "id": "c-alpha-application-n2-h4-else",
+                            "kind": "articleRef",
+                            "targets": []
+                          },
+                          {
+                            "id": "c-alpha-application-n2-else",
+                            "kind": "text",
+                            "text": "을 따릅니다."
+                          },
+                          {
+                            "id": "c-alpha-application-n8-else-else-if",
+                            "kind": "inlineCond",
+                            "branches": [
+                              {
+                                "id": "c-alpha-application-n8-else-else-if-b",
+                                "when": "count(arg.준용예외2) > 0",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-n8-else-else-if-t",
+                                    "kind": "text",
+                                    "text": " 다만, "
+                                  },
+                                  {
+                                    "id": "c-alpha-application-n8-else-else-each",
+                                    "kind": "inlineFor",
+                                    "source": {
+                                      "kind": "refList",
+                                      "ref": "arg.준용예외2"
+                                    },
+                                    "alias": "준용예외마다",
+                                    "connector": "및",
+                                    "children": [
+                                      {
+                                        "id": "c-alpha-application-n8-else-else",
+                                        "kind": "articleRef",
+                                        "targets": [
+                                          {
+                                            "restrict": {
+                                              "current": "c-alpha-application-n8-else-else-each"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "id": "c-alpha-application-n7-else-t-else",
+                                    "kind": "text",
+                                    "text": "은 제외합니다."
+                                  }
+                                ]
+                              }
+                            ]
                           }
-                        ]
+                        ],
+                        "code": "P0100"
                       }
                     ]
                   }
-                ],
-                "code": "P0100"
+                ]
               }
             ]
           }
@@ -6078,6 +6252,26 @@
         "default": {
           "kind": "discriminator",
           "code": "D0002"
+        }
+      },
+      {
+        "name": "준용예외",
+        "type": {
+          "kind": "list<ref>"
+        },
+        "default": {
+          "kind": "discriminator",
+          "code": "D0015"
+        }
+      },
+      {
+        "name": "준용예외2",
+        "type": {
+          "kind": "list<ref>"
+        },
+        "default": {
+          "kind": "discriminator",
+          "code": "D0014"
         }
       }
     ]
@@ -6145,28 +6339,52 @@
                   {
                     "id": "c-meritz-application-n2",
                     "kind": "text",
-                    "text": "을 따릅니다. 다만, "
+                    "text": "을 따릅니다."
                   },
                   {
-                    "id": "c-meritz-application-n3",
-                    "kind": "articleRef",
-                    "targets": [
+                    "id": "c-meritz-application-n3-if",
+                    "kind": "inlineCond",
+                    "branches": [
                       {
-                        "articleId": "g-a9"
-                      },
-                      {
-                        "articleId": "g-a10"
-                      },
-                      {
-                        "articleId": "g-a38"
+                        "id": "c-meritz-application-n3-if-b",
+                        "when": "count(arg.준용예외) > 0",
+                        "children": [
+                          {
+                            "id": "c-meritz-application-n3-if-t",
+                            "kind": "text",
+                            "text": " 다만, "
+                          },
+                          {
+                            "id": "c-meritz-application-n3-each",
+                            "kind": "inlineFor",
+                            "source": {
+                              "kind": "refList",
+                              "ref": "arg.준용예외"
+                            },
+                            "alias": "준용예외마다",
+                            "connector": "및",
+                            "children": [
+                              {
+                                "id": "c-meritz-application-n3",
+                                "kind": "articleRef",
+                                "targets": [
+                                  {
+                                    "restrict": {
+                                      "current": "c-meritz-application-n3-each"
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "id": "c-meritz-application-n4",
+                            "kind": "text",
+                            "text": "은 제외합니다."
+                          }
+                        ]
                       }
-                    ],
-                    "connector": "및"
-                  },
-                  {
-                    "id": "c-meritz-application-n4",
-                    "kind": "text",
-                    "text": "은 제외합니다."
+                    ]
                   },
                   {
                     "id": "c-meritz-application-n5-if-waiver",
@@ -6221,6 +6439,16 @@
         "default": {
           "kind": "discriminator",
           "code": "D0002"
+        }
+      },
+      {
+        "name": "준용예외",
+        "type": {
+          "kind": "list<ref>"
+        },
+        "default": {
+          "kind": "discriminator",
+          "code": "D0014"
         }
       }
     ]
@@ -6284,122 +6512,237 @@
             "when": "builtin.output ≠ 'replace'",
             "children": [
               {
-                "id": "c-alpha-application-disease-n1",
-                "kind": "paragraph",
-                "children": [
+                "id": "c-alpha-application-disease-n1-x",
+                "kind": "condBlock",
+                "branches": [
                   {
-                    "id": "c-alpha-application-disease-n2-h1",
-                    "kind": "text",
-                    "text": "이 "
-                  },
-                  {
-                    "id": "c-alpha-application-disease-n2-h2",
-                    "kind": "inlineCond",
-                    "branches": [
+                    "id": "c-alpha-application-disease-n1-if-waiver-b-x",
+                    "when": "arg.납입면제_있음 = true",
+                    "children": [
                       {
-                        "id": "c-alpha-application-disease-n2-h2-b",
-                        "when": "builtin.output = 'block'",
+                        "id": "c-alpha-application-disease-n1-b",
+                        "kind": "paragraph",
                         "children": [
                           {
-                            "id": "c-alpha-application-disease-n2-h2-b-t",
+                            "id": "c-alpha-application-disease-n2-h1-b",
                             "kind": "text",
-                            "text": "보장조항에서"
-                          }
-                        ]
-                      },
-                      {
-                        "id": "c-alpha-application-disease-n2-h2-e",
-                        "children": [
+                            "text": "이 "
+                          },
                           {
-                            "id": "c-alpha-application-disease-n2-h2-e-t",
+                            "id": "c-alpha-application-disease-n2-h2-b",
+                            "kind": "inlineCond",
+                            "branches": [
+                              {
+                                "id": "c-alpha-application-disease-n2-h2-b-b",
+                                "when": "builtin.output = 'block'",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-disease-n2-h2-b-t-b",
+                                    "kind": "text",
+                                    "text": "보장조항에서"
+                                  }
+                                ]
+                              },
+                              {
+                                "id": "c-alpha-application-disease-n2-h2-e-b",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-disease-n2-h2-e-t-b",
+                                    "kind": "text",
+                                    "text": "특별약관에서"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "id": "c-alpha-application-disease-n2-h3-b",
                             "kind": "text",
-                            "text": "특별약관에서"
+                            "text": " 정하지 않은 사항은 "
+                          },
+                          {
+                            "id": "c-alpha-application-disease-n2-h4-b",
+                            "kind": "articleRef",
+                            "targets": []
+                          },
+                          {
+                            "id": "c-alpha-application-disease-n2-b",
+                            "kind": "text",
+                            "text": "을 따릅니다."
+                          },
+                          {
+                            "id": "c-alpha-application-disease-n3-b-if",
+                            "kind": "inlineCond",
+                            "branches": [
+                              {
+                                "id": "c-alpha-application-disease-n3-b-if-b",
+                                "when": "count(arg.준용예외) > 0",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-disease-n3-b-if-t",
+                                    "kind": "text",
+                                    "text": " 다만, "
+                                  },
+                                  {
+                                    "id": "c-alpha-application-disease-n3-b-each",
+                                    "kind": "inlineFor",
+                                    "source": {
+                                      "kind": "refList",
+                                      "ref": "arg.준용예외"
+                                    },
+                                    "alias": "준용예외마다",
+                                    "connector": "및",
+                                    "children": [
+                                      {
+                                        "id": "c-alpha-application-disease-n3-b",
+                                        "kind": "articleRef",
+                                        "targets": [
+                                          {
+                                            "restrict": {
+                                              "current": "c-alpha-application-disease-n3-b-each"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "id": "c-alpha-application-disease-n4-b",
+                                    "kind": "text",
+                                    "text": "은 제외하며, 보통약관 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  },
+                                  {
+                                    "id": "c-alpha-application-disease-n5-b",
+                                    "kind": "articleRef",
+                                    "targets": [
+                                      {
+                                        "articleId": "g-a27_1"
+                                      },
+                                      {
+                                        "articleId": "g-a27_2"
+                                      }
+                                    ],
+                                    "connector": "및"
+                                  },
+                                  {
+                                    "id": "c-alpha-application-disease-n6-b",
+                                    "kind": "text",
+                                    "text": "도 제외합니다."
+                                  }
+                                ]
+                              }
+                            ]
                           }
-                        ]
+                        ],
+                        "code": "P0100"
                       }
                     ]
                   },
                   {
-                    "id": "c-alpha-application-disease-n2-h3",
-                    "kind": "text",
-                    "text": " 정하지 않은 사항은 "
-                  },
-                  {
-                    "id": "c-alpha-application-disease-n2-h4",
-                    "kind": "articleRef",
-                    "targets": []
-                  },
-                  {
-                    "id": "c-alpha-application-disease-n2",
-                    "kind": "text",
-                    "text": "을 따릅니다. 다만, "
-                  },
-                  {
-                    "id": "c-alpha-application-disease-n3",
-                    "kind": "articleRef",
-                    "targets": [
+                    "id": "c-alpha-application-disease-n1-if-waiver-else-x",
+                    "children": [
                       {
-                        "articleId": "g-a5"
-                      },
-                      {
-                        "articleId": "g-a9"
-                      },
-                      {
-                        "articleId": "g-a10"
-                      },
-                      {
-                        "articleId": "g-a38"
-                      }
-                    ],
-                    "connector": "및"
-                  },
-                  {
-                    "id": "c-alpha-application-disease-n1-if-waiver",
-                    "kind": "inlineCond",
-                    "branches": [
-                      {
-                        "id": "c-alpha-application-disease-n1-if-waiver-b",
-                        "when": "arg.납입면제_있음 = true",
+                        "id": "c-alpha-application-disease-n1-else",
+                        "kind": "paragraph",
                         "children": [
                           {
-                            "id": "c-alpha-application-disease-n4",
+                            "id": "c-alpha-application-disease-n2-h1-else",
                             "kind": "text",
-                            "text": "은 제외하며, 보통약관 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                            "text": "이 "
                           },
                           {
-                            "id": "c-alpha-application-disease-n5",
-                            "kind": "articleRef",
-                            "targets": [
+                            "id": "c-alpha-application-disease-n2-h2-else",
+                            "kind": "inlineCond",
+                            "branches": [
                               {
-                                "articleId": "g-a27_1"
+                                "id": "c-alpha-application-disease-n2-h2-b-else",
+                                "when": "builtin.output = 'block'",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-disease-n2-h2-b-t-else",
+                                    "kind": "text",
+                                    "text": "보장조항에서"
+                                  }
+                                ]
                               },
                               {
-                                "articleId": "g-a27_2"
+                                "id": "c-alpha-application-disease-n2-h2-e-else",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-disease-n2-h2-e-t-else",
+                                    "kind": "text",
+                                    "text": "특별약관에서"
+                                  }
+                                ]
                               }
-                            ],
-                            "connector": "및"
+                            ]
                           },
                           {
-                            "id": "c-alpha-application-disease-n6",
+                            "id": "c-alpha-application-disease-n2-h3-else",
                             "kind": "text",
-                            "text": "도 제외합니다."
-                          }
-                        ]
-                      },
-                      {
-                        "id": "c-alpha-application-disease-n1-if-waiver-else",
-                        "children": [
+                            "text": " 정하지 않은 사항은 "
+                          },
                           {
-                            "id": "c-alpha-application-disease-n1-if-waiver-else-t",
+                            "id": "c-alpha-application-disease-n2-h4-else",
+                            "kind": "articleRef",
+                            "targets": []
+                          },
+                          {
+                            "id": "c-alpha-application-disease-n2-else",
                             "kind": "text",
-                            "text": "은 제외합니다."
+                            "text": "을 따릅니다."
+                          },
+                          {
+                            "id": "c-alpha-application-disease-n3-else-if",
+                            "kind": "inlineCond",
+                            "branches": [
+                              {
+                                "id": "c-alpha-application-disease-n3-else-if-b",
+                                "when": "count(arg.준용예외) > 0",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-disease-n3-else-if-t",
+                                    "kind": "text",
+                                    "text": " 다만, "
+                                  },
+                                  {
+                                    "id": "c-alpha-application-disease-n3-else-each",
+                                    "kind": "inlineFor",
+                                    "source": {
+                                      "kind": "refList",
+                                      "ref": "arg.준용예외"
+                                    },
+                                    "alias": "준용예외마다",
+                                    "connector": "및",
+                                    "children": [
+                                      {
+                                        "id": "c-alpha-application-disease-n3-else",
+                                        "kind": "articleRef",
+                                        "targets": [
+                                          {
+                                            "restrict": {
+                                              "current": "c-alpha-application-disease-n3-else-each"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "id": "c-alpha-application-disease-n1-if-waiver-else-t-else",
+                                    "kind": "text",
+                                    "text": "은 제외합니다."
+                                  }
+                                ]
+                              }
+                            ]
                           }
-                        ]
+                        ],
+                        "code": "P0100"
                       }
                     ]
                   }
-                ],
-                "code": "P0100"
+                ]
               }
             ]
           }
@@ -6416,6 +6759,16 @@
         "default": {
           "kind": "discriminator",
           "code": "D0002"
+        }
+      },
+      {
+        "name": "준용예외",
+        "type": {
+          "kind": "list<ref>"
+        },
+        "default": {
+          "kind": "discriminator",
+          "code": "D0016"
         }
       }
     ]
@@ -11008,122 +11361,237 @@
             "when": "builtin.output ≠ 'replace'",
             "children": [
               {
-                "id": "c-auto-103-n1",
-                "kind": "paragraph",
-                "children": [
+                "id": "c-auto-103-n1-x",
+                "kind": "condBlock",
+                "branches": [
                   {
-                    "id": "c-auto-103-n2-h1",
-                    "kind": "text",
-                    "text": "이 "
-                  },
-                  {
-                    "id": "c-auto-103-n2-h2",
-                    "kind": "inlineCond",
-                    "branches": [
+                    "id": "c-auto-103-n5-if-waiver-b-x",
+                    "when": "arg.납입면제_있음 = true",
+                    "children": [
                       {
-                        "id": "c-auto-103-n2-h2-b",
-                        "when": "builtin.output = 'block'",
+                        "id": "c-auto-103-n1-b",
+                        "kind": "paragraph",
                         "children": [
                           {
-                            "id": "c-auto-103-n2-h2-b-t",
+                            "id": "c-auto-103-n2-h1-b",
                             "kind": "text",
-                            "text": "보장조항에서"
-                          }
-                        ]
-                      },
-                      {
-                        "id": "c-auto-103-n2-h2-e",
-                        "children": [
+                            "text": "이 "
+                          },
                           {
-                            "id": "c-auto-103-n2-h2-e-t",
+                            "id": "c-auto-103-n2-h2-b",
+                            "kind": "inlineCond",
+                            "branches": [
+                              {
+                                "id": "c-auto-103-n2-h2-b-b",
+                                "when": "builtin.output = 'block'",
+                                "children": [
+                                  {
+                                    "id": "c-auto-103-n2-h2-b-t-b",
+                                    "kind": "text",
+                                    "text": "보장조항에서"
+                                  }
+                                ]
+                              },
+                              {
+                                "id": "c-auto-103-n2-h2-e-b",
+                                "children": [
+                                  {
+                                    "id": "c-auto-103-n2-h2-e-t-b",
+                                    "kind": "text",
+                                    "text": "특별약관에서"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "id": "c-auto-103-n2-h3-b",
                             "kind": "text",
-                            "text": "특별약관에서"
+                            "text": " 정하지 않은 사항은 "
+                          },
+                          {
+                            "id": "c-auto-103-n2-h4-b",
+                            "kind": "articleRef",
+                            "targets": []
+                          },
+                          {
+                            "id": "c-auto-103-n2-b",
+                            "kind": "text",
+                            "text": "을 따릅니다."
+                          },
+                          {
+                            "id": "c-auto-103-n3-b-if",
+                            "kind": "inlineCond",
+                            "branches": [
+                              {
+                                "id": "c-auto-103-n3-b-if-b",
+                                "when": "count(arg.준용예외) > 0",
+                                "children": [
+                                  {
+                                    "id": "c-auto-103-n3-b-if-t",
+                                    "kind": "text",
+                                    "text": " 다만, "
+                                  },
+                                  {
+                                    "id": "c-auto-103-n3-b-each",
+                                    "kind": "inlineFor",
+                                    "source": {
+                                      "kind": "refList",
+                                      "ref": "arg.준용예외"
+                                    },
+                                    "alias": "준용예외마다",
+                                    "connector": "및",
+                                    "children": [
+                                      {
+                                        "id": "c-auto-103-n3-b",
+                                        "kind": "articleRef",
+                                        "targets": [
+                                          {
+                                            "restrict": {
+                                              "current": "c-auto-103-n3-b-each"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "id": "c-auto-103-n4-w-b",
+                                    "kind": "text",
+                                    "text": "은 제외하며, 보통약관 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  },
+                                  {
+                                    "id": "c-auto-103-n5-b",
+                                    "kind": "articleRef",
+                                    "targets": [
+                                      {
+                                        "articleId": "g-a27_1"
+                                      },
+                                      {
+                                        "articleId": "g-a27_2"
+                                      }
+                                    ],
+                                    "connector": "및"
+                                  },
+                                  {
+                                    "id": "c-auto-103-n6-w-b",
+                                    "kind": "text",
+                                    "text": "도 제외합니다."
+                                  }
+                                ]
+                              }
+                            ]
                           }
-                        ]
+                        ],
+                        "code": "P0100"
                       }
                     ]
                   },
                   {
-                    "id": "c-auto-103-n2-h3",
-                    "kind": "text",
-                    "text": " 정하지 않은 사항은 "
-                  },
-                  {
-                    "id": "c-auto-103-n2-h4",
-                    "kind": "articleRef",
-                    "targets": []
-                  },
-                  {
-                    "id": "c-auto-103-n2",
-                    "kind": "text",
-                    "text": "을 따릅니다. 다만, "
-                  },
-                  {
-                    "id": "c-auto-103-n3",
-                    "kind": "articleRef",
-                    "targets": [
+                    "id": "c-auto-103-n5-if-waiver-else-x",
+                    "children": [
                       {
-                        "articleId": "g-a4"
-                      },
-                      {
-                        "articleId": "g-a9"
-                      },
-                      {
-                        "articleId": "g-a10"
-                      },
-                      {
-                        "articleId": "g-a38"
-                      }
-                    ],
-                    "connector": "및"
-                  },
-                  {
-                    "id": "c-auto-103-n5-if-waiver",
-                    "kind": "inlineCond",
-                    "branches": [
-                      {
-                        "id": "c-auto-103-n5-if-waiver-b",
-                        "when": "arg.납입면제_있음 = true",
+                        "id": "c-auto-103-n1-else",
+                        "kind": "paragraph",
                         "children": [
                           {
-                            "id": "c-auto-103-n4-w",
+                            "id": "c-auto-103-n2-h1-else",
                             "kind": "text",
-                            "text": "은 제외하며, 보통약관 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                            "text": "이 "
                           },
                           {
-                            "id": "c-auto-103-n5",
-                            "kind": "articleRef",
-                            "targets": [
+                            "id": "c-auto-103-n2-h2-else",
+                            "kind": "inlineCond",
+                            "branches": [
                               {
-                                "articleId": "g-a27_1"
+                                "id": "c-auto-103-n2-h2-b-else",
+                                "when": "builtin.output = 'block'",
+                                "children": [
+                                  {
+                                    "id": "c-auto-103-n2-h2-b-t-else",
+                                    "kind": "text",
+                                    "text": "보장조항에서"
+                                  }
+                                ]
                               },
                               {
-                                "articleId": "g-a27_2"
+                                "id": "c-auto-103-n2-h2-e-else",
+                                "children": [
+                                  {
+                                    "id": "c-auto-103-n2-h2-e-t-else",
+                                    "kind": "text",
+                                    "text": "특별약관에서"
+                                  }
+                                ]
                               }
-                            ],
-                            "connector": "및"
+                            ]
                           },
                           {
-                            "id": "c-auto-103-n6-w",
+                            "id": "c-auto-103-n2-h3-else",
                             "kind": "text",
-                            "text": "도 제외합니다."
-                          }
-                        ]
-                      },
-                      {
-                        "id": "c-auto-103-n5-if-waiver-else",
-                        "children": [
+                            "text": " 정하지 않은 사항은 "
+                          },
                           {
-                            "id": "c-auto-103-n5-if-waiver-else-t",
+                            "id": "c-auto-103-n2-h4-else",
+                            "kind": "articleRef",
+                            "targets": []
+                          },
+                          {
+                            "id": "c-auto-103-n2-else",
                             "kind": "text",
-                            "text": "은 제외합니다."
+                            "text": "을 따릅니다."
+                          },
+                          {
+                            "id": "c-auto-103-n3-else-if",
+                            "kind": "inlineCond",
+                            "branches": [
+                              {
+                                "id": "c-auto-103-n3-else-if-b",
+                                "when": "count(arg.준용예외) > 0",
+                                "children": [
+                                  {
+                                    "id": "c-auto-103-n3-else-if-t",
+                                    "kind": "text",
+                                    "text": " 다만, "
+                                  },
+                                  {
+                                    "id": "c-auto-103-n3-else-each",
+                                    "kind": "inlineFor",
+                                    "source": {
+                                      "kind": "refList",
+                                      "ref": "arg.준용예외"
+                                    },
+                                    "alias": "준용예외마다",
+                                    "connector": "및",
+                                    "children": [
+                                      {
+                                        "id": "c-auto-103-n3-else",
+                                        "kind": "articleRef",
+                                        "targets": [
+                                          {
+                                            "restrict": {
+                                              "current": "c-auto-103-n3-else-each"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "id": "c-auto-103-n5-if-waiver-else-t-else",
+                                    "kind": "text",
+                                    "text": "은 제외합니다."
+                                  }
+                                ]
+                              }
+                            ]
                           }
-                        ]
+                        ],
+                        "code": "P0100"
                       }
                     ]
                   }
-                ],
-                "code": "P0100"
+                ]
               }
             ]
           }
@@ -11140,6 +11608,16 @@
         "default": {
           "kind": "discriminator",
           "code": "D0002"
+        }
+      },
+      {
+        "name": "준용예외",
+        "type": {
+          "kind": "list<ref>"
+        },
+        "default": {
+          "kind": "discriminator",
+          "code": "D0017"
         }
       }
     ]
@@ -12806,37 +13284,52 @@
                   {
                     "id": "c-auto-114-n2",
                     "kind": "text",
-                    "text": "을 따릅니다. 다만, "
+                    "text": "을 따릅니다."
                   },
                   {
-                    "id": "c-auto-114-n3",
-                    "kind": "articleRef",
-                    "targets": [
+                    "id": "c-auto-114-n3-if",
+                    "kind": "inlineCond",
+                    "branches": [
                       {
-                        "articleId": "g-a5"
-                      },
-                      {
-                        "articleId": "g-a9"
-                      },
-                      {
-                        "articleId": "g-a10"
-                      },
-                      {
-                        "articleId": "g-a27_1"
-                      },
-                      {
-                        "articleId": "g-a27_2"
-                      },
-                      {
-                        "articleId": "g-a38"
+                        "id": "c-auto-114-n3-if-b",
+                        "when": "count(arg.준용예외) > 0",
+                        "children": [
+                          {
+                            "id": "c-auto-114-n3-if-t",
+                            "kind": "text",
+                            "text": " 다만, "
+                          },
+                          {
+                            "id": "c-auto-114-n3-each",
+                            "kind": "inlineFor",
+                            "source": {
+                              "kind": "refList",
+                              "ref": "arg.준용예외"
+                            },
+                            "alias": "준용예외마다",
+                            "connector": "및",
+                            "children": [
+                              {
+                                "id": "c-auto-114-n3",
+                                "kind": "articleRef",
+                                "targets": [
+                                  {
+                                    "restrict": {
+                                      "current": "c-auto-114-n3-each"
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "id": "c-auto-114-n4",
+                            "kind": "text",
+                            "text": "은 제외합니다."
+                          }
+                        ]
                       }
-                    ],
-                    "connector": "및"
-                  },
-                  {
-                    "id": "c-auto-114-n4",
-                    "kind": "text",
-                    "text": "은 제외합니다."
+                    ]
                   }
                 ],
                 "code": "P0100"
@@ -12846,7 +13339,19 @@
         ]
       }
     ],
-    "options": []
+    "options": [],
+    "params": [
+      {
+        "name": "준용예외",
+        "type": {
+          "kind": "list<ref>"
+        },
+        "default": {
+          "kind": "discriminator",
+          "code": "D0018"
+        }
+      }
+    ]
   },
   {
     "code": "C0115",
@@ -21643,33 +22148,57 @@
                   {
                     "id": "c-auto-184-n2",
                     "kind": "text",
-                    "text": "을 따릅니다. 다만, "
+                    "text": "을 따릅니다."
                   },
                   {
-                    "id": "c-auto-184-n3",
-                    "kind": "articleRef",
-                    "targets": [
+                    "id": "c-auto-184-n3-if",
+                    "kind": "inlineCond",
+                    "branches": [
                       {
-                        "articleId": "g-a9"
-                      },
-                      {
-                        "articleId": "g-a10"
-                      },
-                      {
-                        "articleId": "g-a38"
+                        "id": "c-auto-184-n3-if-b",
+                        "when": "count(arg.준용예외) > 0",
+                        "children": [
+                          {
+                            "id": "c-auto-184-n3-if-t",
+                            "kind": "text",
+                            "text": " 다만, "
+                          },
+                          {
+                            "id": "c-auto-184-n3-each",
+                            "kind": "inlineFor",
+                            "source": {
+                              "kind": "refList",
+                              "ref": "arg.준용예외"
+                            },
+                            "alias": "준용예외마다",
+                            "connector": "및",
+                            "children": [
+                              {
+                                "id": "c-auto-184-n3",
+                                "kind": "articleRef",
+                                "targets": [
+                                  {
+                                    "restrict": {
+                                      "current": "c-auto-184-n3-each"
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "id": "c-auto-184-n4",
+                            "kind": "text",
+                            "text": "은 "
+                          },
+                          {
+                            "id": "c-auto-184-n5",
+                            "kind": "optionSlot",
+                            "optionCode": "O01"
+                          }
+                        ]
                       }
-                    ],
-                    "connector": "및"
-                  },
-                  {
-                    "id": "c-auto-184-n4",
-                    "kind": "text",
-                    "text": "은 "
-                  },
-                  {
-                    "id": "c-auto-184-n5",
-                    "kind": "optionSlot",
-                    "optionCode": "O01"
+                    ]
                   }
                 ],
                 "code": "P0100"
@@ -21710,6 +22239,18 @@
             ]
           }
         ]
+      }
+    ],
+    "params": [
+      {
+        "name": "준용예외",
+        "type": {
+          "kind": "list<ref>"
+        },
+        "default": {
+          "kind": "discriminator",
+          "code": "D0014"
+        }
       }
     ]
   },

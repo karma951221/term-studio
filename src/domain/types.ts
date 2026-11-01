@@ -336,6 +336,8 @@ export interface JudgmentImpact {
   brokenRefs: { articleId: Id; label: string; message: string }[];
   /** 특약 조 판정이 바뀌는 조 (ADR-0093 결정 6) — 상품담보 탭 저장 · 보통약관 탭 저장(생략 기준이 바뀔 때) 모두. 줄 이름은 「상품담보명 › 조 명」. 비지 않을 때만. */
   specials?: { productCoverageId: Id; articleId: Id; label: string; before: string; after: string }[];
+  /** 준용예외가 바뀌는 특약 · 블록 (ADR-0098 결정 7) — 「상품 · 특약 — 준용예외에 제N조 추가 / 빠짐」. 비지 않을 때만. */
+  exclusions?: { productCoverageId: Id; label: string; added: { articleId: Id; label: string }[]; removed: { articleId: Id; label: string }[] }[];
 }
 
 /** 여러 삭제 대상의 영향을 확인 한 번으로 — 저장 한 번에 값 행 여럿을 뺄 때 (점검 2026-09-27 D2). */

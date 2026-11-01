@@ -6,4 +6,6 @@ export interface CatalogEditData extends Record<string, unknown> {
   resultTypeKind: string;
   resultTypeMulti: boolean;
   resultTypeEnum: string;
+  /** 준용예외 구분자의 후보 조 (결과 타입 「조 참조 목록」만 — ADR-0098 결정 1). 다른 구분자는 빈 목록. */
+  candidates?: string[];
 }

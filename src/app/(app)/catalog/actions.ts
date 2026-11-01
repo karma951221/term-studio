@@ -33,6 +33,8 @@ export async function createDiscriminatorAction(formData: FormData): Promise<voi
     expression: str(formData, "expression"),
     description: str(formData, "description"),
     resultType: resultType as DiscriminatorResultType,
+    // 준용예외 구분자의 후보 조 (ADR-0098 결정 1) — 다른 결과 타입이면 싣지 않는다(서비스가 후보를 거부한다)
+    ...(resultType?.kind === "list<ref>" ? { candidates: formData.getAll("candidates").map(String).filter(Boolean) } : {}),
   });
   if (!r.ok) redirect(errorRedirectPath(`${BASE}/new`, msg(r.rejection)));
   redirect(detailPath(r.value.code));
