@@ -365,6 +365,14 @@ class Walker {
       ...(this.env.master ? { master: this.env.master } : {}),
       ...(this.ctx.rows ? { rows: this.ctx.rows } : {}),
       explain: (reason, where) => this.ctx.explainUndetermined(reason, where),
+      // 조 참조 목록(준용예외) — 원천 식(인자 연결이 바꿔 쓴 구분자 코드)을 그 자리 문맥에서 평가한 조 목록 (ADR-0098 결정 2)
+      refList: (ref) => {
+        const r = this.evalRaw(ref, { ...at, refPath: ref }, this.evalOf(f));
+        if (r.kind === "error") return { ok: false, issue: r.issue };
+        return Array.isArray(r.value) && r.value.every((x) => typeof x === "string")
+          ? { ok: true, value: r.value as string[] }
+          : { ok: false, issue: { kind: "typeMismatch", message: `문장 안 반복의 원천 ${ref} 이(가) 조 참조 목록이 아닙니다`, at: { ...at, refPath: ref } } };
+      },
     }, at);
   }
 
@@ -439,9 +447,16 @@ class Walker {
   refTargets(n: { targets: readonly { articleId?: Id; code?: Code; innerCode?: Code; restrict?: unknown }[] }, f: Frame, at: Coordinate, map: (t: { articleId?: Id; code?: Code }) => { articleId: Id; code?: Code }): { ok: true; targets: RArticleRef["targets"] } | { ok: false; issue: Issue } {
     const out: RArticleRef["targets"] = [];
     for (const t of n.targets) {
+      const r = t.restrict as { values?: unknown; current?: unknown; keys?: unknown } | undefined;
+      // 조 참조 목록 반복의 현재 원소 — 대상 조 없이 「현재」만: 그 원소(템플릿 조) 자체를 가리킨다 (ADR-0098 결정 2)
+      if (t.articleId === undefined && typeof r?.current === "string") {
+        const e = f.loops?.[r.current];
+        if (e?.kind !== "article") return { ok: false, issue: { kind: "structure", message: `조 참조의 「현재」 반복 ${r.current} 이(가) 이 참조를 감싸지 않습니다 — 조 참조 목록 반복 안에서만 쓴다`, at } };
+        out.push({ articleId: e.articleId });
+        continue;
+      }
       const base = map(t);
       const target: RArticleRef["targets"][number] = { ...base, ...(t.innerCode !== undefined ? { innerCode: t.innerCode } : {}) };
-      const r = t.restrict as { values?: unknown; current?: unknown; keys?: unknown } | undefined;
       if (r !== undefined) {
         if (Array.isArray(r.values)) target.values = r.values.filter((v): v is string => typeof v === "string");
         else if (Array.isArray(r.keys)) target.keys = r.keys.filter((v): v is string => typeof v === "string");

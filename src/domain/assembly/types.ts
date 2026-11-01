@@ -29,6 +29,7 @@ import type { Discriminator, EnumDef, SlotPath } from "../catalog/types";
 import type { Clause, OptionSelection } from "../clause/types";
 import type { Binding } from "../clause/params";
 import type { RepeatSource } from "../document/blockRepeat";
+import type { ExclusionJudgment } from "./exclusion";
 import type { DynBenefit } from "../dyntable/types";
 import type { Appendix } from "../document/appendix";
 import type { Box } from "../document/box";
@@ -757,6 +758,8 @@ export interface Booklet {
   trace: ContextTrace[];
   /** 절 형태의 제1절 판정 기록 — 판정 대상 템플릿 조마다(템플릿 조 순). 저장하지 않는 계산값이다(ADR-0082 결정 11). 대치 형태 · 옛 산출본엔 없다. */
   firstSection?: FirstSectionRecord[];
+  /** 준용예외 판정 기록 — 특약 · 블록 × 준용예외 구분자마다 (ADR-0098 결정 7). 준용예외 구분자가 없거나 옛 산출본엔 없다. */
+  exclusions?: ExclusionRecord[];
   /**
    * 막힌 분기 — 조건 평가 오류로 어느 가지도 고르지 못한 분기, 책자 등장 순 (ADR-0092 결정 6 · 기능/조립산출 §3.7).
    * 조립 검사 한 줄의 「평가 대기 c」와 그 목록의 재료다. 옛 산출본엔 없다(없으면 고정 문구) — 새 조립은 없어도 빈 목록을 싣는다.
@@ -799,6 +802,21 @@ export interface FirstSectionRecord {
   substitutions: { productCoverageId: Id; refId: Id; from: Id; to: Id }[];
 }
 
+/**
+ * 준용예외 판정 기록 한 줄 (ADR-0098 결정 7) — 특약 · 블록 하나의 준용예외 구분자 값과 조마다의 근거(넣음 / 안 넣음 · 갈래 · 사유).
+ * 출처 패널 · 판정 변화 영향 카드(저장 전후 `value` 견주기)의 재료. 저장하지 않는 계산값이다.
+ */
+export interface ExclusionRecord {
+  productCoverageId: Id;
+  name: string;
+  /** 준용예외 구분자 코드. */
+  code: Code;
+  context: "special" | "block";
+  /** 값 — 넣는 템플릿 조 id(이 상품 보통약관 조 순). */
+  value: Id[];
+  judgments: ExclusionJudgment[];
+}
+
 /** 상품담보 미리보기 — 담보약관 하나를 특정 상품담보 문맥으로 조립한 결과 (기능/상품 §4 「상품담보 값」). */
 export interface SpecialPreview {
   doc: RenderedDoc;
@@ -817,4 +835,6 @@ export interface SpecialPreview {
   block?: true;
   /** 절 형태: 상품 전체의 제1절 판정 기록(`Booklet.firstSection`) — 블록 조 생략 · 분리 자리의 재료. */
   firstSection?: FirstSectionRecord[];
+  /** 이 상품담보의 준용예외 판정 기록 (`Booklet.exclusions` 와 같은 뜻). */
+  exclusions?: ExclusionRecord[];
 }

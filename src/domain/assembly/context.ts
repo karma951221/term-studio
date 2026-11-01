@@ -56,6 +56,11 @@ export interface AssemblyContext {
   plans?: { options: readonly AssemblyPlanOption[]; context(optionId: Id): EvalContext | undefined };
   /** 설명 모드의 읽기 받이 — 있으면 조립이 조건식 하나를 평가하는 동안 켜서 그 평가의 읽기를 모은다 (ADR-0092 결정 3). */
   tap?: ReadTap;
+  /**
+   * 준용예외 구분자(결과 타입 「조 참조 목록」)의 값 — 구분자 코드 → 판정한 템플릿 조 id (ADR-0098 결정 1).
+   * 특약 · 블록 문맥에만 있고, 조립이 그 문서를 해소하기 **전에** 판정해 채운다(`booklet.ts`). 채우지 않은 구분자는 값 없음.
+   */
+  refLists?: Map<Code, readonly Id[]>;
 }
 
 /**
@@ -130,6 +135,8 @@ interface Env {
   sectioned?: true;
   /** 설명 모드의 읽기 받이 (ADR-0092). */
   tap?: ReadTap;
+  /** 준용예외 구분자의 값 (`AssemblyContext.refLists` 와 같은 표). */
+  refLists: Map<Code, readonly Id[]>;
 }
 
 const EMPTY_SLOTS: ReadonlyMap<SlotPath, ValueSlot> = new Map();
@@ -194,6 +201,12 @@ function discriminatorValue(env: Env, node: CoverageNode | undefined, plan: Plan
   const def = env.catalog.get(ref.code);
   if (!def) return BROKEN; // 없는 구분자 — 고칠 자리는 문면의 참조다 (편집기로 갈 구분자가 없다)
   if (env.evaluating.has(def.code)) return brokenDefinition(def); // 순환 — 정의 저장이 거부하지만(기능/구분자 §3.2) 평가도 스스로 멈춘다
+  // 준용예외 구분자 — 식이 없다. 값은 조립이 특약 · 블록 문맥마다 판정한 조 목록이고, 보통약관 · 대치 · 다른 구분자의 식 안에서는 값이 없다 (ADR-0098 결정 1 · 5)
+  if (def.resultType?.kind === "list<ref>") {
+    if (env.output !== "special" && env.output !== "block") return MISSING;
+    const value = env.refLists.get(def.code);
+    return value === undefined ? MISSING : slotOf([...value]);
+  }
   const parsed = parse(def.expression);
   if (!parsed.ok) return brokenDefinition(def);
   // 구분자 파생식은 문면 문맥을 모른다 — 작성위치 없음 (기능/식언어 §3)
@@ -488,6 +501,7 @@ function envOf(input: AssemblyInput, catalog: ReadonlyMap<Code, Discriminator>, 
     trace,
     evaluating: new Set(),
     output: outputOf(input, form, c),
+    refLists: new Map(),
   };
 }
 
@@ -517,6 +531,7 @@ function contextOf(env: Env, coordinate: Coordinate, repeatable = false): Assemb
     },
     explainUndetermined: (reason, at) => explain(env, reason, at),
     trace: env.trace,
+    refLists: env.refLists,
     ...(env.tap ? { tap: env.tap } : {}),
     ...(repeatable && env.tree ? { rows: rowSourceOf(env, env.tree, coordinate) } : {}),
   };
