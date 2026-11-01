@@ -1,34 +1,40 @@
+// @vitest-environment jsdom
 /**
  * 기본정보 저장 확인 모달 (2026-10-01) — 화면 위쪽 모달 · 서비스가 준 줄을 그대로 · 취소 / 바꾸고 저장.
+ * Radix Dialog 는 포털이라 서버 렌더에 안 나온다 — jsdom 에서 role 로 본다.
  */
-import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SaveConfirmDialog } from "./SaveConfirmDialog";
 
 describe("SaveConfirmDialog", () => {
-  const render = (impact: Parameters<typeof SaveConfirmDialog>[0]["impact"]) =>
-    renderToStaticMarkup(<SaveConfirmDialog impact={impact} onCancel={() => {}} onConfirm={() => {}} />);
+  afterEach(cleanup);
+  const open = (impact: Parameters<typeof SaveConfirmDialog>[0]["impact"], handlers: { onCancel?: () => void; onConfirm?: () => void } = {}) => {
+    render(<SaveConfirmDialog impact={impact} onCancel={handlers.onCancel ?? (() => {})} onConfirm={handlers.onConfirm ?? (() => {})} />);
+    return screen.getByRole("dialog").innerHTML;
+  };
 
   it("화면 위쪽 모달 — 제목 · 영향 줄 · 취소 / 바꾸고 저장(위험)", () => {
-    const html = render({ valueRowsLost: 2, brokenRefs: [], cascade: ["보험종목 삭제 · 제2종(형)", "기본계약 해제 · 일반상해사망 — 상품담보는 특별약관 표에 남습니다"] });
-    expect(html).toContain('class="ts-dialog ts-dialog-top"');
+    const html = open({ valueRowsLost: 2, brokenRefs: [], cascade: ["보험종목 삭제 · 제2종(형)", "기본계약 해제 · 일반상해사망 — 상품담보는 특별약관 표에 남습니다"] });
+    expect(screen.getByRole("dialog", { name: "저장하면 아래 내용이 함께 바뀝니다" })).toBeTruthy();
     expect(html).toContain("저장하면 아래 내용이 함께 바뀝니다");
     expect(html).toContain("<li>입력한 값 2건이 함께 삭제됩니다</li>");
     expect(html).toContain("<li>보험종목 삭제 · 제2종(형)</li>");
     expect(html).toContain("<li>기본계약 해제 · 일반상해사망 — 상품담보는 특별약관 표에 남습니다</li>");
-    expect(html).toMatch(/<button type="button"[^>]*>취소<\/button>/);
-    expect(html).toMatch(/<button type="button" class="danger"[^>]*>바꾸고 저장<\/button>/);
+    expect(screen.getByRole("button", { name: "취소" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "바꾸고 저장" }).getAttribute("data-slot")).toBe("button");
   });
 
   it("잃는 값이 없으면 값 줄은 없다 — 기본계약 해제만", () => {
-    const html = render({ valueRowsLost: 0, brokenRefs: [], cascade: ["기본계약 해제 · 일반상해사망 — 상품담보는 특별약관 표에 남습니다"] });
+    const html = open({ valueRowsLost: 0, brokenRefs: [], cascade: ["기본계약 해제 · 일반상해사망 — 상품담보는 특별약관 표에 남습니다"] });
     expect(html).not.toContain("입력한 값");
     expect(html.match(/<li>/g)).toHaveLength(1);
   });
 
   it("판정 변화 (ADR-0082 결정 11) — 판정이 바뀌는 조(전 → 후) · 회색이 되는 사본 · 다시 쓰이는 사본 · 깨지는 참조 묶음", () => {
-    const html = render({
+    const html = open({
       valueRowsLost: 0,
       brokenRefs: [],
       cascade: [],
@@ -48,7 +54,7 @@ describe("SaveConfirmDialog", () => {
     expect(html).toContain("<li>제25조(계약의 소멸) — 블록 「갑」이 이 상품의 블록이 아닙니다</li>");
   });
   it("특약 조 판정이 바뀌는 조 묶음", () => {
-    const html = render({
+    const html = open({
       valueRowsLost: 0,
       brokenRefs: [],
       cascade: [],
@@ -57,5 +63,16 @@ describe("SaveConfirmDialog", () => {
     expect(html).toContain("특약 조 판정이 바뀌는 조");
     expect(html).toContain("<li>암진단 › 제1조(보험금의 지급사유) — 통째 → 생략</li>");
     expect(html).not.toContain(">판정이 바뀌는 조</span>");
+  });
+
+  it("취소 · Esc 는 onCancel, 「바꾸고 저장」은 onConfirm", async () => {
+    const onCancel = vi.fn();
+    const onConfirm = vi.fn();
+    open({ valueRowsLost: 1, brokenRefs: [], cascade: [] }, { onCancel, onConfirm });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "바꾸고 저장" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    await user.keyboard("{Escape}");
+    expect(onCancel).toHaveBeenCalledTimes(1);
   });
 });

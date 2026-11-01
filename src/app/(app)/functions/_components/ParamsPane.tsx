@@ -20,6 +20,8 @@ import type { ParamDef } from "@/domain/clause";
 import type { CtxDiscriminator } from "@/app/(app)/documents/[id]/_components/condition/types";
 
 import { ARTICLE_REF_PARAM_NOTE, bindingLabel, bindingOfValue, bindingOptions, bindingValue, newParamNameError, SCALAR_TYPES, typeLabel, typeOfValue, typeValue, type EnumChoice, type PlanFormChoice } from "./params";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const NOTE = "본문이 읽는 입력 — 조건 · 슬롯은 구분자 대신 인자를 고른다. 넣는 자리에서 인자마다 구분자 · 상수를 댄다(기본 연결은 저절로).";
 
@@ -41,7 +43,7 @@ function withBinding(p: ParamDef, value: string): ParamDef {
 
 function TypeSelect({ label, param, onChange, enums, forms }: { label: string; param: ParamDef; onChange: (next: ParamDef) => void } & Pick<Choices, "enums" | "forms">) {
   return (
-    <select aria-label={label} value={typeValue(param.type)} onChange={(e) => onChange(withType(param, e.target.value))}>
+    <NativeSelect aria-label={label} value={typeValue(param.type)} onChange={(e) => onChange(withType(param, e.target.value))}>
       {SCALAR_TYPES.map((t) => (
         <option key={t.value} value={t.value}>
           {t.label}
@@ -63,27 +65,27 @@ function TypeSelect({ label, param, onChange, enums, forms }: { label: string; p
         </option>
       ))}
       <option value="articleRef">조 참조</option>
-    </select>
+    </NativeSelect>
   );
 }
 
 function BindingSelect({ label, param, onChange, discriminators, enums, forms }: { label: string; param: ParamDef; onChange: (next: ParamDef) => void } & Choices) {
   if (param.type.kind === "articleRef") {
     return (
-      <select aria-label={label} value="" disabled title={ARTICLE_REF_PARAM_NOTE}>
+      <NativeSelect aria-label={label} value="" disabled title={ARTICLE_REF_PARAM_NOTE}>
         <option value="">없음 — {ARTICLE_REF_PARAM_NOTE}</option>
-      </select>
+      </NativeSelect>
     );
   }
   return (
-    <select aria-label={label} value={bindingValue(param.default)} onChange={(e) => onChange(withBinding(param, e.target.value))}>
+    <NativeSelect aria-label={label} value={bindingValue(param.default)} onChange={(e) => onChange(withBinding(param, e.target.value))}>
       <option value="">없음 — 넣는 자리에서 연결</option>
       {bindingOptions(param.type, discriminators, enums, forms, false).map((o) => (
         <option key={o.value} value={o.value}>
           {o.label}
         </option>
       ))}
-    </select>
+    </NativeSelect>
   );
 }
 
@@ -131,7 +133,7 @@ export function ParamsPane({
       {editing ? (
         <div className="ts-param-add">
           <div className="ts-param-grid">
-            <input
+            <Input
               ref={nameRef}
               className="ts-field-direct"
               aria-label="새 인자 이름"
@@ -171,7 +173,7 @@ export function ParamsPane({
                 {editing ? (
                   <>
                     <IconButton icon={<IconMinusCircle />} danger label={`인자 삭제 · ${p.name || `인자 ${n}`}`} onClick={() => onChange(params.filter((_x, idx) => idx !== i))} />
-                    <input className="ts-field-direct" aria-label={`인자 ${n} 이름`} placeholder="예: 갱신형" value={p.name} onChange={(e) => patch(i, { ...p, name: e.target.value })} />
+                    <Input className="ts-field-direct" aria-label={`인자 ${n} 이름`} placeholder="예: 갱신형" value={p.name} onChange={(e) => patch(i, { ...p, name: e.target.value })} />
                     <TypeSelect label={`인자 ${n} 타입`} param={p} onChange={(next) => patch(i, next)} enums={enums} forms={forms} />
                     <BindingSelect label={`인자 ${n} 기본 연결`} param={p} onChange={(next) => patch(i, next)} {...choices} />
                   </>

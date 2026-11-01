@@ -28,6 +28,8 @@ import { PAY_RATE_PATH } from "@/domain/master";
 import { StructForm, type FormModel, type Submission } from "@/forms";
 
 import { formKeyOf, formSessionReducer, initFormSession } from "./value-drafts";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const MIN_STRUCTURE = "최소 구조 — 세부보장 1개 · 급부 1개는 있어야 한다";
 
@@ -94,7 +96,7 @@ export function Card({ editing, level, nodeKey, treeKey, name, fallbackName, onN
             </span>
             <div className="ts-form-control">
               {editing ? (
-                <input value={name} onChange={(e) => onName(e.target.value)} className="ts-field-direct ts-cov-card-input" aria-label={ariaName} aria-invalid={issue ? true : undefined} />
+                <Input value={name} onChange={(e) => onName(e.target.value)} className="ts-field-direct ts-cov-card-input" aria-label={ariaName} aria-invalid={issue ? true : undefined} />
               ) : (
                 <span className="ts-cov-card-name">{name}</span>
               )}
@@ -115,7 +117,7 @@ export function Card({ editing, level, nodeKey, treeKey, name, fallbackName, onN
         ) : null}
         <span className="ts-cov-card-level">{treeKey ? `${what} ${treeKey}` : what}</span>
         {editing ? (
-          <input
+          <Input
             value={name}
             onChange={(e) => onName(e.target.value)}
             className="ts-field-direct ts-cov-card-input"
@@ -181,7 +183,7 @@ function CategoryRow({ editing, value, options, onChange }: { editing: boolean; 
         </span>
         <div className="ts-form-control">
           {editing ? (
-            <select id={id} className="ts-field-direct" aria-label="담보분류" value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={value === "" || missing ? true : undefined}>
+            <NativeSelect id={id} className="ts-field-direct" aria-label="담보분류" value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={value === "" || missing ? true : undefined}>
               {value === "" && <option value="">— 고르세요 —</option>}
               {missing && <option value={value}>{label}</option>}
               {options.map((o) => (
@@ -189,7 +191,7 @@ function CategoryRow({ editing, value, options, onChange }: { editing: boolean; 
                   {o.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           ) : (
             <span id={id}>{label ?? <span className="ts-muted">—</span>}</span>
           )}

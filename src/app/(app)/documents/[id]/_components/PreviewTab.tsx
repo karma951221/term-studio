@@ -23,6 +23,7 @@ import type { Id } from "@/domain/types";
 import type { PreviewProduct } from "@/services/assembly";
 
 import { previewKeyOf as keyOf, type PreviewSelection } from "./previewSelection";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export interface PreviewTabProps {
   docKind: "special" | "general";
@@ -149,13 +150,13 @@ export function PreviewTab({ docKind, selection, tree, articleId, editing, openN
     <div className="ts-preview-tab">
       <div className="ts-form-row">
         <label htmlFor="ts-preview-product">상품</label>
-        <select id="ts-preview-product" value={selected ? keyOf(selected) : ""} onChange={(e) => selection.pick(e.target.value)}>
+        <NativeSelect id="ts-preview-product" value={selected ? keyOf(selected) : ""} onChange={(e) => selection.pick(e.target.value)}>
           {products.map((p) => (
             <option key={keyOf(p)} value={keyOf(p)}>
               {labelOf(p, products)}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       <p className="ts-muted">{editing ? "편집본" : "저장본"}을 이 상품의 조립 문맥으로 — 조립 결과와 같은 본문 · 번호.</p>
       {!articleId ? (

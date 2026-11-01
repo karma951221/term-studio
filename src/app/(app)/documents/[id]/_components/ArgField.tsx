@@ -7,6 +7,8 @@ import type { ReactNode } from "react";
 
 import { bindingOfValue, bindingValue, constBindingOfText, constInputOf, constTextOf } from "@/app/(app)/functions/_components/params";
 import type { Binding, ParamDef } from "@/domain/clause";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export type BindingChoice = { value: string; label: string; group: string };
 
@@ -36,7 +38,7 @@ export function ScalarArgField({ param, seed, defaultLabel, options, stale }: { 
   return (
     <div className="ts-form-row">
       <label htmlFor={`pop-arg-${param.name}`}>인자 {param.name}</label>
-      <select id={`pop-arg-${param.name}`} name={`arg:${param.name}`} defaultValue={constText !== "" ? "" : bindingValue(seed)}>
+      <NativeSelect id={`pop-arg-${param.name}`} name={`arg:${param.name}`} defaultValue={constText !== "" ? "" : bindingValue(seed)}>
         <option value="">{defaultLabel}</option>
         {stale && (
           <option value={stale.value} disabled>
@@ -44,10 +46,10 @@ export function ScalarArgField({ param, seed, defaultLabel, options, stale }: { 
           </option>
         )}
         {groupedOptions(options)}
-      </select>
+      </NativeSelect>
       {stale && <input type="hidden" name={`argkeep:${param.name}`} value={stale.value} />}
       {direct && (
-        <input
+        <Input
           className="ts-arg-const"
           name={`argc:${param.name}`}
           aria-label={`인자 ${param.name} 상수 직접 입력`}

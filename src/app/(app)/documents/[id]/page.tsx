@@ -22,6 +22,8 @@ import { duplicateGeneralAction, duplicateSpecialAction, removeDocumentAction } 
 import { docListHref } from "../lib";
 import { buildConditionContext } from "./_components/condition/conditionContext";
 import { DocumentEditor } from "./_components/DocumentEditor";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const dynamic = "force-dynamic";
 
@@ -119,12 +121,12 @@ export default async function DocumentDetailPage({ params, searchParams }: { par
           <form action={duplicateGeneralAction.bind(null, id)}>
             <div className="ts-form-row">
               <label htmlFor="dup-title">새 이름</label>
-              <input id="dup-title" type="text" name="title" defaultValue={`${doc.title} (사본)`} required />
+              <Input id="dup-title" type="text" name="title" defaultValue={`${doc.title} (사본)`} required />
             </div>
             <div className="ts-confirm-actions">
-              <button type="submit" className="primary">
+              <Button variant="primary" type="submit" >
                 복제
-              </button>
+              </Button>
               <a href={`/documents/${id}`}>취소</a>
             </div>
           </form>
@@ -143,12 +145,12 @@ export default async function DocumentDetailPage({ params, searchParams }: { par
             </div>
             <div className="ts-form-row">
               <label htmlFor="dup-title">이름</label>
-              <input id="dup-title" type="text" name="title" defaultValue={`${doc.title} (사본)`} required />
+              <Input id="dup-title" type="text" name="title" defaultValue={`${doc.title} (사본)`} required />
             </div>
             <div className="ts-confirm-actions">
-              <button type="submit" className="primary">
+              <Button variant="primary" type="submit" >
                 복제
-              </button>
+              </Button>
               <a href={`/documents/${id}`}>취소</a>
             </div>
           </form>

@@ -47,6 +47,7 @@ import { EditableText, InlineSlot } from "./Inline";
 import type { MenuItem } from "./menus";
 import { CaseControls, caseValueLabel } from "./SwitchControls";
 import { unassignedValues, type SwitchSubject } from "./switchCases";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const flash = (ctx: DocCtx, id: Id) => `${ctx.flashId === id ? " is-flash" : ""}${ctx.edit?.blockSel?.includes(id) ? " is-block-sel" : ""}`;
 
@@ -430,14 +431,14 @@ function SwitchHead({ node, ctx, subject }: { node: Node & { kind: "condBlock" }
     <div className={`ts-doc-cond-head ts-switch-on${edit ? " is-edit" : ""}`}>
       <span className="ts-cond-badge">{SWITCH_WORD.switch}</span>{" "}
       {edit ? (
-        <select aria-label="값별 분기 대상" value={node.switchOn} onChange={(e) => onSubject(e.target.value)}>
+        <NativeSelect aria-label="값별 분기 대상" value={node.switchOn} onChange={(e) => onSubject(e.target.value)}>
           {!subject && <option value={node.switchOn}>{node.switchOn} (없는 대상)</option>}
           {subjects.map((s) => (
             <option key={s.code} value={s.code}>
               {s.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       ) : (
         <span>{subject?.label ?? node.switchOn}</span>
       )}{" "}

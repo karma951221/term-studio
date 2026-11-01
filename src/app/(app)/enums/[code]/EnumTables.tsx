@@ -8,6 +8,8 @@ import { FIELD_LABEL, TYPE_LABEL } from "@/app/_lib/labels";
 import { ENUM_FIELD_TYPES, enumValueLabelKey, type EnumFieldType, type EnumFieldValue } from "@/domain/catalog";
 
 import type { EnumEditField, EnumEditValue } from "../edit-types";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const isNew = (key: string) => key.startsWith("new:");
 
@@ -94,10 +96,10 @@ export function FieldsEditor() {
       onMove={(from, to) => fields.update((current) => moveItem(current ?? [], from, to))}
       columns={[
         { key: "label", header: FIELD_LABEL.fieldName, className: "col-flex", cell: (field, index) => edit
-          ? <input value={field.label} aria-label={`${FIELD_LABEL.fieldName} ${field.label}`} onChange={(event) => change(field.key, { label: event.target.value })} className="ts-field-direct" placeholder={index === 0 ? "예: 약관표시명" : undefined} />
+          ? <Input value={field.label} aria-label={`${FIELD_LABEL.fieldName} ${field.label}`} onChange={(event) => change(field.key, { label: event.target.value })} className="ts-field-direct" placeholder={index === 0 ? "예: 약관표시명" : undefined} />
           : field.label },
         { key: "type", header: FIELD_LABEL.valueType, className: "col-fixed-md", cell: (field) => edit
-          ? <select value={field.type} aria-label={`${field.label || NEW_FIELD} ${FIELD_LABEL.valueType}`} onChange={(event) => retype(field.key, event.target.value as EnumFieldType)} className="ts-field-direct">{ENUM_FIELD_TYPES.map((type) => <option key={type} value={type}>{TYPE_LABEL[type]}</option>)}</select>
+          ? <NativeSelect value={field.type} aria-label={`${field.label || NEW_FIELD} ${FIELD_LABEL.valueType}`} onChange={(event) => retype(field.key, event.target.value as EnumFieldType)} className="ts-field-direct">{ENUM_FIELD_TYPES.map((type) => <option key={type} value={type}>{TYPE_LABEL[type]}</option>)}</NativeSelect>
           : TYPE_LABEL[field.type] },
       ]}
     />}
@@ -109,11 +111,11 @@ function FieldCell({ value, field, onChange, disabled }: { value: EnumEditValue;
   const current = value.fields?.[field.key];
   const label = `${value.label || NEW_VALUE} ${field.label}`;
   if (field.type === "boolean") {
-    return <select value={current === undefined ? "" : String(current)} aria-label={label} disabled={disabled} onChange={(event) => onChange(event.target.value === "" ? undefined : event.target.value === "true")} className="ts-field-direct">
+    return <NativeSelect value={current === undefined ? "" : String(current)} aria-label={label} disabled={disabled} onChange={(event) => onChange(event.target.value === "" ? undefined : event.target.value === "true")} className="ts-field-direct">
       <option value="">미입력</option><option value="true">예</option><option value="false">아니오</option>
-    </select>;
+    </NativeSelect>;
   }
-  return <input value={typeof current === "string" ? current : ""} aria-label={label} disabled={disabled} onChange={(event) => onChange(event.target.value)} className="ts-field-direct" />;
+  return <Input value={typeof current === "string" ? current : ""} aria-label={label} disabled={disabled} onChange={(event) => onChange(event.target.value)} className="ts-field-direct" />;
 }
 
 /**
@@ -149,7 +151,7 @@ export function ValuesEditor({ highlight }: { highlight?: string } = {}) {
   const columns: ValueRowsColumn<EnumEditValue>[] = [
     { key: "label", header: FIELD_LABEL.valueName, className: "col-flex", cell: (value, index) => !edit
       ? value.label
-      : <><input value={value.label} aria-invalid={duplicates.has(value.code) || undefined} aria-label={`${FIELD_LABEL.valueName}${isNew(value.code) ? "" : ` ${value.code}`}`} ref={(el) => { if (el) inputs.current.set(value.code, el); else inputs.current.delete(value.code); }} onChange={(event) => field.update((current) => current.map((item) => item.code === value.code ? { ...item, label: event.target.value } : item))} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); if (index === field.value.length - 1) add(); else inputs.current.get(field.value[index + 1]!.code)?.focus(); }} className="ts-field-direct" placeholder={index === 0 ? "예: 일반심사" : undefined} />
+      : <><Input value={value.label} aria-invalid={duplicates.has(value.code) || undefined} aria-label={`${FIELD_LABEL.valueName}${isNew(value.code) ? "" : ` ${value.code}`}`} ref={(el) => { if (el) inputs.current.set(value.code, el); else inputs.current.delete(value.code); }} onChange={(event) => field.update((current) => current.map((item) => item.code === value.code ? { ...item, label: event.target.value } : item))} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); if (index === field.value.length - 1) add(); else inputs.current.get(field.value[index + 1]!.code)?.focus(); }} className="ts-field-direct" placeholder={index === 0 ? "예: 일반심사" : undefined} />
         {duplicates.has(value.code) ? <p className="ts-form-error">중복된 값입니다.</p> : null}</> },
     // 필드 열은 머리 위 「필드」 묶음 아래에 선다 — 필드 섹션에서 정의한 것이 이 열들이다. 문자열은 넓게, 참거짓은 좁게.
     ...fieldDefs.map((def, index): ValueRowsColumn<EnumEditValue> => ({ key: `f:${def.key}`, header: def.label || NEW_FIELD, group: FIELD_LABEL.field, className: ["ts-enum-fcol", def.type === "boolean" ? "ts-enum-fcol-bool" : "ts-enum-fcol-text", index === 0 ? "is-first" : null].filter(Boolean).join(" "), cell: (value) => edit ? <FieldCell value={value} field={def} disabled={field.pending} onChange={(cell) => setCell(value.code, def.key, cell)} /> : cellText(value.fields?.[def.key]) })),

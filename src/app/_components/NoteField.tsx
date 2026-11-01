@@ -14,6 +14,7 @@ import { useState } from "react";
 import { FIELD_LABEL } from "@/app/_lib/labels";
 import { FormRow } from "./FormRow";
 import { IconButton, IconNote } from "./icons";
+import { Textarea } from "@/components/ui/textarea";
 
 export function NoteField({
   id,
@@ -41,7 +42,7 @@ export function NoteField({
   }
   return (
     <FormRow label={label} htmlFor={id}>
-      <textarea id={id} name={name} rows={2} autoFocus defaultValue={defaultValue} placeholder={placeholder} />
+      <Textarea id={id} name={name} rows={2} autoFocus defaultValue={defaultValue} placeholder={placeholder} />
     </FormRow>
   );
 }

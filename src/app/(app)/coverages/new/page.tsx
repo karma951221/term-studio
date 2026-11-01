@@ -7,6 +7,7 @@ import { getServices } from "@/lib/services";
 
 import { createCoverageAction } from "../actions";
 import { NameFollow } from "./NameFollow";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function NewCoveragePage({ searchParams }: { searchParams: 
       <form id={FORM_ID} action={createCoverageAction} className="ts-create-form">
         <NameFollow />
         <FormRow label="담보분류" htmlFor="cov-category">
-          <select id="cov-category" name="category" required defaultValue="" className="ts-field-direct" title="기본 특약 그룹 — 상품에서 다른 그룹에 넣을 수 있다">
+          <NativeSelect id="cov-category" name="category" required defaultValue="" className="ts-field-direct" title="기본 특약 그룹 — 상품에서 다른 그룹에 넣을 수 있다">
             <option value="" disabled>
               — 고르세요 —
             </option>
@@ -31,7 +32,7 @@ export default async function NewCoveragePage({ searchParams }: { searchParams: 
                 {v.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </FormRow>
         <NoteField id="cov-desc" />
         <p className="ts-muted">세부보장 1 · 급부 1 이 함께 생성됩니다 (최소 구조).</p>

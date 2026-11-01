@@ -22,6 +22,8 @@ import { clauseSideTabsFor, type ClauseSideTab } from "@/app/(app)/documents/[id
 import type { EditTabSlot } from "@/app/(app)/documents/[id]/_components/SidePanel";
 
 import type { ClauseEditOption, ClauseEditValue } from "../edit-types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const TAB_LABEL: Record<ClauseSideTab, string> = { edit: "편집", define: "인자 · 옵션", trial: "시험" };
 
@@ -107,14 +109,14 @@ export function OptionsPane({
       {trial ? (
         <div className="ts-basic-tabs ts-clause-side-tabs" role="tablist" aria-label="오른쪽 단">
           {keys.map((key) => (
-            <button key={key} type="button" role="tab" id={`clause-side-${key}`} aria-selected={side === key} aria-controls={key === "edit" ? "ts-side-panel-edit" : `clause-side-panel-${key}`} onClick={() => setSide(key)}>
+            <Button key={key} type="button" role="tab" id={`clause-side-${key}`} aria-selected={side === key} aria-controls={key === "edit" ? "ts-side-panel-edit" : `clause-side-panel-${key}`} onClick={() => setSide(key)}>
               {TAB_LABEL[key]}
               {key === "edit" && edit?.dirty && (
                 <span className="ts-side-tab-dot" role="img" aria-label="적용하지 않은 변경">
                   ●
                 </span>
               )}
-            </button>
+            </Button>
           ))}
         </div>
       ) : null}
@@ -153,7 +155,7 @@ export function OptionsPane({
                     />
                     <label className="ts-option-title-field">
                       <span className="ts-option-caption">옵션명</span>
-                      <input
+                      <Input
                         className="ts-field-direct ts-option-title"
                         value={option.label}
                         onChange={(event) => patch(option.code, { label: event.target.value })}
@@ -193,7 +195,7 @@ export function OptionsPane({
                           {n}.
                         </span>
                         {editing ? (
-                          <input
+                          <Input
                             className="ts-field-direct ts-option-text"
                             value={value.text}
                             onChange={(event) => setText(option, value.code, event.target.value)}
@@ -218,9 +220,9 @@ export function OptionsPane({
           );
         })}
         {editing ? (
-          <button type="button" className="ts-cov-add-tile ts-option-add" onClick={addOption}>
+          <Button type="button" className="ts-cov-add-tile ts-option-add" onClick={addOption}>
             <IconPlusCircle /> 옵션 추가
-          </button>
+          </Button>
         ) : null}
         {after}
       </div>

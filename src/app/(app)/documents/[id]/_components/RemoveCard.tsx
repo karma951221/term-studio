@@ -18,6 +18,7 @@ import type { Coordinate, Id } from "@/domain/types";
 
 import { articleUsagesAction } from "../../edit-actions";
 import { cascadeOf, internalReferrers, subtreeIds } from "./loss";
+import { Button } from "@/components/ui/button";
 
 export function RemoveCard({
   documentId,
@@ -125,13 +126,13 @@ export function RemoveCard({
       </ul>
       <div className="ts-confirm-actions">
         {(blockers.length === 0 || allowBroken) && (
-          <button type="button" className="danger" onClick={onRemove}>
+          <Button variant="destructive" type="button" onClick={onRemove}>
             {what} 삭제
-          </button>
+          </Button>
         )}
-        <button type="button" onClick={onCancel}>
+        <Button type="button" onClick={onCancel}>
           취소
-        </button>
+        </Button>
       </div>
     </section>
   );

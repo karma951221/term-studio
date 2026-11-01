@@ -14,9 +14,13 @@ import { useSyncExternalStore } from "react";
 
 import { IconChevron, IconWarn } from "@/app/_components/icons";
 import { InfoTip } from "@/app/_components/InfoTip";
+import { RadioDot } from "@/app/_components/RadioGroup";
+
 import { MODE_LABEL, MODE_OPTIONS, NAME_LABEL } from "@/app/_lib/labels";
 import type { ClauseMode, RequiredRefs } from "@/domain/clause";
 import type { AttachLevel, Code } from "@/domain/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 /** 반환 타입을 셀 때 보는 노드 모양 — 편집 트리(`DocumentNode`)의 블록 목록. */
 type UnitNode = { kind: string; branches?: readonly { children: readonly UnitNode[] }[]; children?: readonly UnitNode[] };
@@ -157,7 +161,7 @@ export function ClauseMeta(props: ClauseMetaProps) {
   return (
     <section className="ts-clause-meta ts-basics" aria-label="함수조항 기본정보">
       {isNew ? null : (
-        <button type="button" className="ts-basics-head" aria-expanded={open} aria-controls="clause-meta-body" onClick={() => setOpen(!open)} title={open ? "기본정보 접기" : "기본정보 펼치기"}>
+        <Button type="button" variant="ghost" className="ts-basics-head h-auto min-h-8 justify-start px-0 py-1 text-foreground" aria-expanded={open} aria-controls="clause-meta-body" onClick={() => setOpen(!open)} title={open ? "기본정보 접기" : "기본정보 펼치기"}>
           <IconChevron className={open ? "is-open" : undefined} />
           <span className="ts-mono ts-muted">{code}</span>
           <span className="ts-basics-name">{props.name}</span>
@@ -167,7 +171,7 @@ export function ClauseMeta(props: ClauseMetaProps) {
               <span className="sr-only">경고 {warnings.length}건</span>
             </span>
           ) : null}
-        </button>
+        </Button>
       )}
       {open ? (
         <div id="clause-meta-body" className={isNew ? undefined : "ts-basics-body"}>
@@ -180,7 +184,7 @@ export function ClauseMeta(props: ClauseMetaProps) {
           <div className="ts-form-row">
             <label htmlFor="clause-label">{NAME_LABEL.clause}</label>
             {editing ? (
-              <input id="clause-label" className="ts-field-direct" value={props.label} onChange={(e) => props.onLabel(e.target.value)} placeholder="예: 특별약관의 소멸" autoFocus={isNew} />
+              <Input id="clause-label" className="ts-field-direct" value={props.label} onChange={(e) => props.onLabel(e.target.value)} placeholder="예: 특별약관의 소멸" autoFocus={isNew} />
             ) : (
               <span className="ts-clause-meta-value">{props.savedLabel}</span>
             )}
@@ -194,7 +198,7 @@ export function ClauseMeta(props: ClauseMetaProps) {
               <div className="ts-clause-mode" role="radiogroup" aria-labelledby="clause-mode-label">
                 {MODE_OPTIONS.map((o) => (
                   <label key={o.value} className={`ts-clause-mode-option${mode === o.value ? " is-on" : ""}`}>
-                    <input type="radio" name="clause-mode" value={o.value} checked={mode === o.value} disabled={props.modeLocked && mode !== o.value} onChange={() => props.onMode(o.value)} />
+                    <RadioDot name="clause-mode" value={o.value} checked={mode === o.value} disabled={props.modeLocked && mode !== o.value} onChange={() => props.onMode(o.value)} />
                     <span className="ts-clause-mode-name">{o.label}</span>
                     <span className="ts-clause-mode-hint">{o.hint}</span>
                   </label>

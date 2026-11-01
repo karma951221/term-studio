@@ -20,6 +20,7 @@ import type { AttachLevel, Code } from "@/domain/types";
 import { levelDepth } from "@/domain/master";
 
 import { OPERATOR_TOKENS, referenceToken, type InsertPanelData, type PanelDiscriminator, type PanelField, type PanelForm, type PanelRef } from "../lib";
+import { Button } from "@/components/ui/button";
 
 type Tab = "master" | "discriminator" | "operator";
 
@@ -37,17 +38,17 @@ function Item({ item, level, label, detail, onInsertRef }: { item: PanelRef; lev
   const disabled = preview === undefined;
   return (
     <li>
-      <button
-        type="button"
-        className="ts-insert-item"
-        disabled={disabled}
-        title={disabled ? UPPER_TITLE : `더블클릭으로 넣기: ${preview}`}
-        onDoubleClick={() => !disabled && onInsertRef(item)}
-        onKeyDown={(event) => { if (event.key === "Enter" && !disabled) { event.preventDefault(); onInsertRef(item); } }}
-      >
+      <Button
+ type="button"
+ variant="ghost" className="ts-insert-item h-auto whitespace-normal text-foreground"
+ disabled={disabled}
+ title={disabled ? UPPER_TITLE : `더블클릭으로 넣기: ${preview}`}
+ onDoubleClick={() => !disabled && onInsertRef(item)}
+ onKeyDown={(event) => { if (event.key === "Enter" && !disabled) { event.preventDefault(); onInsertRef(item); } }}
+ >
         <span>{label}</span>
         {detail ? <span className="ts-insert-detail ts-mono">{detail}</span> : null}
-      </button>
+      </Button>
     </li>
   );
 }
@@ -92,16 +93,16 @@ function OperatorTab({ onInsert }: { onInsert: (text: string, caret?: number) =>
     <ul className="ts-insert-list ts-insert-operators">
       {OPERATOR_TOKENS.map((op) => (
         <li key={op.label}>
-          <button
-            type="button"
-            className="ts-insert-item"
-            title={`${op.hint} — 더블클릭으로 넣기`}
-            onDoubleClick={() => onInsert(op.text, op.caret)}
-            onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); onInsert(op.text, op.caret); } }}
-          >
+          <Button
+ type="button"
+ variant="ghost" className="ts-insert-item h-auto whitespace-normal text-foreground"
+ title={`${op.hint} — 더블클릭으로 넣기`}
+ onDoubleClick={() => onInsert(op.text, op.caret)}
+ onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); onInsert(op.text, op.caret); } }}
+ >
             <span className="ts-mono">{op.label}</span>
             <span className="ts-insert-detail">{op.hint}</span>
-          </button>
+          </Button>
         </li>
       ))}
     </ul>
@@ -115,7 +116,7 @@ export function InsertPanel({ data, level, selfCode, onInsert, onInsertRef }: { 
       <p className="ts-l2-side-title">넣기 <span className="ts-count">더블클릭으로 커서 자리에</span></p>
       <div className="ts-basic-tabs" role="tablist" aria-label="넣기">
         {TABS.map((t) => (
-          <button key={t.key} type="button" role="tab" id={`insert-tab-${t.key}`} aria-selected={tab === t.key} aria-controls={`insert-panel-${t.key}`} onClick={() => setTab(t.key)}>{t.label}</button>
+          <Button key={t.key} type="button" role="tab" id={`insert-tab-${t.key}`} aria-selected={tab === t.key} aria-controls={`insert-panel-${t.key}`} onClick={() => setTab(t.key)}>{t.label}</Button>
         ))}
       </div>
       <div role="tabpanel" id={`insert-panel-${tab}`} aria-labelledby={`insert-tab-${tab}`} className="ts-insert-body">

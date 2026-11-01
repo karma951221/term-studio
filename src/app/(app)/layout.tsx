@@ -16,6 +16,7 @@ import { MENU_CHECK, MENU_FLOW } from "@/app/_lib/menu";
 import { NAV_COOKIE } from "@/app/_lib/navCookie";
 import { logoutAction } from "@/app/login/actions";
 import { currentActor, getServices } from "@/lib/services";
+import { Button } from "@/components/ui/button";
 
 const NAV_GROUPS = [...MENU_FLOW, MENU_CHECK];
 
@@ -44,7 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               {me?.name ?? actor.userId} · {ROLE_LABEL[actor.role] ?? actor.role}
             </div>
             <form action={logoutAction}>
-              <button type="submit">로그아웃</button>
+              <Button type="submit">로그아웃</Button>
             </form>
           </div>
         </NavShell>

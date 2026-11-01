@@ -14,6 +14,10 @@ import type { EnumDef } from "@/domain/catalog";
 import { runTrial, trialDefaults, type Clause, type ParamDef } from "@/domain/clause";
 import { fieldsOfForm, formsOfLevel } from "@/domain/master";
 import type { Value } from "@/domain/types";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Checkbox } from "@/components/ui/checkbox";
+
 
 const NOTE = "인자에 값을 넣고 옵션을 골라 출력을 바로 본다 — 저장하지 않는다. 조 참조는 번호 대신 자리표시(⟨인자 이름⟩ · 〔보통약관 제○조〕)로 보인다.";
 
@@ -25,20 +29,20 @@ function ValueField({ id, label, type, value, enums, onChange }: { id: string; l
     case "boolean":
       return (
         <label className="ts-trial-check">
-          <input type="checkbox" aria-label={label} checked={value === true} onChange={(e) => onChange(e.target.checked)} /> 예
+          <Checkbox aria-label={label} checked={value === true} onCheckedChange={(c) => onChange(c === true)} /> 예
         </label>
       );
     case "enum": {
       const def = enums.get(type.enumCode ?? "");
       return (
-        <select id={id} aria-label={label} value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value === "" ? undefined : e.target.value)}>
+        <NativeSelect id={id} aria-label={label} value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value === "" ? undefined : e.target.value)}>
           <option value="">— 비움 —</option>
           {(def?.values ?? []).map((v) => (
             <option key={v.code} value={v.code}>
               {v.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       );
     }
     case "list<enum>": {
@@ -60,9 +64,9 @@ function ValueField({ id, label, type, value, enums, onChange }: { id: string; l
       );
     }
     case "number":
-      return <input id={id} aria-label={label} inputMode="decimal" value={typeof value === "number" ? String(value) : ""} onChange={(e) => onChange(e.target.value.trim() === "" || !Number.isFinite(Number(e.target.value)) ? undefined : Number(e.target.value))} />;
+      return <Input id={id} aria-label={label} inputMode="decimal" value={typeof value === "number" ? String(value) : ""} onChange={(e) => onChange(e.target.value.trim() === "" || !Number.isFinite(Number(e.target.value)) ? undefined : Number(e.target.value))} />;
     default:
-      return <input id={id} aria-label={label} placeholder={type.kind === "date" ? "YYYY-MM-DD" : undefined} value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value)} />;
+      return <Input id={id} aria-label={label} placeholder={type.kind === "date" ? "YYYY-MM-DD" : undefined} value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value)} />;
   }
 }
 
@@ -138,13 +142,13 @@ export function TrialPane({ clause, enums, problem, boxName, appendixName }: { c
         {clause.options.map((o) => (
           <div key={o.code} className="ts-form-row">
             <label htmlFor={`trial-opt-${o.code}`}>{o.label || o.code}</label>
-            <select id={`trial-opt-${o.code}`} value={input.options[o.code] ?? ""} onChange={(e) => setOptions({ ...options, [o.code]: e.target.value })}>
+            <NativeSelect id={`trial-opt-${o.code}`} value={input.options[o.code] ?? ""} onChange={(e) => setOptions({ ...options, [o.code]: e.target.value })}>
               {o.values.map((v) => (
                 <option key={v.code} value={v.code}>
                   {v.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
         ))}
       </div>

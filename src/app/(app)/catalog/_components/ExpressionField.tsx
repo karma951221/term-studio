@@ -3,7 +3,7 @@
 /**
  * 식 입력 — 커서 자리 삽입이 되는 입력 (기능/구분자 §4.3 「더블클릭으로 커서 자리에 토큰이 들어간다」).
  *
- * `useExpressionInsert` 가 `<input ref>` 와 `insert(text, caret)` 을 준다: 지금 커서(`selectionStart`)에 `insertAt` 으로
+ * `useExpressionInsert` 가 `<Input ref>` 와 `insert(text, caret)` 을 준다: 지금 커서(`selectionStart`)에 `insertAt` 으로
  * 넣고 값을 올린 뒤, 다시 그린 다음 커서를 넣은 텍스트 뒤(집계면 괄호 안)로 되돌린다. 값의 주인은 호출부다 —
  * 상세는 EditShell 문맥(`useEditField("expression")`), 생성은 로컬 state.
  */
@@ -12,6 +12,7 @@ import { useEffect, useRef, type RefObject } from "react";
 import type { AttachLevel } from "@/domain/types";
 
 import { insertAt, insideAggregate, referenceToken, type PanelRef } from "../lib";
+import { Input } from "@/components/ui/input";
 
 export function useExpressionInsert(value: string, setValue: (next: string) => void): {
   ref: RefObject<HTMLInputElement | null>;
@@ -48,7 +49,7 @@ export function useExpressionInsert(value: string, setValue: (next: string) => v
   return { ref, insert, insertReference };
 }
 
-/** 식 `<input>` — 코드 글꼴. 제어형이며 ref 로 커서를 다룬다. */
+/** 식 `<Input>` — 코드 글꼴. 제어형이며 ref 로 커서를 다룬다. */
 export function ExpressionInput({ inputRef, value, onChange, id, name, className, placeholder, required, ariaLabel }: { inputRef: RefObject<HTMLInputElement | null>; value: string; onChange: (next: string) => void; id?: string; name?: string; className?: string; placeholder?: string; required?: boolean; ariaLabel?: string }) {
-  return <input ref={inputRef} id={id} name={name} type="text" value={value} onChange={(event) => onChange(event.target.value)} className={`ts-mono ${className ?? ""}`} placeholder={placeholder} required={required} aria-label={ariaLabel} autoComplete="off" spellCheck={false} />;
+  return <Input ref={inputRef} id={id} name={name} type="text" value={value} onChange={(event) => onChange(event.target.value)} className={`ts-mono ${className ?? ""}`} placeholder={placeholder} required={required} aria-label={ariaLabel} autoComplete="off" spellCheck={false} />;
 }

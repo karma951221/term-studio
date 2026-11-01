@@ -8,6 +8,7 @@
 import { useState, type ChangeEvent } from "react";
 import { FormRow } from "@/app/_components/FormRow";
 import { FIELD_LABEL, NAME_LABEL } from "@/app/_lib/labels";
+import { Input } from "@/components/ui/input";
 
 export function NameFollow() {
   const [name, setName] = useState("");
@@ -34,10 +35,10 @@ export function NameFollow() {
   return (
     <>
       <FormRow label={NAME_LABEL.coverage} htmlFor="cov-name">
-          <input id="cov-name" type="text" name="name" required value={name} onChange={onName} className="ts-field-direct" />
+          <Input id="cov-name" type="text" name="name" required value={name} onChange={onName} className="ts-field-direct" />
       </FormRow>
       <FormRow label={FIELD_LABEL.subCoverageName} htmlFor="cov-sub">
-          <input
+          <Input
             id="cov-sub"
             type="text"
             name="subCoverageName"
@@ -48,7 +49,7 @@ export function NameFollow() {
           />
       </FormRow>
       <FormRow label={FIELD_LABEL.benefitName} htmlFor="cov-benefit">
-          <input
+          <Input
             id="cov-benefit"
             type="text"
             name="benefitName"

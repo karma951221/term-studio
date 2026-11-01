@@ -668,10 +668,6 @@ button:where(:not([data-slot])).danger:focus-visible {
   margin-bottom: 12px;
 }
 
-.ts-nav-toggle .ts-icon {
-  transform: rotate(180deg);
-}
-
 .ts-nav[data-collapsed] {
   flex-basis: 36px;
   width: 36px;
@@ -680,10 +676,6 @@ button:where(:not([data-slot])).danger:focus-visible {
 
 .ts-nav[data-collapsed] .ts-nav-head {
   justify-content: center;
-}
-
-.ts-nav[data-collapsed] .ts-nav-toggle .ts-icon {
-  transform: none;
 }
 
 /* 단계 묶음 — 홈의 열과 같은 구성. 제목은 작게, 묶음 사이는 여백으로만 가른다 */
@@ -1202,12 +1194,7 @@ button:where(:not([data-slot])).danger:focus-visible {
   align-items: baseline;
   gap: 6px;
   width: 100%;
-  padding: 4px 0;
-  border: 0;
-  border-radius: 3px;
-  background: none;
   text-align: left;
-  min-height: 28px;
 }
 
 .ts-basics-head:hover {
@@ -2473,23 +2460,8 @@ input:where(:not([data-slot])).ts-option-title {
   color: var(--ts-ink-2);
 }
 
-/* 화면 위쪽에 고정하는 모달 — 가운데보다 시선이 먼저 닿는 자리 */
-.ts-dialog-top:modal {
-  margin-top: 12vh;
-  padding: 16px 18px;
-}
-
 .ts-dialog::backdrop {
   background: rgb(0 0 0 / 28%);
-}
-
-.ts-dialog-body {
-  max-height: min(60vh, 520px);
-  overflow: auto;
-}
-
-.ts-dialog-body + .ts-confirm-actions {
-  margin-top: 12px;
 }
 
 /*
@@ -2587,10 +2559,6 @@ input:where(:not([data-slot])).ts-option-title {
 
 .ts-searchbox {
   color: var(--ts-ink-2) !important;
-}
-
-.ts-searchbox input:where(:not([data-slot])) {
-  width: min(320px, 32vw);
 }
 
 /* 이력 기능 전까지의 기준일·미확정 — 잠긴 표시. 테두리를 지워 「고를 수 있는 것」에서 빼고,
@@ -3031,14 +2999,6 @@ td.col-ident {
 .ts-form-check:has(> input:checked) {
   font-weight: 700;
   color: var(--ts-ink);
-}
-
-.ts-form-prefill,
-.ts-form-clear {
-  font-size: 12px;
-  padding: 1px 8px;
-  min-height: 22px;
-  color: var(--ts-ink-2);
 }
 
 /*
@@ -3557,9 +3517,6 @@ label.ts-field > textarea:where(:not([data-slot])) {
   width: 100%;
   min-height: 28px;
   padding: 3px 6px;
-  border: 0;
-  border-radius: 3px;
-  background: none;
   text-align: left;
   font-size: 13px;
   user-select: none;
@@ -5210,11 +5167,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   margin: 0 4px 0 -4px;
 }
 
-/* 「마스터에는 면책 있음 · 가져오기」 — 「특성 ⊕」 옆 (기능/상품 §4.8) */
-.ts-trait-import {
-  margin-right: 8px;
-}
-
 .ts-trait-menu {
   display: inline-flex;
   flex-wrap: wrap;
@@ -5617,29 +5569,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
   margin: 0 0 6px;
 }
 
-.ts-form-optional-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--ts-ink-2);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.ts-form-optional-btn:hover {
-  color: var(--ts-ink);
-}
-
-.ts-form-optional-btn .ts-icon {
-  width: 12px;
-  height: 12px;
-}
-
 /* 강조 행 — 마스터 필드 상세의 값 노드(「입력 화면 →」)에서 건너온 자리. 테두리(형태)로 말한다 */
 .ts-field-highlight {
   outline: 2px solid var(--ts-mark);
@@ -5983,8 +5912,7 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 .ts-product-head { align-items: center; }
 .ts-terms-template > button:where(:not([data-slot])),
 .ts-terms-template-end > button:where(:not([data-slot])),
-.ts-tool-menu-item,
-.ts-basic-remove {
+.ts-tool-menu-item {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6034,9 +5962,6 @@ button:where(:not([data-slot])).ts-ref-fold:hover {
 /* 세목 제목 줄 — 「세목」 + 두 탭 세그먼트(제목 바로 오른쪽) + 오른쪽 끝 선택 삭제 (2026-10-28 세목 카드) */
 .ts-basic-plans-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 12px; }
 .ts-basic-plans-head > h3 { margin: 0; }
-.ts-basic-plans-head > .ts-basic-remove { margin-left: auto; }
-button:where(:not([data-slot])).ts-basic-remove:hover,
-button:where(:not([data-slot])).ts-basic-remove:focus-visible { border-color: var(--ts-error); color: var(--ts-error); background: var(--ts-error-bg); }
 /* 세그먼트 — 테두리 상자 안의 칸, 현재 칸은 채운다. 높이 32 · 모서리 6 (디자인원칙 §5) */
 .ts-basic-tabs { display: inline-flex; gap: 2px; height: 32px; box-sizing: border-box; padding: 2px; border: 1px solid var(--ts-rule-strong); border-radius: 6px; background: var(--ts-surface); }
 .ts-basic-tabs button:where(:not([data-slot])) { height: 100%; border: 0; border-radius: 4px; padding: 0 12px; background: transparent; color: var(--ts-ink-3); font-size: 13px; white-space: nowrap; }
@@ -6094,29 +6019,8 @@ button:where(:not([data-slot])).ts-basic-remove:focus-visible { border-color: va
   .ts-product-head > .ts-head-actions { margin-left: 0; }
 }
 
-/* 표 입력 (기능/담보 §3.4) — table 필드 편집: 머리글 · 셀 · 붙여넣기 힌트. */
-.ts-table-input table { border-collapse: collapse; }
-.ts-table-input td,
-.ts-table-input th { border: 1px solid var(--ts-rule); padding: 2px 6px; }
-.ts-table-input input:where(:not([data-slot])) { width: 6em; }
-.ts-table-hint { margin-left: 4px; font-size: 0.85em; }
-/* 글 열 칩 — 표 위 글자 버튼(체증 구분의 「(최초)계약일」, 2026-11-01) */
-.ts-table-chips { display: flex; gap: 4px; margin-bottom: 4px; }
-.ts-table-chip { height: 24px; padding: 0 8px; border: 1px solid var(--ts-rule); border-radius: 6px; background: var(--ts-paper); color: var(--ts-ink); font-size: 0.85em; cursor: pointer; }
-.ts-table-chip:hover { background: var(--ts-surface); }
-
-/* 정액표 격자 입력 (기능/담보 §3.4) */
-.ts-grid-input table { border-collapse: collapse; }
-.ts-grid-input td,
-.ts-grid-input th { border: 1px solid var(--ts-rule); padding: 2px 6px; white-space: nowrap; }
-.ts-grid-input input:where(:not([data-slot])) { width: 7em; }
-.ts-grid-input-actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
-.ts-grid-amount-add { display: inline-flex; gap: 4px; align-items: center; }
-
-
 /* 기본 숨김 필드를 펴는 작은 링크 (기능/담보 §3.4 — 감액 「이후 지급률 바꾸기」) */
 .ts-form-reveal-row { margin: 4px 0 0; }
-.ts-form-reveal { font-size: 0.85em; }
 
 /* 문장 안 조건 팝업의 머리 줄 — 팝업 폭에 한 줄로 */
 .ts-pop .ts-cond-var {
@@ -6359,6 +6263,11 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
   width: 20px;
   height: 20px;
   background: var(--ts-surface);
+}
+
+/* 위의 면 색이 ghost 의 hover 바탕을 덮지 않게 — 눌릴 수 있음이 보이도록 */
+.ts-block-acts .ts-iconbtn:hover {
+  background: var(--ts-surface-2);
 }
 
 [data-block]:hover:not(:has([data-block]:hover)) > .ts-block-acts,

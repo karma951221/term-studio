@@ -14,6 +14,9 @@ import { IconButton, IconClose, IconDown, IconPlus, IconTrash, IconUp } from "@/
 import type { Code, Id } from "@/domain/types";
 
 import { displayGroups, freeCoverages, groupCoverages, type CoveragesDraft, type CoveragesDraftAction, type DraftGroup, type GroupContext } from "./coveragesDraft";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /** 열거형 「담보분류」 값 하나 — 이름 · 「그룹 제목」 필드(비면 undefined). */
 export interface CategoryInfo {
@@ -79,9 +82,9 @@ export function SpecialGroupsSection({ draft, ctx, categories, coverageName, err
           <tfoot>
             <tr className="ts-mount-add">
               <td colSpan={cols}>
-                <button type="button" className="ts-linklike" onClick={() => edit.dispatch({ type: "addGroup", ctx })} aria-label="특약 그룹 추가">
+                <Button variant="link" type="button" onClick={() => edit.dispatch({ type: "addGroup", ctx })} aria-label="특약 그룹 추가">
                   <IconPlus /> 그룹
-                </button>
+                </Button>
               </td>
             </tr>
           </tfoot>
@@ -113,7 +116,7 @@ function GroupRows({ group, index, last, title, label, kind, members, free, cove
         <td className="col-code">{index + 1}</td>
         <td className="col-fixed-md">
           {edit && user ? (
-            <input
+            <Input
               type="text"
               value={group.name}
               placeholder="그룹 제목 — 예: 뇌 관련 특별약관"
@@ -141,7 +144,7 @@ function GroupRows({ group, index, last, title, label, kind, members, free, cove
               </span>
             ))}
             {edit && user && (
-              <select
+              <NativeSelect
                 value=""
                 onChange={(e) => e.target.value && edit.dispatch({ type: "joinGroup", key: group.key, coverageId: e.target.value })}
                 aria-label={`담보 넣기 · ${label}`}
@@ -154,7 +157,7 @@ function GroupRows({ group, index, last, title, label, kind, members, free, cove
                     {coverageName(id)}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             )}
           </span>
         </td>

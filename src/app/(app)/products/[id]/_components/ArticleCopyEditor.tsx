@@ -78,6 +78,7 @@ import { COPY_REFUSAL, copyScopeMenu, withBlockRefItems } from "./copyMenus";
 import { useGeneralEdit } from "./GeneralEdit";
 import { draftCopies } from "./generalDraft";
 import { ClauseOptionPicker } from "./TemplateSource";
+import { Button } from "@/components/ui/button";
 
 /** 조 편집 패널의 재료 — 서버가 한 번 넘긴다(직렬화 가능). */
 export interface CopyEditorData {
@@ -555,9 +556,9 @@ export function ArticleCopyEditor({ data, articleId, label }: { data: CopyEditor
               <b>이 사본은 쓰이지 않습니다</b> — 조연결한 담보를 해제하면 다시 쓰입니다. 조립(미리보기 · 산출)은 이 조를 템플릿대로 둔다.
             </span>
             <span className="ts-copy-status-actions">
-              <button type="button" onClick={() => edit.dispatch({ type: "revertArticle", articleId })}>
+              <Button type="button" onClick={() => edit.dispatch({ type: "revertArticle", articleId })}>
                 템플릿대로 되돌리기
-              </button>
+              </Button>
             </span>
           </div>
         )}
@@ -610,13 +611,13 @@ export function ArticleCopyEditor({ data, articleId, label }: { data: CopyEditor
             )}
           </span>
           <span className="ts-copy-status-actions">
-            <button type="button" onClick={() => edit.dispatch({ type: "revertArticle", articleId })}>
+            <Button type="button" onClick={() => edit.dispatch({ type: "revertArticle", articleId })}>
               템플릿대로 되돌리기
-            </button>
+            </Button>
             {stale && (
-              <button type="button" onClick={() => edit.dispatch({ type: "keepCopy", articleId, templateHash: articleHash(templateArticle) })}>
+              <Button type="button" onClick={() => edit.dispatch({ type: "keepCopy", articleId, templateHash: articleHash(templateArticle) })}>
                 사본 유지
-              </button>
+              </Button>
             )}
           </span>
         </div>
