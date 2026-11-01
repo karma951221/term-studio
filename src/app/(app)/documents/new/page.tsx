@@ -17,6 +17,7 @@ import { getServices } from "@/lib/services";
 
 import { createGeneralAction, createSpecialAction } from "../actions";
 import { coveragesWithoutTemplate, docListHref } from "../lib";
+import { Input } from "@/components/ui/input";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export default async function NewDocumentPage({ searchParams }: { searchParams: 
       <CreateHead title={newLabel(ENTITY_LABEL.generalTemplate)} formId={FORM_ID} path={[{ label: ENTITY_LABEL.generalTemplate, href: docListHref("general") }]} banner={<ErrorBanner message={error} />} />
       <form id={FORM_ID} action={createGeneralAction} className="ts-create-form">
         <FormRow label={FIELD_LABEL.title} htmlFor="doc-title">
-          <input id="doc-title" type="text" name="title" required autoFocus placeholder="예: 상해보험 표준약관" />
+          <Input id="doc-title" type="text" name="title" required autoFocus placeholder="예: 상해보험 표준약관" />
         </FormRow>
       </form>
     </div>
@@ -75,7 +76,7 @@ async function newSpecial(error: string | undefined, preselect: string | undefin
           />
         </FormRow>
         <FormRow label={FIELD_LABEL.title} htmlFor="doc-title">
-          <input id="doc-title" type="text" name="title" placeholder="비우면 「{담보명} 특별약관」" />
+          <Input id="doc-title" type="text" name="title" placeholder="비우면 「{담보명} 특별약관」" />
         </FormRow>
       </form>
     </div>
