@@ -152,7 +152,7 @@ export function ContextMenu({ x, y, sections, onPick, onClose }: { x: number; y:
                 variant={item.danger ? "ghost-destructive" : "ghost"}
                 role="menuitem"
                 aria-label={item.name}
-                className={cn("h-auto w-full justify-start rounded-none px-3 py-1 text-left text-[13px] focus-visible:bg-accent", item.danger ? "text-foreground hover:text-destructive" : "text-foreground", item.indent && "pl-6 text-ink-2")}
+                className={cn("flex h-auto w-full justify-start rounded-none px-3 py-1 text-left text-[13px] focus-visible:bg-accent", item.danger ? "text-foreground hover:text-destructive" : "text-foreground", item.indent && "pl-6 text-ink-2")}
                 disabled={item.disabled}
                 onClick={() => {
                   onClose();
