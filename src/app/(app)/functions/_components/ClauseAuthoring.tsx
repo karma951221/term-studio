@@ -64,6 +64,7 @@ import {
   type RefTargetFact,
   boxLabel,
   indexTree,
+  repeatLabel,
   numberTree,
   optionCarrier,
   optionCodeOf,
@@ -323,7 +324,7 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
    * 구분자는 인자 표의 기본 연결 · 넣는 자리의 연결에서 고른다.
    */
   const condition = useMemo(
-    () => ({ ...data.condition, discriminators: [...paramEntries(shownParams, data.enums), ...localEntries(shownParams, localsForSave(shownParams, shownLocals, data.enums), data.enums)], quick: [] }),
+    () => ({ ...data.condition, discriminators: [...paramEntries(shownParams, data.enums), ...localEntries(shownParams, localsForSave(shownParams, shownLocals, data.enums), data.enums)], quick: [], clause: true as const }),
     [data.condition, data.enums, shownParams, shownLocals],
   );
   // 단독 시험 (§3.7 · 「시험」 탭) — 지금 보이는 정의(편집 중이면 편집본)를 시험 문맥으로 펼친다. 시험 값은 화면 상태
@@ -344,6 +345,8 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
   }, [clauseMode, tree, code, editing, label, props.label, shownOptions, shownParams, shownLocals, data.enums]);
   /** 값별 분기 대상 후보 — 목록값 인자 · 내부 변수(최종 결정 5). 칸 머리 · 「값별 분기 넣기」가 쓴다. */
   const switchSubjects = useMemo(() => switchSubjectsOf(condition.discriminators), [condition]);
+  // 조 참조 목록 인자 — 문장 안 반복(준용예외마다)의 원천 후보 (ADR-0098 결정 2)
+  const refLists = useMemo(() => condition.discriminators.filter((d) => d.refList).map((d) => ({ code: d.code, label: d.label })), [condition]);
   const latest = useCallback((): DocumentNode => draftRef.current.state.tree, []);
   const dirty =
     editing &&
@@ -380,7 +383,7 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
       validateOptions: () => [],
     };
     // 값별 분기는 지금 함수조항 안에서만 연다(최종 결정 5) — 이 편집기만 표지를 켠다
-    return { env: { kind: "special", appendixExists: (c) => appendixCodes.has(c), boxExists: (c) => boxByCode.has(c), clauseGate: gate, switches: true }, generalRefs: (id) => (id === GENERALS ? refs : undefined) };
+    return { env: { kind: "special", appendixExists: (c) => appendixCodes.has(c), boxExists: (c) => boxByCode.has(c), clauseGate: gate, switches: true, refLists: (ref) => ref.startsWith("arg.") }, generalRefs: (id) => (id === GENERALS ? refs : undefined) };
   }, [appendixCodes, boxByCode, refs]);
 
   // ── 표기 ──
@@ -458,7 +461,7 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
 
   const refuse = (message: string) => setBanner({ message: `넣을 수 없다 — ${message}` });
 
-  const envOf = (t: DocumentNode, opts: readonly ClauseEditOption[]): ClauseMenuEnv => ({ tree: t, ix: indexTree(t), docKind: "special", newId: randomIds, mode: clauseMode, options: opts, switchSubjects, onRefuse: refuse });
+  const envOf = (t: DocumentNode, opts: readonly ClauseEditOption[]): ClauseMenuEnv => ({ tree: t, ix: indexTree(t), docKind: "special", newId: randomIds, mode: clauseMode, options: opts, switchSubjects, refLists, onRefuse: refuse });
   /** 누르는 순간의 편집본으로 — 메뉴를 연 뒤 문장 칸이 초점을 잃으며 글이 먼저 적용될 수 있다. */
   const menuEnv = (): ClauseMenuEnv => envOf(latest(), optionsRef.current);
 
@@ -676,6 +679,11 @@ export function ClauseAuthoring(props: ClauseAuthoringProps) {
     articleRefChoices: refChoices,
     conditionFor: () => condition,
     switchSubjects,
+    // 문장 안 반복(준용예외마다)의 이름 — 칩 머리 · 현재 조 참조 칩 (ADR-0098 결정 2)
+    repeatLabelOf: (id) => {
+      const n = index.nodes.get(id)?.node;
+      return n?.kind === "inlineFor" ? (n.alias ?? repeatLabel(n.source)) : "반복";
+    },
     boxOf: (c) => boxByCode.get(c),
     ...(flashId ? { flashId } : {}),
     ...(editing ? { edit } : {}),

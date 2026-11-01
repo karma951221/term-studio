@@ -68,6 +68,7 @@ export function typeOfValue(value: string): ParamType {
   if ((kind === "enum" || kind === "list<enum>") && arg) return { kind, enumCode: arg };
   if (kind === "planOptions" && arg) return { kind: "planOptions", form: arg };
   if (kind === "articleRef") return { kind: "articleRef" };
+  if (kind === "list<ref>") return { kind: "list<ref>" };
   if (kind === "string" || kind === "number" || kind === "date") return { kind };
   return { kind: "boolean" };
 }
@@ -82,6 +83,8 @@ export function typeLabel(t: ParamType, enums: readonly EnumChoice[], forms: rea
       return `세목 선택지 목록 ${forms.find((f) => f.key === t.form)?.label ?? t.form}`;
     case "articleRef":
       return "조 참조";
+    case "list<ref>":
+      return "조 참조 목록";
     default:
       return SCALAR_TYPES.find((s) => s.value === t.kind)?.label ?? t.kind;
   }
@@ -170,6 +173,8 @@ export function bindingOptions(
       ...form.booleanFields.map((f) => ({ value: `s:${form.key}:${f.key}`, label: `${form.label} — ${f.label} = 예인 선택지`, group: "원천" })),
     ];
   }
+  // 조 참조 목록 인자 — 준용예외 구분자(결과 타입 「조 참조 목록」)만 댄다 · 상수 없음 (ADR-0098 결정 2)
+  if (t.kind === "list<ref>") return discriminators.filter((d) => !d.param && d.refList).map((d) => ({ value: `d:${d.code}`, label: `${d.label} (${d.code})`, group: "구분자" }));
   // 담보약관 — 세부보장 · 급부 레벨 구분자는 키 경로 · 「현재」로만 고른다(키 없이 고르는 길을 닫는다, ADR-0087 결정 4)
   const lower = (d: CtxDiscriminator): d is CtxDiscriminator & { level: KeyedLevel } => d.level === "subCoverage" || d.level === "benefit";
   const typed = discriminators.filter((d) => !d.param && sameType(d.type, t));
@@ -269,6 +274,7 @@ export function paramEntries(params: readonly ParamDef[], enums: readonly EnumCh
       if (p.type.kind === "articleRef") return [];
       const out: CtxDiscriminator = { code: `arg.${p.name}`, label: `${p.name}(인자)`, level: "product", forms: [], param: true };
       if (p.type.kind !== "planOptions" && p.type.kind !== "list<ref>") out.type = p.type;
+      if (p.type.kind === "list<ref>") out.refList = true; // 문장 안 반복의 원천 후보 (ADR-0098 결정 2)
       if (p.type.kind === "enum" || p.type.kind === "list<enum>") {
         const code = p.type.enumCode;
         out.enumOptions = (enums.find((e) => e.code === code)?.values ?? []).map((v) => ({ code: v.code, label: v.label }));

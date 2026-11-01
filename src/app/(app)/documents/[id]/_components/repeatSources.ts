@@ -10,7 +10,7 @@ import type { EnumDef } from "@/domain/catalog";
 import type { LoopElementType } from "@/domain/clause";
 import type { ConditionContext } from "./condition/types";
 import type { NodeTree } from "@/app/(app)/functions/_components/params";
-import { isRepeatSource, isTreeSource, loopElementType, loopsOnPath, repeatLabel, type RepeatNode, type RepeatSource, type SlotName, type TreeIndex } from "@/domain/document";
+import { isRepeatSource, isTreeSource, loopElementType, loopsOnPath, repeatLabel, type IdSource, type InlineNode, type RepeatNode, type RepeatSource, type SlotName, type TreeIndex } from "@/domain/document";
 import { fieldsOfForm, formsOfLevel, MASTER, type MasterTree } from "@/domain/master";
 import type { Id } from "@/domain/types";
 
@@ -83,10 +83,23 @@ export function currentValueOf(loops: readonly RepeatNode[], opts: { enumOf?: (c
  * 원천 칸 후보 — `outer` 는 이 자리를 감싼 가장 안쪽 반복(없으면 반복 밖). 두 단계 안(반복 안 반복 안)이면 후보가 없다. 블록 · 문장 안 반복 공통.
  * 담보 트리 원천은 `hasCoverage`(담보약관의 블록 반복)일 때만 — 문장 안 반복은 넘기지 않는다(ADR-0088 결정 1 범위 밖).
  */
-export function repeatChoices(opts: { outer?: RepeatNode; depth: number; hasCoverage?: boolean; enumOf?: (code: string) => EnumDef | undefined; master?: MasterTree }): RepeatChoice[] {
+export function repeatChoices(opts: {
+  outer?: RepeatNode;
+  depth: number;
+  hasCoverage?: boolean;
+  enumOf?: (code: string) => EnumDef | undefined;
+  master?: MasterTree;
+  /** 조 참조 목록 원천 후보 — 함수조항은 조 참조 목록 인자(`arg.<이름>`), 담보약관은 준용예외 구분자 (ADR-0098 결정 2). 반복 밖에서만. */
+  refLists?: readonly { code: string; label: string }[];
+  /** 함수조항 — 문장 안 반복의 원천은 조 참조 목록 인자뿐이다(본문 검사가 다른 원천을 거부한다). */
+  refListOnly?: boolean;
+}): RepeatChoice[] {
   const master = opts.master ?? MASTER;
   const label = (source: RepeatSource) => repeatLabel(source, { ...(opts.outer && isRepeatSource(opts.outer.source) ? { outer: opts.outer.source } : {}), master, ...(opts.enumOf ? { enumOf: opts.enumOf } : {}) });
   const choice = (source: RepeatSource, suffix = ""): RepeatChoice => ({ value: sourceValue(source), label: `${label(source)}${suffix}`, source });
+  const refListChoices = (): RepeatChoice[] =>
+    opts.outer || opts.depth > 0 ? [] : (opts.refLists ?? []).map((r) => ({ value: sourceValue({ kind: "refList", ref: r.code }), label: `${r.label.replace(/\(인자\)$/, "")}마다`, source: { kind: "refList", ref: r.code } }));
+  if (opts.refListOnly) return refListChoices();
   if (opts.depth >= 2) return [];
   if (opts.outer) {
     const outer = opts.outer.source;
@@ -109,7 +122,30 @@ export function repeatChoices(opts: { outer?: RepeatNode; depth: number; hasCove
       for (const f of (opts.enumOf?.(t.enumCode)?.fields ?? []).filter((x) => x.type === "boolean")) out.push(choice({ ...base, where: { field: f.key, value: true } }));
     }
   }
-  return out;
+  return [...out, ...refListChoices()];
+}
+
+/**
+ * 조 참조 목록 반복의 현재 원소를 가리키는 조 참조 칩 — 대상 조 없이 `restrict: { current: 반복 id }` (ADR-0098 결정 2).
+ * 편집 트리는 대상 조 id 를 빈 문자열로 운반한다(clauseTree). 조 호칭 · 번호는 조립이 그 상품 최종 번호로 찍는다.
+ */
+export function currentArticleRef(repeatId: Id, newId: IdSource): InlineNode {
+  return { id: newId(), kind: "articleRef", targets: [{ articleId: "", restrict: { current: repeatId } }], scope: "general" };
+}
+
+/**
+ * 문장 안 반복의 조 참조 목록 원천 재료 — 함수조항이면 조 참조 목록 인자뿐(`refListOnly`), 담보약관이면 준용예외 구분자를 다른 원천 뒤에.
+ * 보통약관 템플릿은 없다 — 준용예외 값은 특약 · 블록 문맥에서만 난다 (ADR-0098 결정 5).
+ */
+export function refListRepeatOptions(condition: Pick<ConditionContext, "discriminators" | "coverage" | "clause">): { refLists?: { code: string; label: string }[]; refListOnly?: boolean } {
+  const refLists = condition.discriminators.filter((d) => d.refList).map((d) => ({ code: d.code, label: d.label }));
+  if (condition.clause) return { refLists, refListOnly: true };
+  return condition.coverage && refLists.length > 0 ? { refLists } : {};
+}
+
+/** 자리를 감싼 가장 안쪽 조 참조 목록 반복 — 「현재 조 참조」 넣기의 자리. 「비었을 때」 칸이면(`slot` = fallback) 그 반복은 세지 않는다. */
+export function enclosingRefList(ix: TreeIndex, id: Id, slot?: SlotName): RepeatNode | undefined {
+  return [...loopsAround(ix, id, slot)].reverse().find((l) => isRepeatSource(l.source) && l.source.kind === "refList");
 }
 
 /** 인자 연결 칸의 「반복의 현재 원소」 후보 — 감싼 반복마다 원소 타입 · 이름. */

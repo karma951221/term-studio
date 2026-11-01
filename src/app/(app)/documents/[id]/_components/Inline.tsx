@@ -14,7 +14,7 @@ import { Fragment, useEffect, useRef, type ClipboardEvent, type KeyboardEvent, t
 
 import { blockRefChipText } from "@/app/_lib/blockRef";
 import { STRUCT_KEY_CHIP, SWITCH_WORD } from "@/app/_lib/labels";
-import { DOCUMENT_WIDE_CHIP, isDocumentWideRef, particlePreset, provisionalNote, referenceChunkLabel, referenceKeyIndex, refKey, type ArticleRefNode, type InlineAt, type InlineNode, type ReferenceTarget } from "@/domain/document";
+import { currentElementRef, DOCUMENT_WIDE_CHIP, isDocumentWideRef, particlePreset, repeatLabel, provisionalNote, referenceChunkLabel, referenceKeyIndex, refKey, type ArticleRefNode, type InlineAt, type InlineNode, type ReferenceTarget } from "@/domain/document";
 import { SCOPE_WORD_CHIP, SCOPE_WORD_PATH } from "@/domain/expression";
 import type { Id, WorkMark } from "@/domain/types";
 
@@ -44,6 +44,9 @@ function articleRefText(node: ArticleRefNode, ctx: DocCtx): string {
   // 편집기 미리보기 — 조립과 같은 덩어리 규칙(기능/문면 §3.5). 전체 뷰 번호라 분기 결과는 반영되지 않는다.
   // 문서 전체 참조(대상 없음) — 조립이 출력 위치의 호칭을 찍는다(위치 호칭, 기능/조립산출 §3.10)
   if (isDocumentWideRef(node)) return DOCUMENT_WIDE_CHIP;
+  // 조 참조 목록 반복의 현재 원소 — 원소(조)는 조립이 판정한다 (ADR-0098 결정 2)
+  const current = currentElementRef(node);
+  if (current !== undefined) return `현재 조 ⟨${ctx.repeatLabelOf?.(current) ?? "반복"}⟩`;
   const index = node.scope === "general" ? ctx.references.general : ctx.references.self;
   const alive: ReferenceTarget[] = [];
   let broken = 0;
@@ -101,7 +104,7 @@ function chipParts(node: InlineNode, ctx: DocCtx): { className: string; title: s
       return { className: "ts-doc-slot", title: "조사 — 앞 글자 받침에 따라 조립 때 고른다", body: particlePreset(node.preset).label };
     case "inlineFor": {
       // 상품 문맥이 없어 원소를 모른다 — 자리 말(반복 이름)로 보이고, 본문 · 칸은 펼쳐(팝업) 고친다 (ADR-0088 결정 6)
-      const name = ctx.repeatLabelOf?.(node.id) ?? node.alias ?? "반복";
+      const name = ctx.repeatLabelOf?.(node.id) ?? node.alias ?? repeatLabel(node.source);
       const fallback = (node.fallback ?? []).length > 0 ? " · 「비었을 때」 칸 있음" : "";
       return {
         className: "ts-doc-inline-chip is-repeat",
