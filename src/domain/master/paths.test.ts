@@ -47,6 +47,11 @@ describe("마스터 경로 — 폼키.필드키", () => {
     expect(findForm("fixed_table")).toMatchObject({ level: "benefit", optional: true, system: true, owner: "master" });
   });
 
+  it("급부 특성 fixed_table 의 화면 이름은 「통합치료비」 — 코드 키 · 필드는 그대로 (기능/담보 §3.4, 2026-11-01)", () => {
+    expect(findForm("fixed_table")?.label).toBe("통합치료비");
+    expect(findMasterField("fixed_table.grid")).toBeDefined();
+  });
+
   it("pay.first_only(최초1회한)는 없다 — 2026-09-27 삭제 (기능/마스터 §6.2)", () => {
     expect(findMasterField("pay.first_only")).toBeUndefined();
   });
