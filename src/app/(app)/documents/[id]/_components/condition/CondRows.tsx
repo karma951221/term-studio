@@ -26,7 +26,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 
 /** 값 칸 — 좌변 타입대로. 우변이 구분자 참조면 칩 + 비우기. 담보속성이면 유효값 목록(있음 · 없음은 값 없음). */
-function ValueInput({
+export function ValueInput({
   row,
   name,
   def,
@@ -92,7 +92,7 @@ function ValueInput({
   };
   const kind = def?.type?.kind;
   // value="" — 좌변을 고르면 같은 자리의 아래 <Input value=…> 로 DOM 이 이어진다. 처음부터 제어 칸이어야 「비제어 → 제어」 경고가 없다
-  if (!row.left || !kind) return <Input type="text" className="ts-cond-value" aria-label={label} placeholder="값" disabled />;
+  if (!row.left || !kind) return <Input type="text" className="ts-cond-value" aria-label={label} placeholder="값" value="" disabled />;
   switch (kind) {
     case "boolean":
       return (
