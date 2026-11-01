@@ -1,19 +1,16 @@
 /**
- * 동적표 코드 채번 규칙 (기능/동적표 §3.1 — 시스템 발급 · 불변).
+ * 표 구분자 코드 (기능/구분자 §3.7, ADR-0099) — 시스템이 정해 둔 고정 코드. 채번하지 않는다(DB 행이 없다).
  *
- * 박스(`BX000001`)와 같은 접두 + 6자리 규칙. 순번은 code_sequences (kind `dynTable` · scope 전역 "") 에서 받는다 —
- * 1부터, 오르기만 한다 (삭제된 코드는 다시 태어나지 않는다).
+ * 옛 동적표 코드(`DT000001` …)를 그대로 이어 쓴다 — 구분자 순번(`D0001`)과 섞이지 않는다.
+ * 의존 없는 잎 모듈이라 식 검사(catalog) · 문면 검사(document)가 순환 없이 「표 구분자인가」를 묻는다.
  */
 import type { Code } from "../types";
 
-export const DYN_TABLE_CODE_PREFIX = "DT";
-export const DYN_TABLE_CODE_WIDTH = 6;
+/** 보험금 지급금액표 · 갱신 보험금 지급금액표 · 통합치료비 지급금액표 · 갱신 통합치료비 지급금액표. 정의는 `system.ts`. */
+export const TABLE_DISCRIMINATOR_CODES: readonly Code[] = ["DT000001", "DT000002", "DT000003", "DT000004"];
 
-export function formatDynTableCode(seq: number): Code {
-  if (!Number.isInteger(seq) || seq < 1) throw new RangeError(`코드 순번은 1 이상의 정수여야 합니다: ${seq}`);
-  return DYN_TABLE_CODE_PREFIX + String(seq).padStart(DYN_TABLE_CODE_WIDTH, "0");
-}
+const CODES = new Set<string>(TABLE_DISCRIMINATOR_CODES);
 
-export function isDynTableCode(code: string): boolean {
-  return new RegExp(`^${DYN_TABLE_CODE_PREFIX}\\d{${DYN_TABLE_CODE_WIDTH},}$`).test(code);
+export function isTableDiscriminatorCode(code: string): boolean {
+  return CODES.has(code);
 }

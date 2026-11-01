@@ -101,7 +101,7 @@ describe("정액형 표 펼침 — 통합치료비 (기능/동적표 §3.7)", ()
 
   it("운영 가입금액이 정액표에 없으면 오류(그 급부 행 좌표 · 금액을 말한다) — 그 표는 셀을 비운다", () => {
     const t = expandFixedDynTable(F, { benefits: [상해], insuredAmounts: [30_000_000, 70_000_000] }, 비갱신, deps, { document: "special", ownerId: "pc1" });
-    expect(t.issues).toEqual([expect.objectContaining({ kind: "notEntered", at: expect.objectContaining({ document: "special", refPath: "동적표 T0003 › 행 상해로 인한 경우" }) })]);
+    expect(t.issues).toEqual([expect.objectContaining({ kind: "notEntered", at: expect.objectContaining({ document: "special", refPath: "정액 지급금액 표 › 행 상해로 인한 경우" }) })]);
     expect(t.issues[0].message).toContain("7,000만원");
     expect(lines(t.blocks).at(-1)).toBe("[상해 │ 입원 │ 1일당 │ ]");
   });

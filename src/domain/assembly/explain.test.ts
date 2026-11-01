@@ -15,7 +15,6 @@ import { titleNodes } from "../document/title";
 import { entered, type Id } from "../types";
 import { assemble } from "./booklet";
 import { explainArticle, type ArticleExplanation } from "./explain";
-import { dynTableFixtureA } from "../dyntable";
 import { findForm } from "../master";
 import { alphaPlusFixture, deathCoverage, nodeQualFixture } from "./fixture";
 import type { AssemblyInput, ClauseDecision, ConditionDecision, DecisionRecord, DynTableDecision, RepeatDecision, SwitchDecision } from "./types";
@@ -269,7 +268,7 @@ describe("반복 — 원소별 기록 · 원소 0개", () => {
   });
 });
 
-describe("트리 반복 · 인라인 반복 · 동적표", () => {
+describe("트리 반복 · 인라인 반복 · 표 구분자", () => {
   it("세부보장마다(트리 반복) — 원소 = 스냅샷 노드(키 경로 · 이름), 원소마다 그 노드 문맥의 가지", () => {
     const base = nodeQualFixture();
     const doc: DocumentNode = {
@@ -302,15 +301,15 @@ describe("트리 반복 · 인라인 반복 · 동적표", () => {
     expect(rec.elements.map((x) => outcomes(x.decisions[0]))).toEqual([["taken", "skipped"], ["false", "taken"]]);
   });
 
-  it("동적표 — 원천 급부 · 펼친 행 · 정의가 없으면 그 오류", () => {
+  it("표 구분자 — 원천 급부 · 펼친 행 · 없는 코드면 그 오류", () => {
     const base = alphaPlusFixture();
-    const doc: DocumentNode = { id: "dt-doc", kind: "document", title: "표 표본", children: [article("dt-art", "감액", [{ id: "dt-ref", kind: "dynTableRef", tableCode: "DT000001", bindings: { 갱신형: { kind: "const", value: false } } } as BlockNode])] };
-    const input: AssemblyInput = { ...base, master: [...base.master!, findForm("reduction")!], specialDocuments: new Map([...base.specialDocuments, ["cov-death", doc]]), dynTables: [{ id: "dt-a", code: "DT000001", ...dynTableFixtureA() }] };
+    const docOf = (code: string): DocumentNode => ({ id: "dt-doc", kind: "document", title: "표 표본", children: [article("dt-art", "감액", [{ id: "dt-ref", kind: "tableRef", code } as BlockNode])] });
+    const input: AssemblyInput = { ...base, master: [...base.master!, findForm("reduction")!], specialDocuments: new Map([...base.specialDocuments, ["cov-death", docOf("DT000001")]]) };
     const rec = explain(input, { document: "special", productCoverageId: "pc-basic", articleId: "dt-art" }).sources[0].decisions[0] as DynTableDecision;
     expect(rec).toMatchObject({ kind: "dynTable", nodeId: "dt-ref", tableCode: "DT000001" });
     expect(rec.benefits.map((b) => b.name)).toEqual(["사망보험금"]);
     expect(rec.rows.map((r) => r.name)).toEqual(["사망보험금"]);
-    const missing = explain({ ...input, dynTables: [] }, { document: "special", productCoverageId: "pc-basic", articleId: "dt-art" }).sources[0].decisions[0] as DynTableDecision;
+    const missing = explain({ ...input, specialDocuments: new Map([...base.specialDocuments, ["cov-death", docOf("DT999999")]]) }, { document: "special", productCoverageId: "pc-basic", articleId: "dt-art" }).sources[0].decisions[0] as DynTableDecision;
     expect(missing.issue).toMatchObject({ kind: "brokenRef" });
   });
 });

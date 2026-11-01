@@ -242,7 +242,7 @@ describe("동적표 펼침 — 인수 케이스", () => {
       expect.objectContaining({
         kind: "dynTableMergeConflict",
         severity: "warning",
-        at: expect.objectContaining({ document: "special", ownerId: "pc1", refPath: "동적표 T0001 › 행 항암방사선약물치료비(기타피부암 및 갑상선암)" }),
+        at: expect.objectContaining({ document: "special", ownerId: "pc1", refPath: "감액 지급금액 표 › 행 항암방사선약물치료비(기타피부암 및 갑상선암)" }),
       }),
     ]);
     expect(t.issues[0].message).toContain("열 1");
@@ -313,7 +313,7 @@ describe("동적표 펼침 — 규칙", () => {
     const list = benefits([{ sub: "S", name: "a", rate: 100, reduction: { periods: [["1년", 50]] } }]);
     const t = expand(A, list, undefined);
     expect(t.issues).toEqual([expect.objectContaining({ kind: "argUnbound", at: expect.objectContaining({ refPath: "arg.갱신형" }) })]);
-    expect(t.issues[0].message).toContain("동적표 T0001");
+    expect(t.issues[0].message).toContain("감액 지급금액 표");
     expect(t.header).toHaveLength(3); // 구조는 그대로
 
     const withDefault: DynTable = { ...A, params: [{ name: "갱신형", type: { kind: "boolean" }, default: { kind: "const", value: true } }] };
@@ -358,7 +358,7 @@ describe("동적표 펼침 — 규칙", () => {
   it("열거형에서 지워진 경계는 brokenRef(행 좌표) — 머리글엔 「없는 값」 글자, 열은 맨 뒤", () => {
     const list = benefits([{ sub: "S", name: "a", rate: 100, reduction: { periods: [["1년", 50], ["V09", 70]] } }]);
     const t = expand(A, list, 비갱신);
-    expect(t.issues).toEqual([expect.objectContaining({ kind: "brokenRef", at: expect.objectContaining({ refPath: "동적표 T0001 › 행 a" }) })]);
+    expect(t.issues).toEqual([expect.objectContaining({ kind: "brokenRef", at: expect.objectContaining({ refPath: "감액 지급금액 표 › 행 a" }) })]);
     expect(t.issues[0].message).toContain("V09");
     expect(lines(t, list)[0]).toBe("[구 분 │ 계약일부터 1년경과시점 전일 이전 │ 계약일부터 1년경과시점 이후 계약일부터 없는 값 V09경과시점 전일 이전 │ 계약일부터 없는 값 V09경과시점 이후]");
   });

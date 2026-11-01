@@ -45,7 +45,7 @@ test(
       await page.getByRole("button", { name: "편집", exact: true }).click();
       await expect(editTabButton).toHaveAttribute("aria-selected", "true");
       await expect(sideTabs.getByRole("tab").first()).toHaveText("편집");
-      await expect(editTab(page)).toHaveText("본문에서 함수조항 · 조 참조 · 조건식 · 동적표를 고르면 여기서 고칩니다.");
+      await expect(editTab(page)).toHaveText("본문에서 함수조항 · 조 참조 · 조건식 · 표 구분자를 고르면 여기서 고칩니다.");
     });
 
     const chips = body.locator("[data-chip]");
@@ -117,7 +117,7 @@ test(
       await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
       await page.keyboard.press("Escape");
       await expect(editTabButton).toHaveAttribute("aria-selected", "true");
-      await expect(editTab(page)).toHaveText("본문에서 함수조항 · 조 참조 · 조건식 · 동적표를 고르면 여기서 고칩니다.");
+      await expect(editTab(page)).toHaveText("본문에서 함수조항 · 조 참조 · 조건식 · 표 구분자를 고르면 여기서 고칩니다.");
     });
 
     await ev.action("편집탭#8", "저장 — 편집 탭이 사라지고 들어오기 전 탭(미리보기)으로, 바뀐 칩은 읽기 모드에도 남는다", async () => {

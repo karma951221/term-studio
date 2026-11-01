@@ -101,7 +101,7 @@ interface Computed {
 
 export function expandDynTable(def: DynTable, input: DynTableInput, bindings: Bindings | undefined, deps: DynTableDeps, at: Coordinate = {}): ExpandedDynTable {
   const issues: Issue[] = [];
-  const owner = `동적표 ${def.code}`;
+  const owner = def.label; // 오류 좌표 「<구분자명> › 행 <급부명>」 (기능/구분자 §3.7)
   const here = (refPath: string): Coordinate => ({ ...at, refPath });
 
   // 1. 인자 연결 — 템플릿마다 한 번 바꿔 쓴다(자리마다 같은 결과라 복제 전에). 오류는 모으고 바꿀 수 있는 데까지 바꾼 템플릿을 쓴다

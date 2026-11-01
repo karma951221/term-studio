@@ -1,5 +1,5 @@
 /**
- * 공용 스키마 — 함수조항 정의 · 동적표 정의.
+ * 공용 스키마 — 함수조항 정의. (동적표 정의 dyn_tables 는 0042 에서 걷어냈다 — 지급금액 표는 시스템 표 구분자, ADR-0099)
  *
  * 근거: docs/기능/함수조항/함수조항.md (§3.1 · §3.2 · §3.7) · ADR-0076.
  *
@@ -19,8 +19,6 @@ import type { LocalDef } from "@/domain/clause/locals";
 import type { ParamDef } from "@/domain/clause/params";
 import type { PresetDef } from "@/domain/clause/presets";
 import type { ClauseBody, ClauseMode, OptionDef } from "@/domain/clause/types";
-import type { Inline } from "@/domain/clause/nodes";
-import type { DynTableFixed, DynTableHeaders } from "@/domain/dyntable/types";
 import type { Code } from "@/domain/types";
 
 export const clauses = pgTable("clauses", {
@@ -44,37 +42,6 @@ export const clauses = pgTable("clauses", {
   requiredDiscriminators: jsonb("required_discriminators").$type<Code[]>().notNull(),
   /** 요구 담보속성 종류 코드. */
   requiredAttributes: jsonb("required_attributes").$type<Code[]>().notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  /** users.id — FK 없음. */
-  createdBy: uuid("created_by"),
-  updatedBy: uuid("updated_by"),
-});
-
-/**
- * 동적표 정의 — 기능/동적표 §3.1 (감액 지급금액 표).
- *
- * - 동적표 1건 = 행 1건. 함수조항과 같은 뼈대(코드 · 이름 · 인자)에 본문 대신 **표 규칙**(행 기준은 급부명 고정 · 구분 칸 머리글 · 열 머리글 템플릿 네 벌 · 셀 템플릿).
- *   열을 감액 구간으로 나눌지는 머리글 구조가 정한다(열 기준 컬럼은 0035 에서 폐지, 2026-10-21).
- * - 템플릿은 인라인 노드 배열(jsonb) — 함수조항 본문과 같은 결. 인자는 값 인자만(저장 검사가 거부).
- * - 코드는 code_sequences (kind `dynTable`, scope "") 로 채번한다 — `DT000001` … (불변 · 유일).
- * - 사용처(담보약관의 `dynTableRef`) 역인덱스는 refs 영역 몫 — 여기에는 없다.
- */
-export const dynTables = pgTable("dyn_tables", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  /** 자동 채번 코드 `DT000001` … (불변). */
-  code: text("code").notNull().unique(),
-  label: text("label").notNull(),
-  /** 인자 선언 목록 (ParamDef[] — 값 인자만). 빈 목록 = 인자 0개. */
-  params: jsonb("params").$type<ParamDef[]>().notNull().default([]),
-  /** 구분 칸 머리글 — 기본 「구 분」. */
-  rowHeader: text("row_header").notNull(),
-  /** 열 머리글 템플릿 네 벌 { first, middle, last, single } — 각각 Inline[]. */
-  headers: jsonb("headers").$type<DynTableHeaders>().notNull(),
-  /** 셀 템플릿 (Inline[]). */
-  cell: jsonb("cell").$type<Inline[]>().notNull(),
-  /** 정액형 표의 칸 { caption, benefitHeader } (Inline[] 둘) — 있으면 정액형(기능/동적표 §3.7, 2026-10-31 · 0041). null = 감액(비율) 표. */
-  fixed: jsonb("fixed").$type<DynTableFixed>(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   /** users.id — FK 없음. */

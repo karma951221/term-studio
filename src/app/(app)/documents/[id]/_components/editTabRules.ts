@@ -63,7 +63,7 @@ export function isInsertSpec(spec: PopupSpec): boolean {
     case "newTable":
     case "clauseBlock":
     case "boxPick":
-    case "dynTable":
+    case "tableRef":
     case "repeatInline":
       return true;
     case "repeatBlock":
@@ -111,7 +111,7 @@ export function followUpSpec(ops: readonly EditOp[]): PopupSpec | undefined {
   for (const op of ops) {
     if (op.type !== "insert") continue;
     const n = op.node;
-    if (n.kind === "clauseBlockRef" || n.kind === "dynTableRef") return { kind: "editChip", nodeId: n.id };
+    if (n.kind === "clauseBlockRef" || n.kind === "tableRef") return { kind: "editChip", nodeId: n.id };
     if (n.kind === "forBlock") return { kind: "repeatBlock", nodeId: n.id };
     if (n.kind === "table") return { kind: "tableProps", tableId: n.id };
   }

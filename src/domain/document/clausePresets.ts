@@ -5,7 +5,6 @@
  *   문면 템플릿 트리 · 상품 조 사본(조 하나) 어느 모양이든 걷는다.
  * - `presetUses` : 함수조항 하나의 프리셋별 사용 수 (관계정보).
  * - `renameBindingsIn` : 함수조항 인자 이름 바꾸기 — 그 함수조항 참조의 인자 연결 키를 새 이름으로(출력 불변, 기능/함수조항 §3.7).
- * - `renameDynTableBindingsIn` : 동적표 인자 이름 바꾸기 — 그 동적표 참조(`dynTableRef`)의 인자 연결 키를 같은 규칙으로 (기능/동적표 §3.5).
  */
 import { unfoldPreset } from "../clause/presets";
 import type { Clause } from "../clause/types";
@@ -43,22 +42,6 @@ function renameKeys(ref: { bindings?: Record<string, unknown> }, renames: Readon
   if (!keys.some((k) => renames.has(k))) return false;
   ref.bindings = Object.fromEntries(keys.map((k) => [renames.get(k) ?? k, ref.bindings![k]]));
   return true;
-}
-
-/** 동적표 인자 이름 바꾸기의 사용처 몫 — 그 동적표 참조의 `bindings` 키를 한 번에 바꾼다. 원본은 바꾸지 않는다. `count` = 고친 참조 수. */
-export function renameDynTableBindingsIn<T>(root: T, tableCode: Code, renames: ReadonlyMap<string, string>): { node: T; count: number } {
-  const copy = structuredClone(root);
-  let count = 0;
-  if (renames.size === 0) return { node: copy, count };
-  const walkDyn = (node: unknown): void => {
-    if (Array.isArray(node)) return node.forEach(walkDyn);
-    if (!node || typeof node !== "object") return;
-    const n = node as { kind?: string; tableCode?: Code; bindings?: Record<string, unknown> };
-    if (n.kind === "dynTableRef" && n.tableCode === tableCode && renameKeys(n, renames)) count += 1;
-    for (const v of Object.values(node)) if (v && typeof v === "object") walkDyn(v);
-  };
-  walkDyn(copy);
-  return { node: copy, count };
 }
 
 export function presetUses(root: unknown, clauseCode: Code): Map<Code, number> {

@@ -564,3 +564,35 @@ describe("0038_drop_notice_subtypes", () => {
     expect(await features()).toEqual(["feature.notice_kind", "feature.renewable"]);
   });
 });
+
+describe("0042_drop_dyn_tables", () => {
+  const apply0042 = async () =>
+    client.transaction(async (tx) => {
+      for (const s of statementsOf(tagOf(42))) await tx.exec(s);
+    });
+
+  it("문면의 동적표 참조는 표 구분자 자리(tableRef{code})가 되고 인자 연결은 걷힌다 · dyn_tables 와 그 채번 순번이 없어진다 · 두 번 돌려도 같다 (ADR-0099)", async () => {
+    for (let idx = 6; idx <= 41; idx++) for (const s of statementsOf(tagOf(idx))) await client.exec(s);
+    const tree = {
+      id: "d",
+      kind: "document",
+      title: "특약",
+      children: [{ id: "a", kind: "article", title: [], children: [{ id: "r", kind: "dynTableRef", tableCode: "DT000002", bindings: { 갱신형: { kind: "const", value: true } } }, { id: "p", kind: "paragraph", children: [{ id: "t", kind: "text", text: "tableCode" }] }] }],
+    };
+    await client.query(`INSERT INTO documents (kind, title, tree) VALUES ('special', '특약', $1::jsonb)`, [JSON.stringify(tree)]);
+    await client.query(`INSERT INTO dyn_tables (code, label, row_header, headers, cell) VALUES ('DT000002', '갱신', '구 분', '{}'::jsonb, '[]'::jsonb)`);
+    await client.query(`INSERT INTO code_sequences (kind, scope, next) VALUES ('dynTable', '', 3)`);
+    const read = async () => (await client.query<{ tree: typeof tree }>(`SELECT tree FROM documents`)).rows[0].tree;
+    await apply0042();
+    const after = await read();
+    expect(after.children[0].children).toEqual([
+      { id: "r", kind: "tableRef", code: "DT000002" },
+      { id: "p", kind: "paragraph", children: [{ id: "t", kind: "text", text: "tableCode" }] },
+    ]);
+    const tables = await client.query(`SELECT 1 FROM information_schema.tables WHERE table_name = 'dyn_tables'`);
+    expect(tables.rows).toHaveLength(0);
+    expect((await client.query(`SELECT 1 FROM code_sequences WHERE kind = 'dynTable'`)).rows).toHaveLength(0);
+    await apply0042();
+    expect(await read()).toEqual(after);
+  });
+});

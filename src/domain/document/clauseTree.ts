@@ -214,7 +214,7 @@ const WHAT: Record<string, string> = {
   structKey: "구조 표기",
   clauseInlineRef: "함수조항 참조",
   clauseBlockRef: "함수조항 참조",
-  dynTableRef: "동적표 참조",
+  tableRef: "표 구분자",
   condBlock: "조건 블록",
 };
 

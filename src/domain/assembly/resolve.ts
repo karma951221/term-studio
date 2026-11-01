@@ -24,9 +24,10 @@
  *   key 조합마다 템플릿 행 복제 · 구조 표기 → key 표기 · 바깥 key 세로 병합(spans). 조합이 0 이면 표를 생략한다.
  *   행 안의 조건은 행 노드 문맥에서 해소하고, 슬롯은 행 노드(`RSlot.row`)를 달고 치환 단계로 넘긴다.
  *   행 원천이 없는 문맥(보통약관)의 반복 표는 오류 마커.
- * - **동적표 참조**(dynTableRef, 기능/동적표 §3.6)는 같은 행 원천으로 급부를 열거해(세부보장 순 → 급부 순) 급부마다 지급률(`pay.rate`) · 감액 구간(`reductionPeriods`)을
- *   그 급부 노드 문맥에서 읽고, `expandDynTable` 로 머리글 · 행 · 셀 인라인을 받아 **담보 문맥**(행 노드 문맥이 아니다 — 셀의 「해당보장의」 조건이 담보의 세부보장 수를 센다)으로
- *   조건 · 분기를 해소해 정적 표와 같은 `RTable` 로 낸다. 펼침 오류(argUnbound · brokenRef)는 표 대신 오류 마커, 묶기 충돌 경고는 issues 에만 싣고 표는 낸다.
+ * - **표 구분자 자리**(tableRef, 기능/구분자 §3.7 · ADR-0099)는 같은 행 원천으로 급부를 열거해(세부보장 순 → 급부 순) 급부마다 지급률(`pay.rate`) · 감액 구간(`reductionPeriods`) ·
+ *   체증(`escalationSteps`) · 정액표를 그 급부 노드 문맥에서 읽고, 시스템 연결(갱신형 — `RENEWABLE_CONDITION` · 단서문구 — `provisoText`)을 담보 문맥에서 읽어
+ *   `expandDynTable` 로 머리글 · 행 · 셀 인라인을 받아 **담보 문맥**(행 노드 문맥이 아니다 — 셀의 「해당보장의」 조건이 담보의 세부보장 수를 센다)으로
+ *   조건 · 분기를 해소해 정적 표와 같은 `RTable` 로 낸다. 펼침 오류(brokenRef)는 표 대신 오류 마커, 묶기 충돌 경고는 issues 에만 싣고 표는 낸다.
  * - **박스 참조**(정적 마스터, 최종 결정 9)는 박스 마스터(`env.boxes`)에서 제목 · 줄을 읽어 정적 박스로 바꾼다 — 조 자리 · 호 목록 자리,
  *   펼친 함수조항 본문 안도 같다. 없는 박스는 brokenRef 오류 마커. 줄은 고정 글이라 더 해소할 것이 없다.
  * - 슬롯·조 참조·별표 참조는 그대로 둔다 (4·7단계).
@@ -68,11 +69,11 @@ import { expandClause, resolveOptions } from "../clause/reference";
 import type { Clause, ClauseMode, OptionSelection } from "../clause/types";
 import type { EnumDef } from "../catalog/types";
 import type { Box } from "../document/box";
-import { expandDynTable, expandFixedDynTable, formatWon, type DynBenefit, type DynTable } from "../dyntable";
-import { fixedGrid, insuredAmounts, reductionPeriods } from "../coverage/traits";
+import { expandDynTable, expandFixedDynTable, findTableDiscriminator, formatWon, RENEWABLE_CONDITION, tableDiscriminatorBindings, type DynBenefit } from "../dyntable";
+import { escalationSteps, fixedGrid, insuredAmounts, provisoText, reductionPeriods } from "../coverage/traits";
 import type { SlotReader } from "../catalog";
 import type { MasterTree } from "../master";
-import { fallbackPathId, type ArticleNode, type BoxNode, type BoxRefNode, type BulletListNode, type BulletNode, type ClauseBlockRefNode, type CondBlockNode, type DocumentNode, type DynTableRefNode, type ForBlockNode, type InlineForNode, type InlineNode, type ItemNode, type ParagraphNode, type RepeatNode, type SectionNode, type SubitemNode, type TableNode } from "../document/nodes";
+import { fallbackPathId, type ArticleNode, type BoxNode, type BoxRefNode, type BulletListNode, type BulletNode, type ClauseBlockRefNode, type CondBlockNode, type DocumentNode, type ForBlockNode, type InlineForNode, type InlineNode, type ItemNode, type ParagraphNode, type RepeatNode, type SectionNode, type SubitemNode, type TableNode, type TableRefNode } from "../document/nodes";
 import { withCodes } from "../document/pcode";
 import { foldTitle } from "../document/title";
 import { withClauseCodes } from "../clause/pcode";
@@ -89,8 +90,6 @@ export interface ResolveEnv {
   clauses: ReadonlyMap<Code, Clause>;
   /** 정적 마스터 박스 — 코드 → 박스. 박스 참조를 여기서 편다 (없으면 모든 박스 참조가 brokenRef). */
   boxes?: ReadonlyMap<Code, Box>;
-  /** 동적표 정의 — 코드 → 정의. 동적표 참조를 여기서 편다 (없으면 모든 동적표 참조가 brokenRef, 기능/동적표 §3.6). */
-  dynTables?: ReadonlyMap<Code, DynTable>;
   /** 함수조항 참조 노드 id → 옵션 오버라이드 (상품 스코프 — 보통약관 자리만, 기능/상품 §3.6). */
   overrides: ReadonlyMap<Id, OptionSelection>;
   /** 문서 기본 좌표 (document · ownerId · ownerName). */
@@ -142,10 +141,10 @@ type AnyCond = CondBlockNode | ClauseCondBlockNode;
 type AnySubitem = ClauseSubitemNode | SubitemNode;
 type AnyItem = ItemNode | ClauseItemNode;
 type AnyParagraph = ParagraphNode | ClauseParagraphNode;
-type AnyBlock = AnyParagraph | AnyCond | ClauseSwitchBlockNode | ClauseBlockRefNode | ForBlockNode | ClauseBlock | ItemNode | SubitemNode | ArticleNode | SectionNode | TableNode | BoxNode | BulletListNode | BulletNode | BoxRefNode | DynTableRefNode;
+type AnyBlock = AnyParagraph | AnyCond | ClauseSwitchBlockNode | ClauseBlockRefNode | ForBlockNode | ClauseBlock | ItemNode | SubitemNode | ArticleNode | SectionNode | TableNode | BoxNode | BulletListNode | BulletNode | BoxRefNode | TableRefNode;
 type AnyStatic = TableNode | BoxNode | BulletListNode | ClauseBulletListNode;
 /** 호 목록 자리 — 호 · 조건 블록 · 정적 블록 · 박스 참조 · 「호」 함수조항 참조 (펼친 호 유형 본문도 같은 자리). */
-type AnyItemSlot = AnyItem | AnyCond | AnyStatic | BoxRefNode | DynTableRefNode | ClauseBlockRefNode | ClauseItemCondBlockNode | ClauseItemSwitchBlockNode | ForBlockNode;
+type AnyItemSlot = AnyItem | AnyCond | AnyStatic | BoxRefNode | TableRefNode | ClauseBlockRefNode | ClauseItemCondBlockNode | ClauseItemSwitchBlockNode | ForBlockNode;
 /** 목 목록 자리 — 목 · 조건 블록 · 글머리 목록 · 「목」 함수조항 참조 (펼친 목 유형 본문도 같은 자리). */
 type AnySubitemSlot = AnySubitem | AnyCond | BulletListNode | ClauseBlockRefNode | ClauseSubitemCondBlockNode | ClauseSubitemSwitchBlockNode;
 /** 가지 — 블록·인라인·함수조항 쪽 모두 이 모양이다. children 은 자리에 맞게 캐스팅한다. */
@@ -876,25 +875,27 @@ class Walker {
   }
 
   /**
-   * 동적표 참조 (기능/동적표 §3.6) — 행 원천(상품담보 스냅샷)의 급부를 열거해 펼친 뒤 담보 문맥으로 셀을 해소해 `RTable` 로 낸다.
-   * 급부 값은 그 급부 노드 문맥(`rows.rowContext`)에서 마스터 필드로 읽는다 — `pay.rate`, 감액 폼은 `reductionPeriods`(SlotReader 어댑터: 경로 → 마스터 참조 → 슬롯).
-   * 없는 정의 · 행 원천 없는 문맥(보통약관) · 펼침 오류(argUnbound · brokenRef)는 오류 마커. 미입력 · 묶기 충돌은 issues 에만.
+   * 표 구분자 자리 (기능/구분자 §3.7 · ADR-0099) — 행 원천(상품담보 스냅샷)의 급부를 열거해 펼친 뒤 담보 문맥으로 셀을 해소해 `RTable` 로 낸다.
+   * 급부 값은 그 급부 노드 문맥(`rows.rowContext`)에서 마스터 필드로 읽는다 — `pay.rate`, 감액 폼은 `reductionPeriods` · 체증은 `escalationSteps`(SlotReader 어댑터: 경로 → 마스터 참조 → 슬롯).
+   * 문구 안의 갈림(갱신형 · 단서문구)은 담보 문맥에서 읽어 시스템 연결로 댄다 — 사용자 인자 연결은 없다.
+   * 없는 코드 · 행 원천 없는 문맥(보통약관) · 펼침 오류(brokenRef)는 오류 마커. 미입력 · 묶기 충돌은 issues 에만.
    */
-  dynTable(n: DynTableRefNode, f: Frame): (RTable<RInline> | ErrorNode)[] {
+  dynTable(n: TableRefNode, f: Frame): (RTable<RInline> | ErrorNode)[] {
     const at = this.at(f, n.id);
-    const rec = this.note((): DynTableDecision => ({ kind: "dynTable", ...this.place(n, f), tableCode: n.tableCode, benefits: [], header: [], rows: [] }));
+    const rec = this.note((): DynTableDecision => ({ kind: "dynTable", ...this.place(n, f), tableCode: n.code, benefits: [], header: [], rows: [] }));
     const fail = (issue: Issue): ErrorNode[] => {
       if (rec) rec.issue = issue;
       return [this.error(n.id, issue)];
     };
-    const def = this.env.dynTables?.get(n.tableCode);
-    if (!def) return fail({ kind: "brokenRef", message: `동적표 ${n.tableCode} 이(가) 없습니다`, at });
+    const system = findTableDiscriminator(n.code);
+    if (!system) return fail({ kind: "brokenRef", message: `표 구분자 ${n.code} 이(가) 없습니다`, at });
+    const def = system.table;
     const rows = this.ctx.rows;
-    if (!rows) return fail({ kind: "structure", message: "동적표는 담보약관(상품담보) 문맥에서만 쓸 수 있습니다", at });
+    if (!rows) return fail({ kind: "structure", message: "표 구분자는 담보약관(상품담보) 문맥에서만 쓸 수 있습니다", at });
     const keys = enumerateRows(rows.root, 2, rows.providers);
     if (!keys.ok) {
       const what = keys.rejection.reason === "notFound" ? ` — ${keys.rejection.what} 없음` : "";
-      return fail({ kind: "structure", message: `동적표의 급부를 열거할 수 없습니다${what}`, at });
+      return fail({ kind: "structure", message: `${system.label}의 급부를 열거할 수 없습니다${what}`, at });
     }
     const readerOf = (c: EvalContext | undefined): SlotReader => (path) => {
       if (!c) return undefined;
@@ -911,8 +912,9 @@ class Walker {
       const rate = read("pay.rate");
       const payRate = rate?.entered && typeof rate.value === "number" ? rate.value : undefined;
       const reduction = reductionPeriods(read, (code) => this.env.enums?.get(code));
-      // 정액표(마스터 소유 — 조립 입력이 마스터 값을 섞어 둔다, ADR-0097)
+      // 정액표 · 체증(마스터 소유 — 조립 입력이 마스터 값을 섞어 둔다, ADR-0097)
       const grid = def.fixed ? fixedGrid(read) : undefined;
+      const steps = def.fixed ? undefined : escalationSteps(read);
       benefits.push({
         subCoverageKey: sub.key ?? sub.id,
         subCoverageName: sub.name,
@@ -921,9 +923,14 @@ class Walker {
         ...(payRate !== undefined ? { payRate } : {}),
         ...(reduction ? { reduction } : {}),
         ...(grid ? { fixedGrid: grid } : {}),
+        ...(steps && steps.length > 0 ? { escalation: steps } : {}),
       });
     }
     if (rec) rec.benefits = benefits;
+    // 시스템 연결 — 갱신형(그 상품담보의 갱신유형)은 담보 문맥에서 식으로, 단서문구는 담보 특성에서 읽는다
+    const renewable = this.renewable();
+    const proviso = provisoText(readerOf(this.ctx.eval));
+    const bindings = tableDiscriminatorBindings({ renewable, ...(proviso ? { proviso } : {}) });
     const deps = { formatConst: (value: Parameters<Walker["constText"]>[0], param: ParamDef) => this.constText(value, param.type), refId: n.id };
     // 셀은 담보 문맥(행 노드 문맥 아님) — 「해당보장의」 조건이 담보의 세부보장 수를 센다. 템플릿엔 마스터 슬롯이 없어 행 노드가 필요 없다
     const inner: Frame = { ...f, path: [...f.path, n.id] };
@@ -934,7 +941,7 @@ class Walker {
       if (rec) rec.fixed = true;
       // 정액형 표(기능/동적표 §3.7) — 운영 가입금액은 담보(상품담보) 문맥의 「가입금액」. 급부 → 가입금액 → 캡션 + 표 블록 여럿
       const amounts = insuredAmounts(readerOf(this.ctx.eval)) ?? [];
-      const expanded = expandFixedDynTable(def, { benefits, insuredAmounts: amounts }, n.bindings, deps, at);
+      const expanded = expandFixedDynTable(def, { benefits, insuredAmounts: amounts }, bindings, deps, at);
       this.issues.push(...expanded.issues);
       const fatal = expanded.issues.find((i) => isFatal(i) && i.kind !== "notEntered") ?? (expanded.blocks.length === 0 ? expanded.issues.find(isFatal) : undefined);
       if (fatal) {
@@ -966,7 +973,7 @@ class Walker {
       return out;
     }
 
-    const expanded = expandDynTable(def, { benefits }, n.bindings, deps, at);
+    const expanded = expandDynTable(def, { benefits, renewable }, bindings, deps, at);
     this.issues.push(...expanded.issues);
     const fatal = expanded.issues.find((i) => i.severity !== "warning" && (i.kind === "argUnbound" || i.kind === "brokenRef"));
     if (fatal) {
@@ -990,11 +997,19 @@ class Walker {
     ];
   }
 
+  /** 그 상품담보가 갱신형인가 — 시스템 식 `RENEWABLE_CONDITION` 을 담보 문맥에서. 판정이 서지 않으면(속성 없음 · 미결) 아니오. */
+  private renewable(): boolean {
+    const parsed = parse(RENEWABLE_CONDITION);
+    if (!parsed.ok) return false;
+    const r = evaluate(parsed.value, this.ctx.eval);
+    return r.kind === "value" && r.value === true;
+  }
+
   items(list: readonly AnyItemSlot[], f: Frame): (RItem<RInline> | RStatic<RInline> | ErrorNode)[] {
     return list.flatMap((n): (RItem<RInline> | RStatic<RInline> | ErrorNode)[] => {
       if (n.kind === "item") return [this.item(n, f)];
       if (n.kind === "boxRef") return [this.boxRef(n, f)];
-      if (n.kind === "dynTableRef") return this.dynTable(n, f);
+      if (n.kind === "tableRef") return this.dynTable(n, f);
       if (n.kind === "table" || n.kind === "box" || n.kind === "bulletList") return this.static(n, f);
       if (n.kind === "clauseBlockRef") {
         // 「호」 함수조항 — 호 목록(빈 목록 · 여러 호 가능)을 이 자리에 펴고 번호는 사용처에서 이어 매긴다 (최종 결정 4).
@@ -1034,7 +1049,7 @@ class Walker {
           return this.static(n, f);
         case "boxRef":
           return [this.boxRef(n, f)];
-        case "dynTableRef":
+        case "tableRef":
           return this.dynTable(n, f);
         case "condBlock":
           return this.cond(n, f, false, (children, g) => this.blocks(children as AnyBlock[], g, excludeFromComparison));
