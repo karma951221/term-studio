@@ -8,8 +8,11 @@ import { checkDiscriminatorExpression, discriminatorResultType, type Discriminat
 import type { Discriminator, DiscriminatorResultType } from "@/domain/catalog/types";
 import type { ExprType } from "@/domain/expression";
 import { allMasterFields, levelDepth, masterFieldFullLabel, type MasterTree } from "@/domain/master";
-import type { AttachLevel, Code, FieldType, FieldTypeKind, Issue, Value } from "@/domain/types";
+import type { AttachLevel, Code, FieldType, FieldTypeKind, Id, Issue, Value } from "@/domain/types";
 import type { InspectInput } from "@/services/catalog";
+import { indexTree, type DocumentNode } from "@/domain/document/nodes";
+import { articleRefLabel, numberTree } from "@/domain/document/numbering";
+import { foldTitle } from "@/domain/document/title";
 
 export function str(fd: FormData, key: string): string {
   return String(fd.get(key) ?? "").trim();
@@ -314,4 +317,31 @@ export function insertPanelData(master: MasterTree, defs: readonly Discriminator
     return { code: d.code, label: d.label, level: d.level, ...(type && type.kind !== "list<ref>" ? { typeKind: type.kind } : {}) };
   });
   return { forms: [...forms.values()], discriminators };
+}
+
+// ───────────────────────────── 준용예외 구분자 — 후보 칸 (ADR-0098 결정 1) ─────────────────────────────
+
+/** 후보 칸의 템플릿 한 묶음 — 템플릿의 조를 문서 순 「제N조(제목)」으로. */
+export interface CandidateGroup {
+  id: Id;
+  title: string;
+  articles: { id: Id; label: string }[];
+}
+
+/**
+ * 보통약관 템플릿들 → 후보 칸 재료. 후보는 여러 템플릿의 조를 담을 수 있다 — 담보 문면 한 벌이 템플릿이 다른 상품에 그대로 탑재된다(ADR-0098 결정 1).
+ * 번호는 템플릿의 계산 번호(조건 조 포함)다 — 상품마다 최종 번호는 조립이 찍는다.
+ */
+export function candidateGroups(generals: readonly { id: Id; title: string; tree: DocumentNode }[]): CandidateGroup[] {
+  return generals.map((g) => {
+    const numbers = numberTree(g.tree);
+    const ix = indexTree(g.tree);
+    const articles = [...numbers]
+      .filter(([, n]) => n.kind === "article")
+      .flatMap(([id, n]) => {
+        const node = ix.nodes.get(id)?.node;
+        return node?.kind === "article" ? [{ id, label: articleRefLabel(n.n, foldTitle(node.title)) }] : [];
+      });
+    return { id: g.id, title: g.title, articles };
+  });
 }

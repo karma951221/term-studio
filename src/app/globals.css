@@ -7072,3 +7072,30 @@ button:where(:not([data-slot])).ts-doc-cond-btn.ts-cond-read {
   font-weight: 700;
   box-shadow: inset 0 0 0 1px var(--ts-rule-strong);
 }
+
+/* 준용예외 구분자의 후보 칸 (기능/구분자 §3.8 · ADR-0098 결정 1) — 템플릿마다 조 체크 */
+.ts-candidate-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+}
+.ts-candidate-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--ts-rule-strong);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.ts-candidate-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.ts-candidate-list {
+  margin: 0;
+  padding-left: 18px;
+}

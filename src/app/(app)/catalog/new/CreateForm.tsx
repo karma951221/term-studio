@@ -11,6 +11,8 @@
  * 2026-09-17 — 헤더에 「검사」 (저장 전 검사 · 오류/경고 두 등급, 기능/구분자 §3.3). 결과는 폼 아래 「검사 결과」 블록.
  * 2026-09-17 — 오른쪽에 넣기 패널(마스터 필드 · 구분자 · 연산) 상시, 식 입력은 커서 자리 삽입 (기능/구분자 §4.3).
  *
+ * 2026-11-01 — 결과 타입 「조 참조 목록」(준용예외 구분자)을 고르면 식 칸 대신 후보 칸(템플릿마다 조 체크)이 서고 레벨은 담보로 고정된다 (ADR-0098 결정 1).
+ *
  * 제출 버튼은 헤더 우측에 산다 (화면 하단에 조작을 두지 않는다 — §2 L2).
  */
 import { useState, type ReactNode } from "react";
@@ -29,7 +31,8 @@ import { ExpressionInput, useExpressionInsert } from "../_components/ExpressionF
 import { InsertPanel } from "../_components/InsertPanel";
 import { InspectButton, InspectionResult, type InspectionState } from "../_components/InspectionPanel";
 import { useAutoResultType } from "../_components/useAutoResultType";
-import { inspectInputFrom, RESULT_TYPE_HINT, resultTypeOptions, type InsertPanelData } from "../lib";
+import { CandidatePicker } from "../_components/CandidatePicker";
+import { inspectInputFrom, REF_LIST_KIND, RESULT_TYPE_HINT, resultTypeOptions, type CandidateGroup, type InsertPanelData } from "../lib";
 
 const FORM_ID = "create-discriminator";
 
@@ -40,6 +43,7 @@ export function CreateForm({
   enums,
   panel,
   catalog,
+  candidateGroups = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   /** 오류 배너 등 헤더 바로 아래에 들어갈 것. */
@@ -51,6 +55,8 @@ export function CreateForm({
   panel: InsertPanelData;
   /** 구분자 목록 — 식의 추론 타입(결과 타입 기본값)을 화면에서 바로 구할 때 구분자 참조를 푼다. */
   catalog: readonly Discriminator[];
+  /** 준용예외 구분자의 후보 칸 재료 — 보통약관 템플릿마다 조 (ADR-0098 결정 1). */
+  candidateGroups?: readonly CandidateGroup[];
 }) {
   const [level, setLevel] = useState<AttachLevel>(initialLevel);
   // 식 · 결과 타입은 제어형 — 「검사」가 지금 값을 읽어야 한다 (제출은 여전히 name 으로 formData 에 실린다).
@@ -59,6 +65,8 @@ export function CreateForm({
   const [resultTypeMulti, setResultTypeMulti] = useState(false);
   const [resultTypeEnum, setResultTypeEnum] = useState("");
   const [inspection, setInspection] = useState<InspectionState>();
+  const [candidates, setCandidates] = useState<string[]>([]);
+  const refList = resultTypeKind === REF_LIST_KIND;
   const follow = useAutoResultType({
     catalog,
     initial: { expression: "", level: initialLevel },
@@ -101,12 +109,20 @@ export function CreateForm({
 
             {/* 레벨은 채번 뒤 못 고친다 — 식의 참조 규칙이 레벨에 매여 있다 (ADR-0037). */}
             <FormRow label={FIELD_LABEL.level} info="식이 평가되는 자리다. 채번 뒤에는 고칠 수 없다.">
-              <RadioGroup name="level" label={FIELD_LABEL.level} options={LEVEL_OPTIONS} value={level} onChange={(value) => changeLevel(value as AttachLevel)} />
+              {/* 조 참조 목록(준용예외)은 특약 · 블록(상품담보) 문맥마다 값이 달라 담보 레벨로 고정된다 */}
+              {refList ? <><input type="hidden" name="level" value="coverage" /><span className="ts-field-static">담보</span></> : <RadioGroup name="level" label={FIELD_LABEL.level} options={LEVEL_OPTIONS} value={level} onChange={(value) => changeLevel(value as AttachLevel)} />}
             </FormRow>
 
-            <FormRow label={FIELD_LABEL.expression} htmlFor="new-expr" info="입력 항목과 다른 구분자를 부른다 — 같은 레벨은 그대로, 하위 레벨은 집계 안에서.">
-              <ExpressionInput inputRef={expressionRef} id="new-expr" name="expression" required placeholder="예: exist(exemption.months) · any(waiver.applies)" value={expression} onChange={changeExpression} />
-            </FormRow>
+            {refList ? (
+              <FormRow label="후보 조" info="준용규정의 「다만, … 은 제외합니다」에서 빼는 대상으로 볼 보통약관 조 — 여러 템플릿의 조를 고를 수 있다. 값은 조립이 특약마다 판정한다(후보이고 특약에 조연결된 조가 없는 것 + 위임 조).">
+                <input type="hidden" name="expression" value="" />
+                <CandidatePicker groups={candidateGroups} value={candidates} onChange={setCandidates} name="candidates" />
+              </FormRow>
+            ) : (
+              <FormRow label={FIELD_LABEL.expression} htmlFor="new-expr" info="입력 항목과 다른 구분자를 부른다 — 같은 레벨은 그대로, 하위 레벨은 집계 안에서.">
+                <ExpressionInput inputRef={expressionRef} id="new-expr" name="expression" required placeholder="예: exist(exemption.months) · any(waiver.applies)" value={expression} onChange={changeExpression} />
+              </FormRow>
+            )}
 
             {/* 결과 타입은 필수 — 식의 추론 타입이 기본값, 저장 시 추론 타입과 대조돼 다르면 거부된다 (기능/구분자 §3.1). */}
             <FormRow label={FIELD_LABEL.resultType} htmlFor="new-result-type" info={RESULT_TYPE_HINT}>

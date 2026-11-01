@@ -9,6 +9,7 @@
  *   편집 모드에서 식을 고치면 아직 타입을 고르지 않은 동안 식의 추론 타입을 따라간다 (`useAutoResultType`).
  * 2026-09-17 — 편집 모드 헤더에 「검사」(저장 전 검사 · 오류/경고 두 등급), 읽기 모드 제목 옆에 경고 배지 (기능/구분자 §3.3).
  * 2026-09-17 — 편집 모드 오른쪽에 넣기 패널(마스터 필드 · 구분자 · 연산), 식 입력은 커서 자리 삽입 (기능/구분자 §4.3).
+ * 2026-11-01 — 준용예외 구분자(결과 타입 「조 참조 목록」)는 식 대신 후보 조 칸 — 템플릿마다 조 체크, 결과 타입은 바꾸지 않는다 (ADR-0098 결정 1).
  */
 import { useCallback, useEffect, useState } from "react";
 
@@ -26,7 +27,8 @@ import { InspectButton, InspectionResult, type InspectionState } from "../_compo
 import { useAutoResultType } from "../_components/useAutoResultType";
 import { removeDiscriminatorEditAction, saveDiscriminatorEditAction } from "../edit-actions";
 import type { CatalogEditData } from "../edit-types";
-import { inspectInputFrom, RESULT_TYPE_HINT, resultTypeFromForm, resultTypeLabel, resultTypeOptions, resultTypeToForm, warningBadges, type InsertPanelData } from "../lib";
+import { CandidatePicker, candidateLabels } from "../_components/CandidatePicker";
+import { inspectInputFrom, RESULT_TYPE_HINT, type CandidateGroup, resultTypeFromForm, resultTypeLabel, resultTypeOptions, resultTypeToForm, warningBadges, type InsertPanelData } from "../lib";
 
 const LEVEL_INFO = "식이 평가되는 자리. 같은 레벨 입력 항목은 그대로, 하위 레벨은 집계 안에서만 부른다 — 채번 뒤에는 못 고친다";
 const EXPR_INFO = "입력 항목(`폼.필드`)과 다른 구분자를 부른다 — 같은 레벨은 그대로, 하위 레벨은 집계 안에서";
@@ -59,14 +61,59 @@ interface EditorBodyProps {
   panel: InsertPanelData;
   inspection: InspectionState | undefined;
   onClear: () => void;
+  candidateGroups: readonly CandidateGroup[];
 }
+
+/** 준용예외 구분자의 본문 — 코드 · 구분자명 · 레벨(담보) · 결과 타입(「조 참조 목록」 고정) · 후보 조 · 주석. 식 · 넣기 패널 · 검사가 없다. */
+function RefListFields({ def, groups }: { def: Discriminator; groups: readonly CandidateGroup[] }) {
+  const candidates = useEditField<string[]>("candidates");
+  const editing = candidates.mode === "edit";
+  const labels = candidateLabels(groups, candidates.value ?? []);
+  return (
+    <div className="ts-l2-main">
+      <div className="ts-form-row">
+        <label>코드</label>
+        <div className="ts-form-control"><span className="ts-field-static ts-mono">{def.code}</span></div>
+      </div>
+      <Field name="label" label="구분자명" />
+      <div className="ts-form-row">
+        <label>레벨</label>
+        <div className="ts-form-control"><span className="ts-field-static">{LEVEL_LABEL[def.level]}</span></div>
+      </div>
+      <div className="ts-form-row">
+        <label>{FIELD_LABEL.resultType}</label>
+        <div className="ts-form-control"><span className="ts-field-static">{resultTypeLabel(def.resultType, () => undefined)}</span></div>
+      </div>
+      <div className="ts-form-row">
+        <label>후보 조 <InfoTip text={CANDIDATES_INFO} /></label>
+        <div className="ts-form-control">
+          {editing ? (
+            <CandidatePicker groups={groups} value={candidates.value ?? []} onChange={candidates.setValue} />
+          ) : labels.length === 0 ? (
+            <span className="ts-field-locked">없음</span>
+          ) : (
+            <ul className="ts-candidate-list" aria-label="후보 조">{labels.map((l) => <li key={l}>{l}</li>)}</ul>
+          )}
+        </div>
+      </div>
+      <Field name="description" label="주석" />
+    </div>
+  );
+}
+
+const CANDIDATES_INFO = "준용규정의 「다만, … 은 제외합니다」에서 빼는 대상으로 볼 보통약관 조 — 여러 템플릿의 조를 고를 수 있다. 값은 조립이 특약 · 블록마다 판정한다(후보이고 특약에 조연결된 조가 없는 것 + 특약은 위임 조도)";
 
 /**
  * 본문 — 왼쪽 필드, 편집 모드에서는 오른쪽에 넣기 패널 (기능/구분자 §4.3 상시 패널). 읽기 모드는 필드만.
  * 식 입력은 커서 자리 삽입이 되는 `ExpressionInput` — 패널의 더블클릭이 `insert` 로 들어온다.
  * 식을 바꾸는 두 길(직접 입력 · 패널 삽입) 모두 `setExpression` 을 거쳐 결과 타입 기본값을 따라가게 한다.
  */
-function EditorFields({ def, enums, catalog, panel, inspection, onClear }: EditorBodyProps) {
+function EditorFields(props: EditorBodyProps) {
+  if (props.def.resultType?.kind === "list<ref>") return <RefListFields def={props.def} groups={props.candidateGroups} />;
+  return <ExpressionFields {...props} />;
+}
+
+function ExpressionFields({ def, enums, catalog, panel, inspection, onClear }: EditorBodyProps) {
   const expression = useEditField<string>("expression");
   const kind = useEditField<string>("resultTypeKind");
   const multi = useEditField<boolean>("resultTypeMulti");
@@ -170,6 +217,7 @@ export function CatalogEditor({
   catalog,
   warnings,
   panel,
+  candidateGroups = [],
 }: {
   def: Discriminator;
   /** 결과 타입이 목록값일 때 고를 열거형변수 · 읽기 표시명. */
@@ -180,6 +228,8 @@ export function CatalogEditor({
   warnings: readonly Issue[];
   /** 넣기 패널 재료 — 마스터 필드 트리 · 구분자 목록 (서버가 직렬화). */
   panel: InsertPanelData;
+  /** 준용예외 구분자의 후보 칸 재료 — 보통약관 템플릿마다 조 (ADR-0098 결정 1). */
+  candidateGroups?: readonly CandidateGroup[];
 }) {
   const [inspection, setInspection] = useState<InspectionState>();
   const clearInspection = useCallback(() => setInspection(undefined), []);
@@ -192,12 +242,14 @@ export function CatalogEditor({
     resultTypeKind: form.kind,
     resultTypeMulti: form.multi,
     resultTypeEnum: form.enumCode,
+    candidates: def.candidates ?? [],
   };
+  const refList = def.resultType?.kind === "list<ref>";
   return (
     <EditShell
       initial={data}
       title={def.label}
-      editActions={<EditInspectButton code={def.code} level={def.level} onResult={setInspection} />}
+      editActions={refList ? undefined : <EditInspectButton code={def.code} level={def.level} onResult={setInspection} />}
       readBadges={badges.map((b) => <span key={b.label} className="ts-badge warning" title={b.title}>{b.label}</span>)}
       path={[menuCrumb(DISCRIMINATORS_MENU)]}
       saveAction={saveDiscriminatorEditAction.bind(null, def.code)}
@@ -206,7 +258,7 @@ export function CatalogEditor({
       deleteTooltip={`구분자 ${def.label}(${def.code}) 삭제`}
       deleteSuccessHref="/catalog"
     >
-      <EditorBody def={def} enums={enums} catalog={catalog} panel={panel} inspection={inspection} onClear={clearInspection} />
+      <EditorBody def={def} enums={enums} catalog={catalog} panel={panel} inspection={inspection} onClear={clearInspection} candidateGroups={candidateGroups} />
     </EditShell>
   );
 }

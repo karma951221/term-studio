@@ -40,6 +40,11 @@ export async function saveDiscriminatorEditAction(code: string, input: CatalogEd
     const description = await services.catalog.setDescription(actor, code, input.description);
     error = failed(description, "description");
     if (error) return error;
+    // 준용예외 구분자는 식 · 결과 타입이 없다 — 후보만 고친다 (ADR-0098 결정 1)
+    if (def.resultType?.kind === "list<ref>") {
+      error = failed(await services.catalog.setCandidates(actor, code, input.candidates ?? []), "candidates");
+      return error ?? { ok: true };
+    }
     const expression = await services.catalog.setExpression(actor, code, input.expression, { resultType });
     error = failed(expression, resultType ? "expression" : "resultTypeKind");
     if (error) return error;

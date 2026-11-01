@@ -5,7 +5,9 @@ import type { Issue } from "@/domain/types";
 import type { Discriminator } from "@/domain/catalog/types";
 import type { MasterForm } from "@/domain/master";
 
-import { autoResultTypeForm, bool, fieldTypeFrom, inferResultTypeForm, insertAt, insertPanelData, insideAggregate, inspectInputFrom, OPERATOR_TOKENS, referenceToken, resultTypeFromForm, resultTypeLabel, resultTypeToForm, sameInspectInput, str, valueFromInput, warningBadges } from "./lib";
+import type { DocumentNode } from "@/domain/document/nodes";
+
+import { autoResultTypeForm, bool, candidateGroups, fieldTypeFrom, inferResultTypeForm, insertAt, insertPanelData, insideAggregate, inspectInputFrom, OPERATOR_TOKENS, referenceToken, resultTypeFromForm, resultTypeLabel, resultTypeToForm, sameInspectInput, str, valueFromInput, warningBadges } from "./lib";
 
 describe("catalog lib — FormData 파싱 (순수)", () => {
   it("str — trim 된 문자열, 없으면 빈 문자열", () => {
@@ -232,5 +234,28 @@ describe("catalog lib — 넣기 패널 (기능/구분자 §4.3)", () => {
         { code: "D0002", label: "지급률합", level: "coverage", typeKind: "number" },
       ],
     });
+  });
+});
+
+describe("준용예외 구분자 — 후보 칸 재료 (ADR-0098 결정 1)", () => {
+  it("템플릿마다 조를 문서 순 · 「제N조(제목)」으로 — 관 안 조도", () => {
+    const tree = {
+      id: "g",
+      kind: "document",
+      title: "보통약관",
+      children: [
+        { id: "a1", kind: "article", title: [{ id: "t1", kind: "text", text: "목적" }], children: [] },
+        { id: "s", kind: "section", title: "제2관 보험금의 지급", children: [{ id: "a2", kind: "article", title: [{ id: "t2", kind: "text", text: "보험금의 지급사유" }], children: [] }] },
+      ],
+    } as unknown as DocumentNode;
+    expect(candidateGroups([{ id: "g", title: "보통약관", tree }])).toEqual([
+      { id: "g", title: "보통약관", articles: [{ id: "a1", label: "제1조(목적)" }, { id: "a2", label: "제2조(보험금의 지급사유)" }] },
+    ]);
+  });
+
+  it("결과 타입 「조 참조 목록」 폼 값 왕복 · 표시", () => {
+    expect(resultTypeFromForm("list<ref>", false, "")).toEqual({ kind: "list<ref>" });
+    expect(resultTypeToForm({ kind: "list<ref>" })).toEqual({ kind: "list<ref>", multi: false, enumCode: "" });
+    expect(resultTypeLabel({ kind: "list<ref>" }, () => undefined)).toBe("조 참조 목록");
   });
 });
