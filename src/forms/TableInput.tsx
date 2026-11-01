@@ -33,7 +33,7 @@ function hint(col: TableColumn, text: string): string | undefined {
 
 export function TableInput({ id, field, onEdit, name }: InputProps) {
   // 칩 — 그 열에서 마지막으로 커서를 둔 칸(행 · 열 · 커서 자리)
-  const caret = useRef<{ r: number; c: number; at: number } | undefined>(undefined);
+  const caret = useRef<{ r: number; c: number; at: number; el?: HTMLInputElement } | undefined>(undefined);
   const type = field.view.type;
   if (type.kind !== "table") return null;
   const columns = type.columns;
@@ -62,7 +62,7 @@ export function TableInput({ id, field, onEdit, name }: InputProps) {
   };
   const addRow = () => set([...rows, columns.map(() => "")]);
   const remember = (r: number, c: number) => (e: { currentTarget: HTMLInputElement }) => {
-    caret.current = { r, c, at: e.currentTarget.selectionStart ?? e.currentTarget.value.length };
+    caret.current = { r, c, at: e.currentTarget.selectionStart ?? e.currentTarget.value.length, el: e.currentTarget };
   };
   const insertChip = (c: number, text: string) => {
     const next = rows.length > 0 ? rows.map((row) => [...row]) : [columns.map(() => "")];
@@ -70,7 +70,9 @@ export function TableInput({ id, field, onEdit, name }: InputProps) {
     const r = last ? last.r : next.length - 1;
     while (next[r].length < columns.length) next[r].push("");
     const cur = next[r][c] ?? "";
-    const at = last ? Math.min(last.at, cur.length) : cur.length;
+    // 커서는 누르는 순간 칸에서 읽는다 — 칩 버튼은 mousedown 을 막아 칸이 포커스 · 커서를 지킨다(onSelect 를 놓쳐도 맞게)
+    const live = last?.el?.isConnected ? last.el.selectionStart : null;
+    const at = last ? Math.min(live ?? last.at, cur.length) : cur.length;
     next[r][c] = cur.slice(0, at) + text + cur.slice(at);
     caret.current = { r, c, at: at + text.length };
     set(next);
@@ -138,6 +140,7 @@ export function TableInput({ id, field, onEdit, name }: InputProps) {
                           remember(r, c)(e);
                         }}
                         onSelect={col.chips ? remember(r, c) : undefined}
+                        onFocus={col.chips ? remember(r, c) : undefined}
                         onPaste={onPaste(r, c)}
                         aria-label={`${r + 1}행 ${col.label}`}
                       />

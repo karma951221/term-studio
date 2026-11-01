@@ -94,7 +94,8 @@ test(
       // 칩 — 구분 칸 맨 앞에 커서를 두고 「(최초)계약일」 버튼
       const first = escalation.getByRole("textbox", { name: "1행 구분", exact: true });
       await first.fill("부터 1년 이내");
-      await first.press("Home");
+      // Home 은 macOS Chromium 에서 커서를 옮기지 않는다 — 커서를 직접 맨 앞에
+      await first.evaluate((el: HTMLInputElement) => el.setSelectionRange(0, 0));
       await escalation.getByRole("button", { name: "(최초)계약일", exact: true }).click();
       await expect(first).toHaveValue("〔(최초)계약일〕부터 1년 이내");
       await escalation.getByRole("textbox", { name: "1행 비율", exact: true }).fill("1");
