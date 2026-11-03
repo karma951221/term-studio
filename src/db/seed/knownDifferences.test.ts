@@ -46,6 +46,16 @@ describe("expectedLines — 알려진 차이를 원문 줄에 얹는다", () => 
     expect(() => expectedLines("테스트", "a.md", own, [list[0]])).toThrow(/판/);
   });
 
+  it("파일 판 대조(edition · article 「*」) — 담보 템플릿이 다른 판 원문으로 만들어진 특약은 파일째 그 판의 기대 줄과 대조한다", () => {
+    const own = ["## 제1조(지급사유)", "@ 2607 글"];
+    const read = (dir: string) => ({ 새판: ["## 제1조(지급사유)", "@ 2610 글", "## 제2조(소멸)", "= 소멸"] })[dir as "새판"];
+    const list = [
+      { dir: "테스트", file: "a.md", article: "*", after: "", lines: [], edition: "새판", why: "개정된 판의 템플릿" },
+      { dir: "새판", file: "a.md", article: "소멸", after: "= 소멸", lines: ["= 소멸(표준화)"], replace: true as const, why: "표기" },
+    ];
+    expect(expectedLines("테스트", "a.md", own, list, read)).toEqual(["## 제1조(지급사유)", "@ 2610 글", "## 제2조(소멸)", "= 소멸(표준화)"]);
+  });
+
   it("목록의 차이는 모두 제 자리를 찾는다 — 범위는 바꾸기(replace)에만 쓴다", () => {
     for (const d of KNOWN_DIFFERENCES) if (d.span) expect(d.replace, d.why).toBe(true);
   });

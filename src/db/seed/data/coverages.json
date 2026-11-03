@@ -3485,5 +3485,795 @@
     "coverageValues": [],
     "benefitValues": [],
     "auto": true
+  },
+  {
+    "key": "a10-i64",
+    "code": "COV000227",
+    "name": "상해진단및치료비보장",
+    "benefitName": "상해진단및치료비보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "a10-d180",
+    "code": "COV000228",
+    "name": "암진단비(유사암제외)보장",
+    "benefitName": "암진단비(유사암제외)",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d182",
+    "code": "COV000229",
+    "name": "유사암진단비보장",
+    "benefitName": "유사암진단비보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d184",
+    "code": "COV000230",
+    "name": "유사암진단비Ⅱ보장",
+    "benefitName": "유사암진단비Ⅱ보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d186",
+    "code": "COV000231",
+    "name": "암진단비(유사암 및 소액암 제외)보장",
+    "benefitName": "암진단비(유사암 및 소액암 제외)",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d188",
+    "code": "COV000232",
+    "name": "뇌졸중진단비보장",
+    "benefitName": "뇌졸중진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d190",
+    "code": "COV000233",
+    "name": "뇌졸중진단비Ⅱ보장",
+    "benefitName": "뇌졸중진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "a10-d192",
+    "code": "COV000234",
+    "name": "뇌혈관질환진단비보장",
+    "benefitName": "뇌혈관질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d194",
+    "code": "COV000235",
+    "name": "뇌혈관질환진단비Ⅱ보장",
+    "benefitName": "뇌혈관질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "a10-d196",
+    "code": "COV000236",
+    "name": "급성심근경색증진단비보장",
+    "benefitName": "급성심근경색증진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d198",
+    "code": "COV000237",
+    "name": "급성심근경색증진단비Ⅱ보장",
+    "benefitName": "급성심근경색증진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "a10-d200",
+    "code": "COV000238",
+    "name": "허혈성심장질환진단비보장",
+    "benefitName": "허혈성심장질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d202",
+    "code": "COV000239",
+    "name": "허혈성심장질환진단비Ⅱ보장",
+    "benefitName": "허혈성심장질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "a10-d204",
+    "code": "COV000240",
+    "name": "중증갑상선암진단비보장",
+    "benefitName": "중증갑상선암진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d206",
+    "code": "COV000241",
+    "name": "통합암진단비(유사암제외)보장",
+    "benefitName": "통합암진단비(유사암제외)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d208",
+    "code": "COV000242",
+    "name": "전이암진단비보장",
+    "benefitName": "전이암진단비보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d210",
+    "code": "COV000243",
+    "name": "원격전이포함 4기 통합암진단비(유사암제외)보장",
+    "benefitName": "원격전이포함 4기 통합암진단비(유사암제외)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d211",
+    "code": "COV000244",
+    "name": "원격전이포함 4기 기타피부암 및 갑상선암진단비보장",
+    "benefitName": "원격전이포함 4기 기타피부암 및 갑상선암진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d212",
+    "code": "COV000245",
+    "name": "암진단및치료비Ⅱ보장",
+    "benefitName": "암진단및치료비Ⅱ보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d213",
+    "code": "COV000246",
+    "name": "뇌혈관질환진단및치료비보장",
+    "benefitName": "뇌혈관질환진단및치료비보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "a10-d214",
+    "code": "COV000247",
+    "name": "허혈성심장질환진단및치료비보장",
+    "benefitName": "허혈성심장질환진단및치료비보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "a10-d215",
+    "code": "COV000248",
+    "name": "뇌혈관질환진단및치료비Ⅱ보장",
+    "benefitName": "뇌혈관질환진단및치료비Ⅱ보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d216",
+    "code": "COV000249",
+    "name": "허혈성심장질환진단및치료비Ⅱ보장",
+    "benefitName": "허혈성심장질환진단및치료비Ⅱ보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d217",
+    "code": "COV000250",
+    "name": "암후유장해및진단비보장",
+    "benefitName": "암후유장해및진단비보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d218",
+    "code": "COV000251",
+    "name": "암치료,후유장해및진단비보장",
+    "benefitName": "암치료,후유장해및진단비보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d219",
+    "code": "COV000252",
+    "name": "암후유장해(3-100%)보장",
+    "benefitName": "암후유장해(3-100%)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d220",
+    "code": "COV000253",
+    "name": "암80%이상후유장해보장",
+    "benefitName": "암80%이상후유장해보험금",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d221",
+    "code": "COV000254",
+    "name": "뇌혈관질환수술비보장",
+    "benefitName": "뇌혈관질환수술비보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d222",
+    "code": "COV000255",
+    "name": "허혈성심장질환수술비보장",
+    "benefitName": "허혈성심장질환수술비보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d225",
+    "code": "COV000256",
+    "name": "뇌혈관질환수술비(25%체증형)보장",
+    "benefitName": "뇌혈관질환수술비(25%체증형)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "a10-d226",
+    "code": "COV000257",
+    "name": "허혈성심장질환수술비(25%체증형)보장",
+    "benefitName": "허혈성심장질환수술비(25%체증형)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "a10-d229",
+    "code": "COV000258",
+    "name": "암 통합입통원일당(직접치료,요양병원입원포함)보장",
+    "benefitName": "암 통합입통원일당(직접치료,요양병원입원포함)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d230",
+    "code": "COV000259",
+    "name": "암 통합입통원일당(직접치료)(암중점치료기관(상급종합병원 포함))보장",
+    "benefitName": "암 통합입통원일당(직접치료)(암중점치료기관(상급종합병원 포함))보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": true
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "a10-d231",
+    "code": "COV000260",
+    "name": "특정순환계질환 통합치료비Ⅱ보장",
+    "benefitName": "특정순환계질환 통합치료비Ⅱ보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "a10-b20",
+    "code": "COV000261",
+    "name": "수술비Ⅱ(1-5종)보장",
+    "benefitName": "수술비Ⅱ(1-5종)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "a10-b22",
+    "code": "COV000262",
+    "name": "수술비Ⅱ(1-5종)(체증형) 보장",
+    "benefitName": "수술비Ⅱ(1-5종)(체증형) 보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
   }
 ]

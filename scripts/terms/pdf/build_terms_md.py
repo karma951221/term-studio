@@ -26,7 +26,7 @@ PAGE_OFFSET = 1          # PDF 쪽 = 인쇄 쪽 + 1 (--offset)
 TOC_PAGES = range(37, 90)  # 1-base (--toc)
 PRODUCT = '알파Plus'       # 주계약 목차 제목의 상품명 조각 (--product)
 
-RE_ROMAN = re.compile(r'^([ⅠⅡⅢⅣⅤⅥⅦ])\s*\.\s*(.+)$')
+RE_ROMAN = re.compile(r'^([Ⅰ-Ⅻ])\s*\.\s*(.+)$')   # 알파Plus2610 은 Ⅵ 별표 다음이 Ⅷ 인용 법 규정(Ⅶ 결번)
 RE_절 = re.compile(r'^제\s*(\d+)\s*절\s*(.*)$')
 RE_관 = re.compile(r'^제\s*(\d+)\s*관\s*(.*)$')
 RE_조 = re.compile(r'^(제\s*\d+\s*조(?:의\s*\d+)?)\s*\(')

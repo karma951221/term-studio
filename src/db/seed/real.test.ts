@@ -13,10 +13,10 @@ import { createTestDb, snapshotTestDb, type TestDb } from "@/db/test-utils";
 import { createServices } from "@/services/container";
 
 import { autoFixtures } from "../../../scripts/terms/auto";
-import { ALPHA2607_AUTO } from "../../../scripts/terms/config";
+import { ALPHA2607_AUTO, ALPHA2610 } from "../../../scripts/terms/config";
 import { productGeneral, type ProductGeneralSetting } from "../../../scripts/terms/merge";
 
-import { expectedLines, KNOWN_DIFFERENCES } from "./knownDifferences";
+import { expectedLines, KNOWN_DIFFERENCES, SHARED_2607_IN_2610 } from "./knownDifferences";
 import { loadAlphaPlus } from "./load";
 
 /**
@@ -32,6 +32,9 @@ import { loadAlphaPlus } from "./load";
 const FIXTURES = path.join(process.cwd(), "tests/fixtures/terms");
 /** 알파Plus2607 자동 탑재 특약 — 책자 제목(상품담보명 + 「 특별약관」) · 픽스처. */
 const ALPHA2607_FIXTURES = autoFixtures(ALPHA2607_AUTO, (file) => readFileSync(path.join(FIXTURES, "알파2607", file), "utf8").split("\n")[0]);
+
+/** 알파Plus2610 자동 탑재 특약(2607 담보를 그대로 탑재한 것 · 2607 담보를 2610 글로 바꾼 것 · 2610 이 처음 실은 것) — 책자 제목 · 픽스처(2610 폴더). */
+const ALPHA2610_FIXTURES = autoFixtures(ALPHA2610.autoMounts ?? [], (file) => readFileSync(path.join(FIXTURES, "알파2610", file), "utf8").split("\n")[0]);
 
 /** 상품마다 — 상품명 · 세목 조합 수 · 보통약관(픽스처 · 조 수) · 특약 (책자 제목 · 픽스처). */
 const PRODUCTS: { name: string; dir: string; plans: number; general: string; appendices: string[]; specials: [string, string][] }[] = [
@@ -87,6 +90,34 @@ const PRODUCTS: { name: string; dir: string; plans: number; general: string; app
       ["말기신부전증진단비보장 특별약관", "말기신부전증진단비보장.md"],
       // 자동 탑재 특약 — 원문 「특별약관 Ⅰ ~ Ⅴ」 의 나머지 전부(설정 `ALPHA2607_AUTO`, 갱신형 짝은 두 탑재분)
       ...ALPHA2607_FIXTURES,
+    ],
+  },
+  {
+    // 네 번째 상품 — 2607 과 같은 상품군. 손으로 설정한 담보(2604 상해 · 2607 질병 대표)는 2607 과 같은 탑재, 나머지는 자동 탑재(2607 담보 공유 포함)
+    name: "알파Plus보장보험2610",
+    dir: "알파2610",
+    plans: 4,
+    general: "보통약관 52조(관 7)",
+    appendices: ["AX000002", "AX000001", "AX000004", "AX000007", "AX000008", "AX000010", "AX000011", "AX000020", "AX000012"],
+    specials: [
+      ["일반상해사망보장 특별약관", "일반상해사망보장.md"],
+      ["일반상해사망보장 추가 특별약관", "일반상해사망보장_추가.md"],
+      ["일반상해80%이상후유장해 생활자금보장 특별약관", "일반상해80%이상후유장해_생활자금보장.md"],
+      ["골절(치아파절 제외)진단비Ⅱ보장 특별약관", "골절(치아파절_제외)진단비Ⅱ보장.md"],
+      ["일반상해50%이상후유장해 생활자금보장 특별약관", "일반상해50%이상후유장해_생활자금보장.md"],
+      ["골절수술비Ⅱ보장 특별약관", "골절수술비Ⅱ보장.md"],
+      ["중대한특정상해수술비보장 특별약관", "중대한특정상해수술비보장.md"],
+      ["수술비(1-7종, 연간3회한)[상해]보장 특별약관", "수술비(1-7종,_연간3회한)[상해]보장.md"],
+      ["갱신형 수술비(1-7종, 연간3회한)[상해]보장 특별약관", "갱신형_수술비(1-7종,_연간3회한)[상해]보장.md"],
+      ["신화상치료비보장 특별약관", "신화상치료비보장.md"],
+      ["갱신형 일반상해사망보장 특별약관", "갱신형_일반상해사망보장.md"],
+      ["갱신형 골절(치아파절 제외)진단비Ⅱ보장 특별약관", "갱신형_골절(치아파절_제외)진단비Ⅱ보장.md"],
+      ["5대고액치료비암진단비보장 특별약관", "5대고액치료비암진단비보장.md"],
+      ["양성뇌종양진단비Ⅱ보장 특별약관", "양성뇌종양진단비Ⅱ보장.md"],
+      ["만성당뇨합병증진단비보장 특별약관", "만성당뇨합병증진단비보장.md"],
+      ["중대한재생불량성빈혈진단비보장 특별약관", "중대한재생불량성빈혈진단비보장.md"],
+      ["말기신부전증진단비보장 특별약관", "말기신부전증진단비보장.md"],
+      ...ALPHA2610_FIXTURES,
     ],
   },
   {
@@ -244,11 +275,11 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
 
     it("별표 — 문면이 참조한 것만 등장 순으로 실린다 (별표 마스터는 두 상품이 이름으로 함께 쓴다)", () => {
       const codes = booklet().appendices.map((a) => a.code);
-      if (product.dir !== "알파2607") return expect(codes).toEqual(product.appendices);
+      if (product.dir !== "알파2607" && product.dir !== "알파2610") return expect(codes).toEqual(product.appendices);
       // 알파Plus2607 — 보통약관 아홉이 먼저, 겹치지 않고, 상품이 탑재한 문면(+ 그 문면 · 보통약관이 쓰는 함수조항)이 참조한 별표 전부
       expect(codes.slice(0, product.appendices.length)).toEqual(product.appendices);
       expect(new Set(codes).size).toBe(codes.length);
-      expect([...codes].sort()).toEqual([...referencedAppendices("alpha2607")].sort());
+      expect([...codes].sort()).toEqual([...referencedAppendices(product.dir === "알파2610" ? "alpha2610" : "alpha2607")].sort());
     });
 
     it("특약 그룹 — 원문 특별약관 묶음 순서(Ⅰ ~ Ⅴ): 기본 그룹(담보분류)과 2607 의 사용자 그룹(상해 및 질병 · 기타)이 한 목록 (ADR-0090)", () => {
@@ -256,6 +287,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
       const expected: Record<string, (string | undefined)[]> = {
         "": ["상해 관련 특별약관"],
         알파2607: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
+        알파2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
         메리츠: ["상해 관련 특별약관", "질병 관련 특별약관"],
       };
       expect(titles).toEqual(expected[product.dir]);
@@ -264,6 +296,17 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
     it("책자의 특약은 표본 전부다 — 빠지거나 더한 것이 없다", () => {
       expect(booklet().specials.flatMap((g) => g.docs.map((d) => d.title)).sort()).toEqual(product.specials.map(([title]) => title).sort());
     });
+  });
+
+  it.each(SHARED_2607_IN_2610)("알파Plus2610 「%s」 — 2607 담보를 그대로 탑재할 근거: 2610 원문 = 2607 원문(공백 · 그림 쪽 번호만 다름)", (file) => {
+    const body = (dir: string) =>
+      readFileSync(path.join(FIXTURES, dir, file), "utf8")
+        .split("\n")
+        .filter((l) => !/^> (출처|상품|통계):/.test(l))
+        .join("")
+        .replace(/ — 원문 PDF p\.\d+/g, "")
+        .replace(/\s+/g, "");
+    expect(body("알파2610")).toBe(body("알파2607"));
   });
 
   /**
@@ -940,7 +983,7 @@ describe("★ 실물 재현 변형 — 메리츠 특약 8 은 납입면제가 �
     await db.close();
   });
 
-  it.each(PRODUCTS[2].specials)("「%s」 — 오류 0 · 준용규정이 「… 및 제N조(중도인출)은 제외합니다.」로 끝난다 · 나머지 조는 원문 그대로 · 조 참조 번호가 맞다", (title, file) => {
+  it.each(PRODUCTS.find((p) => p.dir === "메리츠")!.specials)("「%s」 — 오류 0 · 준용규정이 「… 및 제N조(중도인출)은 제외합니다.」로 끝난다 · 나머지 조는 원문 그대로 · 조 참조 번호가 맞다", (title, file) => {
     expect(booklet.issues).toEqual([]);
     const lines = renderedToLines(booklet.specials.flatMap((g) => g.docs).find((d) => d.title === title)!);
     const disease = title.startsWith("갱신형 질병사망");
