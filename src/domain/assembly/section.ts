@@ -2,6 +2,7 @@
  * 절 형태 — 형태 판별 · 제1절 판정 · 위임 문구 · 블록 번호 머리 (기능/조립산출 §3.8 ~ §3.10 · ADR-0021 결정 1 · ADR-0082 · ADR-0090 결정 7 · 8).
  *
  * - 형태는 계약형태와 기본계약 수로 정한다(`planForm`): 주계약 기본계약 2+ · 독립특약 = 절 형태, 그 밖 = 대치 형태.
+ *   기본계약 하나라도 그 문면에 조연결이 없으면 절 형태(ADR-0100 — 2610 판 절형 보통약관의 보장조항 하나).
  *   블록 후보 = 주계약이면 기본계약 상품담보, 독립특약이면 탑재 상품담보 전부. 실제 블록은 문면이 있고 조건 해소 · 블록 빈 조 빼기 뒤 조가 남은 것이다(조립이 센다).
  * - 제1절 판정(`judgeFirstSection`, ADR-0082 결정 1 ~ 7) — 판정 대상은 블록이 하나라도 조연결한 템플릿 조. 연결 수 k/N 으로 먼저 가르고
  *   (마스터 · 블록 하나 위임 · 특칙), 전부 연결(k = N ≥ 2)만 「같다」(함수조항 동일 가드 · 항 단위 — `sameness.ts`)와 준용하기 옵션으로 공통 · 위임 · 공통항 분리 · 전체항 합침.
@@ -31,13 +32,28 @@ export type FormPlan =
       candidates: ReadonlySet<Id>;
     };
 
-/** 형태 판별 (ADR-0021 결정 1 · ADR-0082 결정 2). 주계약 기본계약 0 · 1 은 대치 형태다(0 은 `noBaseContract` 오류를 따로 낸다). */
-export function planForm(input: Pick<AssemblyInput, "product" | "coverages">): FormPlan {
+/**
+ * 형태 판별 (ADR-0021 결정 1 · ADR-0082 결정 2 · ADR-0100). 주계약 기본계약 0 · 1 은 대치 형태다(0 은 `noBaseContract` 오류를 따로 낸다).
+ * 단, 기본계약 하나의 담보약관 문면에 조연결이 하나도 없으면 대치할 조가 없다 — 절 형태(블록 하나)다(2610 판 절형 보통약관, ADR-0100).
+ */
+export function planForm(input: Pick<AssemblyInput, "product" | "coverages"> & Partial<Pick<AssemblyInput, "specialDocuments">>): FormPlan {
   if (isStandaloneContract(input.product.values.get(CONTRACT_KIND_PATH))) {
     return { form: "sectioned", standalone: true, candidates: new Set(input.coverages.map((c) => c.snapshot.id)) };
   }
   if (input.product.baseContractIds.length >= 2) return { form: "sectioned", standalone: false, candidates: new Set(input.product.baseContractIds) };
+  if (input.product.baseContractIds.length === 1 && input.specialDocuments) {
+    const base = input.coverages.find((c) => c.snapshot.id === input.product.baseContractIds[0]);
+    const doc = base && input.specialDocuments.get(base.snapshot.coverageId);
+    if (doc && !hasArticleLink(doc.children)) return { form: "sectioned", standalone: false, candidates: new Set(input.product.baseContractIds) };
+  }
   return { form: "single" };
+}
+
+/** 조연결(`linkedArticleId`)이 있는 조가 하나라도 있나 — 관 · 조건 블록 가지 안까지. */
+function hasArticleLink(list: readonly unknown[]): boolean {
+  return (list as { kind?: string; linkedArticleId?: Id; children?: unknown[]; branches?: { children: unknown[] }[] }[]).some((n) =>
+    n.kind === "article" ? n.linkedArticleId !== undefined : n.kind === "section" ? hasArticleLink(n.children ?? []) : n.kind === "condBlock" ? (n.branches ?? []).some((b) => hasArticleLink(b.children)) : false,
+  );
 }
 
 // ───────────────────────────── 제1절 판정 ─────────────────────────────

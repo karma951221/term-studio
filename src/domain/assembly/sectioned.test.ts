@@ -66,6 +66,23 @@ describe("형태 판별 — 계약형태 + 블록 수 (ADR-0021 결정 1 · ADR-
     expect(b.blocks).toBeUndefined();
   });
 
+  it("주계약 기본계약 1개라도 그 담보약관 문면에 조연결이 하나도 없으면 절 형태 — 블록 하나 (2610 판 절형 보통약관 · ADR-0100)", () => {
+    const input = alphaPlusFixture();
+    const base = input.coverages.find((c) => c.snapshot.id === input.product.baseContractIds[0])!;
+    const unlink = (n: unknown): unknown => {
+      if (Array.isArray(n)) return n.map(unlink);
+      if (!n || typeof n !== "object") return n;
+      return Object.fromEntries(Object.entries(n).filter(([k]) => k !== "linkedArticleId").map(([k, v]) => [k, unlink(v)]));
+    };
+    const specialDocuments = new Map(input.specialDocuments);
+    specialDocuments.set(base.snapshot.coverageId, unlink(specialDocuments.get(base.snapshot.coverageId)) as DocumentNode);
+    const b = assembleInput({ ...input, specialDocuments });
+    expect(b.form).toBe("sectioned");
+    expect(blocksOf(b).map((x) => x.productCoverageId)).toEqual(["pc-base"]);
+    expect(kinds(b)).not.toContain("unlinkedBaseArticle");
+    expect(kinds(b)).not.toContain("noBaseContract");
+  });
+
   it("주계약 기본계약 0개 = noBaseContract · 대치 형태로 끝까지 조립", () => {
     const input = alphaPlusFixture();
     const b = assembleInput({ ...input, product: { ...input.product, baseContractIds: [] } });
