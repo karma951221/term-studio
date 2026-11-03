@@ -7,7 +7,7 @@
  *   npm run terms:pdfmd -- <원문.md> --out <폴더> --only-file 이름목록.txt
  *   npm run terms:pdfmd -- <원문.md> --out <폴더> --all          파일 안의 특약 전부
  *
- * 이름은 원문 `## N. 이름` 의 이름, 「특별약관」을 뺀 이름, fixture 파일명, `#N`(번호) 중 하나. 못 찾은 이름은 오류다.
+ * 이름은 원문 `## N. 이름` 의 이름, 「특별약관」을 뺀 이름, fixture 파일명, `#N`(번호 — 절형 보통약관의 보장조항은 `#2-1`) 중 하나. 못 찾은 이름은 오류다.
  * 만든 파일은 모두 `parseTerms` 로 다시 읽어 본다 — 양식을 어기면 쓰지 않고 멈춘다.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -23,7 +23,12 @@ export function selectUnits(units: Unit[], only: string[] | "all"): Unit[] {
   return only.map((name) => {
     const n = name.trim();
     const hit = units.find(
-      (u) => u.title === n || fixtureName(u.title) === n || u.title.replace(/\s*특별약관/, "").trim() === n || `#${u.no}` === n,
+      (u) =>
+        u.title === n ||
+        fixtureName(u.title) === n ||
+        u.title.replace(/\s*특별약관/, "").trim() === n ||
+        // 번호 — 특약 `#N`, 보장조항은 원문 번호 `#2-1`(없으면 `#보장N`), 보통약관 `#0`
+        (u.kind === "보장조항" ? `#${u.label ?? `보장${u.no}`}` === n : `#${u.no}` === n),
     );
     if (!hit) throw new Error(`특약을 찾지 못함: ${n}`);
     return hit;
@@ -38,8 +43,7 @@ export function generate(src: string, outDir: string, only: string[] | "all", lo
   mkdirSync(outDir, { recursive: true });
   return selectUnits(units, only).map((u) => {
     const warnings: string[] = [];
-    const kind = u.no === 0 && /보통약관$/.test(u.title) ? "보통약관" : "특별약관";
-    const text = convertUnit(u, { ...meta, kind }, warnings);
+    const text = convertUnit(u, { ...meta, kind: u.kind }, warnings);
     const doc = parseTerms(text);
     const file = path.join(outDir, `${fixtureName(u.title)}.md`);
     writeFileSync(file, text);
@@ -66,7 +70,8 @@ function main(argv: string[]): void {
   if (!src) throw new Error("원문 .md 경로가 필요하다 — 사용법은 scripts/terms/pdfmd/cli.ts 머리 주석");
   if (argv.includes("--list")) {
     for (const u of splitUnits(readFileSync(src, "utf8")).units) {
-      console.log(`#${u.no}\tp.${u.startPage ?? "?"}–${u.endPage ?? "?"}\t${fixtureName(u.title)}\t${u.title}`);
+      const no = u.kind === "보장조항" ? `#${u.label ?? `보장${u.no}`}` : `#${u.no}`;
+      console.log(`${no}\t${u.kind}\tp.${u.startPage ?? "?"}–${u.endPage ?? "?"}\t${fixtureName(u.title)}\t${u.title}`);
     }
     return;
   }

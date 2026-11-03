@@ -317,3 +317,115 @@ describe("convertUnit — 파일 하나", () => {
     expect(convertUnit(units[0], { ...readSourceMeta(SOURCE), kind: "특별약관" })).toContain("PDF 120쪽(인쇄 119쪽)");
   });
 });
+
+/** 절형 보통약관(2610 판 — 매뉴얼 §7.1) · 특약 대분류 없는 상품(뇌심 — §7.2)의 추출 꼴. */
+const SECTIONED = `# 무배당 올케어 뇌심보험2610 보통약관
+
+> 원본: 무배당 올케어 뇌심보험2610약관.pdf · PDF p.40–60 · 추출 2026-11-03 · build_terms_md.py (PyMuPDF)
+
+<!-- p.40 -->
+
+## 제1절 일반조항
+
+### 제1관 목적 및 용어의 정의
+
+#### 제1조(목적)
+
+이 계약은 보장합니다.
+
+### 제2관 보험금의 지급
+
+#### 제3조(보험금의 지급사유)
+
+이 계약의 보험금의 지급사유는 제2절 보장조항에서 정합니다.
+
+<!-- p.50 -->
+
+## 제2절 보장조항
+
+**2-1. 뇌혈관질환관혈수술비(연간1회한)보장**
+
+### 제1조(보험금의 지급사유)
+
+[1] 지급합니다.
+
+### 제2조(준용규정)
+
+이 보장조항에서 정하지 않은 사항은 제1절 일반조항을 따릅니다.
+
+<!-- p.51 -->
+
+**2-2. 심장관련질환관혈수술비 (연간1회한)보장**
+
+### 제1조(보험금의 지급사유)
+
+[1] 지급합니다.
+
+<!-- p.52 -->
+
+### 1. 뇌경색증진단비보장 특별약관
+
+#### 제1조(보험금의 지급사유)
+
+[1] 지급합니다.
+
+**3.(보장의 소멸)**
+
+[1] 소멸합니다.
+
+#### 제2조(준용규정)
+
+이 특별약관에서 정하지 않은 사항은 보통약관 제1절 일반조항을 따릅니다.
+
+<!-- p.53 -->
+
+### 2. 뇌출혈진단비보장 특별약관
+
+#### 제1조(보험금의 지급사유)
+
+[1] 지급합니다.
+`;
+
+describe("splitUnits — 절형 보통약관 (매뉴얼 §7.1 · §7.2)", () => {
+  const { units } = splitUnits(SECTIONED);
+
+  it("제1절은 보통약관 한 벌, 제2절의 보장마다 기본계약 문서, `### N.` 특약마다 특약 하나", () => {
+    expect(units.map((u) => [u.kind, u.no, u.label ?? "", u.title, u.startPage, u.endPage])).toEqual([
+      ["보통약관", 0, "", "무배당 올케어 뇌심보험2610 보통약관", 40, 40],
+      ["보장조항", 1, "2-1", "뇌혈관질환관혈수술비(연간1회한)보장", 50, 50],
+      ["보장조항", 2, "2-2", "심장관련질환관혈수술비(연간1회한)보장", 51, 51],
+      ["특별약관", 1, "", "뇌경색증진단비보장 특별약관", 52, 52],
+      ["특별약관", 2, "", "뇌출혈진단비보장 특별약관", 53, 53],
+    ]);
+  });
+
+  it("절 머리는 옮기지 않고 경고도 내지 않는다 — 보통약관의 조는 제1절의 것뿐", () => {
+    const warnings: string[] = [];
+    const out = convertUnit(units[0], { ...readSourceMeta(SECTIONED), kind: "보통약관" }, warnings);
+    expect(warnings).toEqual([]);
+    const doc = parseTerms(out);
+    expect(doc.sections.map((s) => s.title)).toEqual(["목적 및 용어의 정의", "보험금의 지급"]);
+    expect(doc.sections.flatMap((s) => s.articles.map((a) => a.number))).toEqual(["1", "3"]);
+  });
+
+  it("보장 문서는 조가 제1조부터 — 문서종류 「보장조항」", () => {
+    const out = convertUnit(units[1], { ...readSourceMeta(SECTIONED), kind: "보장조항" });
+    expect(out).toContain("# 뇌혈관질환관혈수술비(연간1회한)보장\n");
+    expect(out).toContain("> 상품: 무배당 올케어 뇌심보험2610 · 문서종류: 보장조항");
+    expect(parseTerms(out).sections[0].articles.map((a) => `${a.number}(${a.title})`)).toEqual(["1(보험금의 지급사유)", "2(준용규정)"]);
+  });
+
+  it("특약 안의 소제목 굵은 줄(「**3.(…)**」)은 보장 머리가 아니다", () => {
+    expect(units[3].lines.join("\n")).toContain("**3.(보장의 소멸)**");
+  });
+
+  it("fixture 이름 — 보장은 제목 그대로(빈칸은 `_`)", () => {
+    expect(fixtureName(units[1].title)).toBe("뇌혈관질환관혈수술비(연간1회한)보장");
+  });
+
+  it("번호 없는 굵은 보장 머리(상해안심 「**갱신형 통합상해진단비Ⅱ 보장**」)도 보장 하나 — 「보장」 앞 빈칸은 붙인다", () => {
+    const md = SECTIONED.replace("**2-1. 뇌혈관질환관혈수술비(연간1회한)보장**", "**갱신형 통합상해진단비Ⅱ 보장**");
+    expect(splitUnits(md).units[1]).toMatchObject({ kind: "보장조항", no: 1, title: "갱신형 통합상해진단비Ⅱ보장" });
+    expect(splitUnits(md).units[1].label).toBeUndefined();
+  });
+});

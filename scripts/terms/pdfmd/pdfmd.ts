@@ -20,8 +20,15 @@
  */
 
 export interface Unit {
-  /** `## N.` 의 N — 보통약관처럼 문서 하나인 파일은 0. */
+  /**
+   * 문서종류 — 보통약관 · 보장조항(절형 보통약관 제2절의 보장 하나 = 기본계약 담보약관, 매뉴얼 §7.1) · 특별약관.
+   * `splitUnits` 가 정한다 — `## N.` 이 없는 파일 하나는 보통약관.
+   */
+  kind: UnitKind;
+  /** `## N.` 의 N — 보통약관처럼 문서 하나인 파일은 0, 보장조항은 제2절 안 순번(1 부터). */
   no: number;
+  /** 보장 머리의 원문 번호(「2-1」) — 번호 없는 머리면 없다. */
+  label?: string;
   title: string;
   startPage?: number;
   endPage?: number;
@@ -35,8 +42,10 @@ export interface SourceMeta {
   extracted: string;
 }
 
+export type UnitKind = "보통약관" | "보장조항" | "특별약관";
+
 export interface UnitMeta extends SourceMeta {
-  kind: "보통약관" | "특별약관";
+  kind: UnitKind;
   /** 인쇄 쪽 = PDF 쪽 − offset. 알파Plus 2604 · 2607 모두 1(목차 「printed 99 · pdf 100」). */
   printOffset?: number;
 }
@@ -50,20 +59,40 @@ export function readSourceMeta(md: string): SourceMeta {
   return { pdf: m[1], product: m[1].replace(/약관\.pdf$/, "").trim(), extracted: m[2] };
 }
 
-/** 파일 하나를 특약 단위로 — `## N. 이름` 이 없으면 문서 하나(보통약관). */
+/** 절형 보통약관(2610 판)의 절 머리 — 「## 제1절 일반조항」 · 「## 제2절 보장조항」. */
+const SECTION_HEAD = /^## 제(\d+)절\s/;
+/** 제2절의 보장 머리 — 「**2-1. 이름보장**」 · 「**갱신형 이름 보장**」 (특약 안 소제목 「**3.(…)**」는 아니다). */
+const COVERAGE_HEAD = /^\*\*(?:(\d+-\d+)\.\s*)?([^*]*보장)\*\*$/;
+/** 특약 대분류 없는 상품(뇌심)은 보통약관 파일 안에 특약이 한 단계 깊게 붙는다 — 「### N. 이름 특별약관」 (§7.2). */
+const NESTED_UNIT = /^### (\d+)\.\s+(.*특별약관.*)$/;
+
+/** 보장 이름 — 줄바꿈 자리의 빈칸(「Ⅱ 보장」 · 「수술비 (연간1회한)」)을 붙인다. */
+const coverageTitle = (t: string) => t.trim().replace(/\s+(?=보장$)/, "").replace(/\s+(?=\()/g, "");
+
+/**
+ * 파일 하나를 문서 단위로 — `## N. 이름` 마다 특약 하나, 없으면 문서 하나(보통약관).
+ * 절형 보통약관(`## 제1절` 이 있는 파일)은 제1절 = 보통약관, 제2절의 보장 머리마다 보장조항 문서, `### N. … 특별약관` 마다 특약 하나다.
+ */
 export function splitUnits(md: string): { docTitle: string; units: Unit[] } {
   const all = md.split(/\r?\n/);
   const docTitle = (all.find((l) => l.startsWith("# ")) ?? "").slice(2).trim();
   const units: Unit[] = [];
-  const multi = all.some((l) => UNIT.test(l));
+  const sectioned = all.some((l) => SECTION_HEAD.test(l));
+  const multi = !sectioned && all.some((l) => UNIT.test(l));
   let page: number | undefined;
   let cur: Unit | undefined;
   if (!multi) {
     const head = all.findIndex((l) => l.startsWith("> 원본:"));
-    cur = { no: 0, title: docTitle, lines: [] };
+    cur = { kind: "보통약관", no: 0, title: docTitle, lines: [] };
     units.push(cur);
     all.splice(0, head + 1);
   }
+  let section = 0;
+  let coverages = 0;
+  const open = (u: Unit) => {
+    cur = { ...u, ...(page !== undefined ? { startPage: page, endPage: page } : {}) };
+    units.push(cur);
+  };
   for (const line of all) {
     const p = PAGE.exec(line.trim());
     if (p) {
@@ -71,10 +100,27 @@ export function splitUnits(md: string): { docTitle: string; units: Unit[] } {
       cur?.lines.push(line);
       continue;
     }
+    if (sectioned) {
+      const s = SECTION_HEAD.exec(line);
+      if (s) {
+        section = Number(s[1]);
+        continue;
+      }
+      const c = section === 2 ? COVERAGE_HEAD.exec(line.trim()) : null;
+      if (c && cur?.kind !== "특별약관") {
+        coverages += 1;
+        open({ kind: "보장조항", no: coverages, ...(c[1] ? { label: c[1] } : {}), title: coverageTitle(c[2]), lines: [] });
+        continue;
+      }
+      const n = NESTED_UNIT.exec(line);
+      if (n) {
+        open({ kind: "특별약관", no: Number(n[1]), title: n[2].trim(), lines: [] });
+        continue;
+      }
+    }
     const u = multi ? UNIT.exec(line) : null;
     if (u) {
-      cur = { no: Number(u[1]), title: u[2].trim(), lines: [], ...(page !== undefined ? { startPage: page, endPage: page } : {}) };
-      units.push(cur);
+      open({ kind: "특별약관", no: Number(u[1]), title: u[2].trim(), lines: [] });
       continue;
     }
     if (!cur) continue;
