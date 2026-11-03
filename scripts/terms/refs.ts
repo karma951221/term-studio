@@ -6,7 +6,7 @@
  *   「제16조(…) 제4항 또는 제5항」의 제5항은 제16조의 것이지 현재 조의 것이 아니다.
  * - `제N조(제목)` · `제N조의M(제목)` → articleRef. 제목이 색인과 다르면 텍스트로 두고 보고한다.
  *   조 뒤의 `제K항`·`제L호`는 공백이 없어도 같은 토큰으로 삼킨다 (실물 「제27조의1(…)제1항」).
- * - 「보통약관 」 접두가 붙으면 scope general. 접두는 덩어리당 한 번 — 뒤 멤버가 접두를 새로 달면 새 덩어리다.
+ * - 「보통약관 」 접두가 붙으면 scope general(절형 보통약관의 「보통약관 제1절 일반조항 」 · 「제1절 일반조항 」도). 접두는 덩어리당 한 번 — 뒤 멤버가 접두를 새로 달면 새 덩어리다.
  * - `, ` · ` 및 ` · ` 또는 ` 로 이어진 참조는 한 슬롯(다중 대상 덩어리). 마지막 연결어가 슬롯의 connector 이고,
  *   쉼표로만 이어졌으면 「및」이다 — 연결어는 「및」·「또는」 둘뿐 (기능/문면 §3.5). 실물 「제10호, 제11호」는 「제10호 및 제11호」로 렌더된다.
  * - 「제3조부터 제5조까지」 같은 범위 표기는 읽지 않는다 (개별 나열만) — 렌더는 연속 3개 이상을 범위로 다시 묶는다.
@@ -91,7 +91,7 @@ interface RefContext {
   paragraphs?: Id[];
 }
 
-const ARTICLE = /(보통약관 )?제(\d+)조(?:의(\d+))?\(((?:[^()]|\([^()]*\))*)\)(?:\s*제(\d+)항)?(?:\s*제(\d+)호)?/y;
+const ARTICLE = /(보통약관 (?:제1절 일반조항 )?|제1절 일반조항 )?제(\d+)조(?:의(\d+))?\(((?:[^()]|\([^()]*\))*)\)(?:\s*제(\d+)항)?(?:\s*제(\d+)호)?/y;
 const PARAGRAPH = /제(\d+)항(?:\s*제(\d+)호)?/y;
 const ITEM = /제(\d+)호/y;
 /** 참조가 시작될 수 있는 자리. */
@@ -107,8 +107,11 @@ const CITED_ARTICLE = /제\d+조(?:의\d+)?\s*(?:제\d+항\s*)?$/;
 const JOIN = /^(, | 및 | 또는 )/;
 /** 통합형 특약의 소제목 이름 — 「3.(보장의 소멸) 」 · 「5.(보험료의 납입면제) [2종(보험료 납입면제형)] 」 바로 뒤의 「제K항」은 그 소제목(종형)의 항이다. */
 const SUBSECTION = /(\d+)\.\(((?:[^()]|\([^()]*\))*)\)\s*(?:\[([^[\]]*)\]\s*)?$/;
-/** scope 를 가르는 접두 — 덩어리 앞에 붙는다. */
-const GENERAL_PREFIX = "보통약관 ";
+/**
+ * scope 를 가르는 접두 — 덩어리 앞에 붙는다. 절형 보통약관(2610 판)은 특약이 「보통약관 제1절 일반조항 」, 제2절 보장조항(기본계약 문면)이
+ * 「제1절 일반조항 」으로 보통약관 조를 가리킨다 — 둘 다 보통약관 범위다(절 이름은 조립이 위치 호칭으로 다시 찍는다 — 기능/조립산출 §3.10).
+ */
+const GENERAL_PREFIXES = ["보통약관 제1절 일반조항 ", "제1절 일반조항 ", "보통약관 "];
 
 const squash = (s: string) => s.replace(/\s+/g, "");
 /** 느슨한 제목 — 공백 · 가운뎃점 변형 · 「의」를 지운다(`looseTitles`). */
@@ -328,7 +331,9 @@ export function inlinesFromText(text: string, env: RefEnv, newId: () => Id): Inl
       continue;
     }
     // 「보통약관 」 접두는 probe 앞에 있다 — 덩어리는 접두부터 시작한다
-    const chunkStart = text.slice(0, probe.index).endsWith(GENERAL_PREFIX) ? probe.index - GENERAL_PREFIX.length : probe.index;
+    const before = text.slice(0, probe.index);
+    const prefix = GENERAL_PREFIXES.find((x) => before.endsWith(x));
+    const chunkStart = prefix ? probe.index - prefix.length : probe.index;
     const chunk = readChunk(text, chunkStart, env);
     if (chunk.targets && chunk.targets.length > 0) {
       pieces.push({

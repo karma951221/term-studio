@@ -47,6 +47,18 @@ describe("inlinesFromText — 평문의 조·별표 참조를 슬롯으로", () 
     expect(out[1]).toMatchObject({ scope: "general", targets: [{ articleId: "a27-1" }, { articleId: "a27-2" }] });
   });
 
+  it("절형 보통약관(2610) — 「보통약관 제1절 일반조항 」 · 「제1절 일반조항 」 접두도 general 범위 (매뉴얼 §7.1)", () => {
+    const special = inlinesFromText("다만, 보통약관 제1절 일반조항 제9조(적립부분 적립이율에 관한 사항) 및 제10조(만기환급금의 지급)은 제외하며", env(), newId);
+    expect(special.map((x) => x.kind)).toEqual(["text", "articleRef", "text"]);
+    expect(special[0]).toMatchObject({ text: "다만, " });
+    expect(special[1]).toMatchObject({ scope: "general", targets: [{ articleId: "a9" }, { articleId: "a10" }] });
+    // 제2절 보장조항(기본계약 문면)은 「보통약관」 없이 「제1절 일반조항」만 쓴다
+    const block = inlinesFromText("회사는 제1절 일반조항 제38조(중도인출) 및 아래", env(), newId);
+    expect(block.map((x) => x.kind)).toEqual(["text", "articleRef", "text"]);
+    expect(block[0]).toMatchObject({ text: "회사는 " });
+    expect(block[1]).toMatchObject({ scope: "general", targets: [{ articleId: "a38" }] });
+  });
+
   it("`generalFallback` — 접두 없는 조 참조가 제 문서 조와 맞지 않고 보통약관 조와 맞으면 보통약관 범위(원문의 「보통약관」 빠짐)", () => {
     const self: ArticleIndex = { byNumber: new Map([["9", { id: "s9", title: "준용규정", paragraphIds: [], itemIds: new Map() }]]) };
     const text = "다만, 제9조(적립부분 적립이율에 관한 사항), 제10조(만기환급금의 지급) 및 제38조(중도인출) 제외하며";
