@@ -17,6 +17,7 @@ export interface Preset {
 }
 
 const ALPHA2607 = "docs/_자료/알파Plus보장보험2607/00_주계약";
+const ALPHA2610 = "docs/_자료/알파Plus보장보험2610/00_주계약";
 
 export const PRESETS: Record<string, Preset> = {
   /**
@@ -35,6 +36,21 @@ export const PRESETS: Record<string, Preset> = {
       { src: `${ALPHA2607}/04_특별약관_Ⅲ_상해및질병관련.md`, only: "all" },
       { src: `${ALPHA2607}/05_특별약관_Ⅳ_비용손해관련.md`, only: "all" },
       { src: `${ALPHA2607}/06_특별약관_Ⅴ_기타.md`, only: "all" },
+    ],
+  },
+  /**
+   * 알파Plus보장보험2610 — 보통약관 + 주계약 특별약관 Ⅰ ~ Ⅴ 전부(09 기타 제도성은 뺀다). 추출은 PyMuPDF 1.26(매뉴얼 §3.1).
+   * 특약 앞 「＊ 이 특별약관은 1형(…) 가입시에 한하여 가입가능합니다」 줄은 가입 조건 안내라 옮기지 않는다(조 밖 줄 경고 — 매뉴얼 §7.6).
+   */
+  알파2610: {
+    out: "tests/fixtures/terms/알파2610",
+    jobs: [
+      { src: `${ALPHA2610}/01_보통약관.md`, only: "all" },
+      { src: `${ALPHA2610}/02_특별약관_Ⅰ_상해관련.md`, only: "all" },
+      { src: `${ALPHA2610}/03_특별약관_Ⅱ_질병관련.md`, only: "all" },
+      { src: `${ALPHA2610}/04_특별약관_Ⅲ_상해및질병관련.md`, only: "all" },
+      { src: `${ALPHA2610}/05_특별약관_Ⅳ_비용손해관련.md`, only: "all" },
+      { src: `${ALPHA2610}/06_특별약관_Ⅴ_기타.md`, only: "all" },
     ],
   },
 };
