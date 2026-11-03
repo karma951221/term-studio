@@ -160,6 +160,8 @@ const isText = (e: El | undefined): e is Extract<El, { k: TextKind }> =>
 /** 문장이 끝났나 — 끝나지 않은 줄 다음의 평문은 같은 문장이다. */
 /** 통합형 특약의 소제목 머리 — 줄 머리의 「7.(보장의 해약환급금)…」 (본문 참조 「3.(보장의 소멸) 제3항」 · 「1.(…)에서 · 의 · 에 따라」는 머리가 아니다). */
 const SUBSECTION_HEAD = /^\d+\.\((?:[^()]|\([^()]*\))*\)(?!\s*(?:제\d+항|에서|의|에 따라))/;
+/** 굵은 소제목 줄 — 「**2.(정의 및 진단확정)**」. */
+const BOLD_SUBSECTION = /^\*\*\d+\.\(.*\)\*\*$/;
 const terminal = (t: string) => /(?:[.。:]|다)$/.test(t.trim());
 /** 두 조각을 잇는다 — 【 앞뒤는 붙이고 그 밖은 한 칸. */
 const joinText = (a: string, b: string) => (b.startsWith("【") || a.endsWith("【") ? a.trimEnd() + b : `${a.trimEnd()} ${b}`);
@@ -394,7 +396,8 @@ class Converter {
       return;
     }
     // 항 번호 없는 조(머리말뿐)의 다음 문단도 같은 단독 본문이다(2604 갱신형 수술비 제8조).
-    if (!this.group && isText(last) && (pageBreak || last.k === "lead" || !terminal(last.text)) && !t.startsWith("※") && !boxHead) {
+    // 굵은 소제목 줄(「**2.(…)**」)은 쪽 경계 바로 뒤에 와도 앞 항에 잇지 않는다(알파Plus2610 갱신형 4대양성종양)
+    if (!this.group && isText(last) && (pageBreak || last.k === "lead" || !terminal(last.text)) && !t.startsWith("※") && !boxHead && !BOLD_SUBSECTION.test(t)) {
       last.text = joinText(last.text, t);
       return;
     }
