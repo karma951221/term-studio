@@ -83,6 +83,13 @@ describe("applyExemption — 보장개시일 정의 항을 면책 조건으로",
     );
   });
 
+  it("갱신형 짝 — 비갱신 정의는 15세 단서, 갱신형 정의는 단서 없이 최초계약일 기준이어도 기간이 같으면 한 특성(15세 단서 있음) (알파Plus2610 유사암진단비Ⅱ)", () => {
+    const tree = doc(DEF_15);
+    const article = (tree.children[0] as unknown as { children: Json[] }).children;
+    article.push({ id: "a1-p4", kind: "paragraph", children: [{ id: "a1-p4-x1", kind: "text", text: "이 특별약관에서 암보장개시일이라 함은 최초계약일부터 그날을 포함하여 90일이 지난날의 다음날로 합니다." }] });
+    expect(applyExemption(tree, boxTitle)).toEqual({ months: 3, age15: true });
+  });
+
   it("15세 단서가 없는 면책(1년 · 대상포진 같은 90일) — 조건 블록만, 문장 안 조건 없음, age15 아니오 · 1년 = 12개월", () => {
     const tree = doc("이 특별약관에서 당뇨병보장개시일이라 함은 계약일부터 그날을 포함하여 1년이 지난날의 다음날로 합니다.", "BX000002");
     expect(applyExemption(tree, boxTitle)).toEqual({ months: 12, age15: false });

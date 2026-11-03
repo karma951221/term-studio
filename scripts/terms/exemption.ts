@@ -95,8 +95,10 @@ export function applyExemption(tree: DocumentNode, boxTitle: (code: string) => s
             found.age15 = true;
             return split as InlineNode[];
           });
-          if (trait && (trait.months !== found.months || trait.age15 !== found.age15)) throw new Error(`${tree.title}: 보장개시일 정의 항의 기간 · 15세 단서가 서로 다르다`);
-          trait = found;
+          // 갱신형 짝(두 원문을 합친 템플릿)은 정의 항이 둘 — 기간은 같아야 하고, 15세 단서는 한쪽에만 있을 수 있다(알파Plus2610 유사암진단비Ⅱ 갱신형은 최초계약일 기준 · 단서 없음).
+          // 단서 없는 쪽은 문장 안 조건이 없어 15세 값을 읽지 않는다 — 특성은 「있음」 쪽을 따른다
+          if (trait && trait.months !== found.months) throw new Error(`${tree.title}: 보장개시일 정의 항의 기간이 서로 다르다`);
+          trait = { months: found.months, age15: found.age15 || (trait?.age15 ?? false) };
           const term = TERM.exec(plain(node));
           if (term) terms.add(term[1]);
           const next = list[i + 1] as BlockNode | undefined;
