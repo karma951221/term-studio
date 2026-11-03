@@ -51,7 +51,8 @@ PDF (docs/약관PDF/2610/*.pdf)
 
 ### 3.1 준비
 
-- PyMuPDF(`fitz`)는 **macOS 시스템 python 의 사용자 site-packages** 에 있다 — `python3 -I` 로는 못 읽는다. 클라우드 등 새 환경이면 `pip install --user pymupdf` 먼저.
+- PyMuPDF(`fitz`)는 **macOS 시스템 python 의 사용자 site-packages** 에 있다 — `python3 -I` 로는 못 읽는다. 클라우드 등 새 환경이면 `pip install --user "pymupdf==1.26.5"` 먼저.
+- **PyMuPDF 는 1.26 판으로 고정한다** (2026-11-03). 2.x(MuPDF 1.28)는 표 인식(`find_tables`)이 달라 감액 표 · 지급금액 표의 행이 빠지거나 두 단이 한 표로 엉킨다(알파Plus2610 2대질환 통합생활지원비 · 131대질병수술비 — 2607 fixture 와 대조해 찾았다). 다른 판이 이미 깔린 환경이면 `pip install --target <폴더> "pymupdf==1.26.5"` 뒤 `PYTHONPATH=<폴더>` 로 돌린다.
 - 리포 **밖**의 cwd 에서 실행한다(스크립트 경로 · PDF 경로를 절대 경로로 넘긴다).
 - 큰 PDF(1800쪽)는 4 ~ 5분 걸린다.
 
