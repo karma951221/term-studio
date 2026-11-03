@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """무배당 알파Plus보장보험2607 약관 PDF → 구조화 Markdown + 구조 JSON.
 
-사용: python build_terms_md.py PDF OUTDIR
+사용: python build_terms_md.py PDF OUTDIR [--toc 37-89] [--offset 1] [--product 알파Plus] [--parts]
+  --toc     인쇄 목차가 있는 PDF 쪽 범위(1-base, 양끝 포함). 기본 37-89(알파Plus2607)
+  --offset  PDF 쪽 - 인쇄 쪽. 기본 1
+  --product 주계약 보통약관 · 특별약관 목차 제목에 든 상품명 조각. 기본 알파Plus
+  --parts   목차 대분류(제목)만 찍고 끝낸다 — 새 PDF 의 --toc · --product 를 맞출 때
   1) 인쇄 목차(PDF 37~89쪽) 파싱 → 단위(주계약 보통약관·특별약관 대분류·별표·제도성 / 독립특약) 쪽 범위
   2) 단위별 쪽 범위 요소 스트림(pdf_layout) → 문단·제목·표 블록
   3) 블록 → Markdown 파일 + structure.json (특약·별표·관·조 목록과 쪽)
@@ -11,14 +15,16 @@ import json
 import os
 import re
 import sys
+from datetime import date
 
 import fitz
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pdf_layout import page_elements, join_wrapped  # noqa: E402
 
-PAGE_OFFSET = 1          # PDF 쪽 = 인쇄 쪽 + 1
-TOC_PAGES = range(37, 90)  # 1-base
+PAGE_OFFSET = 1          # PDF 쪽 = 인쇄 쪽 + 1 (--offset)
+TOC_PAGES = range(37, 90)  # 1-base (--toc)
+PRODUCT = '알파Plus'       # 주계약 목차 제목의 상품명 조각 (--product)
 
 RE_ROMAN = re.compile(r'^([ⅠⅡⅢⅣⅤⅥⅦ])\s*\.\s*(.+)$')
 RE_절 = re.compile(r'^제\s*(\d+)\s*절\s*(.*)$')
@@ -99,13 +105,13 @@ def plan_units(toc, npages):
     for pi, part in enumerate(parts):
         t = part['title']
         e = part['entries']
-        if t.endswith('보통약관') and '알파Plus' in t:
-            main_title = t.replace(' 보통약관', '')
+        if t.endswith('보통약관') and PRODUCT in t:
+            main_title = re.sub(r'\s*보통약관$', '', t)   # 「…2610보통약관」처럼 붙여 찍힌 판도 있다
             gwan1 = next(x for x in e if RE_관.match(x['text']))
             units.append({'id': 'main', 'kind': 'main_body', 'title': main_title, 'start': gwan1['pdf'], 'entries': e})
-        elif t.endswith('특별약관') and '알파Plus' in t:
+        elif t.endswith('특별약관') and PRODUCT in t:
             units[-1]['entries'] += e
-            law = next(x for x in e if x['text'].startswith('Ⅶ'))
+            law = next(x for x in e if RE_ROMAN.match(x['text']) and '인용 법' in x['text'])   # 알파Plus2607 은 Ⅶ, 판마다 번호가 다르다
             units[-1]['end'] = law['pdf'] - 1
         elif t == '기타 제도성 특별약관':
             units.append({'id': 'inst', 'kind': 'institutional', 'title': t, 'start': e[0]['pdf'], 'entries': e})
@@ -489,9 +495,34 @@ def safe(s):
 
 
 def main():
-    pdf, outdir = sys.argv[1], sys.argv[2]
+    global PAGE_OFFSET, TOC_PAGES, PRODUCT
+    args = sys.argv[1:]
+
+    def opt(name):
+        if name in args:
+            i = args.index(name)
+            v = args[i + 1]
+            del args[i:i + 2]
+            return v
+        return None
+    if (v := opt('--toc')):
+        a, b = map(int, v.split('-'))
+        TOC_PAGES = range(a, b + 1)
+    if (v := opt('--offset')):
+        PAGE_OFFSET = int(v)
+    if (v := opt('--product')):
+        PRODUCT = v
+    parts_only = '--parts' in args
+    if parts_only:
+        args.remove('--parts')
+    pdf, outdir = args[0], args[1]
     doc = fitz.open(pdf)
     toc = parse_toc(doc)
+    if parts_only:
+        for r in toc:
+            if r.get('title'):
+                print(r['toc_pdf'], r['text'])
+        return
     units = plan_units(toc, len(doc))
     os.makedirs(outdir, exist_ok=True)
     w = Writer()
@@ -506,7 +537,7 @@ def main():
                     u['end'] = p - 1
                     break
         blocks = [classify(b) for b in stream_blocks(doc, u['start'], u['end'], stop_at='【법규')]
-        meta = f'> 원본: {src} · PDF p.{u["start"]}–{u["end"]} · 추출 2026-10-12 · build_terms_md.py (PyMuPDF)'
+        meta = f'> 원본: {src} · PDF p.{u["start"]}–{u["end"]} · 추출 {date.today().isoformat()} · build_terms_md.py (PyMuPDF)'
         if u['kind'] == 'main_body':
             base = '00_주계약'
             w.start(f'{base}/01_보통약관', f'{u["title"]} 보통약관', meta)
