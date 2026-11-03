@@ -114,6 +114,10 @@ export const APPENDICES: AppendixSpec[] = [
   { number: 38, code: "AX000091", name: "민사소송 등 인지법에 정한 인지액" },
   { number: 39, code: "AX000092", name: "송달료 규칙에 정한 송달료(민사소송)" },
   { number: 40, code: "AX000093", name: "송달료 규칙에 정한 송달료(행정소송)" },
+  // 알파Plus2610 이 처음 참조한 별표 — 번호는 2607 과 같은 체계(2610 목차 대조 2026-11-03), 이름은 본문 참조 표기
+  { number: 96, code: "AX000094", name: "전이암 분류표" },
+  { number: 98, code: "AX000095", name: "중증도별 상해분류표" },
+  { number: 99, code: "AX000096", name: "근골 주요처치및수술(급여) 분류표" },
 ];
 
 /** 원문 텍스트의 첫 등장을 값 슬롯으로 바꾼다 (담보 레벨 `담보명` 등). */
@@ -239,6 +243,11 @@ export interface SpecialSpec {
   title?: string;
   /** 자기 원문 파일. */
   file?: string;
+  /**
+   * 원문 폴더 바꾸기 — 상품의 `fixtureDir` 대신 이 폴더의 원문을 읽는다. 같은 담보의 새 판 원문이 개정됐을 때 앞 판 담보 템플릿을
+   * 새 판 글로 바꾼다(2026-11-03 사용자 결정 — 담보명은 전역 유일이라 같은 이름 새 담보를 두지 않는다. 앞 판 상품은 알려진 차이).
+   */
+  fixtureDir?: string;
   /** 보통약관 원문에서 조를 뽑아 만드는 문서 (기본계약). `linkTo` 는 조연결할 보통약관 조 번호. */
   extractFrom?: { file: string; articles: string[]; linkTo: string[] };
   slots: SlotOverlay[];
@@ -854,18 +863,21 @@ const disease = (key: string, file: string, claim: string, slotCount: number, ar
 
 /**
  * 자동 탑재 특약 한 줄 — 원문 목록 번호(`npm run terms:pdfmd -- <원문> --list` 의 #N) · fixture · (있으면) 같은 담보의 갱신형 fixture.
- * 담보 key 는 `a7-<그룹 글자><번호>`. 갱신형만 있는 특약은 갱신형 fixture 를 `file` 에 둔다(제목에서 갱신형을 읽는다).
+ * 담보 key 는 `<접두>-<그룹 글자><번호>`(2607 `a7` · 2610 `a10`). 갱신형만 있는 특약은 갱신형 fixture 를 `file` 에 둔다(제목에서 갱신형을 읽는다).
  */
-export const autoSpecial =
+export const autoSpecialOf =
+  (prefix: string) =>
   (letter: string, category: CoverageCategory, group?: string) =>
   (no: number, file: string, renewal?: string): SpecialSpec => ({
-    code: `a7-${letter}${no}-doc`,
-    ownerCoverage: `a7-${letter}${no}`,
-    idPrefix: `a7${letter}${no}`,
+    code: `${prefix}-${letter}${no}-doc`,
+    ownerCoverage: `${prefix}-${letter}${no}`,
+    idPrefix: `${prefix}${letter}${no}`,
     file,
     slots: [],
     auto: { category, ...(group ? { group } : {}), ...(renewal ? { renewal } : {}) },
   });
+/** 알파Plus2607 자동 탑재 — 담보 key `a7-<글자><번호>`. */
+export const autoSpecial = autoSpecialOf("a7");
 const injury = autoSpecial("i", "V01");
 // 「기타 특별약관」(자동갱신 · 피보험자추가) · 「상해 및 질병 관련 특별약관」은 기본 그룹이 없다 — 담보분류는 질병, 묶음은 사용자 그룹 (ADR-0090)
 const etc = autoSpecial("e", "V02", "기타 특별약관");
@@ -1085,6 +1097,115 @@ export const ALPHA2607_AUTO: SpecialSpec[] = [
   etc(2, "피보험자추가.md"),
 ];
 
+
+// ───────────────────────────── 알파Plus2610 ─────────────────────────────
+
+/** 알파Plus2610 원문 폴더 — 개정된 2607 담보의 원문도 여기서 읽는다(`SpecialSpec.fixtureDir`). */
+const ALPHA2610_DIR = "tests/fixtures/terms/알파2610";
+
+/**
+ * 2610 에서 글이 개정된 2607 담보 — 담보 템플릿을 2610 원문으로 바꾼다(2026-11-03 사용자 결정: 담보명은 전역 유일이라 같은 이름의 새 담보를 두지 않는다).
+ * 2607 상품은 이 담보들이 2610 글로 찍힌다 — 알려진 차이(판 대조, `knownDifferences.ts`). 대조 근거: `tests/fixtures/terms/알파2610/_2607대조.json` 의 diff.
+ * 2604 담보(생활자금 80 · 50 · 수술비 짝 · 갱신형 사망)는 2604 상품도 써서 바꾸지 않는다 — 2610 쪽 알려진 차이.
+ */
+export const REVISED_IN_2610: ReadonlySet<string> = new Set([
+  "a7-b17", "a7-b18", "a7-b19", "a7-b20", "a7-b21", "a7-b22", "a7-c3", "a7-c4", "a7-c5", "a7-c6", "a7-d10", "a7-d122", "a7-d125", "a7-d126", "a7-d128", "a7-d129", "a7-d130", "a7-d132", "a7-d134", "a7-d135", "a7-d136", "a7-d137", "a7-d138", "a7-d139", "a7-d140", "a7-d141", "a7-d143", "a7-d144", "a7-d145", "a7-d146", "a7-d147", "a7-d148", "a7-d149", "a7-d150", "a7-d151", "a7-d154", "a7-d156", "a7-d157", "a7-d158", "a7-d159", "a7-d16", "a7-d160", "a7-d161", "a7-d162", "a7-d17", "a7-d177", "a7-d18", "a7-d22", "a7-d25", "a7-d35", "a7-d40", "a7-d43", "a7-d46", "a7-d47", "a7-d53", "a7-d62", "a7-d70", "a7-d73", "a7-d75", "a7-d78", "a7-d84", "a7-d86", "a7-d95", "a7-d96", "a7-d99", "a7-e1", "a7-e2", "a7-i11", "a7-i13", "a7-i49", "a7-i52", "a7-i59", "a7-i61", "a7-anemia",
+]);
+const revisedIn2610 = (s: SpecialSpec): SpecialSpec => (REVISED_IN_2610.has(s.ownerCoverage) ? { ...s, fixtureDir: ALPHA2610_DIR } : s);
+
+const injury10 = autoSpecialOf("a10")("i", "V01");
+const illness10 = autoSpecialOf("a10")("d", "V02");
+const both10 = autoSpecialOf("a10")("b", "V02", "상해 및 질병 관련 특별약관");
+const cost10 = autoSpecialOf("a10")("c", "V03");
+const etc10 = autoSpecialOf("a10")("e", "V02", "기타 특별약관");
+
+/** 알파Plus2610 이 처음 실은 특약(2607 에 없는 이름) — 자동 탑재 한 줄씩(원문 목록 번호 · fixture · 갱신형 fixture). */
+export const ALPHA2610_AUTO: SpecialSpec[] = [
+  injury10(64, "상해진단및치료비보장.md"),
+  illness10(180, "암진단비(유사암제외)보장.md", "갱신형_암진단비(유사암제외)보장.md"),
+  illness10(182, "유사암진단비보장.md", "갱신형_유사암진단비보장.md"),
+  illness10(184, "유사암진단비Ⅱ보장.md", "갱신형_유사암진단비Ⅱ보장.md"),
+  illness10(186, "암진단비(유사암_및_소액암_제외)보장.md", "갱신형_암진단비(유사암_및_소액암_제외)보장.md"),
+  illness10(188, "뇌졸중진단비보장.md", "갱신형_뇌졸중진단비보장.md"),
+  illness10(190, "뇌졸중진단비Ⅱ보장.md", "갱신형_뇌졸중진단비Ⅱ보장.md"),
+  illness10(192, "뇌혈관질환진단비보장.md", "갱신형_뇌혈관질환진단비보장.md"),
+  illness10(194, "뇌혈관질환진단비Ⅱ보장.md", "갱신형_뇌혈관질환진단비Ⅱ보장.md"),
+  illness10(196, "급성심근경색증진단비보장.md", "갱신형_급성심근경색증진단비보장.md"),
+  illness10(198, "급성심근경색증진단비Ⅱ보장.md", "갱신형_급성심근경색증진단비Ⅱ보장.md"),
+  illness10(200, "허혈성심장질환진단비보장.md", "갱신형_허혈성심장질환진단비보장.md"),
+  illness10(202, "허혈성심장질환진단비Ⅱ보장.md", "갱신형_허혈성심장질환진단비Ⅱ보장.md"),
+  illness10(204, "중증갑상선암진단비보장.md", "갱신형_중증갑상선암진단비보장.md"),
+  illness10(206, "통합암진단비(유사암제외)보장.md", "갱신형_통합암진단비(유사암제외)보장.md"),
+  illness10(208, "전이암진단비보장.md", "갱신형_전이암진단비보장.md"),
+  illness10(210, "원격전이포함_4기_통합암진단비(유사암제외)보장.md"),
+  illness10(211, "원격전이포함_4기_기타피부암_및_갑상선암진단비보장.md"),
+  illness10(212, "암진단및치료비Ⅱ보장.md"),
+  illness10(213, "뇌혈관질환진단및치료비보장.md"),
+  illness10(214, "허혈성심장질환진단및치료비보장.md"),
+  illness10(215, "뇌혈관질환진단및치료비Ⅱ보장.md"),
+  illness10(216, "허혈성심장질환진단및치료비Ⅱ보장.md"),
+  illness10(217, "암후유장해및진단비보장.md"),
+  illness10(218, "암치료,후유장해및진단비보장.md"),
+  illness10(219, "암후유장해(3-100%)보장.md"),
+  illness10(220, "암80%이상후유장해보장.md"),
+  illness10(221, "뇌혈관질환수술비보장.md", "갱신형_뇌혈관질환수술비보장.md"),
+  illness10(222, "허혈성심장질환수술비보장.md", "갱신형_허혈성심장질환수술비보장.md"),
+  illness10(225, "뇌혈관질환수술비(25%체증형)보장.md", "갱신형_뇌혈관질환수술비(25%체증형)보장.md"),
+  illness10(226, "허혈성심장질환수술비(25%체증형)보장.md", "갱신형_허혈성심장질환수술비(25%체증형)보장.md"),
+  illness10(229, "암_통합입통원일당(직접치료,요양병원입원포함)보장.md"),
+  illness10(230, "암_통합입통원일당(직접치료)(암중점치료기관(상급종합병원_포함))보장.md"),
+  illness10(231, "특정순환계질환_통합치료비Ⅱ보장.md"),
+  both10(20, "수술비Ⅱ(1-5종)보장.md", "갱신형_수술비Ⅱ(1-5종)보장.md"),
+  both10(22, "수술비Ⅱ(1-5종)(체증형)_보장.md"),
+];
+
+/**
+ * 알파Plus2610 자동 탑재 순서 — 원문 「특별약관 Ⅰ ~ Ⅴ」 목록 순. `a7-*` 는 2607 담보를 그대로(원문이 같거나 2610 글로 바꾼 것), `a10-*` 는 2610 이 처음 실은 것.
+ * 손으로 설정한 담보(2604 상해 · 2607 질병 대표)는 `products.json` 의 손 탑재다.
+ */
+const ALPHA2610_ORDER = [
+  "a7-i11", "a7-i12", "a7-i13", "a7-i14", "a7-i16", "a7-i17",
+  "a7-i18", "a7-i19", "a7-i20", "a7-i21", "a7-i23", "a7-i24",
+  "a7-i25", "a7-i26", "a7-i28", "a7-i29", "a7-i30", "a7-i31",
+  "a7-i36", "a7-i38", "a7-i39", "a7-i40", "a7-i41", "a7-i42",
+  "a7-i45", "a7-i46", "a7-i47", "a7-i48", "a7-i49", "a7-i50",
+  "a7-i51", "a7-i52", "a7-i53", "a7-i54", "a7-i55", "a7-i56",
+  "a7-i57", "a7-i58", "a7-i59", "a7-i60", "a7-i61", "a7-i62",
+  "a7-i63", "a10-i64", "a7-d1", "a7-d2", "a7-d6", "a7-d7",
+  "a7-d9", "a7-d10", "a7-d11", "a7-d12", "a7-d13", "a7-d14",
+  "a7-d15", "a7-d16", "a7-d17", "a7-d18", "a7-d19", "a7-d20",
+  "a7-d21", "a7-d22", "a7-d24", "a7-d25", "a7-d26", "a7-d28",
+  "a7-d29", "a7-d30", "a7-d35", "a7-d38", "a7-d39", "a7-d40",
+  "a7-d41", "a7-d43", "a7-d44", "a7-d45", "a7-d46", "a7-d47",
+  "a7-d50", "a7-d52", "a7-d53", "a7-d58", "a7-d59", "a7-d60",
+  "a7-d61", "a7-d62", "a7-d63", "a7-d64", "a7-d66", "a7-d67",
+  "a7-d68", "a7-d70", "a7-d72", "a7-d73", "a7-d75", "a7-d77",
+  "a7-d78", "a7-d79", "a7-d80", "a7-d81", "a7-d82", "a7-d83",
+  "a7-d84", "a7-d86", "a7-d88", "a7-d89", "a7-d90", "a7-d92",
+  "a7-d93", "a7-d94", "a7-d95", "a7-d96", "a7-d97", "a7-d98",
+  "a7-d99", "a7-d100", "a7-d101", "a7-d102", "a7-d103", "a7-d104",
+  "a7-d105", "a7-d106", "a7-d107", "a7-d108", "a7-d110", "a7-d111",
+  "a7-d112", "a7-d113", "a7-d114", "a7-d115", "a7-d122", "a7-d124",
+  "a7-d125", "a7-d126", "a7-d128", "a7-d129", "a7-d130", "a7-d132",
+  "a7-d134", "a7-d135", "a7-d136", "a7-d137", "a7-d138", "a7-d139",
+  "a7-d140", "a7-d141", "a7-d143", "a7-d144", "a7-d145", "a7-d146",
+  "a7-d147", "a7-d148", "a7-d149", "a7-d150", "a7-d151", "a7-d152",
+  "a7-d154", "a7-d155", "a7-d156", "a7-d157", "a7-d158", "a7-d159",
+  "a7-d160", "a7-d161", "a7-d162", "a7-d163", "a7-d165", "a7-d166",
+  "a7-d167", "a7-d168", "a7-d173", "a7-d175", "a7-d177", "a7-d178",
+  "a7-d179", "a10-d180", "a10-d182", "a10-d184", "a10-d186", "a10-d188",
+  "a10-d190", "a10-d192", "a10-d194", "a10-d196", "a10-d198", "a10-d200",
+  "a10-d202", "a10-d204", "a10-d206", "a10-d208", "a10-d210", "a10-d211",
+  "a10-d212", "a10-d213", "a10-d214", "a10-d215", "a10-d216", "a10-d217",
+  "a10-d218", "a10-d219", "a10-d220", "a10-d221", "a10-d222", "a10-d225",
+  "a10-d226", "a10-d229", "a10-d230", "a10-d231", "a7-b1", "a7-b2",
+  "a7-b3", "a7-b4", "a7-b5", "a7-b9", "a7-b10", "a7-b11",
+  "a7-b12", "a7-b13", "a7-b15", "a7-b16", "a7-b17", "a7-b18",
+  "a7-b19", "a7-b20", "a7-b21", "a7-b22", "a10-b20", "a10-b22",
+  "a7-c1", "a7-c2", "a7-c3", "a7-c4", "a7-c5", "a7-c6",
+  "a7-e1", "a7-e2",
+];
+
 const ALPHA2607_SPECIALS: SpecialSpec[] = [
   disease("cancer5", "5대고액치료비암진단비보장.md", "5대고액치료비암진단비", 3, ["2", "5", "7"]),
   disease("tumor", "양성뇌종양진단비Ⅱ보장.md", "양성뇌종양진단비", 3),
@@ -1092,7 +1213,7 @@ const ALPHA2607_SPECIALS: SpecialSpec[] = [
   disease("anemia", "중대한재생불량성빈혈진단비보장.md", "중대한재생불량성빈혈진단비", 3),
   disease("kidney", "말기신부전증진단비보장.md", "말기신부전증진단비", 3),
   ...ALPHA2607_AUTO,
-];
+].map((spec) => revisedIn2610(spec));
 
 export const ALPHA2607: ProductTerms = {
   code: "alpha2607",
@@ -1103,7 +1224,28 @@ export const ALPHA2607: ProductTerms = {
   specials: ALPHA2607_SPECIALS,
 };
 
-export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607];
+/**
+ * 무배당 알파Plus보장보험2610 — 네 번째 실물 재현 상품(2607 과 같은 상품군 · 같은 보통약관 구성 — 매뉴얼 §6 · 2610_작업인계).
+ * 보통약관은 2607 판과 「영업일」 정의(근로자의 날 → 노동절) · 납입면제 조사 하나만 다르다 — 용어의 정의는 조 사본, 납입면제는 2604 함수조항(알려진 차이).
+ * 특약: 2607 과 원문이 같은 것은 2607 담보 그대로, 개정된 것은 2607 담보 템플릿을 2610 글로(`REVISED_IN_2610`), 처음 실은 것은 `a10-*` 자동 탑재.
+ */
+const ALPHA2610_GENERAL: GeneralSpec = { ...ALPHA2607_GENERAL, code: "alpha2610-general" };
+const byCoverage = new Map([...ALPHA2607_SPECIALS, ...ALPHA2610_AUTO].map((s) => [s.ownerCoverage, s]));
+export const ALPHA2610: ProductTerms = {
+  code: "alpha2610",
+  line: "alpha",
+  fixtureDir: ALPHA2610_DIR,
+  appendixNumbers: ALPHA.appendixNumbers,
+  general: ALPHA2610_GENERAL,
+  specials: ALPHA2610_AUTO,
+  autoMounts: ALPHA2610_ORDER.map((key) => {
+    const spec = byCoverage.get(key);
+    if (!spec) throw new Error(`알파Plus2610 자동 탑재 순서: ${key} 설정 없음`);
+    return spec;
+  }),
+};
+
+export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610];
 export const SEED_DIR = "src/db/seed/data";
 
 /**
@@ -1123,6 +1265,8 @@ export const GENERAL_TEMPLATE = {
     [ALPHA_GENERAL.code]: [] as string[],
     // 글이 같아도 가리키는 자리가 그 판의 것인 조 — 부지급 사유(메리츠 지급사유 조) · 통지(메리츠 납입면제 조) · 지급절차(메리츠 세부규정의 항) ·
     // 보험나이(메리츠 무효 조의 호) · 위법계약의 해지(메리츠 해약환급금의 항). 변환기가 찾아 알린다(merge.ts `refMismatches`).
+    // 2610 — 용어의 정의 표 「영업일」의 「노동절」(2607 판 「근로자의 날」)
+    [ALPHA2610_GENERAL.code]: ["용어의 정의"],
     [MERITZ_GENERAL.code]: ["용어의 정의", "보험금을 지급하지 않는 사유", "보험금 지급사유 등의 통지", "보험금의 지급절차", "계약의 무효", "계약내용의 변경 등", "보험나이 등", "계약의 소멸", "위법계약의 해지", "해약환급금"],
   } as Record<string, string[]>,
   // 기본계약이 대치하는 두 조도 변형이다 — 기본계약(일반상해사망 · 일반상해80%이상후유장해)마다 항 구성이 달라 조립이 다른 조의 「제4조 제N항」을

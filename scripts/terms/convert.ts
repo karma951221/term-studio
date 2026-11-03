@@ -47,7 +47,7 @@ import { inlinesFromText, leftoverReferences, type ArticleEntry, type ArticleInd
 import { applyAlphaWaiver, applyMeritzWaiver, guardAlphaApplication, guardDiseaseApplication, guardExcludeSentence, guardOwnWaiver, guardWaiverBlocks, guardWaiverMentions, resolveWaiverCodes } from "./waiver";
 
 const root = process.cwd();
-const read = (product: ProductTerms, file: string) => readFileSync(path.join(root, product.fixtureDir, file), "utf8");
+const read = (product: ProductTerms, file: string, spec?: SpecialSpec) => readFileSync(path.join(root, spec?.fixtureDir ?? product.fixtureDir, file), "utf8");
 const numberId = (n: string) => n.replace("의", "_");
 
 export interface Built {
@@ -1124,7 +1124,7 @@ function buildSpecial(spec: SpecialSpec, product: ProductTerms, generalParsed: P
       else report.push(`조연결 실패: ${spec.code} 조 ${number} → 보통약관 ${spec.extractFrom!.linkTo[i]}`);
     });
   } else {
-    const parsed = parseTerms(read(product, spec.file!));
+    const parsed = parseTerms(read(product, spec.file!, spec));
     built = buildStructure(parsed, spec.idPrefix, spec.title ?? parsed.title, undefined, { restartGroups: Boolean(spec.auto) });
     applyInlineConds(built.tree, built.numberOf, spec.inlineConds ?? [], report);
     applyInlineClauses(built.tree, built.numberOf, spec.inlineClauses ?? [], report);
@@ -1135,7 +1135,7 @@ function buildSpecial(spec: SpecialSpec, product: ProductTerms, generalParsed: P
       built.auto = { title: parsed.title };
       // 갱신형 짝 — 두 원문을 따로 변환(참조는 제 문서 안에서 풀린다)한 뒤 템플릿 한 벌로 합친다(auto.ts mergeRenewal)
       if (spec.auto.renewal) {
-        const renewalParsed = parseTerms(read(product, spec.auto.renewal));
+        const renewalParsed = parseTerms(read(product, spec.auto.renewal, spec));
         const renewal = buildStructure(renewalParsed, `${spec.idPrefix}r`, renewalParsed.title, undefined, { restartGroups: true });
         convertText(renewal, general.index, product.appendixNumbers, report, true);
         built.tree = mergeRenewal(built.tree, renewal.tree, RENEWAL, spec.idPrefix);
