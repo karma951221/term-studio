@@ -1116,8 +1116,7 @@ const revisedIn2610 = (s: SpecialSpec): SpecialSpec => (REVISED_IN_2610.has(s.ow
 const injury10 = autoSpecialOf("a10")("i", "V01");
 const illness10 = autoSpecialOf("a10")("d", "V02");
 const both10 = autoSpecialOf("a10")("b", "V02", "상해 및 질병 관련 특별약관");
-const cost10 = autoSpecialOf("a10")("c", "V03");
-const etc10 = autoSpecialOf("a10")("e", "V02", "기타 특별약관");
+// 비용손해 · 기타 묶음에는 2610 이 처음 실은 특약이 없다(2607 담보 그대로)
 
 /** 알파Plus2610 이 처음 실은 특약(2607 에 없는 이름) — 자동 탑재 한 줄씩(원문 목록 번호 · fixture · 갱신형 fixture). */
 export const ALPHA2610_AUTO: SpecialSpec[] = [
