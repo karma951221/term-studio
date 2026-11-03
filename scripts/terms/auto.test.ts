@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ArticleNode, DocumentNode, InlineNode } from "../../src/domain/document/nodes";
 
-import { articlesDeep, autoFixtures, canonicalArticle, claimOf, collapseRenewal, coverageNameOf, mergeRenewal, textNodesOf, wordClusters } from "./auto";
+import { articlesDeep, autoFixtures, autoMountPlan, canonicalArticle, claimOf, collapseRenewal, coverageNameOf, mergeRenewal, textNodesOf, wordClusters } from "./auto";
 import { foldTitle, titleNodes } from "../../src/domain/document/title";
 
 const WHEN = "exist(attr.A0001) and attr.A0001 = '2'";
@@ -165,5 +165,32 @@ describe("collapseRenewal — 함수조항을 얹은 뒤 같은 글이 된 두 �
     );
     for (const a of articlesDeep(kept)) a.children = [{ id: `${a.id}-k`, kind: "clauseBlockRef", clauseCode: "C0001", options: {} }];
     expect(collapseRenewal(kept, "m", () => true)).toBe(0);
+  });
+});
+
+describe("autoMountPlan — 자동 탑재분의 탑재 · 특약 그룹 (함께 쓰는 다른 상품 담보 포함)", () => {
+  it("탑재 — 짝은 둘(비갱신 · 갱신), 갱신형만은 하나(갱신형), 비갱신만은 속성 없이. 다른 상품 담보(shared)도 같은 모양으로 탑재만", () => {
+    const plan = autoMountPlan([
+      { coverage: "a7-i1", category: "V01", pair: false, renewal: false, shared: true },
+      { coverage: "a10-i2", category: "V01", pair: true, renewal: false },
+      { coverage: "a7-d1", category: "V02", pair: false, renewal: true, shared: true },
+    ]);
+    expect(plan.mounts).toEqual([
+      { code: "a7-i1", coverage: "a7-i1", section: "special", attributes: [], auto: true },
+      { code: "a10-i2", coverage: "a10-i2", section: "special", attributes: [{ kindCode: "A0001", valueCode: "1" }], auto: true },
+      { code: "a10-i2-renew", coverage: "a10-i2", section: "special", attributes: [{ kindCode: "A0001", valueCode: "2" }], auto: true },
+      { code: "a7-d1", coverage: "a7-d1", section: "special", attributes: [{ kindCode: "A0001", valueCode: "2" }], auto: true },
+    ]);
+  });
+
+  it("그룹 — 원문 순서대로 기본 그룹(담보분류)은 처음 나올 때 한 번, 사용자 그룹은 소속 담보를 모은다(함께 쓰는 담보도)", () => {
+    const plan = autoMountPlan([
+      { coverage: "x1", category: "V01", pair: false, renewal: false },
+      { coverage: "a7-b1", category: "V02", group: "상해 및 질병 관련 특별약관", pair: false, renewal: false, shared: true },
+      { coverage: "x2", category: "V01", pair: false, renewal: false },
+      { coverage: "x3", category: "V02", group: "상해 및 질병 관련 특별약관", pair: false, renewal: false },
+      { coverage: "x4", category: "V03", pair: false, renewal: false },
+    ]);
+    expect(plan.groups).toEqual([{ category: "V01" }, { name: "상해 및 질병 관련 특별약관", coverages: ["a7-b1", "x3"] }, { category: "V03" }]);
   });
 });

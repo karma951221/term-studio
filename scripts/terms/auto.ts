@@ -38,6 +38,46 @@ export function autoFixtures(specs: readonly { file?: string; auto?: { renewal?:
   });
 }
 
+/** 자동 탑재분 하나 — 담보 key · 담보분류 · 사용자 그룹 · 갱신형 짝(`pair`) · 갱신형만(`renewal`). `shared` = 다른 상품이 만든 담보를 그대로 탑재(담보 · 템플릿을 새로 만들지 않는다). */
+export interface AutoMountEntry {
+  coverage: string;
+  category: string;
+  group?: string;
+  pair: boolean;
+  renewal: boolean;
+  shared?: boolean;
+}
+
+export type AutoGroup = { category: string } | { name: string; coverages: string[] };
+export interface AutoMount {
+  code: string;
+  coverage: string;
+  section: "special";
+  attributes: { kindCode: string; valueCode: string }[];
+  auto: true;
+}
+
+/**
+ * 자동 탑재분의 탑재 · 특약 그룹 (ADR-0090) — 원문 순서대로. 갱신형 짝은 탑재 둘(갱신유형 비갱신 · 갱신형), 갱신형만은 하나(갱신형).
+ * 그룹 목록은 기본 그룹(담보분류)이 처음 나올 때 한 번, 사용자 그룹은 소속 담보를 모은다 — 다른 상품 담보를 함께 쓰는 탑재분도 같다.
+ */
+export function autoMountPlan(entries: readonly AutoMountEntry[]): { mounts: AutoMount[]; groups: AutoGroup[] } {
+  const mounts: AutoMount[] = [];
+  const groups: AutoGroup[] = [];
+  for (const e of entries) {
+    if (e.group !== undefined) {
+      const user = groups.find((g): g is Extract<AutoGroup, { name: string }> => "name" in g && g.name === e.group);
+      if (user) user.coverages.push(e.coverage);
+      else groups.push({ name: e.group, coverages: [e.coverage] });
+    } else if (!groups.some((g) => "category" in g && g.category === e.category)) groups.push({ category: e.category });
+    const attr = (v: string) => [{ kindCode: "A0001", valueCode: v }];
+    const mount = (code: string, attributes: AutoMount["attributes"]): AutoMount => ({ code, coverage: e.coverage, section: "special", attributes, auto: true });
+    if (e.pair) mounts.push(mount(e.coverage, attr("1")), mount(`${e.coverage}-renew`, attr("2")));
+    else mounts.push(mount(e.coverage, e.renewal ? attr("2") : []));
+  }
+  return { mounts, groups };
+}
+
 /**
  * 「특별약관의 소멸」 첫 항에서 보험금명 — 「제1조(보험금의 지급사유)에서 정한 ○○ 지급사유가 발생한 경우」의 ○○.
  * 참조 변환 뒤 조 참조 다음 글(「에서 정한 ○○ 지급사유가 …」)에서도 읽는다.

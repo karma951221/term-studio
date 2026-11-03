@@ -33,7 +33,7 @@ import { CLAIM_CATALOG_ENTRY, CLAIM_SLOT, inlineClaimNames } from "./claim";
 import type { Discriminator } from "../../src/domain/catalog/types";
 import { applyClauseUse, articleRefParamsOf, guardApplicationOutput, INNER_TARGETS, positionApplicationHead, clauseFromSource, inlineBody, optionCode, parameterize, placeOptions, reId, valueCode, type ClauseRecord } from "./clauses";
 import { rewriteDocumentExclusions, rewriteExclusions } from "./exclusion";
-import { articlesDeep, canonicalArticle, claimOf, collapseRenewal, coverageNameOf, localPaths, mergeRenewal, textNodesOf, wordClusters } from "./auto";
+import { articlesDeep, autoMountPlan, canonicalArticle, claimOf, collapseRenewal, coverageNameOf, localPaths, mergeRenewal, textNodesOf, wordClusters, type AutoGroup, type AutoMountEntry } from "./auto";
 import { APPENDED_CLAUSE_KEYS, APPENDICES, CLAUSES, GENERAL_TEMPLATE, PRODUCTS, RENEWAL, SEED_DIR, type ClauseUse, type ProductTerms, type SlotOverlay, type SpecialSpec } from "./config";
 import { parseTerms, type ParsedArticle, type ParsedDoc } from "./parse";
 import { applyExemption, type ExemptionTrait } from "./exemption";
@@ -854,41 +854,38 @@ function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyM
   // 자동 탑재분은 `auto: true` 로 표시한다 — 다시 쓸 때 지난번 자동 탑재분을 모두 지우고 지금 설정으로 새로 쓴다(손으로 쓴 것은 그대로)
   type Value = { path: string; value: unknown };
   type Coverage = { key: string; code: string; name: string; benefitName: string; category?: string; subCoverages?: { name: string; benefitName: string; benefitValues?: Value[] }[]; coverageValues: Value[]; benefitValues: unknown[]; auto?: true };
-  type Group = { category: string } | { name: string; coverages: string[] };
   type Mount = { code: string; coverage: string; section: string; attributes: { kindCode: string; valueCode: string }[]; auto?: true };
   const coverages = JSON.parse(readFileSync(path.join(root, SEED_DIR, "coverages.json"), "utf8")) as Coverage[];
   type SeedCopy = { article: Id; replace: ArticleNode };
-  const seeded = JSON.parse(readFileSync(path.join(root, SEED_DIR, "products.json"), "utf8")) as { code: string; general: string; mounts: Mount[]; groups?: Group[]; hiddenArticles?: Id[]; copies?: SeedCopy[] }[];
+  const seeded = JSON.parse(readFileSync(path.join(root, SEED_DIR, "products.json"), "utf8")) as { code: string; general: string; mounts: Mount[]; groups?: AutoGroup[]; hiddenArticles?: Id[]; copies?: SeedCopy[] }[];
   const hand = coverages.filter((c) => !c.auto);
   const next: Coverage[] = [...hand];
+  /** 자동 탑재 특약 문면 — 어느 상품이 만들었든(다른 상품 담보를 함께 쓰는 탑재분이 만든 쪽 문면의 제목을 읽는다). */
+  const builtAuto = new Map(products.flatMap((p) => [...p.specials].filter(([, b]) => b.auto)));
+  const created = new Set<string>();
   for (const p of products) {
-    const mounts: Mount[] = [];
-    const groups: Group[] = [];
-    for (const spec of p.product.specials.filter((s) => s.auto)) {
-      const { category, group } = spec.auto!;
-      const user = group === undefined ? undefined : groups.find((g): g is Extract<Group, { name: string }> => "name" in g && g.name === group);
-      if (group !== undefined) {
-        if (user) user.coverages.push(spec.ownerCoverage);
-        else groups.push({ name: group, coverages: [spec.ownerCoverage] });
-      } else if (!groups.some((g) => "category" in g && g.category === category)) groups.push({ category });
-      const meta = p.specials.get(spec.code)!.auto!;
+    const own = new Set(p.product.specials.map((s) => s.code));
+    const entries: AutoMountEntry[] = [];
+    for (const spec of p.product.autoMounts ?? p.product.specials.filter((s) => s.auto)) {
+      const meta = builtAuto.get(spec.code)?.auto;
+      if (!meta) throw new Error(`${p.product.code}: 자동 탑재 ${spec.code} 의 문면이 없다 — 만든 상품의 specials 에 있어야 한다`);
       const { name, renewal } = coverageNameOf(meta.title);
-      const benefit = meta.claim ?? name;
+      const shared = !own.has(spec.code);
+      entries.push({ coverage: spec.ownerCoverage, category: spec.auto!.category, ...(spec.auto!.group !== undefined ? { group: spec.auto!.group } : {}), pair: Boolean(spec.auto!.renewal), renewal, ...(shared ? { shared } : {}) });
+      if (shared || created.has(spec.ownerCoverage)) continue;
+      created.add(spec.ownerCoverage);
       next.push({
         key: spec.ownerCoverage,
         code: `COV${String(next.length + 1).padStart(6, "0")}`,
         name,
-        benefitName: benefit,
+        benefitName: meta.claim ?? name,
         category: spec.auto!.category,
         coverageValues: [],
         benefitValues: [],
         auto: true,
       });
-      const attr = (v: string) => [{ kindCode: "A0001", valueCode: v }];
-      const mount = (code: string, attributes: Mount["attributes"]): Mount => ({ code, coverage: spec.ownerCoverage, section: "special", attributes, auto: true });
-      if (spec.auto!.renewal) mounts.push(mount(spec.ownerCoverage, attr("1")), mount(`${spec.ownerCoverage}-renew`, attr("2")));
-      else mounts.push(mount(spec.ownerCoverage, renewal ? attr("2") : []));
     }
+    const { mounts, groups } = autoMountPlan(entries);
     const product = seeded.find((x) => x.code === (p.product.seedCode ?? p.product.code));
     const setting = generalSettings.get(p.product.code);
     if (product && setting) {

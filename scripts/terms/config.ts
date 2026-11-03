@@ -494,7 +494,13 @@ export interface ProductTerms {
   /** 원문 별표 번호 → 별표 코드. */
   appendixNumbers: Map<number, string>;
   general: GeneralSpec;
+  /** 이 상품이 만드는 담보약관(문면 · 템플릿 · 자동 탑재 담보). */
   specials: SpecialSpec[];
+  /**
+   * 자동 탑재 순서 — 원문 목록 순. 다른 상품의 자동 탑재 특약(그 상품 `specials` 의 것)을 넣으면 그 담보 · 템플릿을 **그대로 탑재**한다
+   * (원문이 같은 특약 — 공통화, 매뉴얼 §6.1). 없으면 `specials` 의 자동 탑재 특약 전부.
+   */
+  autoMounts?: SpecialSpec[];
 }
 
 /**
