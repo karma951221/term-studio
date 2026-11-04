@@ -431,7 +431,7 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     expect(saved.ok && saved.value.version).toBe(doc.version + 1);
     const preview = await services.assembly.preview(product.id);
     expect(preview.ok && preview.value.exclusions?.some((x) => x.name.startsWith("일반상해사망보장") && x.value.includes("g-a9"))).toBe(false);
-  });
+  }, 180_000); // 탑재한 상품마다 판정 변화를 견준다 — 실물 상품이 늘어 30초를 넘는다(2026-11-04)
 });
 
 /**

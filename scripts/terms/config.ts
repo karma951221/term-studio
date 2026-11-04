@@ -1503,7 +1503,6 @@ export const CAREFREE2610: ProductTerms = {
 const injuryGa = autoSpecialOf("ga")("i", "V01");
 const illnessGa = autoSpecialOf("ga")("d", "V02");
 const bothGa = autoSpecialOf("ga")("b", "V02", "상해 및 질병 관련 특별약관");
-const costGa = autoSpecialOf("ga")("c", "V03");
 /** The좋은 알파Plus2610 이 처음 실은 특약 — 자동 탑재 한 줄씩. */
 export const GOODALPHA2610_AUTO: SpecialSpec[] = [
   injuryGa(35, "갱신형_간호·간병통합서비스_사용_일반상해입원일당(181일이상)_(요양,정신,한방병원제외)보장.md"),
