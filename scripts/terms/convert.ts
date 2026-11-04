@@ -587,6 +587,8 @@ function main(): void {
   // 상품마다 최종 보통약관(템플릿 + 사본 + 노출 끔)의 참조 무결성 — 시드 저장(보통약관 탭 저장과 같은 검사)이 거부하기 전에 여기서 멈춘다
   for (const p of products) {
     const s = perGeneral.get(p.product.general.code)!;
+    const keep = new Set(p.product.general.keepShown ?? []);
+    s.hidden = s.hidden.filter((id) => !keep.has(id));
     const broken = productRefIssues({ template, copies: s.copies.map((a) => ({ articleId: a.id, article: a })), hidden: s.hidden });
     issues.push(...broken.map((i) => `${p.product.code}: 보통약관 설정 ${i.at.articleId ?? ""} — ${i.message}`));
   }
