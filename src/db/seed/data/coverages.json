@@ -5101,5 +5101,575 @@
     "coverageValues": [],
     "benefitValues": [],
     "auto": true
+  },
+  {
+    "key": "bs-base21",
+    "code": "COV000322",
+    "name": "뇌혈관질환관혈수술비(연간1회한)(맞춤간편가입)보장",
+    "benefitName": "뇌혈관질환관혈수술비(연간1회한)(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-base22",
+    "code": "COV000323",
+    "name": "심장관련질환관혈수술비(연간1회한)(맞춤간편가입)보장",
+    "benefitName": "심장관련질환관혈수술비(연간1회한)(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-base23",
+    "code": "COV000324",
+    "name": "2대질환 중증치료비(급여,연간1회한)(맞춤간편가입)보장",
+    "benefitName": "2대질환 중증치료비(급여,연간1회한)(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d1",
+    "code": "COV000325",
+    "name": "뇌경색증진단비(맞춤간편가입)보장",
+    "benefitName": "뇌경색증진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d2",
+    "code": "COV000326",
+    "name": "중증뇌경색증진단비(맞춤간편가입)보장",
+    "benefitName": "중증뇌경색증진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d3",
+    "code": "COV000327",
+    "name": "뇌출혈진단비(맞춤간편가입)보장",
+    "benefitName": "뇌출혈진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d4",
+    "code": "COV000328",
+    "name": "뇌졸중진단비(맞춤간편가입)보장",
+    "benefitName": "뇌졸중진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d5",
+    "code": "COV000329",
+    "name": "뇌혈관질환진단비(맞춤간편가입)보장",
+    "benefitName": "뇌혈관질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d6",
+    "code": "COV000330",
+    "name": "급성심근경색증진단비(맞춤간편가입)보장",
+    "benefitName": "급성심근경색증진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d7",
+    "code": "COV000331",
+    "name": "허혈성심장질환진단비(맞춤간편가입)보장",
+    "benefitName": "허혈성심장질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d8",
+    "code": "COV000332",
+    "name": "뇌출혈진단 응급환자 응급실내원비(연간1회한) (맞춤간편가입)보장",
+    "benefitName": "뇌출혈진단 응급환자 응급실내원비(연간1회한) (맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d9",
+    "code": "COV000333",
+    "name": "뇌경색증진단 응급환자 응급실내원비(연간1회한) (맞춤간편가입)보장",
+    "benefitName": "뇌경색증진단 응급환자 응급실내원비(연간1회한) (맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d10",
+    "code": "COV000334",
+    "name": "급성심근경색증진단 응급환자 응급실내원비(연간1회한)(맞춤간편가입)보장",
+    "benefitName": "급성심근경색증진단 응급환자 응급실내원비(연간1회한)(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d11",
+    "code": "COV000335",
+    "name": "2대질환 주요치료비(연간1회한, 10년간)(맞춤간편가입)보장",
+    "benefitName": "2대질환 주요치료비(연간1회한, 10년간)(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [
+      {
+        "path": "proviso.text",
+        "value": "「2대질환」으로 진단확정 시(보험금 지급기간 동안 적용)"
+      }
+    ],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d12",
+    "code": "COV000336",
+    "name": "상급종합병원 2대질환 주요치료비(연간1회한, 10년간)(맞춤간편가입)보장",
+    "benefitName": "상급종합병원 2대질환 주요치료비(연간1회한, 10년간)(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [
+      {
+        "path": "proviso.text",
+        "value": "「2대질환」으로 진단확정 시(보험금 지급기간 동안 적용)"
+      }
+    ],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d13",
+    "code": "COV000337",
+    "name": "혈전용해치료비Ⅲ (연간1회한)(맞춤간편가입)보장",
+    "benefitName": "혈전용해치료비Ⅲ (연간1회한)(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d14",
+    "code": "COV000338",
+    "name": "기계적혈전제거술(카테터법) 치료비Ⅲ(급여, 연간1회한) (맞춤간편가입)보장",
+    "benefitName": "기계적혈전제거술(카테터법) 치료비Ⅲ(급여, 연간1회한) (맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d15",
+    "code": "COV000339",
+    "name": "뇌혈관질환수술비(맞춤간편가입)보장",
+    "benefitName": "뇌혈관질환수술비(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d16",
+    "code": "COV000340",
+    "name": "허혈성심장질환수술비(맞춤간편가입)보장",
+    "benefitName": "허혈성심장질환수술비(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d17",
+    "code": "COV000341",
+    "name": "뇌혈관질환통원일당(연간30회한)(맞춤간편가입)보장",
+    "benefitName": "뇌혈관질환통원일당(연간30회한)(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d18",
+    "code": "COV000342",
+    "name": "뇌혈관질환통원일당(종합병원, 연간30회한) (맞춤간편가입)보장",
+    "benefitName": "뇌혈관질환통원일당(종합병원, 연간30회한) (맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d19",
+    "code": "COV000343",
+    "name": "뇌혈관질환통원일당(상급종합병원, 연간30회한) (맞춤간편가입)보장",
+    "benefitName": "뇌혈관질환통원일당(상급종합병원, 연간30회한) (맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d20",
+    "code": "COV000344",
+    "name": "허혈성심장질환통원일당(연간30회한)(맞춤간편가입)보장",
+    "benefitName": "허혈성심장질환통원일당(연간30회한)(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d21",
+    "code": "COV000345",
+    "name": "허혈성심장질환통원일당(종합병원, 연간30회한) (맞춤간편가입)보장",
+    "benefitName": "허혈성심장질환통원일당(종합병원, 연간30회한) (맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d22",
+    "code": "COV000346",
+    "name": "허혈성심장질환통원일당(상급종합병원, 연간30회한) (맞춤간편가입)보장",
+    "benefitName": "허혈성심장질환통원일당(상급종합병원, 연간30회한) (맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d23",
+    "code": "COV000347",
+    "name": "중증허혈성심장질환진단비(맞춤간편가입)보장",
+    "benefitName": "중증허혈성심장질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d24",
+    "code": "COV000348",
+    "name": "중등증이상허혈성심장질환진단비(맞춤간편가입)보장",
+    "benefitName": "중등증이상허혈성심장질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "bs-d25",
+    "code": "COV000349",
+    "name": "뇌혈관질환진단및치료비(맞춤간편가입)보장",
+    "benefitName": "뇌혈관질환진단및치료비(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "bs-d26",
+    "code": "COV000350",
+    "name": "허혈성심장질환진단및치료비(맞춤간편가입)보장",
+    "benefitName": "허혈성심장질환진단및치료비(맞춤간편가입)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
   }
 ]

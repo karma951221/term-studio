@@ -1826,7 +1826,53 @@ export const BRAINRENEW2610: ProductTerms = {
   }),
 };
 
-export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610, CAREFREE2610, GOODALPHA2610, GOODCAREFREE2610, BRAINRENEW2610];
+/**
+ * 무배당 올케어 꽉 채운 뇌심보험(세만기형)2610(맞춤간편심사형) — 뇌심2610 과 같은 꼴이되 담보 이름이 모두 「(맞춤간편가입)」 꼬리라 새 담보다
+ * (보장조항 셋 · 특약 26 — 담보명은 원문 그대로). 보통약관은 뇌심 조 사본 그대로.
+ */
+const illnessBs = autoSpecialOf("bs")("d", "V02");
+export const BRAINSIMPLE2610_AUTO: SpecialSpec[] = [
+  { ...autoSpecialOf("bs")("base", "V02")(21, "뇌혈관질환관혈수술비(연간1회한)(맞춤간편가입)보장.md"), auto: { category: "V02", base: true } },
+  { ...autoSpecialOf("bs")("base", "V02")(22, "심장관련질환관혈수술비(연간1회한)(맞춤간편가입)보장.md"), auto: { category: "V02", base: true } },
+  { ...autoSpecialOf("bs")("base", "V02")(23, "2대질환_중증치료비(급여,연간1회한)(맞춤간편가입)보장.md"), auto: { category: "V02", base: true } },
+  illnessBs(1, "뇌경색증진단비(맞춤간편가입)보장.md"),
+  illnessBs(2, "중증뇌경색증진단비(맞춤간편가입)보장.md"),
+  illnessBs(3, "뇌출혈진단비(맞춤간편가입)보장.md"),
+  illnessBs(4, "뇌졸중진단비(맞춤간편가입)보장.md"),
+  illnessBs(5, "뇌혈관질환진단비(맞춤간편가입)보장.md"),
+  illnessBs(6, "급성심근경색증진단비(맞춤간편가입)보장.md"),
+  illnessBs(7, "허혈성심장질환진단비(맞춤간편가입)보장.md"),
+  illnessBs(8, "뇌출혈진단_응급환자_응급실내원비(연간1회한)_(맞춤간편가입)보장.md"),
+  illnessBs(9, "뇌경색증진단_응급환자_응급실내원비(연간1회한)_(맞춤간편가입)보장.md"),
+  illnessBs(10, "급성심근경색증진단_응급환자_응급실내원비(연간1회한)(맞춤간편가입)보장.md"),
+  illnessBs(11, "2대질환_주요치료비(연간1회한,_10년간)(맞춤간편가입)보장.md"),
+  illnessBs(12, "상급종합병원_2대질환_주요치료비(연간1회한,_10년간)(맞춤간편가입)보장.md"),
+  illnessBs(13, "혈전용해치료비Ⅲ_(연간1회한)(맞춤간편가입)보장.md"),
+  illnessBs(14, "기계적혈전제거술(카테터법)_치료비Ⅲ(급여,_연간1회한)_(맞춤간편가입)보장.md"),
+  illnessBs(15, "뇌혈관질환수술비(맞춤간편가입)보장.md"),
+  illnessBs(16, "허혈성심장질환수술비(맞춤간편가입)보장.md"),
+  illnessBs(17, "뇌혈관질환통원일당(연간30회한)(맞춤간편가입)보장.md"),
+  illnessBs(18, "뇌혈관질환통원일당(종합병원,_연간30회한)_(맞춤간편가입)보장.md"),
+  illnessBs(19, "뇌혈관질환통원일당(상급종합병원,_연간30회한)_(맞춤간편가입)보장.md"),
+  illnessBs(20, "허혈성심장질환통원일당(연간30회한)(맞춤간편가입)보장.md"),
+  illnessBs(21, "허혈성심장질환통원일당(종합병원,_연간30회한)_(맞춤간편가입)보장.md"),
+  illnessBs(22, "허혈성심장질환통원일당(상급종합병원,_연간30회한)_(맞춤간편가입)보장.md"),
+  illnessBs(23, "중증허혈성심장질환진단비(맞춤간편가입)보장.md"),
+  illnessBs(24, "중등증이상허혈성심장질환진단비(맞춤간편가입)보장.md"),
+  illnessBs(25, "뇌혈관질환진단및치료비(맞춤간편가입)보장.md"),
+  illnessBs(26, "허혈성심장질환진단및치료비(맞춤간편가입)보장.md"),
+];
+const BRAINSIMPLE2610_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brs2610-general" };
+export const BRAINSIMPLE2610: ProductTerms = {
+  ...BRAIN2610,
+  code: "brs2610",
+  fixtureDir: "tests/fixtures/terms/뇌심세만기간편2610",
+  general: BRAINSIMPLE2610_GENERAL,
+  specials: BRAINSIMPLE2610_AUTO,
+  autoMounts: undefined,
+};
+
+export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610, CAREFREE2610, GOODALPHA2610, GOODCAREFREE2610, BRAINRENEW2610, BRAINSIMPLE2610];
 export const SEED_DIR = "src/db/seed/data";
 
 /**
@@ -1852,6 +1898,14 @@ export const GENERAL_TEMPLATE = {
       "만기환급금의 지급", "상해보험계약 후 알릴 의무", "알릴 의무 위반의 효과", "계약내용의 변경 등", "회사의 파산선고와 해지", "중도인출"],
     // 뇌심2610 — 제2절에 지급사유를 맡기는 제3 · 4조 · 이 판 글의 납입면제 세 조(사유 둘)
     [BRAIN2610_GENERAL.code]: [
+      "보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "뇌졸중, 급성심근경색증의 정의 및 진단확정", "납입면제에 관한 세부규정",
+      // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
+      "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 등의 청구", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "알릴 의무 위반의 효과", "사기에 의한 계약",
+      "계약내용의 변경 등", "계약의 소멸", "제1회 보험료 및 회사의 보장개시", "법령 등의 개정에 따른 계약내용의 변경", "회사의 손해배상책임",
+      // 상품의 사실이 글에 박힌 조 — 질병 보험의 목적 · 알릴 의무 · 보험나이 · 납입최고 · 부활(납입면제 사유 둘)
+      "목적", "계약 전 알릴 의무", "약관교부 및 설명의무 등", "계약의 무효", "보험나이 등", "보험료의 납입이 연체되는 경우 납입최고(독촉)와 계약의 해지", "보험료의 납입을 연체하여 해지된 계약의 부활(효력회복)",
+    ],
+    [BRAINSIMPLE2610_GENERAL.code]: [
       "보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "뇌졸중, 급성심근경색증의 정의 및 진단확정", "납입면제에 관한 세부규정",
       // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
       "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 등의 청구", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "알릴 의무 위반의 효과", "사기에 의한 계약",
@@ -1903,6 +1957,7 @@ export const GENERAL_TEMPLATE = {
     // 뇌심 정의 조는 사유 둘만 나열한 이름 — 템플릿 정의 조(일반 고정 제목, ADR-0088 결정 7)와 같은 자리
     [BRAIN2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [BRAINRENEW2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
+    [BRAINSIMPLE2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [GOODALPHA2610_GENERAL.code]: { "암(유사암제외), 뇌졸중, 급성심근경색증, 희귀난치성 7대질환, 만성당뇨합병증, 양성뇌종양의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [GOODCAREFREE2610_GENERAL.code]: { "암(유사암제외), 뇌졸중, 급성심근경색증, 희귀난치성 7대질환, 만성당뇨합병증, 양성뇌종양의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
   } as Record<string, Record<string, string>>,
