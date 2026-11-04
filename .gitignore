@@ -54,3 +54,6 @@ next-env.d.ts
 # 로컬 도구 메타데이터 — Claude 데스크톱 앱이 고쳐 쓰는 실행 설정 · 개인 설정
 /.claude/launch.json
 /.claude/settings.local.json
+
+# PDF 추출기(scripts/terms/pdf) 가 pdf_layout 을 import 하며 남기는 캐시
+__pycache__/
