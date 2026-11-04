@@ -19,6 +19,7 @@ export interface Preset {
 const ALPHA2607 = "docs/_자료/알파Plus보장보험2607/00_주계약";
 const ALPHA2610 = "docs/_자료/알파Plus보장보험2610/00_주계약";
 const SA2610 = "docs/_자료/메리츠 상해안심보험2610/00_주계약";
+const BRAIN2610 = "docs/_자료/올케어 꽉 채운 뇌심보험(세만기형)2610(일반심사형)/00_주계약";
 
 export const PRESETS: Record<string, Preset> = {
   /**
@@ -65,5 +66,13 @@ export const PRESETS: Record<string, Preset> = {
       { src: `${SA2610}/03_특별약관_Ⅱ_상해및질병관련.md`, only: "all" },
       { src: `${SA2610}/04_특별약관_Ⅲ_비용손해관련.md`, only: "all" },
     ],
+  },
+  /**
+   * 무배당 올케어 꽉 채운 뇌심보험(세만기형)2610(일반심사형) — 절형 보통약관(제1절 = 보통약관 · 제2절 보장 셋 2-1 ~ 2-3 = 기본계약 담보약관)
+   * + 특약 26(대분류 없이 보통약관 파일 안 `### N.` — 매뉴얼 §7.2).
+   */
+  뇌심2610: {
+    out: "tests/fixtures/terms/뇌심2610",
+    jobs: [{ src: `${BRAIN2610}/01_보통약관.md`, only: "all" }],
   },
 };

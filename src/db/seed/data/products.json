@@ -1045,7 +1045,7 @@
             {
               "id": "g-a2-b5-k",
               "kind": "boxRef",
-              "boxCode": "BX000030"
+              "boxCode": "BX000031"
             },
             {
               "id": "g-a2-p4",
@@ -1222,7 +1222,7 @@
             {
               "id": "g-a2-b8-k",
               "kind": "boxRef",
-              "boxCode": "BX000031"
+              "boxCode": "BX000032"
             }
           ]
         }
@@ -1584,7 +1584,7 @@
             {
               "id": "g-a8-b2-k",
               "kind": "boxRef",
-              "boxCode": "BX000007"
+              "boxCode": "BX000008"
             },
             {
               "id": "g-a8-p5",
@@ -1786,12 +1786,12 @@
                 {
                   "id": "g-a22-b1-k",
                   "kind": "boxRef",
-                  "boxCode": "BX000038"
+                  "boxCode": "BX000039"
                 },
                 {
                   "id": "g-a22-b2-k",
                   "kind": "boxRef",
-                  "boxCode": "BX000013"
+                  "boxCode": "BX000014"
                 }
               ],
               "code": "P0100"
@@ -1944,7 +1944,7 @@
             {
               "id": "g-a23-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000039"
+              "boxCode": "BX000040"
             },
             {
               "id": "g-a23-p3",
@@ -1995,7 +1995,7 @@
             {
               "id": "g-a23-b2-k",
               "kind": "boxRef",
-              "boxCode": "BX000014"
+              "boxCode": "BX000015"
             },
             {
               "id": "g-a23-p4",
@@ -2138,7 +2138,7 @@
             {
               "id": "g-a24-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000040"
+              "boxCode": "BX000041"
             }
           ]
         }
@@ -2234,7 +2234,7 @@
             {
               "id": "g-a25-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000015"
+              "boxCode": "BX000016"
             }
           ]
         }
@@ -2382,7 +2382,7 @@
             {
               "id": "g-a32_1-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000045"
+              "boxCode": "BX000046"
             }
           ]
         }
@@ -2440,7 +2440,7 @@
                     {
                       "id": "g-a35-b1-k",
                       "kind": "boxRef",
-                      "boxCode": "BX000046"
+                      "boxCode": "BX000047"
                     }
                   ]
                 }
@@ -8986,7 +8986,7 @@
             {
               "id": "g-a2-b8-k",
               "kind": "boxRef",
-              "boxCode": "BX000048"
+              "boxCode": "BX000049"
             }
           ]
         }
@@ -10244,7 +10244,7 @@
             {
               "id": "g-a2-b8-k",
               "kind": "boxRef",
-              "boxCode": "BX000049"
+              "boxCode": "BX000050"
             }
           ]
         }
@@ -10379,7 +10379,7 @@
             {
               "id": "g-a7-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000050"
+              "boxCode": "BX000051"
             }
           ]
         }
@@ -10668,7 +10668,7 @@
             {
               "id": "g-a8-b2-k",
               "kind": "boxRef",
-              "boxCode": "BX000007"
+              "boxCode": "BX000008"
             },
             {
               "id": "g-a8-p5",
@@ -10847,7 +10847,7 @@
             {
               "id": "g-a11-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000053"
+              "boxCode": "BX000054"
             },
             {
               "id": "g-a11-t2",
@@ -10936,7 +10936,7 @@
             {
               "id": "g-a11-b3-k",
               "kind": "boxRef",
-              "boxCode": "BX000054"
+              "boxCode": "BX000055"
             },
             {
               "id": "g-a11-t4",
@@ -11192,7 +11192,7 @@
                 {
                   "id": "g-a21-b1-k",
                   "kind": "boxRef",
-                  "boxCode": "BX000037"
+                  "boxCode": "BX000038"
                 }
               ],
               "code": "P0100"
@@ -11235,7 +11235,7 @@
                 {
                   "id": "g-a21-b2-k",
                   "kind": "boxRef",
-                  "boxCode": "BX000011"
+                  "boxCode": "BX000012"
                 }
               ],
               "code": "P0200"
@@ -11272,12 +11272,12 @@
             {
               "id": "g-a21-b3-k",
               "kind": "boxRef",
-              "boxCode": "BX000073"
+              "boxCode": "BX000074"
             },
             {
               "id": "g-a21-b4-k",
               "kind": "boxRef",
-              "boxCode": "BX000074"
+              "boxCode": "BX000075"
             },
             {
               "id": "g-a21-p4",
@@ -11373,7 +11373,7 @@
             {
               "id": "g-a21-b5-k",
               "kind": "boxRef",
-              "boxCode": "BX000012"
+              "boxCode": "BX000013"
             }
           ]
         }
@@ -11458,17 +11458,17 @@
                 {
                   "id": "g-a22-b1-k",
                   "kind": "boxRef",
-                  "boxCode": "BX000076"
+                  "boxCode": "BX000077"
                 },
                 {
                   "id": "g-a22-b2-k",
                   "kind": "boxRef",
-                  "boxCode": "BX000077"
+                  "boxCode": "BX000078"
                 },
                 {
                   "id": "g-a22-b3-k",
                   "kind": "boxRef",
-                  "boxCode": "BX000013"
+                  "boxCode": "BX000014"
                 }
               ],
               "code": "P0100"
@@ -11558,12 +11558,12 @@
             {
               "id": "g-a24-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000078"
+              "boxCode": "BX000079"
             },
             {
               "id": "g-a24-b2-k",
               "kind": "boxRef",
-              "boxCode": "BX000079"
+              "boxCode": "BX000080"
             }
           ]
         }
@@ -11596,7 +11596,7 @@
             {
               "id": "g-a25-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000015"
+              "boxCode": "BX000016"
             }
           ]
         }
@@ -11641,7 +11641,7 @@
             {
               "id": "g-a26-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000016"
+              "boxCode": "BX000017"
             },
             {
               "id": "g-a26-p3",
@@ -11983,7 +11983,7 @@
             {
               "id": "g-a45-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000029"
+              "boxCode": "BX000030"
             }
           ]
         }
@@ -12206,12 +12206,12 @@
                 {
                   "id": "g-a16-b1-k",
                   "kind": "boxRef",
-                  "boxCode": "BX000061"
+                  "boxCode": "BX000062"
                 },
                 {
                   "id": "g-a16-b2-k",
                   "kind": "boxRef",
-                  "boxCode": "BX000062"
+                  "boxCode": "BX000063"
                 },
                 {
                   "id": "g-a16-p1-i2",
@@ -12300,7 +12300,7 @@
             {
               "id": "g-a16-b3-k",
               "kind": "boxRef",
-              "boxCode": "BX000063"
+              "boxCode": "BX000064"
             },
             {
               "id": "g-a16-p3",
@@ -12334,12 +12334,12 @@
             {
               "id": "g-a16-b4-k",
               "kind": "boxRef",
-              "boxCode": "BX000088"
+              "boxCode": "BX000089"
             },
             {
               "id": "g-a16-b5-k",
               "kind": "boxRef",
-              "boxCode": "BX000015"
+              "boxCode": "BX000016"
             },
             {
               "id": "g-a16-p4",
@@ -12368,7 +12368,7 @@
             {
               "id": "g-a16-b6-k",
               "kind": "boxRef",
-              "boxCode": "BX000065"
+              "boxCode": "BX000066"
             },
             {
               "id": "g-a16-p5",
@@ -12419,7 +12419,7 @@
             {
               "id": "g-a16-b7-k",
               "kind": "boxRef",
-              "boxCode": "BX000009"
+              "boxCode": "BX000010"
             }
           ]
         }
@@ -12906,7 +12906,7 @@
             {
               "id": "g-a23-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000039"
+              "boxCode": "BX000040"
             },
             {
               "id": "g-a23-p3",
@@ -12969,7 +12969,7 @@
             {
               "id": "g-a23-b2-k",
               "kind": "boxRef",
-              "boxCode": "BX000014"
+              "boxCode": "BX000015"
             },
             {
               "id": "g-a23-p5",
@@ -13218,12 +13218,3092 @@
             {
               "id": "g-a38-b1-k",
               "kind": "boxRef",
-              "boxCode": "BX000026"
+              "boxCode": "BX000027"
             },
             {
               "id": "g-a38-b2-k",
               "kind": "boxRef",
-              "boxCode": "BX000089"
+              "boxCode": "BX000090"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "code": "br2610",
+    "name": "올케어 꽉 채운 뇌심보험(세만기형)2610(일반심사형)",
+    "general": "general",
+    "namingTemplate": "[A0001] [담보명] [A0002]",
+    "values": [
+      {
+        "path": "disclosure.avg_rate",
+        "value": 2.5
+      },
+      {
+        "path": "feature.contract_kind",
+        "value": "V01"
+      },
+      {
+        "path": "feature.renewable",
+        "value": false
+      },
+      {
+        "path": "feature.fetal",
+        "value": false
+      },
+      {
+        "path": "feature.group_contract",
+        "value": false
+      },
+      {
+        "path": "feature.notice_kind",
+        "value": "V01"
+      }
+    ],
+    "planOptions": [
+      {
+        "code": "type-1",
+        "axis": "type",
+        "number": 1,
+        "name": "보험료 납입면제 미적용형",
+        "planTypeCode": "waiver",
+        "values": [
+          {
+            "path": "waiver.applies",
+            "value": false
+          },
+          {
+            "path": "waiver.reasons",
+            "value": []
+          }
+        ]
+      },
+      {
+        "code": "type-2",
+        "axis": "type",
+        "number": 2,
+        "name": "보험료 납입면제형",
+        "planTypeCode": "waiver",
+        "values": [
+          {
+            "path": "waiver.applies",
+            "value": true
+          },
+          {
+            "path": "waiver.reasons",
+            "value": [
+              "V03",
+              "V04"
+            ]
+          },
+          {
+            "path": "waiver.age15",
+            "value": false
+          }
+        ]
+      },
+      {
+        "code": "form-1",
+        "axis": "form",
+        "number": 1,
+        "name": "해약환급금 지급형",
+        "planTypeCode": "no_surrender",
+        "values": [
+          {
+            "path": "no_surrender.type",
+            "value": "V01"
+          }
+        ]
+      }
+    ],
+    "plans": [
+      [
+        "type-1",
+        "form-1"
+      ],
+      [
+        "type-2",
+        "form-1"
+      ]
+    ],
+    "mounts": [
+      {
+        "code": "br-base21",
+        "coverage": "br-base21",
+        "section": "base",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "br-base22",
+        "coverage": "br-base22",
+        "section": "base",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "br-base23",
+        "coverage": "br-base23",
+        "section": "base",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "br-d1",
+        "coverage": "br-d1",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "br-d2",
+        "coverage": "br-d2",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a7-d21",
+        "coverage": "a7-d21",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a10-d188",
+        "coverage": "a10-d188",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a10-d192",
+        "coverage": "a10-d192",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a10-d196",
+        "coverage": "a10-d196",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a10-d200",
+        "coverage": "a10-d200",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "br-d8",
+        "coverage": "br-d8",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "br-d9",
+        "coverage": "br-d9",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "br-d10",
+        "coverage": "br-d10",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a7-d126",
+        "coverage": "a7-d126",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a7-d130",
+        "coverage": "a7-d130",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "br-d13",
+        "coverage": "br-d13",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "br-d14",
+        "coverage": "br-d14",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a10-d221",
+        "coverage": "a10-d221",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a10-d222",
+        "coverage": "a10-d222",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a7-d110",
+        "coverage": "a7-d110",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a7-d111",
+        "coverage": "a7-d111",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a7-d112",
+        "coverage": "a7-d112",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a7-d113",
+        "coverage": "a7-d113",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a7-d114",
+        "coverage": "a7-d114",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a7-d115",
+        "coverage": "a7-d115",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "br-d23",
+        "coverage": "br-d23",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "br-d24",
+        "coverage": "br-d24",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a10-d213",
+        "coverage": "a10-d213",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      },
+      {
+        "code": "a10-d214",
+        "coverage": "a10-d214",
+        "section": "special",
+        "attributes": [],
+        "auto": true
+      }
+    ],
+    "hiddenArticles": [
+      "m-a3",
+      "m-a4",
+      "g-a9",
+      "g-a10",
+      "g-a16",
+      "m-a25",
+      "m-a29",
+      "m-a30",
+      "m-a31",
+      "m-a33",
+      "g-a38"
+    ],
+    "copies": [
+      {
+        "article": "g-a3",
+        "replace": {
+          "id": "g-a3",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a3.title",
+              "kind": "text",
+              "text": "보험금의 지급사유"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a3-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a3-p1-x1",
+                  "kind": "text",
+                  "text": "이 계약의 보험금의 지급사유는 제2절 보장조항에서 정합니다."
+                }
+              ],
+              "code": "P0100"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a4",
+        "replace": {
+          "id": "g-a4",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a4.title",
+              "kind": "text",
+              "text": "보험금 지급에 관한 세부규정"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a4-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a4-p1-x1",
+                  "kind": "text",
+                  "text": "이 계약의 보험금 지급에 관한 세부규정은 제2절 보장조항에서 정합니다."
+                }
+              ],
+              "code": "P0100"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a27_1",
+        "replace": {
+          "id": "g-a27_1",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a27_1.title",
+              "kind": "text",
+              "text": "보험료의 납입면제"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a27_1-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a27_1-p1-x1",
+                  "kind": "text",
+                  "text": "회사는 2종(보험료 납입면제형)을 가입한 피보험자가 보험료 납입기간 중에 다음 중 어느 하나의 사유에 해당되고 계약이 소멸되지 않은 경우에는 차회 이후 보험료의 납입을 면제합니다."
+                }
+              ],
+              "items": [
+                {
+                  "id": "g-a27_1-p1-i1",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a27_1-p1-i1-x1",
+                      "kind": "text",
+                      "text": "피보험자가「뇌졸중」으로 진단확정되었을 경우"
+                    }
+                  ],
+                  "code": "PZ0300"
+                },
+                {
+                  "id": "g-a27_1-p1-i2",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a27_1-p1-i2-x1",
+                      "kind": "text",
+                      "text": "피보험자가「급성심근경색증」으로 진단확정되었을 경우"
+                    }
+                  ],
+                  "code": "PZ0400"
+                }
+              ],
+              "code": "P0100"
+            },
+            {
+              "id": "g-a27_1-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a27_1-p2-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a27_1",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a27_1-p2-x3",
+                  "kind": "text",
+                  "text": "의 규정에도 불구하고 보험료의 납입이 면제되기 이전에 보험료 납입 연체가 있는 경우에는 연체된 보험료를 납입하여야 하며, 납입하지 않은 경우 "
+                },
+                {
+                  "id": "g-a27_1-p2-x2",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a29"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a27_1-p2-x4",
+                  "kind": "text",
+                  "text": "에 따라 해지될 수 있습니다."
+                }
+              ],
+              "code": "PZ0200"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a27_3",
+        "replace": {
+          "id": "g-a27_3",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a27_3.title",
+              "kind": "text",
+              "text": "뇌졸중, 급성심근경색증의 정의 및 진단확정"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a27_3-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a27_3-p1-x2",
+                  "kind": "text",
+                  "text": "이 계약에 있어「뇌졸중」이라 함은 제9차 한국표준질병사인분류에 있어서「뇌졸중」으로 분류되는 질병으로"
+                },
+                {
+                  "id": "g-a27_3-p1-x1",
+                  "kind": "appendixRef",
+                  "appendixCode": "AX000007"
+                },
+                {
+                  "id": "g-a27_3-p1-x3",
+                  "kind": "text",
+                  "text": "에서 정한 거미막하출혈, 뇌내출혈, 기타 비외상성 두개내출혈, 뇌경색증, 뇌경색증을 유발하지 않은 뇌전동맥의 폐쇄 및 협착, 뇌경색증을 유발하지 않은 대뇌동맥의 폐쇄 및 협착을 말합니다."
+                }
+              ],
+              "code": "PZ0100"
+            },
+            {
+              "id": "g-a27_3-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a27_3-p2-x1",
+                  "kind": "text",
+                  "text": "「뇌졸중」의 진단확정은 의료법 제3조(의료기관)에서 정한 국내의 병원, 의원 또는 국외의 의료관련법에서 정한 의료기관의 의사(치과의사 제외) 면허를 가진 자에 의하여 내려져야 하며, 이 진단은 병력, 신경학적 검진과 함께 뇌전산화단층촬영(brain CT scan), 자기공명영상(MRI), 뇌혈관조영술, 양전자방출단층술(PET), 단일광자방출 전산화 단층술(SPECT), 뇌척수액검사 등을 기초로 하여야 합니다. 또한, 회사가「뇌졸중」의 조사나 확인을 위하여 필요하다고 인정하는 경우에는 검사결과, 진료기록부의 사본 제출을 요청할 수 있습니다."
+                }
+              ],
+              "code": "PZ0200"
+            },
+            {
+              "id": "g-a27_3-p3",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a27_3-p3-x2",
+                  "kind": "text",
+                  "text": "이 계약에 있어서「급성심근경색증」이라 함은 제9차 한국표준질병사인분류에 있어서「급성심근경색증」으로 분류되는 질병으로"
+                },
+                {
+                  "id": "g-a27_3-p3-x1",
+                  "kind": "appendixRef",
+                  "appendixCode": "AX000008"
+                },
+                {
+                  "id": "g-a27_3-p3-x3",
+                  "kind": "text",
+                  "text": "에서 정한 급성 심근경색증, 후속심근경색증, 급성 심근경색증 후 특정 현존 합병증을 말합니다."
+                }
+              ],
+              "code": "PZ0300"
+            },
+            {
+              "id": "g-a27_3-p4",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a27_3-p4-x1",
+                  "kind": "text",
+                  "text": "「급성심근경색증」의 진단확정은 의료법 제3조(의료기관)에서 정한 국내의 병원, 의원 또는 국외의 의료관련법에서 정한 의료기관의 의사(치과의사 제외) 면허를 가진 자에 의하여 내려져야 하며, 이 진단은 병력과 함께 심전도, 심장초음파, 관상동맥(심장동맥)촬영술, 혈액중 심장 효소검사 등을 기초로 하여야 합니다. 또한, 회사가「급성심근경색증」의 조사나 확인을 위하여 필요하다고 인정하는 경우에는 검사결과, 진료기록부의 사본 제출을 요청할 수 있습니다."
+                }
+              ],
+              "code": "PZ0400"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a27_2",
+        "replace": {
+          "id": "g-a27_2",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a27_2.title",
+              "kind": "text",
+              "text": "납입면제에 관한 세부규정"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a27_2-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a27_2-p1-x2",
+                  "kind": "text",
+                  "text": "보험수익자와 회사가 "
+                },
+                {
+                  "id": "g-a27_2-p1-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a27_1",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a27_2-p1-x3",
+                  "kind": "text",
+                  "text": "의 보험료의 납입면제 사유에 대해 합의하지 못할 때는 보험수익자와 회사가 함께 제3자를 정하고 그 제3자의 의견에 따를 수 있습니다. 제3자는 의료법 제3조(의료기관)에 규정한 종합병원 소속 전문의 중에 정하며, 보험료 납입면제 사유 판정에 드는 의료비용은 회사가 전액 부담합니다."
+                }
+              ],
+              "code": "PZ0100"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a2",
+        "replace": {
+          "id": "g-a2",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a2.title",
+              "kind": "text",
+              "text": "용어의 정의"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a2-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a2-p1-x1",
+                  "kind": "text",
+                  "text": "이 계약에서 사용되는 용어의 정의는 이 계약의 다른 조항에서 달리 정의되지 않는 한 다음과 같습니다. 계약 관련 용어"
+                }
+              ],
+              "code": "P0100"
+            },
+            {
+              "id": "g-a2-t1",
+              "kind": "table",
+              "columns": [
+                {},
+                {}
+              ],
+              "rows": [
+                {
+                  "header": true,
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t1-r0c0-x1",
+                        "kind": "text",
+                        "text": "용어"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t1-r0c1-x1",
+                        "kind": "text",
+                        "text": "정의"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t1-r1c0-x1",
+                        "kind": "text",
+                        "text": "계약자"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t1-r1c1-x1",
+                        "kind": "text",
+                        "text": "회사와 계약을 체결하고 보험료를 납입할 의무를 지는 사람을 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t1-r2c0-x1",
+                        "kind": "text",
+                        "text": "기본계약"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t1-r2c1-x1",
+                        "kind": "text",
+                        "text": "계약자와 회사가 체결한 계약내용 중 보통약관에 해당하는 부분을 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t1-r3c0-x1",
+                        "kind": "text",
+                        "text": "보험수익자"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t1-r3c1-x1",
+                        "kind": "text",
+                        "text": "보험금 지급사유가 발생하는 때에 회사에 보험금을 청구하여 받을 수 있는 사람을 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t1-r4c0-x1",
+                        "kind": "text",
+                        "text": "보험증권"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t1-r4c1-x1",
+                        "kind": "text",
+                        "text": "계약의 성립과 그 내용을 증명하기 위하여 회사가 계약자에게 드리는 증서를 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t1-r5c0-x1",
+                        "kind": "text",
+                        "text": "진단계약"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t1-r5c1-x1",
+                        "kind": "text",
+                        "text": "계약을 체결하기 위하여 피보험자가 건강진단을 받아야 하는 계약을 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t1-r6c0-x1",
+                        "kind": "text",
+                        "text": "피보험자"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t1-r6c1-x1",
+                        "kind": "text",
+                        "text": "보험사고의 대상이 되는 사람을 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t1-r7c0-x1",
+                        "kind": "text",
+                        "text": "1종(보험료 납입면제 미적용형)"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t1-r7c1-x1",
+                        "kind": "articleRef",
+                        "targets": [
+                          {
+                            "articleId": "g-a27_1"
+                          },
+                          {
+                            "articleId": "g-a27_2"
+                          }
+                        ],
+                        "connector": "및",
+                        "scope": "self"
+                      },
+                      {
+                        "id": "g-a2-t1-r7c1-x2",
+                        "kind": "text",
+                        "text": "을 적용하지 않는 계약을 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t1-r8c0-x1",
+                        "kind": "text",
+                        "text": "2종(보험료 납입면제형)"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t1-r8c1-x1",
+                        "kind": "articleRef",
+                        "targets": [
+                          {
+                            "articleId": "g-a27_1",
+                            "code": "P0100"
+                          }
+                        ],
+                        "connector": "및",
+                        "scope": "self"
+                      },
+                      {
+                        "id": "g-a2-t1-r8c1-x2",
+                        "kind": "text",
+                        "text": "에 따라 보험료를 납입면제하는 계약을 말합니다."
+                      }
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "g-a2-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a2-p2-x1",
+                  "kind": "text",
+                  "text": "지급사유 관련 용어"
+                }
+              ],
+              "code": "P0300"
+            },
+            {
+              "id": "g-a2-t2",
+              "kind": "table",
+              "columns": [
+                {},
+                {}
+              ],
+              "rows": [
+                {
+                  "header": true,
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t2-r0c0-x1",
+                        "kind": "text",
+                        "text": "용어"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t2-r0c1-x1",
+                        "kind": "text",
+                        "text": "정의"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t2-r1c0-x1",
+                        "kind": "text",
+                        "text": "상해"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t2-r1c1-x1",
+                        "kind": "text",
+                        "text": "보험기간 중에 발생한 급격하고도 우연한 외래의 사고로 신체(의수, 의족, 의안, 의치 등 신체보조장구는 제외하나, 인공장기나 부분 의치 등 신체에 이식되어 그 기능을 대신할 경우는 포함합니다)에 입은 상해를 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t2-r2c0-x1",
+                        "kind": "text",
+                        "text": "신체"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t2-r2c1-x1",
+                        "kind": "text",
+                        "text": "의수, 의족, 의안, 의치 등 신체보조장구는 제외하나, 인공장기나 부분 의치 등 신체에 이식되어 그 기능을 대신할 경우는 포함합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t2-r3c0-x1",
+                        "kind": "text",
+                        "text": "중요한 사항"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t2-r3c1-x1",
+                        "kind": "text",
+                        "text": "계약 전 알릴 의무와 관련하여 회사가 그 사실을 알았더라면 계약의 청약을 거절하거나 보험가입금액 한도 제한, 일부 보장 제외, 보험금 삭감, 보험료 할증과 같이 조건부로 승낙하는 등 계약 승낙에 영향을 미칠 수 있는 사항을 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t2-r4c0-x1",
+                        "kind": "text",
+                        "text": "한국표준질병사인분류"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t2-r4c1-x1",
+                        "kind": "text",
+                        "text": "제9차 개정 한국표준질병사인분류(통계청 고시 제2025-299호, 2026.1.1. 시행)를 말합니다. 약관에서 정한 대상질병(항목) 분류표의 분류번호와 다르나 제9차 한국표준질병사인분류의 기준에 따라 분류번호를 동시에 부여가 가능한 경우 해당 대상질병(항목) 분류에 포함합니다. 제10차 개정 이후 약관에서 보상하는 대상질병 해당여부는 진단 당시 시행되고 있는 한국표준질병사인분류에 따라 판단합니다. 진단서 상의 분류번호는 진단 당시 시행되고 있는 한국표준질병사인분류 질병코딩지침서에 따라 기재된 것을 인정합니다."
+                      }
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "g-a2-b3-k",
+              "kind": "boxRef",
+              "boxCode": "BX000001"
+            },
+            {
+              "id": "g-a2-p3",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a2-p3-x1",
+                  "kind": "text",
+                  "text": "지급금과 이자율 관련 용어"
+                }
+              ],
+              "code": "P0600"
+            },
+            {
+              "id": "g-a2-t4",
+              "kind": "table",
+              "columns": [
+                {},
+                {}
+              ],
+              "rows": [
+                {
+                  "header": true,
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t4-r0c0-x1",
+                        "kind": "text",
+                        "text": "용어"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t4-r0c1-x1",
+                        "kind": "text",
+                        "text": "정의"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t4-r1c0-x1",
+                        "kind": "text",
+                        "text": "연단위 복리"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t4-r1c1-x1",
+                        "kind": "text",
+                        "text": "회사가 지급할 금전에 이자를 줄 때 1년마다 마지막 날에 그 이자를 원금에 더한 금액을 다음 1년의 원금으로 하는 이자 계산방법을 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t4-r2c0-x1",
+                        "kind": "text",
+                        "text": "평균공시이율"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t4-r2c1-x1",
+                        "kind": "text",
+                        "text": "전체 보험회사 공시이율의 평균으로, 이 계약 체결 시점의 이율을 말합니다. 이 계약의 평균공시이율은 2.50%입니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t4-r3c0-x1",
+                        "kind": "text",
+                        "text": "계약자적립액"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t4-r3c1-x1",
+                        "kind": "text",
+                        "text": "장래의 해약환급금 등을 지급하기 위하여 계약자가 납입한 보험료 중 일정액을 기준으로 보험료 및 해약환급금 산출방법서에서 정한 방법에 따라 계산한 금액을 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t4-r4c0-x1",
+                        "kind": "text",
+                        "text": "해약환급금"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t4-r4c1-x1",
+                        "kind": "text",
+                        "text": "계약이 해지되는 때에 회사가 계약자에게 돌려주는 금액을 말합니다."
+                      }
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "g-a2-b5-k",
+              "kind": "boxRef",
+              "boxCode": "BX000002"
+            },
+            {
+              "id": "g-a2-p4",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a2-p4-x1",
+                  "kind": "text",
+                  "text": "기간과 날짜 관련 용어"
+                }
+              ],
+              "code": "P0900"
+            },
+            {
+              "id": "g-a2-t6",
+              "kind": "table",
+              "columns": [
+                {},
+                {}
+              ],
+              "rows": [
+                {
+                  "header": true,
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t6-r0c0-x1",
+                        "kind": "text",
+                        "text": "용어"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t6-r0c1-x1",
+                        "kind": "text",
+                        "text": "정의"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t6-r1c0-x1",
+                        "kind": "text",
+                        "text": "보험기간"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t6-r1c1-x1",
+                        "kind": "text",
+                        "text": "계약에 따라 보장을 받는 기간을 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t6-r2c0-x1",
+                        "kind": "text",
+                        "text": "영업일"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t6-r2c1-x1",
+                        "kind": "text",
+                        "text": "회사가 영업점에서 정상적으로 영업하는 날을 말하며, 토요일,‘관공서의 공휴일에 관한 규정’에 따른 공휴일(대체공휴일 포함)과 노동절을 제외합니다."
+                      }
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "g-a2-p5",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a2-p5-x1",
+                  "kind": "text",
+                  "text": "보험료 관련 용어"
+                }
+              ],
+              "code": "P1100"
+            },
+            {
+              "id": "g-a2-t7",
+              "kind": "table",
+              "columns": [
+                {},
+                {}
+              ],
+              "rows": [
+                {
+                  "header": true,
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t7-r0c0-x1",
+                        "kind": "text",
+                        "text": "용어"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t7-r0c1-x1",
+                        "kind": "text",
+                        "text": "정의"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t7-r1c0-x1",
+                        "kind": "text",
+                        "text": "보험료"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t7-r1c1-x1",
+                        "kind": "text",
+                        "text": "계약자가 매 납입기일에 납입하기로 한 보험료로 기본계약 보험료와 특별약관이 부가된 경우에는 특별약관 보험료의 합계액을 말합니다."
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a2-t7-r2c0-x1",
+                        "kind": "text",
+                        "text": "기본계약보험료"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a2-t7-r2c1-x1",
+                        "kind": "text",
+                        "text": "계약에서 정한 보험금을 지급하는데 필요한 보험료를 말합니다."
+                      }
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "g-a2-b8-k",
+              "kind": "boxRef",
+              "boxCode": "BX000091"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a5",
+        "replace": {
+          "id": "g-a5",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a5.title",
+              "kind": "text",
+              "text": "보험금을 지급하지 않는 사유"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a5-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a5-p1-x1",
+                  "kind": "text",
+                  "text": "회사는 다음 중 어느 한 가지로 보험금 지급사유가 발생한 때에는 보험금을 지급하지 않습니다."
+                }
+              ],
+              "items": [
+                {
+                  "id": "g-a5-p1-i1",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a5-p1-i1-x1",
+                      "kind": "text",
+                      "text": "피보험자가 고의로 자신을 해친 경우. 다만, 피보험자가 심신상실 등으로 자유로운 의사결정을 할 수 없는 상태에서 자신을 해친 경우에는 보험금을 지급합니다."
+                    }
+                  ],
+                  "code": "PZ0200"
+                },
+                {
+                  "id": "g-a5-p1-i2",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a5-p1-i2-x1",
+                      "kind": "text",
+                      "text": "보험수익자가 고의로 피보험자를 해친 경우. 다만, 그 보험수익자가 보험금의 일부 보험수익자인 경우에는 다른 보험수익자에 대한 보험금은 지급합니다."
+                    }
+                  ],
+                  "code": "PZ0300"
+                },
+                {
+                  "id": "g-a5-p1-i3",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a5-p1-i3-x1",
+                      "kind": "text",
+                      "text": "계약자가 고의로 피보험자를 해친 경우"
+                    }
+                  ],
+                  "code": "PZ0400"
+                },
+                {
+                  "id": "g-a5-p1-i4",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a5-p1-i4-x1",
+                      "kind": "text",
+                      "text": "피보험자의 임신, 출산(제왕절개를 포함합니다), 산후기. 그러나, 회사가 보장하는 보험금 지급사유와 보장개시일부터 2년이 지난 후에 발생한 습관성 유산, 불임 및 인공수정 관련 합병증으로 인한 경우에는 보험금을 지급합니다."
+                    }
+                  ],
+                  "code": "PZ0500"
+                },
+                {
+                  "id": "g-a5-p1-i5",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a5-p1-i5-x1",
+                      "kind": "text",
+                      "text": "전쟁, 외국의 무력행사, 혁명, 내란, 사변, 폭동"
+                    }
+                  ],
+                  "code": "PZ0600"
+                },
+                {
+                  "id": "g-a5-b1-k",
+                  "kind": "boxRef",
+                  "boxCode": "BX000003"
+                },
+                {
+                  "id": "g-a5-b2-k",
+                  "kind": "boxRef",
+                  "boxCode": "BX000004"
+                }
+              ],
+              "code": "PZ0100"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a7",
+        "replace": {
+          "id": "g-a7",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a7.title",
+              "kind": "text",
+              "text": "보험금 등의 청구"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a7-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a7-p1-x1",
+                  "kind": "text",
+                  "text": "보험수익자는 다음의 서류를 제출하고 보험금 또는 보험료 납입면제를 청구하여야 합니다."
+                }
+              ],
+              "items": [
+                {
+                  "id": "g-a7-p1-i1",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a7-p1-i1-x1",
+                      "kind": "text",
+                      "text": "청구서(회사양식)"
+                    }
+                  ],
+                  "code": "PZ0300"
+                },
+                {
+                  "id": "g-a7-p1-i2",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a7-p1-i2-x1",
+                      "kind": "text",
+                      "text": "사고증명서(진단서, 진료비계산서, 사망진단서, 장해진단서, 입원치료확인서, 의사처방전(처방조제비) 등)"
+                    }
+                  ],
+                  "code": "PZ0400"
+                },
+                {
+                  "id": "g-a7-p1-i3",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a7-p1-i3-x1",
+                      "kind": "text",
+                      "text": "신분증(주민등록증이나 운전면허증 등 사진이 붙은 정부기관발행 신분증, 본인이 아닌 경우에는 본인의 인감증명서, 본인서명사실확인서 또는 안전성과 신뢰성이 확보된 전자적 수단을 활용한 보험수익자 의사표시의 확인방법 포함)"
+                    }
+                  ],
+                  "code": "PZ0500"
+                },
+                {
+                  "id": "g-a7-p1-i4",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a7-p1-i4-x1",
+                      "kind": "text",
+                      "text": "기타 보험수익자가 보험금의 수령 또는 보험료 납입면제 청구에 필요하여 제출하는 서류"
+                    }
+                  ],
+                  "code": "PZ0600"
+                }
+              ],
+              "code": "PZ0100"
+            },
+            {
+              "id": "g-a7-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a7-p2-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a7",
+                      "code": "PZ0400"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a7-p2-x2",
+                  "kind": "text",
+                  "text": "의 사고증명서는 의료법 제3조(의료기관)에서 규정한 국내의 병원이나 의원 또는 국외의 의료관련법에서 정한 의료기관에서 발급한 것이어야 합니다."
+                }
+              ],
+              "code": "PZ0200"
+            },
+            {
+              "id": "g-a7-b1-k",
+              "kind": "boxRef",
+              "boxCode": "BX000051"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a8",
+        "replace": {
+          "id": "g-a8",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a8.title",
+              "kind": "text",
+              "text": "보험금의 지급절차"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a8-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a8-p1-x2",
+                  "kind": "text",
+                  "text": "회사는 "
+                },
+                {
+                  "id": "g-a8-p1-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a7"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a8-p1-x3",
+                  "kind": "text",
+                  "text": "에서 정한 서류를 접수한 때에는 접수증을 드리고 휴대전화 문자메시지 또는 전자우편 등으로도 송부하며, 그 서류를 접수한 날부터 3영업일 이내에 보험금을 지급합니다."
+                }
+              ],
+              "code": "P0100"
+            },
+            {
+              "id": "g-a8-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a8-p2-x3",
+                  "kind": "text",
+                  "text": "회사가 보험금 지급사유를 조사・확인하기 위해 필요한 기간이 "
+                },
+                {
+                  "id": "g-a8-p2-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a8",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a8-p2-x4",
+                  "kind": "text",
+                  "text": "의 지급기일을 초과할 것이 명백히 예상되는 경우에는 그 구체적인 사유와 지급예정일 및 보험금 가지급 제도(회사가 추정하는 보험금의 50% 이내를 지급)에 대하여 피보험자 또는 보험수익자에게 즉시 통지합니다. 다만, 지급예정일은 다음 각 호의 어느 하나에 해당하는 경우를 제외하고는 "
+                },
+                {
+                  "id": "g-a8-p2-x2",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a7"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a8-p2-x5",
+                  "kind": "text",
+                  "text": "에서 정한 서류를 접수한 날부터 30영업일 이내에서 정합니다."
+                }
+              ],
+              "items": [
+                {
+                  "id": "g-a8-p2-i1",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a8-p2-i1-x1",
+                      "kind": "text",
+                      "text": "소송제기"
+                    }
+                  ],
+                  "code": "P0500"
+                },
+                {
+                  "id": "g-a8-p2-i2",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a8-p2-i2-x1",
+                      "kind": "text",
+                      "text": "분쟁조정 신청"
+                    }
+                  ],
+                  "code": "P0900"
+                },
+                {
+                  "id": "g-a8-p2-i3",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a8-p2-i3-x1",
+                      "kind": "text",
+                      "text": "수사기관의 조사"
+                    }
+                  ],
+                  "code": "P1000"
+                },
+                {
+                  "id": "g-a8-p2-i4",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a8-p2-i4-x1",
+                      "kind": "text",
+                      "text": "해외에서 발생한 보험사고에 대한 조사"
+                    }
+                  ],
+                  "code": "P1100"
+                },
+                {
+                  "id": "g-a8-p2-i5",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a8-p2-i5-x1",
+                      "kind": "articleRef",
+                      "targets": [
+                        {
+                          "articleId": "g-a8",
+                          "code": "P0700"
+                        }
+                      ],
+                      "connector": "및",
+                      "scope": "self"
+                    },
+                    {
+                      "id": "g-a8-p2-i5-x2",
+                      "kind": "text",
+                      "text": "에 따른 회사의 조사요청에 대한 동의 거부 등 계약자, 피보험자 또는 보험수익자의 책임있는 사유로 보험금 지급사유의 조사 및 확인이 지연되는 경우"
+                    }
+                  ],
+                  "code": "P1200"
+                },
+                {
+                  "id": "g-a8-p2-i6",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a8-p2-i6-x1",
+                      "kind": "text",
+                      "text": "보험금 지급사유에 대해 제3자의 의견에 따르기로 한 경우"
+                    }
+                  ],
+                  "code": "P1300"
+                },
+                {
+                  "id": "g-a8-b1-k",
+                  "kind": "boxRef",
+                  "boxCode": "BX000007"
+                }
+              ],
+              "code": "P0200"
+            },
+            {
+              "id": "g-a8-p3",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a8-p3-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a8",
+                      "code": "P0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a8-p3-x2",
+                  "kind": "text",
+                  "text": "에 따라 장해지급률의 판정 및 지급할 보험금의 결정과 관련하여 확정된 장해지급률에 따른 보험금을 초과한 부분에 대한 분쟁으로 보험금 지급이 늦어지는 경우에는 보험수익자의 청구에 따라 이미 확정된 보험금을 먼저 가지급합니다."
+                }
+              ],
+              "code": "P0300"
+            },
+            {
+              "id": "g-a8-p4",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a8-p4-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a8",
+                      "code": "P0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a8-p4-x2",
+                  "kind": "text",
+                  "text": "에 따라 추가적인 조사가 이루어지는 경우, 회사는 보험수익자의 청구에 따라 회사가 추정하는 보험금의 50% 상당액을 가지급보험금으로 지급합니다."
+                }
+              ],
+              "code": "P0400"
+            },
+            {
+              "id": "g-a8-b2-k",
+              "kind": "boxRef",
+              "boxCode": "BX000008"
+            },
+            {
+              "id": "g-a8-p5",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a8-p5-x4",
+                  "kind": "text",
+                  "text": "회사는 "
+                },
+                {
+                  "id": "g-a8-p5-x2",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a8",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a8-p5-x5",
+                  "kind": "text",
+                  "text": "의 규정에 정한 지급기일 내에 보험금을 지급하지 않았을 때("
+                },
+                {
+                  "id": "g-a8-p5-x3",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a8",
+                      "code": "P0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a8-p5-x6",
+                  "kind": "text",
+                  "text": "의 규정에서 정한 지급예정일을 통지한 경우를 포함합니다)에는 그 다음날부터 지급일까지의 기간에 대하여"
+                },
+                {
+                  "id": "g-a8-p5-x1",
+                  "kind": "appendixRef",
+                  "appendixCode": "AX000001"
+                },
+                {
+                  "id": "g-a8-p5-x7",
+                  "kind": "text",
+                  "text": "에서 정한 이율로 계산한 금액을 보험금에 더하여 지급합니다. 그러나 계약자, 피보험자 또는 보험수익자의 책임있는 사유로 지급이 지연된 때에는 그 해당기간에 대한 이자는 더하여 지급하지 않습니다. 다만, 회사는 계약자 등이 분쟁조정을 신청했다는 사유만으로 이자지급을 거절하지 않습니다."
+                }
+              ],
+              "code": "P0600"
+            },
+            {
+              "id": "g-a8-p6",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a8-p6-x2",
+                  "kind": "text",
+                  "text": "계약자, 피보험자 또는 보험수익자는 "
+                },
+                {
+                  "id": "g-a8-p6-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a17"
+                    },
+                    {
+                      "articleId": "g-a17",
+                      "code": "P0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a8-p6-x3",
+                  "kind": "text",
+                  "text": "의 보험금 지급사유조사와 관련하여 의료기관, 국민건강보험공단, 경찰서 등 관공서에 대한 회사의 서면에 따른 조사요청에 동의하여야 합니다. 다만, 정당한 사유 없이 이에 동의하지 않을 경우 사실확인이 끝날 때까지 회사는 보험금 지급지연에 따른 이자를 지급하지 않습니다."
+                }
+              ],
+              "code": "P0700"
+            },
+            {
+              "id": "g-a8-p7",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a8-p7-x2",
+                  "kind": "text",
+                  "text": "회사는 "
+                },
+                {
+                  "id": "g-a8-p7-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a8",
+                      "code": "P0700"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a8-p7-x3",
+                  "kind": "text",
+                  "text": "의 서면조사에 대한 동의 요청시 조사목적, 사용처 등을 명시하고 설명합니다."
+                }
+              ],
+              "code": "P0800"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a11",
+        "replace": {
+          "id": "g-a11",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a11.title",
+              "kind": "text",
+              "text": "보험금 받는 방법의 변경"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a11-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a11-p1-x1",
+                  "kind": "text",
+                  "text": "계약자(보험금 지급사유 발생 후에는 보험수익자)는 회사의 사업방법서에서 정한 바에 따라 보험금의 전부 또는 일부에 대하여 나누어 지급받거나 일시에 지급받는 방법으로 변경할 수 있습니다."
+                }
+              ],
+              "code": "P0100"
+            },
+            {
+              "id": "g-a11-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a11-p2-x2",
+                  "kind": "text",
+                  "text": "회사는 "
+                },
+                {
+                  "id": "g-a11-p2-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a11",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a11-p2-x3",
+                  "kind": "text",
+                  "text": "에 따라 일시에 지급할 금액을 나누어 지급하는 경우에는 나중에 지급할 금액에 대하여 평균공시이율을 연단위 복리로 계산한 금액을 더하며, 나누어 지급할 금액을 일시에 지급하는 경우에는 평균공시이율을 연단위 복리로 할인한 금액을 지급합니다."
+                }
+              ],
+              "code": "P0200"
+            },
+            {
+              "id": "g-a11-b1-k",
+              "kind": "boxRef",
+              "boxCode": "BX000054"
+            },
+            {
+              "id": "g-a11-t2",
+              "kind": "table",
+              "title": "보험금 지급 예시",
+              "columns": [
+                {},
+                {}
+              ],
+              "rows": [
+                {
+                  "header": true,
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a11-t2-r0c0-x1",
+                        "kind": "text",
+                        "text": "지급일"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a11-t2-r0c1-x1",
+                        "kind": "text",
+                        "text": "보험금 받는 방법 변경 후 지급액"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a11-t2-r1c0-x1",
+                        "kind": "text",
+                        "text": "2025년 4월 1일"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a11-t2-r1c1-x1",
+                        "kind": "text",
+                        "text": "2천만원"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a11-t2-r2c0-x1",
+                        "kind": "text",
+                        "text": "2026년 4월 1일"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a11-t2-r2c1-x1",
+                        "kind": "text",
+                        "text": "2천만원 × (1 + 평균공시이율)"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a11-t2-r3c0-x1",
+                        "kind": "text",
+                        "text": "2027년 4월 1일"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a11-t2-r3c1-x1",
+                        "kind": "text",
+                        "text": "2천만원 × (1 + 평균공시이율)2"
+                      }
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "g-a11-b3-k",
+              "kind": "boxRef",
+              "boxCode": "BX000055"
+            },
+            {
+              "id": "g-a11-t4",
+              "kind": "table",
+              "title": "보험금 지급 예시",
+              "columns": [
+                {},
+                {}
+              ],
+              "rows": [
+                {
+                  "header": true,
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a11-t4-r0c0-x1",
+                        "kind": "text",
+                        "text": "지급일"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a11-t4-r0c1-x1",
+                        "kind": "text",
+                        "text": "보험금 받는 방법 변경 후 지급액"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a11-t4-r1c0-x1",
+                        "kind": "text",
+                        "text": "2025년 4월 1일"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a11-t4-r1c1-x1",
+                        "kind": "text",
+                        "text": "1천만원+1천만원 ÷ (1 + 평균공시이율)+1천만원 ÷ (1 + 평균공시이율)2"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a11-t4-r2c0-x1",
+                        "kind": "text",
+                        "text": "2026년 4월 1일"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a11-t4-r2c1-x1",
+                        "kind": "text",
+                        "text": "-"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "cells": [
+                    [
+                      {
+                        "id": "g-a11-t4-r3c0-x1",
+                        "kind": "text",
+                        "text": "2027년 4월 1일"
+                      }
+                    ],
+                    [
+                      {
+                        "id": "g-a11-t4-r3c1-x1",
+                        "kind": "text",
+                        "text": "-"
+                      }
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a12",
+        "replace": {
+          "id": "g-a12",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a12.title",
+              "kind": "text",
+              "text": "주소변경통지"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a12-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a12-p1-x1",
+                  "kind": "text",
+                  "text": "계약자(보험수익자가 계약자와 다른 경우 보험수익자를 포함합니다)는 주소 또는 연락처가 변경된 경우에는 지체없이 그 변경내용을 회사에 알려야 합니다."
+                }
+              ],
+              "code": "PZ0100"
+            },
+            {
+              "id": "g-a12-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a12-p2-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a12",
+                      "code": "PZ0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a12-p2-x2",
+                  "kind": "text",
+                  "text": "에서 정한대로 계약자 또는 보험수익자가 변경내용을 알리지 않은 경우에는 계약자 또는 보험수익자가 회사에 알린 최종의 주소 또는 연락처로 등기우편 등 우편물에 대한 기록이 남는 방법으로 회사가 알린 사항은 일반적으로 도달에 필요한 기간이 지난 때에 계약자 또는 보험수익자에게 도달된 것으로 봅니다."
+                }
+              ],
+              "code": "PZ0200"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a17",
+        "replace": {
+          "id": "g-a17",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a17.title",
+              "kind": "text",
+              "text": "알릴 의무 위반의 효과"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a17-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a17-p1-x2",
+                  "kind": "text",
+                  "text": "회사는 계약자 또는 피보험자가 고의 또는 중대한 과실로 "
+                },
+                {
+                  "id": "g-a17-p1-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a15"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a17-p1-x3",
+                  "kind": "text",
+                  "text": "를 위반하고 그 의무가 중요한 사항에 해당하는 경우에는 손해의 발생여부에 관계없이 이 계약을 해지할 수 있습니다."
+                }
+              ],
+              "code": "P0100"
+            },
+            {
+              "id": "g-a17-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a17-p2-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a17",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a17-p2-x2",
+                  "kind": "text",
+                  "text": "의 경우에도 불구하고 다음 중 하나에 해당하는 경우에는 회사는 계약을 해지할 수 없습니다."
+                }
+              ],
+              "items": [
+                {
+                  "id": "g-a17-p2-i1",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a17-p2-i1-x1",
+                      "kind": "text",
+                      "text": "회사가 최초계약 체결당시에 그 사실을 알았거나 과실로 알지 못하였을 때"
+                    }
+                  ],
+                  "code": "P0800"
+                },
+                {
+                  "id": "g-a17-p2-i2",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a17-p2-i2-x1",
+                      "kind": "text",
+                      "text": "회사가 그 사실을 안 날부터 1개월 이상 지났거나 또는 제1회 보험료를 받은 때부터 보험금 지급사유 또는 보험료 납입면제사유가 발생하지 않고 2년(진단계약의 경우 질병에 대하여는 1년)이 지났을 때"
+                    }
+                  ],
+                  "code": "P0900"
+                },
+                {
+                  "id": "g-a17-p2-i3",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a17-p2-i3-x1",
+                      "kind": "text",
+                      "text": "최초계약을 체결한 날부터 3년이 지났을 때"
+                    }
+                  ],
+                  "code": "P1000"
+                },
+                {
+                  "id": "g-a17-p2-i4",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a17-p2-i4-x1",
+                      "kind": "text",
+                      "text": "회사가 이 계약을 청약할 때 피보험자의 건강상태를 판단할 수 있는 기초자료(건강진단서 사본 등)에 따라 승낙한 경우에 건강진단서 사본 등에 명기되어 있는 사항으로 보험금 지급사유 또는 보험료 납입면제사유가 발생하였을 때(계약자 또는 피보험자가 회사에 제출한 기초자료의 내용 중 중요사항을 고의로 사실과 다르게 작성한 때에는 계약을 해지할 수 있습니다)"
+                    }
+                  ],
+                  "code": "P1100"
+                },
+                {
+                  "id": "g-a17-p2-i5",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a17-p2-i5-x1",
+                      "kind": "text",
+                      "text": "보험설계사 등이 계약자 또는 피보험자에게 알릴 기회를 주지 않았거나 계약자 또는 피보험자가 사실대로 알리는 것을 방해한 경우, 계약자 또는 피보험자에게 사실대로 알리지 않게 하였거나 부실한 사항을 알릴 것을 권유했을 때. 다만, 보험설계사 등의 행위가 없었다 하더라도 계약자 또는 피보험자가 사실대로 알리지 않거나 부실한 사항을 알렸다고 인정되는 경우에는 계약을 해지할 수 있습니다."
+                    }
+                  ],
+                  "code": "P1200"
+                }
+              ],
+              "code": "P0200"
+            },
+            {
+              "id": "g-a17-p3",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a17-p3-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a17",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a17-p3-x3",
+                  "kind": "text",
+                  "text": "에 따라 계약을 해지하였을 때에는 "
+                },
+                {
+                  "id": "g-a17-p3-x2",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a35",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a17-p3-x4",
+                  "kind": "text",
+                  "text": "에 따른 해약환급금을 계약자에게 지급합니다."
+                }
+              ],
+              "code": "P0300"
+            },
+            {
+              "id": "g-a17-p4",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a17-p4-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a17",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a17-p4-x2",
+                  "kind": "text",
+                  "text": "에 따른 계약의 해지가 보험금 지급 또는 보험료 납입면제사유 사유 발생 후에 이루어진 경우에 회사는 보험금을 지급하지 않거나, 보험료 납입을 면제하지 않습니다. 계약 전 알릴 의무 위반사실(계약해지 등의 원인이 되는 위반사실을 구체적으로 명시)뿐만 아니라 계약 전 알릴 의무사항이 중요한 사항에 해당되는 사유를「반대증거가 있는 경우 이의를 제기할 수 있습니다」라는 문구와 함께 계약자에게 서면 또는 전자문서 등으로 알려 드립니다. 회사가 전자문서로 안내하고자 할 경우에는 계약자에게 서면 또는 「전자서명법」 제2조 제2호에 따른 전자서명으로 동의를 얻어 수신확인을 조건으로 전자문서를 송신하여야 합니다. 계약자의 전자문서 수신이 확인되기 전까지는 그 전자문서는 송신되지 않은 것으로 봅니다. 회사는 전자문서가 수신되지 않은 것을 확인한 경우에는 서면(등기우편 등)으로 다시 알려드립니다."
+                }
+              ],
+              "code": "P0400"
+            },
+            {
+              "id": "g-a17-p5",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a17-p5-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a17",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a17-p5-x3",
+                  "kind": "text",
+                  "text": "에도 불구하고 알릴 의무를 위반한 사실이 보험금 지급사유 또는 보험료 납입면제사유 발생에 영향을 미쳤음을 회사가 증명하지 못한 경우에는 "
+                },
+                {
+                  "id": "g-a17-p5-x2",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a17",
+                      "code": "P0400"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a17-p5-x4",
+                  "kind": "text",
+                  "text": "에 관계없이 약정한 보험금을 지급하거나, 보험료 납입면제를 적용합니다."
+                }
+              ],
+              "code": "P0500"
+            },
+            {
+              "id": "g-a17-p6",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a17-p6-x1",
+                  "kind": "text",
+                  "text": "회사는 다른 보험가입내역에 대한 계약 전 알릴 의무 위반을 이유로 계약을 해지하거나 보험금 지급 또는 보험료 납입면제를 거절하지 않습니다."
+                }
+              ],
+              "code": "P0600"
+            },
+            {
+              "id": "g-a17-p7",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a17-p7-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a30"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a17-p7-x3",
+                  "kind": "text",
+                  "text": "에 따라 이 계약이 부활이 이루어진 경우에는 부활계약을 "
+                },
+                {
+                  "id": "g-a17-p7-x2",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a17",
+                      "code": "P0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a17-p7-x4",
+                  "kind": "text",
+                  "text": "의 최초계약으로 봅니다.(부활(효력회복)이 여러차례 발생된 경우에는 각각의 부활(효력회복)계약을 최초계약으로 봅니다)"
+                }
+              ],
+              "code": "P0700"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a18",
+        "replace": {
+          "id": "g-a18",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a18.title",
+              "kind": "text",
+              "text": "사기에 의한 계약"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a18-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a18-p1-x1",
+                  "kind": "text",
+                  "text": "계약자 또는 피보험자가 대리진단, 약물사용을 수단으로 진단절차를 통과하거나 진단서 위·변조 또는 청약일 이전에 암 또는 인간면역결핍바이러스(HIV) 감염의 진단 확정을 받은 후 이를 숨기고 가입하는 등 사기에 의하여 계약이 성립되었음을 회사가 증명하는 경우에는 계약일부터 5년 이내(사기사실을 안 날부터 1개월 이내)에 계약을 취소할 수 있습니다."
+                }
+              ],
+              "code": "PZ0100"
+            },
+            {
+              "id": "g-a18-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a18-p2-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a18",
+                      "code": "PZ0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a18-p2-x2",
+                  "kind": "text",
+                  "text": "에 따라 계약이 취소된 경우에는 회사는 이미 납입한 보험료를 계약자에게 돌려 드립니다."
+                }
+              ],
+              "code": "PZ0200"
+            },
+            {
+              "id": "g-a18-p3",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a18-p3-x2",
+                  "kind": "text",
+                  "text": "보험료 납입이 면제된 경우 "
+                },
+                {
+                  "id": "g-a18-p3-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a18",
+                      "code": "PZ0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a18-p3-x3",
+                  "kind": "text",
+                  "text": "의「이미 납입한 보험료」는 계약자가 실제로 납입한 보험료로 합니다."
+                }
+              ],
+              "code": "PZ0300"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a23",
+        "replace": {
+          "id": "g-a23",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a23.title",
+              "kind": "text",
+              "text": "계약내용의 변경 등"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a23-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a23-p1-x1",
+                  "kind": "text",
+                  "text": "계약자는 회사의 승낙을 얻어 다음의 사항을 변경할 수 있습니다. 이 경우 승낙을 서면 등으로 알리거나 보험증권의 뒷면에 기재하여 드립니다."
+                }
+              ],
+              "items": [
+                {
+                  "id": "g-a23-p1-i1",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a23-p1-i1-x1",
+                      "kind": "text",
+                      "text": "보험종목"
+                    }
+                  ],
+                  "code": "P0300"
+                },
+                {
+                  "id": "g-a23-p1-i2",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a23-p1-i2-x1",
+                      "kind": "text",
+                      "text": "보험기간"
+                    }
+                  ],
+                  "code": "P0600"
+                },
+                {
+                  "id": "g-a23-p1-i3",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a23-p1-i3-x1",
+                      "kind": "text",
+                      "text": "보험료 납입주기, 납입방법 및 납입기간"
+                    }
+                  ],
+                  "code": "P0900"
+                },
+                {
+                  "id": "g-a23-p1-i4",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a23-p1-i4-x1",
+                      "kind": "text",
+                      "text": "계약자, 피보험자"
+                    }
+                  ],
+                  "code": "P1000"
+                },
+                {
+                  "id": "g-a23-p1-i5",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a23-p1-i5-x1",
+                      "kind": "text",
+                      "text": "보험가입금액, 보험료 등 기타 계약의 내용"
+                    }
+                  ],
+                  "code": "PZ1100"
+                }
+              ],
+              "code": "P0100"
+            },
+            {
+              "id": "g-a23-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a23-p2-x1",
+                  "kind": "text",
+                  "text": "계약자는 보험수익자를 변경할 수 있으며 이 경우에는 회사의 승낙이 필요하지 않습니다. 다만, 변경된 보험수익자가 회사에 권리를 대항하기 위해서는 계약자가 보험수익자가 변경되었음을 회사에 통지하여야 합니다."
+                }
+              ],
+              "code": "P0200"
+            },
+            {
+              "id": "g-a23-b1-k",
+              "kind": "boxRef",
+              "boxCode": "BX000040"
+            },
+            {
+              "id": "g-a23-p3",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a23-p3-x1",
+                  "kind": "text",
+                  "text": "회사는 계약자가 제1회 보험료를 납입한 때부터 1년 이상 지난 유효한 계약으로서 그 보험종목의 변경을 요청할 때에는 회사의 사업방법서에서 정하는 방법에 따라 이를 변경하여 드립니다."
+                }
+              ],
+              "code": "P0400"
+            },
+            {
+              "id": "g-a23-p4",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a23-p4-x3",
+                  "kind": "text",
+                  "text": "회사는 계약자가 "
+                },
+                {
+                  "id": "g-a23-p4-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a23",
+                      "code": "PZ1100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a23-p4-x4",
+                  "kind": "text",
+                  "text": "에 따라 보험가입금액을 감액하고자 할 때에는 그 감액된 부분은 해지된 것으로 보며, 이로써 회사가 지급하여야 할 해약환급금이 있을 때에는 "
+                },
+                {
+                  "id": "g-a23-p4-x2",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a35",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a23-p4-x5",
+                  "kind": "text",
+                  "text": "에 따른 해약환급금을 계약자에게 지급합니다."
+                }
+              ],
+              "code": "P0500"
+            },
+            {
+              "id": "g-a23-b2-k",
+              "kind": "boxRef",
+              "boxCode": "BX000015"
+            },
+            {
+              "id": "g-a23-p5",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a23-p5-x2",
+                  "kind": "text",
+                  "text": "계약자가 "
+                },
+                {
+                  "id": "g-a23-p5-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a23",
+                      "code": "P0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a23-p5-x3",
+                  "kind": "text",
+                  "text": "에 따라 보험수익자를 변경하고자 할 경우 계약자와 피보험자가 동일하지 않을 때에는 보험금 지급사유가 발생하기 전에 피보험자가 서면(「전자서명법」 제2조 제2호에 따른 전자서명이 있는 경우로서 상법 시행령 제44조의2에 정하는 바에 따라 본인 확인 및 위조ㆍ변조 방지에 대한 신뢰성을 갖춘 전자문서를 포함)으로 동의하여야 합니다."
+                }
+              ],
+              "code": "P0700"
+            },
+            {
+              "id": "g-a23-p6",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a23-p6-x2",
+                  "kind": "text",
+                  "text": "회사는 "
+                },
+                {
+                  "id": "g-a23-p6-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a23",
+                      "code": "P0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a23-p6-x3",
+                  "kind": "text",
+                  "text": "에 따라 계약자를 변경한 경우, 변경된 계약자에게 보험증권 및 약관을 교부하고 변경된 계약자가 요청하는 경우 약관의 중요한 내용을 설명하여 드립니다."
+                }
+              ],
+              "code": "PZ0800"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a25",
+        "replace": {
+          "id": "g-a25",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a25.title",
+              "kind": "text",
+              "text": "계약의 소멸"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a25-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a25-p1-x1",
+                  "kind": "text",
+                  "text": "피보험자가 사망한 경우에는 이 계약은 소멸되며, 이 경우 회사는 그 때까지「보험료 및 해약환급금 산출방법서」에서 정한 사망 당시 계약자적립액(중도인출이 있는 경우 중도인출 원금과 이자를 차감하고 적립한 금액을 말합니다) 및 미경과보험료를 계약자에게 지급합니다."
+                }
+              ],
+              "code": "P0100"
+            },
+            {
+              "id": "g-a25-b1-k",
+              "kind": "boxRef",
+              "boxCode": "BX000016"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a26",
+        "replace": {
+          "id": "g-a26",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a26.title",
+              "kind": "text",
+              "text": "제1회 보험료 및 회사의 보장개시"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a26-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a26-p1-x1",
+                  "kind": "text",
+                  "text": "회사는 계약의 청약을 승낙하고 제1회 보험료를 받은 때부터 이 약관이 정한 바에 따라 보장을 합니다. 또한, 회사가 청약과 함께 제1회 보험료를 받은 후 승낙한 경우에도 제1회 보험료를 받은 때부터 보장이 개시됩니다. 자동이체 또는 신용카드로 납입하는 경우에는 자동이체신청 또는 신용카드매출승인에 필요한 정보를 제공한 때를 제1회 보험료를 받은 때로 하며, 계약자의 책임 있는 사유로 자동이체 또는 매출승인이 불가능한 경우에는 보험료가 납입되지 않은 것으로 봅니다."
+                }
+              ],
+              "code": "PZ0100"
+            },
+            {
+              "id": "g-a26-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a26-p2-x1",
+                  "kind": "text",
+                  "text": "회사가 청약과 함께 제1회 보험료를 받고 청약을 승낙하기 전에 보험금 지급사유가 발생하였을 때에도 보장개시일부터 이 약관이 정하는 바에 따라 보장을 합니다."
+                }
+              ],
+              "code": "PZ0200"
+            },
+            {
+              "id": "g-a26-b1-k",
+              "kind": "boxRef",
+              "boxCode": "BX000017"
+            },
+            {
+              "id": "g-a26-p3",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a26-p3-x2",
+                  "kind": "text",
+                  "text": "회사는 "
+                },
+                {
+                  "id": "g-a26-p3-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a26",
+                      "code": "PZ0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a26-p3-x3",
+                  "kind": "text",
+                  "text": "에도 불구하고 다음 중 한 가지에 해당되는 경우에는 보장을 하지 않습니다."
+                }
+              ],
+              "items": [
+                {
+                  "id": "g-a26-p3-i1",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a26-p3-i1-x1",
+                      "kind": "articleRef",
+                      "targets": [
+                        {
+                          "articleId": "g-a15"
+                        }
+                      ],
+                      "connector": "및",
+                      "scope": "self"
+                    },
+                    {
+                      "id": "g-a26-p3-i1-x2",
+                      "kind": "text",
+                      "text": "에 따라 계약자 또는 피보험자가 회사에 알린 내용이나 건강진단 내용이 보험금 지급사유의 발생에 영향을 미쳤음을 회사가 증명하는 경우"
+                    }
+                  ],
+                  "code": "PZ0300"
+                },
+                {
+                  "id": "g-a26-p3-i2",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a26-p3-i2-x1",
+                      "kind": "articleRef",
+                      "targets": [
+                        {
+                          "articleId": "g-a17"
+                        }
+                      ],
+                      "connector": "및",
+                      "scope": "self"
+                    },
+                    {
+                      "id": "g-a26-p3-i2-x2",
+                      "kind": "text",
+                      "text": "를 준용하여 회사가 보장을 하지 않을 수 있는 경우"
+                    }
+                  ],
+                  "code": "PZ0500"
+                },
+                {
+                  "id": "g-a26-p3-i3",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a26-p3-i3-x1",
+                      "kind": "text",
+                      "text": "진단계약에서 보험금 지급사유가 발생할 때까지 진단을 받지 않은 경우. 다만, 진단계약에서 진단을 받지 않은 경우라도 상해로 보험금 지급사유가 발생하는 경우에는 보장을 해드립니다."
+                    }
+                  ],
+                  "code": "PZ0600"
+                }
+              ],
+              "code": "PZ0400"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a44",
+        "replace": {
+          "id": "g-a44",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a44.title",
+              "kind": "text",
+              "text": "법령 등의 개정에 따른 계약내용의 변경"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a44-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a44-p1-x1",
+                  "kind": "text",
+                  "text": "회사는 보험금 지급사유 관련 법률이 개정된 경우에는 변경된 내용을 적용합니다."
+                }
+              ],
+              "code": "PZ0100"
+            },
+            {
+              "id": "g-a44-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a44-p2-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a44",
+                      "code": "PZ0100"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a44-p2-x2",
+                  "kind": "text",
+                  "text": "에도 불구하고 다음 각 호 중 어느 한 가지에 해당되는 경우에는 회사는 객관적이고 합리적인 범위내에서 기존 계약내용에 상응하는 새로운 보장내용으로 계약내용을 변경할 수 있습니다."
+                }
+              ],
+              "items": [
+                {
+                  "id": "g-a44-p2-i1",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a44-p2-i1-x1",
+                      "kind": "text",
+                      "text": "관련 법률의 개정 또는 폐지 등에 따라 약관에서 정한 보험금 지급사유 판정기준이 변경되는 경우"
+                    }
+                  ],
+                  "code": "PZ0600"
+                },
+                {
+                  "id": "g-a44-p2-i2",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a44-p2-i2-x1",
+                      "kind": "text",
+                      "text": "관련 법률의 개정 또는 폐지 등에 따라 약관에서 정한 보험금 지급사유의 판정이 불가능한 경우"
+                    }
+                  ],
+                  "code": "PZ0700"
+                },
+                {
+                  "id": "g-a44-p2-i3",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a44-p2-i3-x1",
+                      "kind": "text",
+                      "text": "관련 법률의 개정 또는 폐지 등에 따라 계약유지 필요가 없어지는 경우"
+                    }
+                  ],
+                  "code": "PZ0800"
+                },
+                {
+                  "id": "g-a44-p2-i4",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a44-p2-i4-x1",
+                      "kind": "text",
+                      "text": "기타 금융위원회 등의 명령이 있는 경우"
+                    }
+                  ],
+                  "code": "PZ0900"
+                }
+              ],
+              "code": "PZ0200"
+            },
+            {
+              "id": "g-a44-p3",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a44-p3-x2",
+                  "kind": "text",
+                  "text": "회사는 "
+                },
+                {
+                  "id": "g-a44-p3-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a44",
+                      "code": "PZ0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a44-p3-x3",
+                  "kind": "text",
+                  "text": "에 따라 계약이 변경되는 경우 계약내용 변경일의 15일 이전까지 서면(등기우편 등), 전화(음성녹취) 또는 전자문서 등으로 보장내용 및 가입금액, 보험료 변경내역 및 변경 절차 등을 계약자에게 알립니다."
+                }
+              ],
+              "code": "PZ0300"
+            },
+            {
+              "id": "g-a44-p4",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a44-p4-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a44",
+                      "code": "PZ0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a44-p4-x2",
+                  "kind": "text",
+                  "text": "에 따라 계약내용을 변경하는 경우에는 보장내용, 가입금액 및 납입보험료가 변경될 수 있으며, 계약내용 변경 시점 이후 잔여보험기간의 보장을 위한 재원인 계약자적립액 및 미경과보험료 정산으로 계약자가 추가로 납입하여야 할(또는 반환받을) 금액이 발생할 수 있습니다."
+                }
+              ],
+              "code": "PZ0400"
+            },
+            {
+              "id": "g-a44-p5",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a44-p5-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a44",
+                      "code": "PZ0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a44-p5-x2",
+                  "kind": "text",
+                  "text": "에도 불구하고 계약자가 계약내용 변경을 원하지 않거나, 새로운 보장내용으로 계약내용을 변경하는 것이 불가능한 경우, 회사는 계약자에게 이 계약의「보험료 및 해약환급금 산출방법서」에서 정하는 바에 따라 계약내용 변경시점의 계약자적립액 및 미경과보험료를 지급하고, 이 계약은 더 이상 효력을 가지지 않습니다."
+                }
+              ],
+              "code": "PZ0500"
+            }
+          ]
+        }
+      },
+      {
+        "article": "g-a45",
+        "replace": {
+          "id": "g-a45",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a45.title",
+              "kind": "text",
+              "text": "회사의 손해배상책임"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a45-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a45-p1-x1",
+                  "kind": "text",
+                  "text": "회사는 계약과 관련하여 임직원, 보험설계사 및 대리점의 책임있는 사유로 계약자, 피보험자 및 보험수익자에게 발생된 손해에 대하여 관계 법령 등에 따라 손해배상의 책임을 집니다."
+                }
+              ],
+              "code": "PZ0100"
+            },
+            {
+              "id": "g-a45-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a45-p2-x1",
+                  "kind": "text",
+                  "text": "회사는 보험금 지급 거절 및 지연지급의 사유가 없음을 알았거나 알 수 있었는데도 소를 제기하여 계약자, 피보험자 또는 보험수익자에게 손해를 가한 경우에는 그에 따른 손해를 배상할 책임을 집니다."
+                }
+              ],
+              "code": "PZ0200"
+            },
+            {
+              "id": "g-a45-p3",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a45-p3-x2",
+                  "kind": "text",
+                  "text": "회사가 보험금 지급여부 및 지급금액에 관하여 현저하게 공정을 잃은 합의로 보험수익자에게 손해를 가한 경우에도 회사는 "
+                },
+                {
+                  "id": "g-a45-p3-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a45",
+                      "code": "PZ0200"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a45-p3-x3",
+                  "kind": "text",
+                  "text": "에 따라 손해를 배상할 책임을 집니다."
+                }
+              ],
+              "code": "PZ0300"
+            },
+            {
+              "id": "g-a45-b1-k",
+              "kind": "boxRef",
+              "boxCode": "BX000030"
             }
           ]
         }

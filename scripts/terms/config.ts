@@ -123,6 +123,9 @@ export const APPENDICES: AppendixSpec[] = [
   { code: "AX000098", name: "신골절치료비(치아파절제외) 보험금 지급률표" },
   { code: "AX000099", name: "자동차사고 부상 등급표" },
   { code: "AX000100", name: "특정급여시술치료 분류표" },
+  // 뇌심2610 이 처음 참조한 별표 — 번호는 뇌심 원문(BRAIN2610.appendixNumbers)
+  { code: "AX000101", name: "뇌경색증 분류표" },
+  { code: "AX000102", name: "2대질환 중증치료 분류표" },
 ];
 
 /** 원문 텍스트의 첫 등장을 값 슬롯으로 바꾼다 (담보 레벨 `담보명` 등). */
@@ -1401,7 +1404,85 @@ export const SA2610: ProductTerms = {
   }),
 };
 
-export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610];
+
+// ───────────────────────────── 무배당 올케어 꽉 채운 뇌심보험(세만기형)2610(일반심사형) ─────────────────────────────
+
+const illnessBr = autoSpecialOf("br")("d", "V02");
+/** 뇌심2610 이 처음 실은 담보 — 기본계약 보장조항 셋(제2절 2-1 ~ 2-3, 섹션 base) + 특약. */
+export const BRAIN2610_AUTO: SpecialSpec[] = [
+  { ...autoSpecialOf("br")("base", "V02")(21, "뇌혈관질환관혈수술비(연간1회한)보장.md"), auto: { category: "V02", base: true } },
+  { ...autoSpecialOf("br")("base", "V02")(22, "심장관련질환관혈수술비(연간1회한)보장.md"), auto: { category: "V02", base: true } },
+  { ...autoSpecialOf("br")("base", "V02")(23, "2대질환_중증치료비(급여,연간1회한)보장.md"), auto: { category: "V02", base: true } },
+  illnessBr(1, "뇌경색증진단비보장.md"),
+  illnessBr(2, "중증뇌경색증진단비보장.md"),
+  illnessBr(8, "뇌출혈진단_응급환자_응급실내원비(연간1회한)보장.md"),
+  illnessBr(9, "뇌경색증진단_응급환자_응급실내원비(연간1회한)보장.md"),
+  illnessBr(10, "급성심근경색증진단_응급환자_응급실내원비(연간1회한)보장.md"),
+  illnessBr(13, "혈전용해치료비Ⅲ_(연간1회한)보장.md"),
+  illnessBr(14, "기계적혈전제거술(카테터법)_치료비Ⅲ(급여,_연간1회한)보장.md"),
+  illnessBr(23, "중증허혈성심장질환진단비보장.md"),
+  illnessBr(24, "중등증이상허혈성심장질환진단비보장.md"),
+];
+
+/** 뇌심2610 자동 탑재 순서 — 원문 순(보장조항 → 특약). 알파와 이름이 같은 특약 17 은 알파 담보 그대로(2026-11-04 사용자 결정). */
+const BRAIN2610_ORDER: [string, ("renewal" | "base")?][] = [
+  ["br-base21"],
+  ["br-base22"],
+  ["br-base23"],
+  ["br-d1"],
+  ["br-d2"],
+  ["a7-d21"],
+  ["a10-d188", "base"],
+  ["a10-d192", "base"],
+  ["a10-d196", "base"],
+  ["a10-d200", "base"],
+  ["br-d8"],
+  ["br-d9"],
+  ["br-d10"],
+  ["a7-d126", "base"],
+  ["a7-d130", "base"],
+  ["br-d13"],
+  ["br-d14"],
+  ["a10-d221", "base"],
+  ["a10-d222", "base"],
+  ["a7-d110", "base"],
+  ["a7-d111", "base"],
+  ["a7-d112", "base"],
+  ["a7-d113", "base"],
+  ["a7-d114", "base"],
+  ["a7-d115", "base"],
+  ["br-d23"],
+  ["br-d24"],
+  ["a10-d213"],
+  ["a10-d214"],
+];
+
+/**
+ * 무배당 올케어 꽉 채운 뇌심보험(세만기형)2610(일반심사형) — 여섯 번째 실물 재현 상품(절형 보통약관 · 기본계약 셋 · 특약 대분류 없음 — 매뉴얼 §7.2).
+ * - 상품군 meritz(매뉴얼 §7.4) — 납입면제 세 조는 이 판 원문 글 그대로 조 사본(사유 둘 — 뇌졸중 · 급성심근경색증). 알파 납입면제 함수조항 모양
+ *   (사유 열하나 · 반복 템플릿)을 옮기지 않는다 — 공통화할 같은 글이 없다.
+ * - 기본계약 보장조항 셋은 절 형태 블록(기본계약 2+ — ADR-0021 결정 1). 특약 26: 알파와 이름이 같은 17 은 알파 담보 그대로(2026-11-04 사용자 결정).
+ */
+const BRAIN2610_GENERAL: GeneralSpec = { code: "br2610-general", file: "보통약관.md", idPrefix: "br", emptyArticles: [], omitContained: ["19"], clauses: [] };
+const byBrain = new Map([...ALPHA2607_SPECIALS, ...ALPHA2610_AUTO, ...BRAIN2610_AUTO].map((s) => [s.ownerCoverage, s]));
+export const BRAIN2610: ProductTerms = {
+  code: "br2610",
+  line: "meritz",
+  fixtureDir: "tests/fixtures/terms/뇌심2610",
+  // 원문 별표 번호 → 마스터. 6 · 10 은 이 상품이 처음 참조했다
+  appendixNumbers: new Map([
+    [1, "AX000001"], [2, "AX000007"], [3, "AX000008"], [4, "AX000048"], [5, "AX000065"], [6, "AX000101"], [7, "AX000033"], [8, "AX000060"], [9, "AX000029"], [10, "AX000102"],
+  ]),
+  general: BRAIN2610_GENERAL,
+  specials: BRAIN2610_AUTO,
+  autoMounts: BRAIN2610_ORDER.map(([key, only]) => {
+    const spec = byBrain.get(key);
+    if (!spec) throw new Error(`뇌심2610 자동 탑재 순서: ${key} 설정 없음`);
+    return only ? { ...spec, auto: { ...spec.auto!, mountOnly: only } } : spec;
+  }),
+};
+
+export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610];
 export const SEED_DIR = "src/db/seed/data";
 
 /**
@@ -1425,6 +1506,13 @@ export const GENERAL_TEMPLATE = {
     [SA2610_GENERAL.code]: ["용어의 정의", "보험금의 지급사유", "보험금의 청구", "보험금 지급에 관한 세부규정", "보험금 지급사유 등의 통지", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "사기에 의한 계약", "약관교부 및 설명의무 등", "계약의 무효", "보험나이 등", "계약의 소멸", "제1회 보험료 및 회사의 보장개시", "법령 등의 개정에 따른 계약내용의 변경", "회사의 손해배상책임",
       // 상품의 사실이 글에 박힌 조 — 중도인출 한도 80% · 납입면제 문구 없음 · 보험종목 변경 없음
       "만기환급금의 지급", "상해보험계약 후 알릴 의무", "알릴 의무 위반의 효과", "계약내용의 변경 등", "회사의 파산선고와 해지", "중도인출"],
+    // 뇌심2610 — 제2절에 지급사유를 맡기는 제3 · 4조 · 이 판 글의 납입면제 세 조(사유 둘)
+    [BRAIN2610_GENERAL.code]: [
+      "보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "뇌졸중, 급성심근경색증의 정의 및 진단확정", "납입면제에 관한 세부규정",
+      // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
+      "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 등의 청구", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "알릴 의무 위반의 효과", "사기에 의한 계약",
+      "계약내용의 변경 등", "계약의 소멸", "제1회 보험료 및 회사의 보장개시", "법령 등의 개정에 따른 계약내용의 변경", "회사의 손해배상책임",
+    ],
     // 2610 — 용어의 정의 표 「영업일」의 「노동절」(2607 판 「근로자의 날」)
     [ALPHA2610_GENERAL.code]: ["용어의 정의"],
     [MERITZ_GENERAL.code]: ["용어의 정의", "보험금을 지급하지 않는 사유", "보험금 지급사유 등의 통지", "보험금의 지급절차", "계약의 무효", "계약내용의 변경 등", "보험나이 등", "계약의 소멸", "위법계약의 해지", "해약환급금"],
@@ -1434,6 +1522,8 @@ export const GENERAL_TEMPLATE = {
   // 조 이름 별칭 — 그 판이 바탕 조를 다른 이름으로 쓴다(사본으로 제 이름 · 글을 지킨다)
   aliases: {
     [SA2610_GENERAL.code]: { "보험금의 청구": "보험금 등의 청구" },
+    // 뇌심 정의 조는 사유 둘만 나열한 이름 — 템플릿 정의 조(일반 고정 제목, ADR-0088 결정 7)와 같은 자리
+    [BRAIN2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
   } as Record<string, Record<string, string>>,
   variants: {
     [MERITZ_GENERAL.code]: ["보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "보험료 납입면제 사유의 정의 및 진단확정", "납입면제에 관한 세부규정"],

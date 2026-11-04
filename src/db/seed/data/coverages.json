@@ -4635,5 +4635,233 @@
     "coverageValues": [],
     "benefitValues": [],
     "auto": true
+  },
+  {
+    "key": "br-base21",
+    "code": "COV000299",
+    "name": "뇌혈관질환관혈수술비(연간1회한)보장",
+    "benefitName": "뇌혈관질환관혈수술비(연간1회한)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "br-base22",
+    "code": "COV000300",
+    "name": "심장관련질환관혈수술비(연간1회한)보장",
+    "benefitName": "심장관련질환관혈수술비(연간1회한)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "br-base23",
+    "code": "COV000301",
+    "name": "2대질환 중증치료비(급여,연간1회한)보장",
+    "benefitName": "2대질환 중증치료비(급여,연간1회한)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "br-d1",
+    "code": "COV000302",
+    "name": "뇌경색증진단비보장",
+    "benefitName": "뇌경색증진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "br-d2",
+    "code": "COV000303",
+    "name": "중증뇌경색증진단비보장",
+    "benefitName": "중증뇌경색증진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "br-d8",
+    "code": "COV000304",
+    "name": "뇌출혈진단 응급환자 응급실내원비(연간1회한)보장",
+    "benefitName": "뇌출혈진단 응급환자 응급실내원비(연간1회한)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "br-d9",
+    "code": "COV000305",
+    "name": "뇌경색증진단 응급환자 응급실내원비(연간1회한)보장",
+    "benefitName": "뇌경색증진단 응급환자 응급실내원비(연간1회한)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "br-d10",
+    "code": "COV000306",
+    "name": "급성심근경색증진단 응급환자 응급실내원비(연간1회한)보장",
+    "benefitName": "급성심근경색증진단 응급환자 응급실내원비(연간1회한)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "br-d13",
+    "code": "COV000307",
+    "name": "혈전용해치료비Ⅲ (연간1회한)보장",
+    "benefitName": "혈전용해치료비Ⅲ (연간1회한)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "br-d14",
+    "code": "COV000308",
+    "name": "기계적혈전제거술(카테터법) 치료비Ⅲ(급여, 연간1회한)보장",
+    "benefitName": "기계적혈전제거술(카테터법) 치료비Ⅲ(급여, 연간1회한)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "br-d23",
+    "code": "COV000309",
+    "name": "중증허혈성심장질환진단비보장",
+    "benefitName": "중증허혈성심장질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "br-d24",
+    "code": "COV000310",
+    "name": "중등증이상허혈성심장질환진단비보장",
+    "benefitName": "중등증이상허혈성심장질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
   }
 ]
