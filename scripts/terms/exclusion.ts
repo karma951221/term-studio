@@ -37,6 +37,24 @@ function sameCandidates(lists: readonly Discriminator[], ids: readonly string[])
   return lists.find((d) => [...new Set(d.candidates ?? [])].sort().join() === key);
 }
 
+/** 목록 뒤에 잇는 1종 납입면제 문장 — 「은 제외하며, 보통약관 1종(…)으로 가입한 경우 」 + [납입면제 조 참조] + 「도 제외합니다.」. */
+const WAIVER_TAIL = /^은 제외하며, 보통약관 (1종\([^)]*\)으로 가입한 경우 )$/;
+
+/**
+ * 목록이 비었을 때의 가지 — 목록 뒤에 1종 납입면제 문장이 이어지면 그 문장만 「다만, 1종(…)으로 가입한 경우 [납입면제 조]은 제외합니다.」로 남긴다
+ * (2026-11-04 — 적립부분 조가 없는 상품은 준용예외가 비어도 납입면제 두 조 제외는 남는다: 뇌심2610 원문). 그 꼴이 아니면 없음(목록과 함께 빠진다).
+ */
+function onlyWaiver(inside: readonly Node[], refId: string): Node[] | undefined {
+  const [head, refs, tail] = inside;
+  const m = head?.kind === "text" ? WAIVER_TAIL.exec(head.text!) : null;
+  if (!m || refs?.kind !== "articleRef" || tail?.kind !== "text" || !tail.text!.startsWith("도 제외합니다.") || inside.length !== 3) return undefined;
+  return [
+    { id: `${refId}-if-e-t`, kind: "text", text: ` ${LEAD}${m[1]}` },
+    suffixed(refs, "-none"),
+    { id: `${refId}-if-e-t2`, kind: "text", text: `은${tail.text!.slice("도".length)}` },
+  ];
+}
+
 interface RewriteOptions {
   /** 「다만, 」 뒤 조 참조가 바꿀 목록인가 — 아니면 `skip` 으로 넘긴다. */
   accepts(ref: Node): boolean;
@@ -106,6 +124,7 @@ function paragraphRewriter(o: RewriteOptions): (p: Node) => Node {
     }
     const lead = xs[k];
     const each = `${ref.id}-each`;
+    const none = onlyWaiver(inside, ref.id);
     const cond: Node = {
       id: `${ref.id}-if`,
       kind: "inlineCond",
@@ -119,6 +138,7 @@ function paragraphRewriter(o: RewriteOptions): (p: Node) => Node {
             ...inside,
           ],
         },
+        ...(none ? [{ id: `${ref.id}-if-e`, children: none }] : []),
       ],
     };
     const before = lead.text!.slice(0, -LEAD.length).trimEnd();

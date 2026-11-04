@@ -28,7 +28,7 @@ describe("loadRealBase — 화면 E2E 바탕", () => {
     await t.close();
   });
 
-  it("별표 전부 · 열거형 2(E0001 · 필드 넷, E0002 — D0003 이 읽는 무저해지 유형) · 구분자 8(D0002 ~ D0009 — D0001 담보명은 2026-10-21 뺐다 · 납입면제 부가항의 15세 단서가 읽는 D0009 15세 이상 적용 납입면제 있음까지 앞 코드) · 보통약관 쪽이 쓰는 박스 83 · 함수조항 42(앞 코드 — 통합간편 사본이 쓰는 것 포함) · 보통약관 템플릿 1 — 담보 · 상품은 없다", async () => {
+  it("별표 전부 · 열거형 2(E0001 · 필드 넷, E0002 — D0003 이 읽는 무저해지 유형) · 구분자 8(D0002 ~ D0009 — D0001 담보명은 2026-10-21 뺐다 · 납입면제 부가항의 15세 단서가 읽는 D0009 15세 이상 적용 납입면제 있음까지 앞 코드) · 보통약관 쪽이 쓰는 박스 99 · 함수조항 42(앞 코드 — 통합간편 사본이 쓰는 것 포함) · 보통약관 템플릿 1 — 담보 · 상품은 없다", async () => {
     expect(await loadRealBase(services, admin)).toEqual({ created: true });
     expect(await services.document.listAppendices()).toHaveLength(appendices.length);
     const clauses = (await services.clause.list()).map((c) => c.code);
@@ -40,7 +40,7 @@ describe("loadRealBase — 화면 E2E 바탕", () => {
     expect((await services.catalog.list()).map((d) => d.code)).toEqual(["D0002", "D0003", "D0004", "D0005", "D0006", "D0007", "D0008", "D0009"]);
     const boxes = (await services.document.listBoxes()).map((b) => b.code);
     expect(boxes).toEqual([...boxesUsedByGenerals()].sort());
-    expect(boxes).toEqual(Array.from({ length: 94 }, (_, i) => `BX${String(i + 1).padStart(6, "0")}`));
+    expect(boxes).toEqual(Array.from({ length: 99 }, (_, i) => `BX${String(i + 1).padStart(6, "0")}`));
     expect((await services.document.list("general")).map((d) => d.title)).toEqual(["보통약관(일반)"]);
     expect(await services.coverage.listSummaries()).toEqual([]);
     expect(await services.product.listProducts()).toEqual([]);
@@ -49,6 +49,6 @@ describe("loadRealBase — 화면 E2E 바탕", () => {
   it("다시 부르면 아무것도 하지 않는다", async () => {
     expect(await loadRealBase(services, admin)).toEqual({ created: false });
     expect(await services.clause.list()).toHaveLength(42);
-    expect(await services.document.listBoxes()).toHaveLength(94);
+    expect(await services.document.listBoxes()).toHaveLength(99);
   });
 });

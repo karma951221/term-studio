@@ -224,8 +224,9 @@ export function mergeGenerals(
     // 사본 — 템플릿 조에 없는 자리의 P 코드는 PZ 로 (그 자리를 가리키는 참조도 같은 표로 고친다)
     const picked = o.copies.map((title) => {
       const a = own.find((x) => foldTitle(x.title) === title);
-      const b = baseByTitle.get(o.aliases?.[title] ?? title);
-      if (!a || !b) throw new Error(`보통약관 합치기: ${o.code} 의 사본 조 「${title}」 이(가) ${a ? "바탕 판" : "그 판"}에 없다`);
+      // 앞 판이 넣은 조도 사본으로 고를 수 있다(뇌심 연만기 판의 「갱신계약 … 해제」 — 메리츠 통합간편이 넣은 조, 2026-11-04)
+      const b = baseByTitle.get(o.aliases?.[title] ?? title) ?? addedByTitle.get(o.aliases?.[title] ?? title);
+      if (!a || !b) throw new Error(`보통약관 합치기: ${o.code} 의 사본 조 「${title}」 이(가) ${a ? "템플릿" : "그 판"}에 없다`);
       return { a, b };
     });
     const codeMap = new Map<Id, Map<Code, Code>>();

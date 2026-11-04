@@ -283,6 +283,14 @@ rm -rf .data && npm run db:seed
 `GEN_PRODUCT=… GEN_DIR=… GEN_CODE=… GEN_OUT=… npx vitest run src/db/seed/genDifferences.test.ts` 로 모아 `generatedArticle` 항목으로 적는다.
 다른 상품 담보를 그대로 실을 때, 그 담보가 가리키는 보통약관 조는 사본으로 바꾸면 깨질 수 있다 — 템플릿 글로 두고(`GENERAL_TEMPLATE.templateKept`) 알려진 차이로 적는다.
 
+### 7.8 만기 · 심사형만 다른 판 — 담보 하나 (2026-11-04, 뇌심2610 네 판)
+
+- **만기만 다른 판**(세만기 · 연만기): 연만기 판 갱신형 원문을 세만기 판 담보의 갱신형 짝(`auto.renewal` — 다른 폴더면 `../<폴더>/<파일>`)으로 합친다. 세만기는 `mountOnly: "base"`, 연만기는 `"renewal"`.
+  짝 원문의 보통약관 조 참조는 번호가 달라도(연만기 판은 자동갱신 조가 끼어 밀린다) 제목이 하나로 맞으면 그 조로 푼다(refs.ts — 「조 번호가 다른 판」 보고).
+- **심사형만 다른 판**(일반심사 · 맞춤간편): 담보 · 템플릿을 모두 함께 쓰고(`autoMounts` 그대로, `specials` 비움), 상품담보명 규칙에 「[고지 접사]」 칩 · 고지유형 간편심사 · 접사 값을 둔다.
+  원문 대조는 `noticeVariantFiles`(접사를 뗀 이름으로 짝) · 일반심사 판 파일 판 대조. genDifferences 는 접사 붙은 제목으로 fixture 를 못 찾는다 — real.test 가 짝으로 대조한다.
+- 보통약관 사본은 앞 판이 넣은 조(메리츠 「갱신계약 … 해제」)도 고를 수 있다(merge.ts).
+
 ## 8. 검수 체크리스트
 
 추출(①)

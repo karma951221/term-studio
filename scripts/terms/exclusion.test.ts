@@ -52,6 +52,20 @@ describe("준용규정 함수조항 — 수동 제외 조 목록 → 준용예�
     ]);
   });
 
+  it("목록 뒤에 1종 납입면제 문장이 이어지면 목록이 빈 가지에 그 문장만 남긴다 — 적립부분 조가 없는 상품(뇌심2610, 2026-11-04)", () => {
+    const c = clause([...head, ref("r", ["g-a9", "g-a10", "g-a38"]), { id: "t", kind: "text", text: "은 제외하며, 보통약관 1종(보험료 납입면제 미적용형)으로 가입한 경우 " }, ref("w", ["g-a27_1", "g-a27_2"]), { id: "t2", kind: "text", text: "도 제외합니다." }]);
+    expect(rewriteExclusions([c], catalog)).toEqual([]);
+    const p = (c.body[0] as unknown as { branches: { children: { children: { kind: string; branches?: { when?: string; children: unknown[] }[] }[] }[] }[] }).branches[0].children[0];
+    const cond = p.children.find((n) => n.kind === "inlineCond")!;
+    expect(cond.branches!.map((b) => b.when)).toEqual(["count(arg.준용예외) > 0", undefined]);
+    expect(cond.branches![0].children.at(-1)).toEqual({ id: "t2", kind: "text", text: "도 제외합니다." });
+    expect(cond.branches![1].children).toEqual([
+      { id: "r-if-e-t", kind: "text", text: " 다만, 1종(보험료 납입면제 미적용형)으로 가입한 경우 " },
+      { id: "w-none", kind: "articleRef", targets: [{ articleId: "g-a27_1" }, { articleId: "g-a27_2" }], connector: "및" },
+      { id: "r-if-e-t2", kind: "text", text: "은 제외합니다." },
+    ]);
+  });
+
   it("목록이 문장 안 조건 가지에 있으면 가지마다 항으로 펴고(조건 안 조건 금지) 가지마다 구분자를 고른다", () => {
     const c = clause([
       ...head,
