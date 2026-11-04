@@ -279,6 +279,9 @@ rm -rf .data && npm run db:seed
 - **개정됐으면** 2607 담보 템플릿을 새 판 원문으로 바꾼다 — `SpecialSpec.fixtureDir`(설정 `REVISED_IN_2610`). 담보명은 전역 유일이라 같은 이름 새 담보를 둘 수 없다(사용자 결정). 앞 판 상품은 그 특약이 새 판 글로 찍혀 파일 판 대조(알려진 차이)가 된다. 2604 상품도 쓰는 담보는 바꾸지 않는다.
 - **처음 실은 것**은 새 접두(`a10-*`)의 자동 탑재다.
 감액 지급금액 표 차이는 조립 결과와 원문을 대조해 `paymentTableAt` 항목으로 뽑는다(표 구분자 모양 — §5).
+원문이 통째로 같은 형제 상품(케어프리 M-Basket ↔ 알파Plus2610)은 설정을 그대로 쓰고 파일째 판 대조한다. 그 밖의 대조 실패는
+`GEN_PRODUCT=… GEN_DIR=… GEN_CODE=… GEN_OUT=… npx vitest run src/db/seed/genDifferences.test.ts` 로 모아 `generatedArticle` 항목으로 적는다.
+다른 상품 담보를 그대로 실을 때, 그 담보가 가리키는 보통약관 조는 사본으로 바꾸면 깨질 수 있다 — 템플릿 글로 두고(`GENERAL_TEMPLATE.templateKept`) 알려진 차이로 적는다.
 
 ## 8. 검수 체크리스트
 
