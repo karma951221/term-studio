@@ -190,7 +190,8 @@ describe("특약 자체의 납입면제 — 「납입면제 있음」 IF 로 통
 
   it("조째 — 「보험료의 납입면제」 · 「납입면제에 관한 세부규정」 조는 모두 조 자리 IF 안에 있다", () => {
     const docs = documents.filter((d) => all(d.tree, (x) => x.kind === "article" && (titleOf(x) === "보험료의 납입면제" || titleOf(x) === "납입면제에 관한 세부규정")).length > 0);
-    expect(docs.length).toBe(5);
+    // 알파 다섯 + 뇌심 맞춤간편 2대질환 주요치료비 둘(bs-d11 · bs-d12, 2026-11-04)
+    expect(docs.length).toBe(7);
     for (const d of docs) {
       const wrapped = all(d.tree, ownIf);
       const inside = new Set(wrapped.flatMap((w) => all(w, (x) => x.kind === "article").map((a) => a.id)));
