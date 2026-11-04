@@ -197,6 +197,7 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
       ["D0017", "준용예외(세부규정 포함)", "coverage", ""],
       ["D0018", "준용예외(질병 · 납입면제)", "coverage", ""],
       ["D0019", "준용예외(자동갱신형)", "coverage", ""],
+      ["D0020", "준용예외(지급하지 않는 사유)", "coverage", ""],
     ]);
     expect(defs.find((d) => d.code === "D0014")).toMatchObject({ resultType: { kind: "list<ref>" }, candidates: ["g-a9", "g-a10", "g-a38"] });
   });
@@ -283,14 +284,14 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     expect(boxes).toHaveLength(seedBoxes.length);
     // 같은 박스는 하나 — 신의료기술평가위원회는 수술 담보 다섯 곳(+ 알파Plus2607 자동 탑재 수술 담보)이 함께 쓴다 — 쓰임 = 시드 문면의 박스 참조 자리 수
     const surgeryBox = boxes.find((b) => b.title === "신의료기술평가위원회")!;
-    // 보통약관 쪽 박스(앞 코드)가 상해안심 조 사본으로 여섯 늘었다(2026-11-04)
-    expect(surgeryBox.code).toBe("BX000092");
-    const sites = JSON.stringify([seedDocuments, seedClauses]).split('"boxCode":"BX000092"').length - 1;
+    // 보통약관 쪽 박스(앞 코드)가 상해안심 · 뇌심 조 사본으로 열하나 늘었다(2026-11-04)
+    expect(surgeryBox.code).toBe("BX000097");
+    const sites = JSON.stringify([seedDocuments, seedClauses]).split('"boxCode":"BX000097"').length - 1;
     expect(sites).toBeGreaterThanOrEqual(5);
     expect((await services.document.boxUsages(surgeryBox.code)).length).toBe(sites);
     // 같은 제목 박스가 판마다 하나씩 있었으나(「청약서에서」 2604 · 「서면으로」 통합간편 · 줄 나눔이 다른 2607 — 낱말만 달라도 따로, 2026-10-21)
     // 템플릿이 하나(2607 판)가 되어 「계약 전 알릴 의무」 조를 사본으로 두지 않은 판의 박스는 쓰이지 않아 빠졌다 (2026-10-28)
-    expect(boxes.filter((b) => b.title === "계약 전 알릴 의무").map((b) => b.code)).toEqual(["BX000057"]);
+    expect(boxes.filter((b) => b.title === "계약 전 알릴 의무").map((b) => b.code)).toEqual(["BX000058", "BX000059"]); // 뇌심2610 은 이 조를 사본으로 두어(질병 보험의 글) 제 박스가 하나 더 있다
     // 알파Plus 준용규정은 담보속성(갱신유형)을 읽는다 — 담보속성은 함수조항이 직접 읽는다 — 요구 참조는 저장 때 식에서 뽑는다 (기능/함수조항 §3.3).
     // 「1종 … 납입면제 조도 제외」 문장은 「납입면제 있음」 인자(기본 연결 D0002)로 가른다 — 납입면제 없는 상품이면 빠진다
     // 「다만, … 은 제외합니다」 목록은 준용예외 구분자 인자(갱신형 가지 · 비갱신 가지)로 — 조립이 판정한다 (ADR-0098 결정 2)

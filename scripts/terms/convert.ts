@@ -716,7 +716,15 @@ function applyAutoClauses(products: readonly BuiltProduct[], candidates: readonl
     seen.set(title, k);
     const label = sameTitle.get(title)! > 1 ? `${title}(알파Plus2607 ${k})` : `${title}(알파Plus2607)`;
     const key = `auto-${clauses.length + 1}`;
-    const blocks = clauseFromSource(ms[0].b.tree, ms[0].slice, key);
+    let blocks: ReturnType<typeof clauseFromSource>;
+    try {
+      blocks = clauseFromSource(ms[0].b.tree, ms[0].slice, key);
+    } catch (e) {
+      // 조 밖 참조가 이미 함수조항 블록 안으로 들어간 항을 가리키면(뇌심2610 응급실내원비 — 「제4조(…) 제1항」이 정의 함수조항 안쪽) 인자로 딸 수 없다 — 문면에 둔다
+      report.push(`[auto] ${title} — 함수조항으로 묶지 않음: ${(e as Error).message}`);
+      seen.set(title, k - 1);
+      continue;
+    }
     // 옵션 자리 — 첫 자리 조의 글 노드 순번 · 앞 길이로 글을 [앞, 옵션 자리, 뒤]로 가른다(함수조항 본문은 원문 자리와 같은 순서의 글 노드를 갖는다)
     const nodes = textNodesOf(blocks);
     const options = c.places.map((place, oi) => {
