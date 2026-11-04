@@ -225,6 +225,7 @@ export interface ClauseUse {
 export interface GeneralSpec {
   code: string;
   file: string;
+  /** 보통약관 조 id 접두 — 조 번호가 다른 판끼리는 달라야 한다(합친 id 대응표가 함수조항 참조를 고칠 때 겹친다). 번호까지 같은 형제 판만 함께 쓴다. */
   idPrefix: string;
   /**
    * 그 판에 없어도 조 노출을 끄지 않는 템플릿 조 id — 다른 상품군 담보를 그대로 탑재하면 그 담보약관이 가리키는 조(알파 납입면제 세 조)가
@@ -1781,7 +1782,7 @@ export const GOODCAREFREE2610: ProductTerms = { ...GOODALPHA2610, code: "gc2610"
  * 무배당 올케어 꽉 채운 뇌심보험(연만기형)2610(일반심사형) — 뇌심2610 의 담보를 갱신형으로 싣는 형제(보장조항 셋 · 특약 26 모두 같은 이름).
  * 담보 · 템플릿을 새로 만들지 않는다 — 템플릿은 비갱신 글이라 갱신형 원문과의 차이는 알려진 차이. 보통약관은 연만기라 계약의 자동갱신 · 갱신계약 해제가 더 있다.
  */
-const BRAINRENEW2610_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brl2610-general" };
+const BRAINRENEW2610_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brl2610-general", idPrefix: "brl" };
 const BRAINRENEW2610_ORDER: [string, ("renewal" | "base")?][] = [
   ["br-base21", "renewal"],
   ["br-base22", "renewal"],
@@ -1862,7 +1863,7 @@ export const BRAINSIMPLE2610_AUTO: SpecialSpec[] = [
   illnessBs(25, "뇌혈관질환진단및치료비(맞춤간편가입)보장.md"),
   illnessBs(26, "허혈성심장질환진단및치료비(맞춤간편가입)보장.md"),
 ];
-const BRAINSIMPLE2610_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brs2610-general" };
+const BRAINSIMPLE2610_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brs2610-general", idPrefix: "brs" };
 export const BRAINSIMPLE2610: ProductTerms = {
   ...BRAIN2610,
   code: "brs2610",
@@ -1873,7 +1874,7 @@ export const BRAINSIMPLE2610: ProductTerms = {
 };
 
 /** 무배당 올케어 꽉 채운 뇌심보험(연만기형)2610(맞춤간편심사형) — 세만기 맞춤간편의 담보를 갱신형으로 싣는 형제(연만기 일반 ↔ 뇌심2610 과 같은 꼴). */
-const BRAINSIMPLERENEW2610_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brsl2610-general" };
+const BRAINSIMPLERENEW2610_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brsl2610-general", idPrefix: "brsl" };
 const bySimple = new Map(BRAINSIMPLE2610_AUTO.map((s) => [s.ownerCoverage, s]));
 const BRAINSIMPLERENEW2610_ORDER: [string, ("renewal" | "base")?][] = [
   ["bs-base21", "renewal"],

@@ -37344,7 +37344,7 @@
     "code": "C0291",
     "label": "준용규정(알파Plus2607 10)",
     "mode": "block",
-    "description": "알파Plus2607 특약 15곳이 조째 같은 글이다 — 변환기가 찾아 묶었다(첫 자리 br-d1-doc 「준용규정」)",
+    "description": "알파Plus2607 특약 4곳이 조째 같은 글이다 — 변환기가 찾아 묶었다(첫 자리 br-d1-doc 「준용규정」)",
     "body": [
       {
         "id": "c-auto-291-n1-output",
@@ -37418,10 +37418,10 @@
                     "kind": "articleRef",
                     "targets": [
                       {
-                        "articleId": "g-a27"
+                        "articleId": "g-a27_1"
                       },
                       {
-                        "articleId": "g-a27_3"
+                        "articleId": "g-a27_2"
                       }
                     ],
                     "connector": "및"
@@ -37604,7 +37604,7 @@
     "code": "C0293",
     "label": "준용규정(알파Plus2607 11)",
     "mode": "block",
-    "description": "알파Plus2607 특약 18곳이 조째 같은 글이고 낱말 2자리만 다르다(옵션) — 변환기가 찾아 묶었다(첫 자리 br-d8-doc 「준용규정」)",
+    "description": "알파Plus2607 특약 5곳이 조째 같은 글이고 낱말 1자리만 다르다(옵션) — 변환기가 찾아 묶었다(첫 자리 br-d8-doc 「준용규정」)",
     "body": [
       {
         "id": "c-auto-293-n1-output",
@@ -37621,38 +37621,28 @@
                   {
                     "id": "c-auto-293-n2",
                     "kind": "text",
-                    "text": "이 특별약관에서 정하지 않은 사항은 보통약관 제1절 일반조항을 따릅니다. "
+                    "text": "이 특별약관에서 정하지 않은 사항은 보통약관 제1절 일반조항을 따릅니다. 다만, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
                   },
                   {
                     "id": "c-auto-293-n3",
-                    "kind": "optionSlot",
-                    "optionCode": "O01"
-                  },
-                  {
-                    "id": "c-auto-293-n4",
-                    "kind": "text",
-                    "text": " 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
-                  },
-                  {
-                    "id": "c-auto-293-n5",
                     "kind": "articleRef",
                     "targets": [
                       {
-                        "articleId": "g-a27"
+                        "articleId": "g-a27_1"
                       },
                       {
-                        "articleId": "g-a27_3"
+                        "articleId": "g-a27_2"
                       }
                     ],
                     "connector": "및"
                   },
                   {
-                    "id": "c-auto-293-n6",
+                    "id": "c-auto-293-n4",
                     "kind": "optionSlot",
-                    "optionCode": "O02"
+                    "optionCode": "O01"
                   },
                   {
-                    "id": "c-auto-293-n7",
+                    "id": "c-auto-293-n5",
                     "kind": "text",
                     "text": " 제외합니다."
                   }
@@ -37672,42 +37662,11 @@
         "values": [
           {
             "code": "V01",
-            "label": "다만,",
-            "order": 0,
-            "body": [
-              {
-                "id": "c-auto-293-o1v1-x1",
-                "kind": "text",
-                "text": "다만,"
-              }
-            ]
-          },
-          {
-            "code": "V02",
-            "label": "또한,",
-            "order": 1,
-            "body": [
-              {
-                "id": "c-auto-293-o1v2-x1",
-                "kind": "text",
-                "text": "또한,"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "code": "O02",
-        "label": "낱말 2",
-        "order": 1,
-        "values": [
-          {
-            "code": "V01",
             "label": "도",
             "order": 0,
             "body": [
               {
-                "id": "c-auto-293-o2v1-x1",
+                "id": "c-auto-293-o1v1-x1",
                 "kind": "text",
                 "text": "도"
               }
@@ -37719,7 +37678,7 @@
             "order": 1,
             "body": [
               {
-                "id": "c-auto-293-o2v2-x1",
+                "id": "c-auto-293-o1v2-x1",
                 "kind": "text",
                 "text": "은"
               }
@@ -38453,16 +38412,258 @@
   },
   {
     "code": "C0300",
+    "label": "준용규정(알파Plus2607 14)",
+    "mode": "block",
+    "description": "알파Plus2607 특약 11곳이 조째 같은 글이다 — 변환기가 찾아 묶었다(첫 자리 bs-d1-doc 「준용규정」)",
+    "body": [
+      {
+        "id": "c-auto-300-n1-output",
+        "kind": "condBlock",
+        "branches": [
+          {
+            "id": "c-auto-300-n1-output-b",
+            "when": "builtin.output ≠ 'replace'",
+            "children": [
+              {
+                "id": "c-auto-300-n1",
+                "kind": "paragraph",
+                "children": [
+                  {
+                    "id": "c-auto-300-n2",
+                    "kind": "text",
+                    "text": "이 특별약관에서 정하지 않은 사항은 보통약관 제1절 일반조항을 따릅니다."
+                  },
+                  {
+                    "id": "c-auto-300-n3-if",
+                    "kind": "inlineCond",
+                    "branches": [
+                      {
+                        "id": "c-auto-300-n3-if-b",
+                        "when": "count(arg.준용예외) > 0",
+                        "children": [
+                          {
+                            "id": "c-auto-300-n3-if-t",
+                            "kind": "text",
+                            "text": " 다만, "
+                          },
+                          {
+                            "id": "c-auto-300-n3-each",
+                            "kind": "inlineFor",
+                            "source": {
+                              "kind": "refList",
+                              "ref": "arg.준용예외"
+                            },
+                            "alias": "준용예외마다",
+                            "connector": "및",
+                            "children": [
+                              {
+                                "id": "c-auto-300-n3",
+                                "kind": "articleRef",
+                                "targets": [
+                                  {
+                                    "restrict": {
+                                      "current": "c-auto-300-n3-each"
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "id": "c-auto-300-n4",
+                            "kind": "text",
+                            "text": "는 제외합니다."
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c-auto-300-n4-rest",
+                    "kind": "text",
+                    "text": " 또한, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                  },
+                  {
+                    "id": "c-auto-300-n5",
+                    "kind": "articleRef",
+                    "targets": [
+                      {
+                        "articleId": "g-a27_1"
+                      },
+                      {
+                        "articleId": "g-a27_2"
+                      }
+                    ],
+                    "connector": "및"
+                  },
+                  {
+                    "id": "c-auto-300-n6",
+                    "kind": "text",
+                    "text": "도 제외합니다."
+                  }
+                ],
+                "code": "P0100"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "options": [],
+    "params": [
+      {
+        "name": "준용예외",
+        "type": {
+          "kind": "list<ref>"
+        },
+        "default": {
+          "kind": "discriminator",
+          "code": "D0020"
+        }
+      }
+    ]
+  },
+  {
+    "code": "C0301",
+    "label": "준용규정(알파Plus2607 15)",
+    "mode": "block",
+    "description": "알파Plus2607 특약 13곳이 조째 같은 글이고 낱말 2자리만 다르다(옵션) — 변환기가 찾아 묶었다(첫 자리 bs-d8-doc 「준용규정」)",
+    "body": [
+      {
+        "id": "c-auto-301-n1-output",
+        "kind": "condBlock",
+        "branches": [
+          {
+            "id": "c-auto-301-n1-output-b",
+            "when": "builtin.output ≠ 'replace'",
+            "children": [
+              {
+                "id": "c-auto-301-n1",
+                "kind": "paragraph",
+                "children": [
+                  {
+                    "id": "c-auto-301-n2",
+                    "kind": "text",
+                    "text": "이 특별약관에서 정하지 않은 사항은 보통약관 제1절 일반조항을 따릅니다. "
+                  },
+                  {
+                    "id": "c-auto-301-n3",
+                    "kind": "optionSlot",
+                    "optionCode": "O01"
+                  },
+                  {
+                    "id": "c-auto-301-n4",
+                    "kind": "text",
+                    "text": " 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                  },
+                  {
+                    "id": "c-auto-301-n5",
+                    "kind": "articleRef",
+                    "targets": [
+                      {
+                        "articleId": "g-a27_1"
+                      },
+                      {
+                        "articleId": "g-a27_2"
+                      }
+                    ],
+                    "connector": "및"
+                  },
+                  {
+                    "id": "c-auto-301-n6",
+                    "kind": "optionSlot",
+                    "optionCode": "O02"
+                  },
+                  {
+                    "id": "c-auto-301-n7",
+                    "kind": "text",
+                    "text": " 제외합니다."
+                  }
+                ],
+                "code": "P0100"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "options": [
+      {
+        "code": "O01",
+        "label": "낱말 1",
+        "order": 0,
+        "values": [
+          {
+            "code": "V01",
+            "label": "다만,",
+            "order": 0,
+            "body": [
+              {
+                "id": "c-auto-301-o1v1-x1",
+                "kind": "text",
+                "text": "다만,"
+              }
+            ]
+          },
+          {
+            "code": "V02",
+            "label": "또한,",
+            "order": 1,
+            "body": [
+              {
+                "id": "c-auto-301-o1v2-x1",
+                "kind": "text",
+                "text": "또한,"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "O02",
+        "label": "낱말 2",
+        "order": 1,
+        "values": [
+          {
+            "code": "V01",
+            "label": "도",
+            "order": 0,
+            "body": [
+              {
+                "id": "c-auto-301-o2v1-x1",
+                "kind": "text",
+                "text": "도"
+              }
+            ]
+          },
+          {
+            "code": "V02",
+            "label": "은",
+            "order": 1,
+            "body": [
+              {
+                "id": "c-auto-301-o2v2-x1",
+                "kind": "text",
+                "text": "은"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "C0302",
     "label": "보험료의 납입면제(알파Plus2607 2)",
     "mode": "block",
     "description": "알파Plus2607 특약 2곳이 조째 같은 글이다 — 변환기가 찾아 묶었다(첫 자리 bs-d11-doc 「보험료의 납입면제」)",
     "body": [
       {
-        "id": "c-auto-300-n1",
+        "id": "c-auto-302-n1",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-300-n2",
+            "id": "c-auto-302-n2",
             "kind": "text",
             "text": "회사는 피보험자가 보험료 납입기간 중「2대질환」으로 진단확정되고 특별약관이 소멸되지 않은 경우에는 차회 이후 이 특별약관의 보험료 납입을 면제합니다."
           }
@@ -38470,11 +38671,11 @@
         "code": "P0100"
       },
       {
-        "id": "c-auto-300-n3",
+        "id": "c-auto-302-n3",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-300-n4",
+            "id": "c-auto-302-n4",
             "kind": "articleRef",
             "targets": [
               {
@@ -38485,22 +38686,22 @@
             "scope": "clause"
           },
           {
-            "id": "c-auto-300-n5",
+            "id": "c-auto-302-n5",
             "kind": "text",
             "text": "의 규정에도 불구하고 보험료의 납입이 면제되기 이전에 보험료 납입 연체가 있는 경우에는 연체된 보험료를 납입하여야 하며, 납입하지 않은 경우 "
           },
           {
-            "id": "c-auto-300-n6",
+            "id": "c-auto-302-n6",
             "kind": "articleRef",
             "targets": [
               {
-                "articleId": "g-a28"
+                "articleId": "g-a29"
               }
             ],
             "connector": "및"
           },
           {
-            "id": "c-auto-300-n7",
+            "id": "c-auto-302-n7",
             "kind": "text",
             "text": "에 따라 해지될 수 있습니다."
           }
@@ -38511,17 +38712,17 @@
     "options": []
   },
   {
-    "code": "C0301",
+    "code": "C0303",
     "label": "특별약관의 해약환급금(알파Plus2607 2)",
     "mode": "block",
     "description": "알파Plus2607 특약 2곳이 조째 같은 글이다 — 변환기가 찾아 묶었다(첫 자리 bs-d11-doc 「특별약관의 해약환급금」)",
     "body": [
       {
-        "id": "c-auto-301-n1",
+        "id": "c-auto-303-n1",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-301-n2",
+            "id": "c-auto-303-n2",
             "kind": "text",
             "text": "이 특별약관에 따른 해약환급금은「보험료 및 해약환급금 산출방법서」에 따라 계산합니다."
           }
@@ -38529,31 +38730,31 @@
         "code": "P0100"
       },
       {
-        "id": "c-auto-301-n3",
+        "id": "c-auto-303-n3",
         "kind": "boxRef",
         "boxCode": "BX000087"
       },
       {
-        "id": "c-auto-301-n4",
+        "id": "c-auto-303-n4",
         "kind": "boxRef",
         "boxCode": "BX001107"
       },
       {
-        "id": "c-auto-301-n5",
+        "id": "c-auto-303-n5",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-301-n6",
+            "id": "c-auto-303-n6",
             "kind": "text",
             "text": "해약환급금의 지급사유가 발생한 경우 계약자는 회사에 해약환급금을 청구하여야 하며, 회사는 청구를 접수한 날부터 3영업일 이내에 해약환급금을 지급합니다. 해약환급금 지급일까지의 기간에 대한 이자의 계산은"
           },
           {
-            "id": "c-auto-301-n7",
+            "id": "c-auto-303-n7",
             "kind": "appendixRef",
             "appendixCode": "AX000001"
           },
           {
-            "id": "c-auto-301-n8",
+            "id": "c-auto-303-n8",
             "kind": "text",
             "text": "에 따릅니다."
           }
@@ -38561,11 +38762,11 @@
         "code": "P0400"
       },
       {
-        "id": "c-auto-301-n9",
+        "id": "c-auto-303-n9",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-301-n10",
+            "id": "c-auto-303-n10",
             "kind": "text",
             "text": "회사는 경과기간별 해약환급금에 관한 표를 계약자에게 제공하여 드립니다."
           }
@@ -38573,11 +38774,11 @@
         "code": "P0500"
       },
       {
-        "id": "c-auto-301-n11",
+        "id": "c-auto-303-n11",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-301-n12",
+            "id": "c-auto-303-n12",
             "kind": "articleRef",
             "targets": [
               {
@@ -38587,7 +38788,7 @@
             "connector": "및"
           },
           {
-            "id": "c-auto-301-n13",
+            "id": "c-auto-303-n13",
             "kind": "text",
             "text": "에 따라 위법계약이 해지되는 경우 회사가 적립한 해지 당시의 계약자적립액 및 미경과보험료를 반환하여 드립니다."
           }
@@ -38598,17 +38799,17 @@
     "options": []
   },
   {
-    "code": "C0302",
+    "code": "C0304",
     "label": "보험금 지급에 관한 세부규정(알파Plus2607 23)",
     "mode": "block",
     "description": "알파Plus2607 특약 2곳이 조째 같은 글이고 낱말 3자리만 다르다(옵션) — 변환기가 찾아 묶었다(첫 자리 bs-d18-doc 「보험금 지급에 관한 세부규정」)",
     "body": [
       {
-        "id": "c-auto-302-n1",
+        "id": "c-auto-304-n1",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-302-n2",
+            "id": "c-auto-304-n2",
             "kind": "articleRef",
             "targets": [
               {
@@ -38618,17 +38819,17 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-302-n3",
+            "id": "c-auto-304-n3",
             "kind": "text",
             "text": "의 종합병원 "
           },
           {
-            "id": "c-auto-302-n4",
+            "id": "c-auto-304-n4",
             "kind": "optionSlot",
             "optionCode": "O01"
           },
           {
-            "id": "c-auto-302-n5",
+            "id": "c-auto-304-n5",
             "kind": "text",
             "text": " 지급 횟수는 종합병원에 통원한 날만을 기준으로 계산합니다."
           }
@@ -38636,16 +38837,16 @@
         "code": "P0100"
       },
       {
-        "id": "c-auto-302-n6",
+        "id": "c-auto-304-n6",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-302-n7",
+            "id": "c-auto-304-n7",
             "kind": "text",
             "text": "피보험자가 종합병원 이외의 병원 또는 의원에 통원하여 치료를 받던 중 해당 병원이 "
           },
           {
-            "id": "c-auto-302-n8",
+            "id": "c-auto-304-n8",
             "kind": "articleRef",
             "targets": [
               {
@@ -38655,12 +38856,12 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-302-n9",
+            "id": "c-auto-304-n9",
             "kind": "text",
             "text": "의 종합병원에 해당하는 경우에는 종합병원 적용일부터 "
           },
           {
-            "id": "c-auto-302-n10",
+            "id": "c-auto-304-n10",
             "kind": "articleRef",
             "targets": [
               {
@@ -38670,17 +38871,17 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-302-n11",
+            "id": "c-auto-304-n11",
             "kind": "text",
             "text": "에 따라 종합병원 "
           },
           {
-            "id": "c-auto-302-n12",
+            "id": "c-auto-304-n12",
             "kind": "optionSlot",
             "optionCode": "O02"
           },
           {
-            "id": "c-auto-302-n13",
+            "id": "c-auto-304-n13",
             "kind": "text",
             "text": " 지급합니다."
           }
@@ -38688,16 +38889,16 @@
         "code": "P0200"
       },
       {
-        "id": "c-auto-302-n14",
+        "id": "c-auto-304-n14",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-302-n15",
+            "id": "c-auto-304-n15",
             "kind": "text",
             "text": "피보험자가 종합병원에 통원하여 치료를 받던 중 해당 병원이 "
           },
           {
-            "id": "c-auto-302-n16",
+            "id": "c-auto-304-n16",
             "kind": "articleRef",
             "targets": [
               {
@@ -38707,12 +38908,12 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-302-n17",
+            "id": "c-auto-304-n17",
             "kind": "text",
             "text": "의 종합병원 지정이 취소된 경우 종합병원 지정 취소 적용일 전일까지의 통원에 대하여 "
           },
           {
-            "id": "c-auto-302-n18",
+            "id": "c-auto-304-n18",
             "kind": "articleRef",
             "targets": [
               {
@@ -38722,17 +38923,17 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-302-n19",
+            "id": "c-auto-304-n19",
             "kind": "text",
             "text": "에 따라 종합병원 "
           },
           {
-            "id": "c-auto-302-n20",
+            "id": "c-auto-304-n20",
             "kind": "optionSlot",
             "optionCode": "O03"
           },
           {
-            "id": "c-auto-302-n21",
+            "id": "c-auto-304-n21",
             "kind": "text",
             "text": " 지급합니다."
           }
@@ -38740,16 +38941,16 @@
         "code": "P0300"
       },
       {
-        "id": "c-auto-302-n22",
+        "id": "c-auto-304-n22",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-302-n23",
+            "id": "c-auto-304-n23",
             "kind": "text",
             "text": "보험수익자와 회사가 "
           },
           {
-            "id": "c-auto-302-n24",
+            "id": "c-auto-304-n24",
             "kind": "articleRef",
             "targets": [
               {
@@ -38759,7 +38960,7 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-302-n25",
+            "id": "c-auto-304-n25",
             "kind": "text",
             "text": "의 보험금 지급사유에 대해 합의하지 못할 때는 보험수익자와 회사가 함께 제3자를 정하고 그 제3자의 의견에 따를 수 있습니다. 제3자는 의료법 제3조(의료기관)에 규정한 종합병원 소속 전문의 중에 정하며, 보험금 지급사유 판정에 드는 의료비용은 회사가 전액 부담합니다."
           }
@@ -38779,7 +38980,7 @@
             "order": 0,
             "body": [
               {
-                "id": "c-auto-302-o1v1-x1",
+                "id": "c-auto-304-o1v1-x1",
                 "kind": "text",
                 "text": "뇌혈관질환통원일당의"
               }
@@ -38791,7 +38992,7 @@
             "order": 1,
             "body": [
               {
-                "id": "c-auto-302-o1v2-x1",
+                "id": "c-auto-304-o1v2-x1",
                 "kind": "text",
                 "text": "허혈성심장질환통원일당의"
               }
@@ -38810,7 +39011,7 @@
             "order": 0,
             "body": [
               {
-                "id": "c-auto-302-o2v1-x1",
+                "id": "c-auto-304-o2v1-x1",
                 "kind": "text",
                 "text": "뇌혈관질환통원일당을"
               }
@@ -38822,7 +39023,7 @@
             "order": 1,
             "body": [
               {
-                "id": "c-auto-302-o2v2-x1",
+                "id": "c-auto-304-o2v2-x1",
                 "kind": "text",
                 "text": "허혈성심장질환통원일당을"
               }
@@ -38841,7 +39042,7 @@
             "order": 0,
             "body": [
               {
-                "id": "c-auto-302-o3v1-x1",
+                "id": "c-auto-304-o3v1-x1",
                 "kind": "text",
                 "text": "뇌혈관질환통원일당을"
               }
@@ -38853,7 +39054,7 @@
             "order": 1,
             "body": [
               {
-                "id": "c-auto-302-o3v2-x1",
+                "id": "c-auto-304-o3v2-x1",
                 "kind": "text",
                 "text": "허혈성심장질환통원일당을"
               }
@@ -38878,17 +39079,17 @@
     ]
   },
   {
-    "code": "C0303",
+    "code": "C0305",
     "label": "보험금 지급에 관한 세부규정(알파Plus2607 24)",
     "mode": "block",
     "description": "알파Plus2607 특약 2곳이 조째 같은 글이고 낱말 3자리만 다르다(옵션) — 변환기가 찾아 묶었다(첫 자리 bs-d19-doc 「보험금 지급에 관한 세부규정」)",
     "body": [
       {
-        "id": "c-auto-303-n1",
+        "id": "c-auto-305-n1",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-303-n2",
+            "id": "c-auto-305-n2",
             "kind": "articleRef",
             "targets": [
               {
@@ -38898,17 +39099,17 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-303-n3",
+            "id": "c-auto-305-n3",
             "kind": "text",
             "text": "의 상급종합병원 "
           },
           {
-            "id": "c-auto-303-n4",
+            "id": "c-auto-305-n4",
             "kind": "optionSlot",
             "optionCode": "O01"
           },
           {
-            "id": "c-auto-303-n5",
+            "id": "c-auto-305-n5",
             "kind": "text",
             "text": " 지급 횟수는 상급종합병원에 통원한 날만을 기준으로 계산합니다."
           }
@@ -38916,16 +39117,16 @@
         "code": "P0100"
       },
       {
-        "id": "c-auto-303-n6",
+        "id": "c-auto-305-n6",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-303-n7",
+            "id": "c-auto-305-n7",
             "kind": "text",
             "text": "피보험자가 상급종합병원 이외의 병원 또는 의원에 통원하여 치료를 받던 중 해당 병원이 "
           },
           {
-            "id": "c-auto-303-n8",
+            "id": "c-auto-305-n8",
             "kind": "articleRef",
             "targets": [
               {
@@ -38935,12 +39136,12 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-303-n9",
+            "id": "c-auto-305-n9",
             "kind": "text",
             "text": "의 상급종합병원에 해당하는 경우에는 상급종합병원 적용일부터 "
           },
           {
-            "id": "c-auto-303-n10",
+            "id": "c-auto-305-n10",
             "kind": "articleRef",
             "targets": [
               {
@@ -38950,17 +39151,17 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-303-n11",
+            "id": "c-auto-305-n11",
             "kind": "text",
             "text": "에 따라 상급종합병원 "
           },
           {
-            "id": "c-auto-303-n12",
+            "id": "c-auto-305-n12",
             "kind": "optionSlot",
             "optionCode": "O02"
           },
           {
-            "id": "c-auto-303-n13",
+            "id": "c-auto-305-n13",
             "kind": "text",
             "text": " 지급합니다."
           }
@@ -38968,16 +39169,16 @@
         "code": "P0200"
       },
       {
-        "id": "c-auto-303-n14",
+        "id": "c-auto-305-n14",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-303-n15",
+            "id": "c-auto-305-n15",
             "kind": "text",
             "text": "피보험자가 상급종합병원에 통원하여 치료를 받던 중 해당 병원이 "
           },
           {
-            "id": "c-auto-303-n16",
+            "id": "c-auto-305-n16",
             "kind": "articleRef",
             "targets": [
               {
@@ -38987,12 +39188,12 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-303-n17",
+            "id": "c-auto-305-n17",
             "kind": "text",
             "text": "의 상급종합병원 지정이 취소된 경우 상급종합병원 지정 취소 적용일 전일까지의 통원에 대하여 "
           },
           {
-            "id": "c-auto-303-n18",
+            "id": "c-auto-305-n18",
             "kind": "articleRef",
             "targets": [
               {
@@ -39002,17 +39203,17 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-303-n19",
+            "id": "c-auto-305-n19",
             "kind": "text",
             "text": "에 따라 상급종합병원 "
           },
           {
-            "id": "c-auto-303-n20",
+            "id": "c-auto-305-n20",
             "kind": "optionSlot",
             "optionCode": "O03"
           },
           {
-            "id": "c-auto-303-n21",
+            "id": "c-auto-305-n21",
             "kind": "text",
             "text": " 지급합니다."
           }
@@ -39020,16 +39221,16 @@
         "code": "P0300"
       },
       {
-        "id": "c-auto-303-n22",
+        "id": "c-auto-305-n22",
         "kind": "paragraph",
         "children": [
           {
-            "id": "c-auto-303-n23",
+            "id": "c-auto-305-n23",
             "kind": "text",
             "text": "보험수익자와 회사가 "
           },
           {
-            "id": "c-auto-303-n24",
+            "id": "c-auto-305-n24",
             "kind": "articleRef",
             "targets": [
               {
@@ -39039,7 +39240,7 @@
             "scope": "param"
           },
           {
-            "id": "c-auto-303-n25",
+            "id": "c-auto-305-n25",
             "kind": "text",
             "text": "의 보험금 지급사유에 대해 합의하지 못할 때는 보험수익자와 회사가 함께 제3자를 정하고 그 제3자의 의견에 따를 수 있습니다. 제3자는 의료법 제3조(의료기관)에 규정한 종합병원 소속 전문의 중에 정하며, 보험금 지급사유 판정에 드는 의료비용은 회사가 전액 부담합니다."
           }
@@ -39059,7 +39260,7 @@
             "order": 0,
             "body": [
               {
-                "id": "c-auto-303-o1v1-x1",
+                "id": "c-auto-305-o1v1-x1",
                 "kind": "text",
                 "text": "뇌혈관질환통원일당의"
               }
@@ -39071,7 +39272,7 @@
             "order": 1,
             "body": [
               {
-                "id": "c-auto-303-o1v2-x1",
+                "id": "c-auto-305-o1v2-x1",
                 "kind": "text",
                 "text": "허혈성심장질환통원일당의"
               }
@@ -39090,7 +39291,7 @@
             "order": 0,
             "body": [
               {
-                "id": "c-auto-303-o2v1-x1",
+                "id": "c-auto-305-o2v1-x1",
                 "kind": "text",
                 "text": "뇌혈관질환통원일당을"
               }
@@ -39102,7 +39303,7 @@
             "order": 1,
             "body": [
               {
-                "id": "c-auto-303-o2v2-x1",
+                "id": "c-auto-305-o2v2-x1",
                 "kind": "text",
                 "text": "허혈성심장질환통원일당을"
               }
@@ -39121,7 +39322,7 @@
             "order": 0,
             "body": [
               {
-                "id": "c-auto-303-o3v1-x1",
+                "id": "c-auto-305-o3v1-x1",
                 "kind": "text",
                 "text": "뇌혈관질환통원일당을"
               }
@@ -39133,7 +39334,7 @@
             "order": 1,
             "body": [
               {
-                "id": "c-auto-303-o3v2-x1",
+                "id": "c-auto-305-o3v2-x1",
                 "kind": "text",
                 "text": "허혈성심장질환통원일당을"
               }
