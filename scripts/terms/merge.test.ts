@@ -69,6 +69,23 @@ describe("mergeGenerals — 보통약관 여러 벌을 템플릿 하나 + 상품
     expect(JSON.stringify(s1.children[2])).toContain('"articleId":"g-a2","code":"PZ0200"');
   });
 
+  it("다른 판에만 있는 조를 뒤 판도 가지면 앞 판이 넣은 조에 잇는다 — 템플릿에 한 번만 (상해안심2610 계약의 자동갱신 ↔ 메리츠)", () => {
+    const third = doc("sa", "상해안심 보통약관", section("sa-s1", "총칙", article("sa-a1", "목적", paragraph("sa-a1-p1", "목적 글", "P0100")), article("sa-a7", "계약의 자동갱신", paragraph("sa-a7-p1", "갱신 글", "P0100"))));
+    const { tree, products } = mergeGenerals({ code: "base", tree: base() }, [{ code: "other", tree: other(), copies: [] }, { code: "third", tree: third, copies: [] }], { id: "general", title: "보통약관(일반)" });
+    expect((tree.children[0] as SectionNode).children.map((a) => a.id)).toEqual(["g-a1", "g-a2", "m-a3"]);
+    expect(products.get("third")!.idMap.get("sa-a7")).toBe("m-a3");
+    expect(products.get("third")!.hidden).not.toContain("m-a3");
+  });
+
+  it("조 이름 별칭 — 그 판이 다른 이름으로 쓴 바탕 조(「보험금의 청구」 ↔ 「보험금 등의 청구」)에 잇고, 사본은 그 판 이름 그대로", () => {
+    const third = doc("sa", "상해안심 보통약관", section("sa-s1", "총칙", article("sa-a1", "목적", paragraph("sa-a1-p1", "목적 글", "P0100")), article("sa-a2", "정의", paragraph("sa-a2-p1", "상해안심 정의", "P0100"))));
+    const { tree, products } = mergeGenerals({ code: "base", tree: base() }, [{ code: "third", tree: third, copies: ["정의"], aliases: { 정의: "용어의 정의" } }], { id: "general", title: "보통약관(일반)" });
+    expect((tree.children[0] as SectionNode).children.map((a) => a.id)).toEqual(["g-a1", "g-a2"]);
+    expect(products.get("third")!.idMap.get("sa-a2")).toBe("g-a2");
+    expect(products.get("third")!.copies.map((a) => [a.id, JSON.stringify(a.title)])).toEqual([["g-a2", expect.stringContaining("정의")]]);
+    expect(JSON.stringify(products.get("third")!.copies[0].title)).not.toContain("용어의");
+  });
+
   it("다른 판에 없는 바탕 조 · 다른 판에만 있는 조는 그 상품에서 조 노출을 끈다", () => {
     const { products } = merged();
     expect(products.get("base")!.hidden).toEqual(["m-a3"]);

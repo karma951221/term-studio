@@ -566,7 +566,7 @@ function main(): void {
 
   // ── 보통약관 합치기 — 템플릿 「보통약관(일반)」 하나 + 상품별 조 노출 끔 · 조 사본 (merge.ts). 그 판의 담보약관 · 함수조항 참조를 템플릿 조 id 로 고친다
   const base = generals.find((g) => g.code === GENERAL_TEMPLATE.base)!;
-  const others = generals.filter((g) => g !== base).map((g) => ({ ...g, copies: GENERAL_TEMPLATE.copies[g.code] ?? [], variants: GENERAL_TEMPLATE.variants[g.code] ?? [] }));
+  const others = generals.filter((g) => g !== base).map((g) => ({ ...g, copies: GENERAL_TEMPLATE.copies[g.code] ?? [], variants: GENERAL_TEMPLATE.variants[g.code] ?? [], aliases: GENERAL_TEMPLATE.aliases[g.code] ?? {} }));
   const { tree: template, products: perGeneral, refMismatches } = mergeGenerals(base, others, { id: GENERAL_TEMPLATE.code, title: GENERAL_TEMPLATE.title });
   issues.push(...refMismatches.map((m) => `${m.general}: 보통약관 조 「${m.article}」이(가) 템플릿과 다른 대상을 가리킨다 — GENERAL_TEMPLATE.copies 에 사본으로 고른다`));
   const idMap = new Map([...perGeneral.values()].flatMap((p) => [...p.idMap]));
@@ -587,6 +587,8 @@ function main(): void {
   // 상품마다 최종 보통약관(템플릿 + 사본 + 노출 끔)의 참조 무결성 — 시드 저장(보통약관 탭 저장과 같은 검사)이 거부하기 전에 여기서 멈춘다
   for (const p of products) {
     const s = perGeneral.get(p.product.general.code)!;
+    const keep = new Set(p.product.general.keepShown ?? []);
+    s.hidden = s.hidden.filter((id) => !keep.has(id));
     const broken = productRefIssues({ template, copies: s.copies.map((a) => ({ articleId: a.id, article: a })), hidden: s.hidden });
     issues.push(...broken.map((i) => `${p.product.code}: 보통약관 설정 ${i.at.articleId ?? ""} — ${i.message}`));
   }
@@ -871,7 +873,16 @@ function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyM
       if (!meta) throw new Error(`${p.product.code}: 자동 탑재 ${spec.code} 의 문면이 없다 — 만든 상품의 specials 에 있어야 한다`);
       const { name, renewal } = coverageNameOf(meta.title);
       const shared = !own.has(spec.code);
-      entries.push({ coverage: spec.ownerCoverage, category: spec.auto!.category, ...(spec.auto!.group !== undefined ? { group: spec.auto!.group } : {}), pair: Boolean(spec.auto!.renewal), renewal, ...(shared ? { shared } : {}) });
+      const only = spec.auto!.mountOnly;
+      entries.push({
+        coverage: spec.ownerCoverage,
+        category: spec.auto!.category,
+        ...(spec.auto!.group !== undefined ? { group: spec.auto!.group } : {}),
+        pair: Boolean(spec.auto!.renewal) && only === undefined,
+        renewal: only === undefined ? renewal : only === "renewal",
+        ...(shared ? { shared } : {}),
+        ...(spec.auto!.base ? { base: true } : {}),
+      });
       if (shared || created.has(spec.ownerCoverage)) continue;
       created.add(spec.ownerCoverage);
       next.push({
@@ -896,7 +907,7 @@ function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyM
       else delete product.copies;
     }
     if (product) {
-      product.mounts = [...product.mounts.filter((m) => !m.auto), ...mounts];
+      product.mounts = [...product.mounts.filter((m) => !m.auto), ...mounts].sort((a, b) => (a.section === "base" ? 0 : 1) - (b.section === "base" ? 0 : 1));
       if (groups.some((g) => "name" in g)) product.groups = groups;
       else delete product.groups;
     }

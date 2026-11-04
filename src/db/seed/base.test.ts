@@ -40,7 +40,7 @@ describe("loadRealBase — 화면 E2E 바탕", () => {
     expect((await services.catalog.list()).map((d) => d.code)).toEqual(["D0002", "D0003", "D0004", "D0005", "D0006", "D0007", "D0008", "D0009"]);
     const boxes = (await services.document.listBoxes()).map((b) => b.code);
     expect(boxes).toEqual([...boxesUsedByGenerals()].sort());
-    expect(boxes).toEqual(Array.from({ length: 83 }, (_, i) => `BX${String(i + 1).padStart(6, "0")}`));
+    expect(boxes).toEqual(Array.from({ length: 89 }, (_, i) => `BX${String(i + 1).padStart(6, "0")}`));
     expect((await services.document.list("general")).map((d) => d.title)).toEqual(["보통약관(일반)"]);
     expect(await services.coverage.listSummaries()).toEqual([]);
     expect(await services.product.listProducts()).toEqual([]);
@@ -49,6 +49,6 @@ describe("loadRealBase — 화면 E2E 바탕", () => {
   it("다시 부르면 아무것도 하지 않는다", async () => {
     expect(await loadRealBase(services, admin)).toEqual({ created: false });
     expect(await services.clause.list()).toHaveLength(42);
-    expect(await services.document.listBoxes()).toHaveLength(83);
+    expect(await services.document.listBoxes()).toHaveLength(89);
   });
 });

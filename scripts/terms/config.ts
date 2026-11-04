@@ -118,6 +118,11 @@ export const APPENDICES: AppendixSpec[] = [
   { number: 96, code: "AX000094", name: "전이암 분류표" },
   { number: 98, code: "AX000095", name: "중증도별 상해분류표" },
   { number: 99, code: "AX000096", name: "근골 주요처치및수술(급여) 분류표" },
+  // 상해안심2610 이 처음 참조한 별표 — 번호는 상해안심 원문(SA2610.appendixNumbers)
+  { code: "AX000097", name: "통합상해분류표Ⅱ" },
+  { code: "AX000098", name: "신골절치료비(치아파절제외) 보험금 지급률표" },
+  { code: "AX000099", name: "자동차사고 부상 등급표" },
+  { code: "AX000100", name: "특정급여시술치료 분류표" },
 ];
 
 /** 원문 텍스트의 첫 등장을 값 슬롯으로 바꾼다 (담보 레벨 `담보명` 등). */
@@ -218,6 +223,11 @@ export interface GeneralSpec {
   code: string;
   file: string;
   idPrefix: string;
+  /**
+   * 그 판에 없어도 조 노출을 끄지 않는 템플릿 조 id — 다른 상품군 담보를 그대로 탑재하면 그 담보약관이 가리키는 조(알파 납입면제 세 조)가
+   * 상품에 있어야 한다(노출 끈 조를 가리키면 저장 거부). 납입면제 세 조는 「납입면제 있음」 조건이라 납입면제 없는 상품에서는 조립이 뺀다.
+   */
+  keepShown?: string[];
   /** 함수조항 쓰임 — 두 보통약관이 조째 같은 조. */
   clauses?: ClauseUse[];
   /**
@@ -268,7 +278,15 @@ export interface SpecialSpec {
    * 자동 탑재 특약 — 함수조항 쓰임 · 보험금명 슬롯을 변환기가 찾는다(`auto.ts` · convert.ts). `renewal` 은 같은 담보의 갱신형 원문 —
    * 두 벌을 템플릿 하나로 합친다(갱신유형 조건 블록). 담보 · 탑재 시드도 변환기가 쓴다(`coverages.json` · `products.json` 의 자동 탑재분).
    */
-  auto?: { category: CoverageCategory; group?: string; renewal?: string };
+  auto?: {
+    category: CoverageCategory;
+    group?: string;
+    renewal?: string;
+    /** 기본계약으로 탑재(섹션 base) — 절형 보통약관 제2절의 보장조항 문서(ADR-0100). */
+    base?: boolean;
+    /** 다른 상품의 갱신형 짝을 함께 쓸 때 이 상품이 싣는 쪽만 — 상해안심은 갱신형만 판다. */
+    mountOnly?: "renewal" | "base";
+  };
 }
 
 /**
@@ -1244,7 +1262,146 @@ export const ALPHA2610: ProductTerms = {
   }),
 };
 
-export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610];
+
+// ───────────────────────────── 메리츠 상해안심보험2610 ─────────────────────────────
+
+const injurySa = autoSpecialOf("sa")("i", "V01");
+const bothSa = autoSpecialOf("sa")("b", "V02", "상해 및 질병 관련 특별약관");
+const costSa = autoSpecialOf("sa")("c", "V03");
+
+/** 상해안심2610 이 처음 실은 특약 — 자동 탑재 한 줄씩. 기본계약(제2절 보장조항 「갱신형 통합상해진단비Ⅱ보장」)은 첫 줄 — 섹션 base. */
+export const SA2610_AUTO: SpecialSpec[] = [
+  { ...autoSpecialOf("sa")("base", "V01")(0, "갱신형_통합상해진단비Ⅱ보장.md"), auto: { category: "V01", base: true } },
+  injurySa(2, "갱신형_일반상해80%이상후유장해보장.md"),
+  injurySa(8, "보행자_자동차사고부상치료비보장.md"),
+  injurySa(12, "갱신형_상해재활치료비_(급여,1일1회한,연간15회한)보장.md"),
+  injurySa(13, "갱신형_종합병원_상해재활치료비(급여,1일1회한,연간15회한).md"),
+  injurySa(14, "갱신형_상급종합병원_상해재활치료비(급여,1일1회한,연간15회한).md"),
+  injurySa(15, "갱신형_상해MRI_CT검사비_(급여,연간1회한)보장.md"),
+  injurySa(16, "갱신형_상해_응급실내원비(응급)보장.md"),
+  injurySa(17, "갱신형_골절(치아파절제외)진단비Ⅱ보장.md"),
+  injurySa(22, "갱신형_신골절치료비(치아파절제외)보장.md"),
+  injurySa(23, "갱신형_한방치료비[골절(치아파절_제외)Ⅱ]보장.md"),
+  injurySa(24, "갱신형_한방치료비[상해수술]보장.md"),
+  injurySa(25, "한방치료비[운전자용_자동차사고부상(1-11급)]보장.md"),
+  injurySa(26, "한방치료비[비운전자용_자동차사고부상(1-11급)]보장.md"),
+  injurySa(27, "운전자용_교통상해사망보장.md"),
+  injurySa(28, "비운전자용_교통상해사망보장.md"),
+  injurySa(29, "운전자용_교통상해80%이상후유장해보장.md"),
+  injurySa(30, "비운전자용_교통상해80%이상후유장해보장.md"),
+  injurySa(31, "운전자용_교통상해후유장해(3-100%)보장.md"),
+  injurySa(32, "비운전자용_교통상해후유장해(3-100%)보장.md"),
+  injurySa(33, "운전자용_교통상해입원일당(1일이상)보장.md"),
+  injurySa(34, "비운전자용_교통상해입원일당(1일이상)보장.md"),
+  injurySa(35, "운전자용_자동차사고부상치료비(1-5급)보장.md"),
+  injurySa(36, "비운전자용_자동차사고부상치료비(1-5급)보장.md"),
+  injurySa(37, "운전자용_자동차사고부상치료비(1-14급)보장.md"),
+  injurySa(38, "비운전자용_자동차사고부상치료비(1-14급)보장.md"),
+  bothSa(3, "갱신형_응급실내원비(1-3등급)보장.md"),
+  costSa(2, "갱신형_전기통신금융사기(피싱,파밍,스미싱,메모리해킹)(피해환급금제외)손해보장.md"),
+  costSa(3, "운전자용_벌금(Ⅳ)(비탑승중포함)보장.md"),
+  costSa(4, "운전자용_벌금(대물)보장.md"),
+  costSa(5, "심급별_자동차사고_변호사선임비용Ⅱ보장.md"),
+  costSa(6, "교통사고_처리지원금(Ⅸ)(비탑승중포함)보장.md"),
+  costSa(7, "교통사고_처리지원금(Ⅲ)(중대법규위반,6주미만)보장.md"),
+  costSa(8, "영업용운전자용_면허정지보장.md"),
+  costSa(9, "영업용운전자용_면허취소보장.md"),
+  costSa(10, "자동차사고_변호사선임비용(Ⅲ)(변호사선임_현물급부_선택가능)보장.md"),
+];
+
+/**
+ * 상해안심2610 자동 탑재 순서 — 원문 Ⅰ ~ Ⅲ 목록 순. `a7-*` 는 알파Plus 담보 그대로(이름이 같은 담보 — 2026-11-04 사용자 결정: 담보명은 전역 유일,
+ * 원문 글은 다르다 — 파일 판 대조), `mountOnly` 는 갱신형 짝 중 상해안심이 파는 쪽. 2604 담보(사망 · 수술비 · 골절수술 · 중대한특정상해)는 products.json 손 탑재.
+ */
+const SA2610_ORDER: [string, ("renewal" | "base")?][] = [
+  ["sa-base0"],
+  ["sa-i2"],
+  ["a7-i14", "renewal"],
+  ["a7-i16", "renewal"],
+  ["a7-i12", "renewal"],
+  ["a7-i60", "renewal"],
+  ["a7-i42", "renewal"],
+  ["sa-i8"],
+  ["a7-i59", "renewal"],
+  ["sa-i12"],
+  ["sa-i13"],
+  ["sa-i14"],
+  ["sa-i15"],
+  ["sa-i16"],
+  ["sa-i17"],
+  ["a7-i36", "renewal"],
+  ["a7-i23", "renewal"],
+  ["a7-i30", "renewal"],
+  ["sa-i22"],
+  ["sa-i23"],
+  ["sa-i24"],
+  ["sa-i25"],
+  ["sa-i26"],
+  ["sa-i27"],
+  ["sa-i28"],
+  ["sa-i29"],
+  ["sa-i30"],
+  ["sa-i31"],
+  ["sa-i32"],
+  ["sa-i33"],
+  ["sa-i34"],
+  ["sa-i35"],
+  ["sa-i36"],
+  ["sa-i37"],
+  ["sa-i38"],
+  ["a7-i13", "renewal"],
+  ["a7-b5", "renewal"],
+  ["a7-b10", "renewal"],
+  ["sa-b3"],
+  ["a7-c3", "renewal"],
+  ["sa-c2"],
+  ["sa-c3"],
+  ["sa-c4"],
+  ["sa-c5"],
+  ["sa-c6"],
+  ["sa-c7"],
+  ["sa-c8"],
+  ["sa-c9"],
+  ["sa-c10"],
+];
+
+/**
+ * 메리츠 상해안심보험2610 — 다섯 번째 실물 재현 상품(2610 판 절형 보통약관 첫 상품, 매뉴얼 §7.1 · §7.4).
+ * - 상품군은 메리츠(line meritz) — 납입면제가 없고 보통약관이 자동갱신형(계약의 자동갱신 · 갱신계약 해제)이라 통합간편과 같은 무리다.
+ *   상품군 꼬리표는 납입면제 · 준용규정 함수조항 무리를 고르는 것뿐이라 새 상품군을 두지 않는다(결정 메모 — 매뉴얼 §7.4).
+ * - 보통약관은 제1절 일반조항. 제2절 보장 하나(갱신형 통합상해진단비Ⅱ)는 기본계약 담보약관 — 조연결이 없어 절 형태(ADR-0100).
+ * - 특약 52: 알파Plus 와 이름이 같은 17 은 알파 담보 그대로(2026-11-04 사용자 결정), 나머지 35 는 `sa-*` 자동 탑재.
+ */
+const SA2610_GENERAL: GeneralSpec = {
+  code: "sa2610-general",
+  file: "보통약관.md",
+  idPrefix: "sa",
+  emptyArticles: [],
+  omitContained: ["22"],
+  clauses: [],
+  // 알파 담보를 그대로 탑재하므로(준용규정이 납입면제 조를 가리킨다) 알파 납입면제 세 조는 노출 — 납입면제 미적용형이라 조립이 뺀다
+  keepShown: ["g-a27_1", "g-a27_2", "g-a27_3"],
+};
+const bySa = new Map([...ALPHA2607_SPECIALS, ...SA2610_AUTO].map((s) => [s.ownerCoverage, s]));
+export const SA2610: ProductTerms = {
+  code: "sa2610",
+  line: "meritz",
+  fixtureDir: "tests/fixtures/terms/상해안심2610",
+  // 원문 별표 번호 → 마스터 (이름이 같은 별표). 3 · 12 · 13 · 14 는 이 상품이 처음 참조했다
+  appendixNumbers: new Map([
+    [1, "AX000001"], [2, "AX000002"], [3, "AX000097"], [4, "AX000014"], [5, "AX000021"], [6, "AX000015"], [7, "AX000090"], [8, "AX000091"],
+    [9, "AX000092"], [10, "AX000023"], [11, "AX000003"], [12, "AX000098"], [13, "AX000099"], [14, "AX000100"], [15, "AX000025"], [16, "AX000026"],
+  ]),
+  general: SA2610_GENERAL,
+  specials: SA2610_AUTO,
+  autoMounts: SA2610_ORDER.map(([key, only]) => {
+    const spec = bySa.get(key);
+    if (!spec) throw new Error(`상해안심2610 자동 탑재 순서: ${key} 설정 없음`);
+    return only ? { ...spec, auto: { ...spec.auto!, mountOnly: only } } : spec;
+  }),
+};
+
+export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610];
 export const SEED_DIR = "src/db/seed/data";
 
 /**
@@ -1264,12 +1421,20 @@ export const GENERAL_TEMPLATE = {
     [ALPHA_GENERAL.code]: [] as string[],
     // 글이 같아도 가리키는 자리가 그 판의 것인 조 — 부지급 사유(메리츠 지급사유 조) · 통지(메리츠 납입면제 조) · 지급절차(메리츠 세부규정의 항) ·
     // 보험나이(메리츠 무효 조의 호) · 위법계약의 해지(메리츠 해약환급금의 항). 변환기가 찾아 알린다(merge.ts `refMismatches`).
+    // 상해안심2610 — 가리키는 자리가 그 판의 것인 조(변환기 refMismatches) · 제2절 보장조항에 지급사유를 맡기는 제3 · 4조 · 노출 끈 조를 가리키는 조
+    [SA2610_GENERAL.code]: ["용어의 정의", "보험금의 지급사유", "보험금의 청구", "보험금 지급에 관한 세부규정", "보험금 지급사유 등의 통지", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "사기에 의한 계약", "약관교부 및 설명의무 등", "계약의 무효", "보험나이 등", "계약의 소멸", "제1회 보험료 및 회사의 보장개시", "법령 등의 개정에 따른 계약내용의 변경", "회사의 손해배상책임",
+      // 상품의 사실이 글에 박힌 조 — 중도인출 한도 80% · 납입면제 문구 없음 · 보험종목 변경 없음
+      "만기환급금의 지급", "상해보험계약 후 알릴 의무", "알릴 의무 위반의 효과", "계약내용의 변경 등", "회사의 파산선고와 해지", "중도인출"],
     // 2610 — 용어의 정의 표 「영업일」의 「노동절」(2607 판 「근로자의 날」)
     [ALPHA2610_GENERAL.code]: ["용어의 정의"],
     [MERITZ_GENERAL.code]: ["용어의 정의", "보험금을 지급하지 않는 사유", "보험금 지급사유 등의 통지", "보험금의 지급절차", "계약의 무효", "계약내용의 변경 등", "보험나이 등", "계약의 소멸", "위법계약의 해지", "해약환급금"],
   } as Record<string, string[]>,
   // 기본계약이 대치하는 두 조도 변형이다 — 기본계약(일반상해사망 · 일반상해80%이상후유장해)마다 항 구성이 달라 조립이 다른 조의 「제4조 제N항」을
   // 기본계약 항에 잇지 못하고(booklet `positionAliases` — 템플릿 조와 기본계약 조의 항 수가 같아야 한다), 조연결된 조의 사본은 잠긴다(ADR-0082 결정 10)
+  // 조 이름 별칭 — 그 판이 바탕 조를 다른 이름으로 쓴다(사본으로 제 이름 · 글을 지킨다)
+  aliases: {
+    [SA2610_GENERAL.code]: { "보험금의 청구": "보험금 등의 청구" },
+  } as Record<string, Record<string, string>>,
   variants: {
     [MERITZ_GENERAL.code]: ["보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "보험료 납입면제 사유의 정의 및 진단확정", "납입면제에 관한 세부규정"],
   } as Record<string, string[]>,

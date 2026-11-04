@@ -46,13 +46,15 @@ export interface AutoMountEntry {
   pair: boolean;
   renewal: boolean;
   shared?: boolean;
+  /** 기본계약 — 탑재 섹션 base(절형 보통약관의 보장조항 문서), 특약 그룹에 들지 않는다. */
+  base?: boolean;
 }
 
 export type AutoGroup = { category: string } | { name: string; coverages: string[] };
 export interface AutoMount {
   code: string;
   coverage: string;
-  section: "special";
+  section: "special" | "base";
   attributes: { kindCode: string; valueCode: string }[];
   auto: true;
 }
@@ -65,6 +67,10 @@ export function autoMountPlan(entries: readonly AutoMountEntry[]): { mounts: Aut
   const mounts: AutoMount[] = [];
   const groups: AutoGroup[] = [];
   for (const e of entries) {
+    if (e.base) {
+      mounts.push({ code: e.coverage, coverage: e.coverage, section: "base", attributes: e.renewal ? [{ kindCode: "A0001", valueCode: "2" }] : [], auto: true });
+      continue;
+    }
     if (e.group !== undefined) {
       const user = groups.find((g): g is Extract<AutoGroup, { name: string }> => "name" in g && g.name === e.group);
       if (user) user.coverages.push(e.coverage);

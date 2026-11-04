@@ -4275,5 +4275,365 @@
     "coverageValues": [],
     "benefitValues": [],
     "auto": true
+  },
+  {
+    "key": "sa-base0",
+    "code": "COV000263",
+    "name": "통합상해진단비Ⅱ보장",
+    "benefitName": "통합상해진단비Ⅱ보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i2",
+    "code": "COV000264",
+    "name": "일반상해80%이상후유장해보장",
+    "benefitName": "일반상해80%이상후유장해보험금",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i8",
+    "code": "COV000265",
+    "name": "보행자 자동차사고부상치료비보장",
+    "benefitName": "보행자 자동차사고부상치료비보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i12",
+    "code": "COV000266",
+    "name": "상해재활치료비 (급여,1일1회한,연간15회한)보장",
+    "benefitName": "상해재활치료비 (급여,1일1회한,연간15회한)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i13",
+    "code": "COV000267",
+    "name": "종합병원 상해재활치료비(급여,1일1회한,연간15회한)",
+    "benefitName": "종합병원 상해재활치료비(급여,1일1회한,연간15회한)",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i14",
+    "code": "COV000268",
+    "name": "상급종합병원 상해재활치료비(급여,1일1회한,연간15회한)",
+    "benefitName": "상급종합병원 상해재활치료비(급여,1일1회한,연간15회한)",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i15",
+    "code": "COV000269",
+    "name": "상해MRI/CT검사비 (급여,연간1회한)보장",
+    "benefitName": "상해MRI/CT검사비 (급여,연간1회한)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i16",
+    "code": "COV000270",
+    "name": "상해 응급실내원비(응급)보장",
+    "benefitName": "상해 응급실내원비(응급)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i17",
+    "code": "COV000271",
+    "name": "골절(치아파절제외)진단비Ⅱ보장",
+    "benefitName": "골절(치아파절제외)진단비Ⅱ보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i22",
+    "code": "COV000272",
+    "name": "신골절치료비(치아파절제외)보장",
+    "benefitName": "신골절치료비(치아파절제외)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i23",
+    "code": "COV000273",
+    "name": "한방치료비[골절(치아파절 제외)Ⅱ]보장",
+    "benefitName": "한방치료비[골절(치아파절 제외)Ⅱ]보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i24",
+    "code": "COV000274",
+    "name": "한방치료비[상해수술]보장",
+    "benefitName": "한방치료비[상해수술]보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i25",
+    "code": "COV000275",
+    "name": "한방치료비[운전자용 자동차사고부상(1-11급)]보장",
+    "benefitName": "한방치료비[운전자용 자동차사고부상(1-11급)]보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i26",
+    "code": "COV000276",
+    "name": "한방치료비[비운전자용 자동차사고부상(1-11급)]보장",
+    "benefitName": "한방치료비[비운전자용 자동차사고부상(1-11급)]보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i27",
+    "code": "COV000277",
+    "name": "운전자용 교통상해사망보장",
+    "benefitName": "사망보험금",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i28",
+    "code": "COV000278",
+    "name": "비운전자용 교통상해사망보장",
+    "benefitName": "사망보험금",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i29",
+    "code": "COV000279",
+    "name": "운전자용 교통상해80%이상후유장해보장",
+    "benefitName": "교통상해 80%이상후유장해보험금",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i30",
+    "code": "COV000280",
+    "name": "비운전자용 교통상해80%이상후유장해보장",
+    "benefitName": "교통상해 80%이상후유장해보험금",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i31",
+    "code": "COV000281",
+    "name": "운전자용 교통상해후유장해(3-100%)보장",
+    "benefitName": "운전자용 교통상해후유장해(3-100%)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i32",
+    "code": "COV000282",
+    "name": "비운전자용 교통상해후유장해(3-100%)보장",
+    "benefitName": "비운전자용 교통상해후유장해(3-100%)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i33",
+    "code": "COV000283",
+    "name": "운전자용 교통상해입원일당(1일이상)보장",
+    "benefitName": "운전자용 교통상해입원일당(1일이상)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i34",
+    "code": "COV000284",
+    "name": "비운전자용 교통상해입원일당(1일이상)보장",
+    "benefitName": "비운전자용 교통상해입원일당(1일이상)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i35",
+    "code": "COV000285",
+    "name": "운전자용 자동차사고부상치료비(1-5급)보장",
+    "benefitName": "운전자용 자동차사고부상치료비(1-5급)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i36",
+    "code": "COV000286",
+    "name": "비운전자용 자동차사고부상치료비(1-5급)보장",
+    "benefitName": "비운전자용 자동차사고부상치료비(1-5급)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i37",
+    "code": "COV000287",
+    "name": "운전자용 자동차사고부상치료비(1-14급)보장",
+    "benefitName": "운전자용 자동차사고부상치료비(1-14급)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-i38",
+    "code": "COV000288",
+    "name": "비운전자용 자동차사고부상치료비(1-14급)보장",
+    "benefitName": "비운전자용 자동차사고부상치료비(1-14급)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-b3",
+    "code": "COV000289",
+    "name": "응급실내원비(1-3등급)보장",
+    "benefitName": "응급실내원비(1-3등급)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-c2",
+    "code": "COV000290",
+    "name": "전기통신금융사기(피싱,파밍,스미싱,메모리해킹)(피해환급금제외)손해보장",
+    "benefitName": "전기통신금융사기(피싱,파밍,스미싱,메모리해킹)(피해환급금제외)손해보장",
+    "category": "V03",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-c3",
+    "code": "COV000291",
+    "name": "운전자용 벌금(Ⅳ)(비탑승중포함)보장",
+    "benefitName": "운전자용 벌금(Ⅳ)(비탑승중포함)보장",
+    "category": "V03",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-c4",
+    "code": "COV000292",
+    "name": "운전자용 벌금(대물)보장",
+    "benefitName": "운전자용 벌금(대물)보장",
+    "category": "V03",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-c5",
+    "code": "COV000293",
+    "name": "심급별 자동차사고 변호사선임비용Ⅱ보장",
+    "benefitName": "심급별 자동차사고 변호사선임비용Ⅱ보장",
+    "category": "V03",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-c6",
+    "code": "COV000294",
+    "name": "교통사고 처리지원금(Ⅸ)(비탑승중포함)보장",
+    "benefitName": "교통사고 처리지원금(Ⅸ)(비탑승중포함)보장",
+    "category": "V03",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-c7",
+    "code": "COV000295",
+    "name": "교통사고 처리지원금(Ⅲ)(중대법규위반,6주미만)보장",
+    "benefitName": "교통사고 처리지원금(Ⅲ)(중대법규위반,6주미만)보장",
+    "category": "V03",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-c8",
+    "code": "COV000296",
+    "name": "영업용운전자용 면허정지보장",
+    "benefitName": "영업용운전자용 면허정지보장",
+    "category": "V03",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-c9",
+    "code": "COV000297",
+    "name": "영업용운전자용 면허취소보장",
+    "benefitName": "영업용운전자용 면허취소보장",
+    "category": "V03",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "sa-c10",
+    "code": "COV000298",
+    "name": "자동차사고 변호사선임비용(Ⅲ)(변호사선임 현물급부 선택가능)보장",
+    "benefitName": "자동차사고 변호사선임비용(Ⅲ)(변호사선임 현물급부 선택가능)보장",
+    "category": "V03",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
   }
 ]

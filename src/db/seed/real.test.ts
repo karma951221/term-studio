@@ -13,10 +13,10 @@ import { createTestDb, snapshotTestDb, type TestDb } from "@/db/test-utils";
 import { createServices } from "@/services/container";
 
 import { autoFixtures } from "../../../scripts/terms/auto";
-import { ALPHA2607_AUTO, ALPHA2610 } from "../../../scripts/terms/config";
+import { ALPHA2607_AUTO, ALPHA2610, SA2610 } from "../../../scripts/terms/config";
 import { productGeneral, type ProductGeneralSetting } from "../../../scripts/terms/merge";
 
-import { expectedLines, KNOWN_DIFFERENCES, SHARED_2607_IN_2610 } from "./knownDifferences";
+import { expectedLines, KNOWN_DIFFERENCES, SA2610_SHARED, SHARED_2607_IN_2610 } from "./knownDifferences";
 import { loadAlphaPlus } from "./load";
 
 /**
@@ -35,6 +35,18 @@ const ALPHA2607_FIXTURES = autoFixtures(ALPHA2607_AUTO, (file) => readFileSync(p
 
 /** 알파Plus2610 자동 탑재 특약(2607 담보를 그대로 탑재한 것 · 2607 담보를 2610 글로 바꾼 것 · 2610 이 처음 실은 것) — 책자 제목 · 픽스처(2610 폴더). */
 const ALPHA2610_FIXTURES = autoFixtures(ALPHA2610.autoMounts ?? [], (file) => readFileSync(path.join(FIXTURES, "알파2610", file), "utf8").split("\n")[0]);
+
+/** 상해안심2610 특약 — 알파 담보를 그대로 탑재한 17 + 자동 탑재(기본계약 보장조항은 제2절 블록이라 뺀다). */
+const SA2610_FIXTURES: [string, string][] = [
+  ...SA2610_SHARED.map(([title, file]): [string, string] => [title, file]),
+  ...autoFixtures(SA2610.specials.filter((s) => !s.auto?.base), (file) => readFileSync(path.join(FIXTURES, "상해안심2610", file), "utf8").split("\n")[0]),
+];
+/** 원문이 제 조를 다른 제목으로 가리키는 자리 — 변환기가 풀지 못해 원문 글 그대로 남는다(알려진 차이 — 원문 표기). 파일 → 대조기 문구. */
+const KNOWN_REFERENCE_ISSUES: Record<string, string[]> = {
+  "자동차사고_변호사선임비용(Ⅲ)(변호사선임_현물급부_선택가능)보장.md": ["조 참조 「제5조(변호사선임 현물급부 지급에 관한 세부규정)」 — 제5조는 「변호사선임현물급부제공에관한세부규정」"],
+};
+/** 실물 재현 상품의 시드 코드 — 별표 대조가 쓴다(자동 탑재 상품은 참조한 별표 전부). */
+const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610" };
 
 /** 상품마다 — 상품명 · 세목 조합 수 · 보통약관(픽스처 · 조 수) · 특약 (책자 제목 · 픽스처). */
 const PRODUCTS: { name: string; dir: string; plans: number; general: string; appendices: string[]; specials: [string, string][] }[] = [
@@ -119,6 +131,15 @@ const PRODUCTS: { name: string; dir: string; plans: number; general: string; app
       ["말기신부전증진단비보장 특별약관", "말기신부전증진단비보장.md"],
       ...ALPHA2610_FIXTURES,
     ],
+  },
+  {
+    // 2610 판 절형 보통약관 첫 상품 — 기본계약 보장조항 하나(절 형태, ADR-0100). 보통약관 대조는 제1절, 보장조항은 아래 블록 대조
+    name: "메리츠 상해안심보험2610",
+    dir: "상해안심2610",
+    plans: 1,
+    general: "보통약관 제1절 50조(관 7)",
+    appendices: ["AX000002", "AX000001"],
+    specials: SA2610_FIXTURES,
   },
   {
     name: "메리츠 통합간편건강보험(연만기형)",
@@ -237,7 +258,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
       const lines = renderedToLines(doc!);
       const diff = diffArticlesUnordered(source(product.dir, file), lines);
       expect(diff, describeDiff(diff)).toEqual(clean);
-      expect(referenceNumberIssues(lines, articleTitles(renderedToLines(booklet().general!)))).toEqual([]);
+      expect(referenceNumberIssues(lines, articleTitles(renderedToLines(booklet().general!))).filter((i) => !(KNOWN_REFERENCE_ISSUES[file] ?? []).includes(i))).toEqual([]);
     });
 
     it("알려진 차이는 원문과 정말 다르다 — 차이마다 조립에 그 줄이 있고 원문에는 없다(목록이 낡으면 지운다)", () => {
@@ -275,11 +296,14 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
 
     it("별표 — 문면이 참조한 것만 등장 순으로 실린다 (별표 마스터는 두 상품이 이름으로 함께 쓴다)", () => {
       const codes = booklet().appendices.map((a) => a.code);
-      if (product.dir !== "알파2607" && product.dir !== "알파2610") return expect(codes).toEqual(product.appendices);
+      if (!SEED_CODE[product.dir]) return expect(codes).toEqual(product.appendices);
       // 알파Plus2607 — 보통약관 아홉이 먼저, 겹치지 않고, 상품이 탑재한 문면(+ 그 문면 · 보통약관이 쓰는 함수조항)이 참조한 별표 전부
       expect(codes.slice(0, product.appendices.length)).toEqual(product.appendices);
       expect(new Set(codes).size).toBe(codes.length);
-      expect([...codes].sort()).toEqual([...referencedAppendices(product.dir === "알파2610" ? "alpha2610" : "alpha2607")].sort());
+      const referenced = referencedAppendices(SEED_CODE[product.dir]);
+      // 상해안심 — 알파 담보 공유 때문에 노출해 둔 납입면제 세 조(keepShown)는 조건으로 빠져 그 별표도 실리지 않는다: 실린 것 ⊂ 참조한 것
+      if (product.dir === "상해안심2610") return expect(codes.filter((c) => !referenced.has(c))).toEqual([]);
+      expect([...codes].sort()).toEqual([...referenced].sort());
     });
 
     it("특약 그룹 — 원문 특별약관 묶음 순서(Ⅰ ~ Ⅴ): 기본 그룹(담보분류)과 2607 의 사용자 그룹(상해 및 질병 · 기타)이 한 목록 (ADR-0090)", () => {
@@ -288,6 +312,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
         "": ["상해 관련 특별약관"],
         알파2607: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
         알파2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
+        상해안심2610: ["상해 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
         메리츠: ["상해 관련 특별약관", "질병 관련 특별약관"],
       };
       expect(titles).toEqual(expected[product.dir]);
@@ -296,6 +321,16 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
     it("책자의 특약은 표본 전부다 — 빠지거나 더한 것이 없다", () => {
       expect(booklet().specials.flatMap((g) => g.docs.map((d) => d.title)).sort()).toEqual(product.specials.map(([title]) => title).sort());
     });
+  });
+
+  it("메리츠 상해안심보험2610 — 절 형태 · 제2절 보장조항 블록 하나(갱신형 통합상해진단비Ⅱ)가 원문과 같다 (ADR-0100)", () => {
+    const b = booklets.get("메리츠 상해안심보험2610")!;
+    expect(b.form).toBe("sectioned");
+    const blocks = (b.blocks ?? []).flatMap((g) => g.docs);
+    expect(blocks).toHaveLength(1);
+    const lines = renderedToLines(blocks[0]!);
+    const diff = diffArticlesUnordered(source("상해안심2610", "갱신형_통합상해진단비Ⅱ보장.md"), lines);
+    expect(diff, describeDiff(diff)).toEqual(clean);
   });
 
   it.each(SHARED_2607_IN_2610)("알파Plus2610 「%s」 — 2607 담보를 그대로 탑재할 근거: 2610 원문 = 2607 원문(공백 · 그림 쪽 번호만 다름)", (file) => {
