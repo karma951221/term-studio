@@ -43,6 +43,8 @@ const SA2610_FIXTURES: [string, string][] = [
 ];
 /** 원문이 제 조를 다른 제목으로 가리키는 자리 — 변환기가 풀지 못해 원문 글 그대로 남는다(알려진 차이 — 원문 표기). 파일 → 대조기 문구. */
 const KNOWN_REFERENCE_ISSUES: Record<string, string[]> = {
+  "갱신형_특정뇌동맥질환_뇌동맥류수술비(급여,_연간1회한)보장.md": ["조 참조 「제3조(「특정뇌동맥질환」의 정의 및 진단확정)」 — 제3조는 「특정뇌동맥질환의정의및진단확정」"],
+
   "자동차사고_변호사선임비용(Ⅲ)(변호사선임_현물급부_선택가능)보장.md": ["조 참조 「제5조(변호사선임 현물급부 지급에 관한 세부규정)」 — 제5조는 「변호사선임현물급부제공에관한세부규정」"],
 };
 /** 뇌심2610 특약 — 알파 담보를 그대로 탑재한 17 + 자동 탑재(기본계약 보장조항 셋은 제2절 블록이라 뺀다). */
@@ -325,7 +327,8 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
         }
         for (const l of d.lines) {
           expect(lines, d.why).toContain(normalizeLine(l));
-          if (!editioned.has(d.article)) expect(raw, d.why).not.toContain(normalizeLine(l));
+          // 조 본문 통째 바꾸기(생성 차이 — span)는 바뀌지 않은 줄도 품는다: 줄마다 원문에 없을 것을 묻지 않는다
+          if (!editioned.has(d.article) && !d.span) expect(raw, d.why).not.toContain(normalizeLine(l));
         }
       }
     });
