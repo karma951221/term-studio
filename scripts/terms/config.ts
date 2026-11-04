@@ -1482,7 +1482,22 @@ export const BRAIN2610: ProductTerms = {
   }),
 };
 
-export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610];
+/**
+ * 메리츠 케어프리보험 M-Basket2610 — 알파Plus2610 과 같은 구성(특약 325 가 글까지 같다 — 자동갱신 특약 본문의 상품명만 다르다).
+ * 담보 · 템플릿을 새로 만들지 않고 알파Plus2610 의 탑재 순서를 그대로 쓴다(2026-11-04 — 알파 형제).
+ */
+const CAREFREE2610_GENERAL: GeneralSpec = { ...ALPHA2607_GENERAL, code: "cf2610-general" };
+export const CAREFREE2610: ProductTerms = {
+  code: "cf2610",
+  line: "alpha",
+  fixtureDir: "tests/fixtures/terms/케어프리2610",
+  appendixNumbers: ALPHA.appendixNumbers,
+  general: CAREFREE2610_GENERAL,
+  specials: [],
+  autoMounts: ALPHA2610.autoMounts,
+};
+
+export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610, CAREFREE2610];
 export const SEED_DIR = "src/db/seed/data";
 
 /**
@@ -1517,6 +1532,7 @@ export const GENERAL_TEMPLATE = {
     ],
     // 2610 — 용어의 정의 표 「영업일」의 「노동절」(2607 판 「근로자의 날」)
     [ALPHA2610_GENERAL.code]: ["용어의 정의"],
+    [CAREFREE2610_GENERAL.code]: ["용어의 정의"],
     [MERITZ_GENERAL.code]: ["용어의 정의", "보험금을 지급하지 않는 사유", "보험금 지급사유 등의 통지", "보험금의 지급절차", "계약의 무효", "계약내용의 변경 등", "보험나이 등", "계약의 소멸", "위법계약의 해지", "해약환급금"],
   } as Record<string, string[]>,
   // 기본계약이 대치하는 두 조도 변형이다 — 기본계약(일반상해사망 · 일반상해80%이상후유장해)마다 항 구성이 달라 조립이 다른 조의 「제4조 제N항」을

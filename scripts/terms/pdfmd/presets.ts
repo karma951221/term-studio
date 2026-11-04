@@ -19,6 +19,9 @@ export interface Preset {
 const ALPHA2607 = "docs/_자료/알파Plus보장보험2607/00_주계약";
 const ALPHA2610 = "docs/_자료/알파Plus보장보험2610/00_주계약";
 const SA2610 = "docs/_자료/메리츠 상해안심보험2610/00_주계약";
+const CAREFREE2610 = "docs/_자료/메리츠 케어프리보험 M-Basket2610/00_주계약";
+const GOODALPHA2610 = "docs/_자료/메리츠 The좋은 알파Plus보장보험2610/00_주계약";
+const GOODCAREFREE2610 = "docs/_자료/메리츠 The좋은 케어프리보험 M-Basket2610/00_주계약";
 const BRAIN2610 = "docs/_자료/올케어 꽉 채운 뇌심보험(세만기형)2610(일반심사형)/00_주계약";
 
 export const PRESETS: Record<string, Preset> = {
@@ -74,5 +77,39 @@ export const PRESETS: Record<string, Preset> = {
   뇌심2610: {
     out: "tests/fixtures/terms/뇌심2610",
     jobs: [{ src: `${BRAIN2610}/01_보통약관.md`, only: "all" }],
+  },
+  /** 메리츠 케어프리보험 M-Basket2610 — 알파Plus2610 과 같은 구성(목차 인자 같음). 보통약관 + 주계약 특별약관 Ⅰ ~ Ⅴ. */
+  케어프리2610: {
+    out: "tests/fixtures/terms/케어프리2610",
+    jobs: [
+      { src: `${CAREFREE2610}/01_보통약관.md`, only: "all" },
+      { src: `${CAREFREE2610}/02_특별약관_Ⅰ_상해관련.md`, only: "all" },
+      { src: `${CAREFREE2610}/03_특별약관_Ⅱ_질병관련.md`, only: "all" },
+      { src: `${CAREFREE2610}/04_특별약관_Ⅲ_상해및질병관련.md`, only: "all" },
+      { src: `${CAREFREE2610}/05_특별약관_Ⅳ_비용손해관련.md`, only: "all" },
+      { src: `${CAREFREE2610}/06_특별약관_Ⅴ_기타.md`, only: "all" },
+    ],
+  },
+  /** 메리츠 The좋은 알파Plus보장보험2610 — 보통약관 + 주계약 특별약관 Ⅰ ~ Ⅳ. */
+  The좋은알파2610: {
+    out: "tests/fixtures/terms/The좋은알파2610",
+    jobs: [
+      { src: `${GOODALPHA2610}/01_보통약관.md`, only: "all" },
+      { src: `${GOODALPHA2610}/02_특별약관_Ⅰ_상해관련.md`, only: "all" },
+      { src: `${GOODALPHA2610}/03_특별약관_Ⅱ_질병관련.md`, only: "all" },
+      { src: `${GOODALPHA2610}/04_특별약관_Ⅲ_상해및질병관련.md`, only: "all" },
+      { src: `${GOODALPHA2610}/05_특별약관_Ⅳ_비용손해관련.md`, only: "all" },
+    ],
+  },
+  /** 메리츠 The좋은 케어프리보험 M-Basket2610 — 보통약관 + 주계약 특별약관 Ⅰ ~ Ⅳ. */
+  The좋은케어프리2610: {
+    out: "tests/fixtures/terms/The좋은케어프리2610",
+    jobs: [
+      { src: `${GOODCAREFREE2610}/01_보통약관.md`, only: "all" },
+      { src: `${GOODCAREFREE2610}/02_특별약관_Ⅰ_상해관련.md`, only: "all" },
+      { src: `${GOODCAREFREE2610}/03_특별약관_Ⅱ_질병관련.md`, only: "all" },
+      { src: `${GOODCAREFREE2610}/04_특별약관_Ⅲ_상해및질병관련.md`, only: "all" },
+      { src: `${GOODCAREFREE2610}/05_특별약관_Ⅳ_비용손해관련.md`, only: "all" },
+    ],
   },
 };

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -16,7 +16,7 @@ import { autoFixtures } from "../../../scripts/terms/auto";
 import { ALPHA2607_AUTO, ALPHA2610, BRAIN2610, SA2610 } from "../../../scripts/terms/config";
 import { productGeneral, type ProductGeneralSetting } from "../../../scripts/terms/merge";
 
-import { BRAIN2610_SHARED, expectedLines, KNOWN_DIFFERENCES, SA2610_SHARED, SHARED_2607_IN_2610 } from "./knownDifferences";
+import { ALPHA_SIBLINGS, BRAIN2610_SHARED, expectedLines, KNOWN_DIFFERENCES, SA2610_SHARED, SHARED_2607_IN_2610 } from "./knownDifferences";
 import { loadAlphaPlus } from "./load";
 
 /**
@@ -51,7 +51,7 @@ const BRAIN2610_FIXTURES: [string, string][] = [
   ...autoFixtures(BRAIN2610.specials.filter((s) => !s.auto?.base), (file) => readFileSync(path.join(FIXTURES, "뇌심2610", file), "utf8").split("\n")[0]),
 ];
 /** 실물 재현 상품의 시드 코드 — 별표 대조가 쓴다(자동 탑재 상품은 참조한 별표 전부). */
-const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610", 뇌심2610: "br2610" };
+const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610", 뇌심2610: "br2610", 케어프리2610: "cf2610" };
 
 /** 상품마다 — 상품명 · 세목 조합 수 · 보통약관(픽스처 · 조 수) · 특약 (책자 제목 · 픽스처). */
 const PRODUCTS: { name: string; dir: string; plans: number; general: string; appendices: string[]; specials: [string, string][] }[] = [
@@ -176,6 +176,12 @@ const PRODUCTS: { name: string; dir: string; plans: number; general: string; app
   },
 ];
 
+// 알파 형제 — 알파Plus2610 과 같은 특약 · 같은 책자 제목, fixture 는 제 폴더(원문이 같다 — 아래 근거 테스트)
+{
+  const base = PRODUCTS.find((p) => p.dir === "알파2610")!;
+  PRODUCTS.push({ ...base, name: "케어프리보험 M-Basket2610", dir: "케어프리2610" });
+}
+
 /** 원문 → 기대 줄 — 인수기준 알려진 차이(`knownDifferences.ts`)를 얹는다. 대조기는 완화하지 않는다. */
 const fixtureLines = (dir: string, file: string) => sourceToLines(readFileSync(path.join(FIXTURES, dir, file), "utf8"));
 /** 판 대조(공용 템플릿 판의 원문 조)는 그 판 원문도 읽는다. */
@@ -282,6 +288,8 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
       /** 판 대조한 조 — 그 위에 얹은 차이는 그 판 글을 고치는 것이라 원문 줄로 되돌릴 수 있다(원문에 없음은 보지 않는다). */
       const editioned = new Set(mine.filter((x) => x.edition !== undefined).map((x) => x.article));
       for (const d of mine) {
+        // 파일 판 대조(「*」)는 조 단위가 아니다 — 원문이 그 판과 같다는 근거는 따로 본다(알파 형제 · 2607 공유 근거 테스트)
+        if (d.article === "*") continue;
         if (d.edition !== undefined) {
           // 판 대조 — 제 원문 조와 그 판 원문 조가 정말 다르다(같으면 목록이 낡았다)
           const body = (all: string[]) => {
@@ -328,6 +336,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
         알파2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
         상해안심2610: ["상해 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
         뇌심2610: ["질병 관련 특별약관"],
+        케어프리2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
         메리츠: ["상해 관련 특별약관", "질병 관련 특별약관"],
       };
       expect(titles).toEqual(expected[product.dir]);
@@ -357,6 +366,21 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
       const diff = diffArticlesUnordered(source("뇌심2610", `${doc.title.replace(/ /g, "_")}.md`), renderedToLines(doc));
       expect(diff, describeDiff(diff)).toEqual(clean);
     }
+  });
+
+  it.each(ALPHA_SIBLINGS)("$name — 알파Plus2610 설정을 그대로 쓸 근거: 원문 fixture 전부가 알파Plus2610 원문과 같다(상품명 · 공백 · 그림 쪽 번호만 다름)", ({ dir, name }) => {
+    const files = readdirSync(path.join(FIXTURES, dir)).filter((f) => f.endsWith(".md"));
+    expect(files.sort()).toEqual(readdirSync(path.join(FIXTURES, "알파2610")).filter((f) => f.endsWith(".md")).sort());
+    const body = (d: string, f: string) =>
+      readFileSync(path.join(FIXTURES, d, f), "utf8")
+        .split("\n")
+        .filter((l) => !/^> (출처|상품|통계):/.test(l))
+        .join("")
+        .replaceAll(name, "@")
+        .replaceAll("무배당 알파Plus보장보험2610", "@")
+        .replace(/ — 원문 PDF p\.\d+/g, "")
+        .replace(/\s+/g, "");
+    for (const f of files) expect(body(dir, f), f).toBe(body("알파2610", f));
   });
 
   it.each(SHARED_2607_IN_2610)("알파Plus2610 「%s」 — 2607 담보를 그대로 탑재할 근거: 2610 원문 = 2607 원문(공백 · 그림 쪽 번호만 다름)", (file) => {
