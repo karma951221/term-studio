@@ -18,6 +18,7 @@ export interface Preset {
 
 const ALPHA2607 = "docs/_자료/알파Plus보장보험2607/00_주계약";
 const ALPHA2610 = "docs/_자료/알파Plus보장보험2610/00_주계약";
+const SA2610 = "docs/_자료/메리츠 상해안심보험2610/00_주계약";
 
 export const PRESETS: Record<string, Preset> = {
   /**
@@ -51,6 +52,18 @@ export const PRESETS: Record<string, Preset> = {
       { src: `${ALPHA2610}/04_특별약관_Ⅲ_상해및질병관련.md`, only: "all" },
       { src: `${ALPHA2610}/05_특별약관_Ⅳ_비용손해관련.md`, only: "all" },
       { src: `${ALPHA2610}/06_특별약관_Ⅴ_기타.md`, only: "all" },
+    ],
+  },
+  /**
+   * 메리츠 상해안심보험2610 — 절형 보통약관(제1절 = 보통약관 · 제2절 보장 하나 = 기본계약 담보약관 「갱신형 통합상해진단비Ⅱ보장」) + 주계약 특별약관 Ⅰ ~ Ⅲ 전부.
+   */
+  상해안심2610: {
+    out: "tests/fixtures/terms/상해안심2610",
+    jobs: [
+      { src: `${SA2610}/01_보통약관.md`, only: "all" },
+      { src: `${SA2610}/02_특별약관_Ⅰ_상해관련.md`, only: "all" },
+      { src: `${SA2610}/03_특별약관_Ⅱ_상해및질병관련.md`, only: "all" },
+      { src: `${SA2610}/04_특별약관_Ⅲ_비용손해관련.md`, only: "all" },
     ],
   },
 };
