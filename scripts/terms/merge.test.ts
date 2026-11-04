@@ -134,6 +134,22 @@ describe("mergeGenerals — 보통약관 여러 벌을 템플릿 하나 + 상품
     expect(products.get("other")!.idMap.has("m-a9")).toBe(false);
   });
 
+  it("앞 판의 변형을 함께 쓴다(variantsFrom) — 같은 이름의 조를 바탕 조가 아니라 그 판이 넣은 변형 조에 잇는다(The좋은 알파 ↔ 통합간편 일반상해사망 지급사유)", () => {
+    const flat = (prefix: string, titles: string[]) => doc(prefix, "보통약관", section(`${prefix}-s1`, "관", ...titles.map((t, i) => article(`${prefix}-a${i + 1}`, t, paragraph(`${prefix}-a${i + 1}-p1`, `${prefix} ${t}`, "P0100")))));
+    const titles = ["목적", "보험금의 지급사유", "약관의 해석"];
+    const { products } = mergeGenerals(
+      { code: "base", tree: flat("g", titles) },
+      [
+        { code: "other", tree: flat("m", titles), copies: [], variants: ["보험금의 지급사유"] },
+        { code: "third", tree: flat("ga", titles), copies: [], variantsFrom: { from: "other", titles: ["보험금의 지급사유"] } },
+      ],
+      { id: "general", title: "보통약관(일반)" },
+    );
+    expect(products.get("third")!.idMap.get("ga-a2")).toBe("m-a2");
+    expect(products.get("third")!.idMap.get("ga-a1")).toBe("g-a1");
+    expect(products.get("third")!.hidden).toEqual(["g-a2"]);
+  });
+
   it("잇닿은 변형 여럿은 묶음째 — 묶음 마지막 조의 바탕 조 뒤에 원문 순서대로 (바탕 조 사이에 엇갈려 끼지 않는다)", () => {
     const flat = (prefix: string, titles: string[]) => doc(prefix, "보통약관", section(`${prefix}-s1`, "관", ...titles.map((t, i) => article(`${prefix}-a${i + 1}`, t, paragraph(`${prefix}-a${i + 1}-p1`, `${prefix} ${t}`, "P0100")))));
     const titles = ["목적", "보험금의 지급사유", "보험금 지급에 관한 세부규정", "약관의 해석"];
