@@ -28,6 +28,8 @@ export interface OtherGeneral extends GeneralSource {
   copies: readonly string[];
   /** 조 이름 별칭 — 그 판 조 명 → 바탕 판 조 명(같은 조를 판이 다른 이름으로 쓴다 — 상해안심2610 「보험금의 청구」). 사본은 그 판 이름 그대로다. */
   aliases?: Readonly<Record<string, string>>;
+  /** 앞 판(상품 보통약관 코드)의 변형을 함께 쓴다 — 고른 이름(`titles`)의 조는 바탕 조가 아니라 그 판의 변형 조에 잇는다. */
+  variantsFrom?: { from: string; titles: readonly string[] };
   /** 그 판의 조째 템플릿에 함께 둘 조 — 조 명. 바탕 판의 같은 조와 서로 조 노출을 끈다. */
   variants?: readonly string[];
 }
@@ -206,6 +208,8 @@ export function mergeGenerals(
   const refMismatches: { general: string; article: string }[] = [];
   /** 앞 판이 넣은(바탕 판에 없는) 조 — 뒤 판의 같은 조는 이것에 잇는다(변형은 빼고). */
   const addedByTitle = new Map<string, ArticleNode>();
+  /** 판마다 넣은 변형 조 — 뒤 판이 `variantsFrom` 으로 함께 쓴다. */
+  const variantsOf = new Map<string, Map<string, ArticleNode>>();
 
   for (const o of others) {
     const own = articlesOf(o.tree);
@@ -213,7 +217,8 @@ export function mergeGenerals(
     const idMap = new Map<Id, Id>();
     for (const a of own) {
       const t = o.aliases?.[foldTitle(a.title)] ?? foldTitle(a.title);
-      const b = variants.has(foldTitle(a.title)) ? undefined : (baseByTitle.get(t) ?? addedByTitle.get(t));
+      const shared = o.variantsFrom?.titles.includes(t) ? variantsOf.get(o.variantsFrom.from)?.get(t) : undefined;
+      const b = variants.has(foldTitle(a.title)) ? undefined : (shared ?? baseByTitle.get(t) ?? addedByTitle.get(t));
       if (b) idMap.set(a.id, b.id);
     }
     // 사본 — 템플릿 조에 없는 자리의 P 코드는 PZ 로 (그 자리를 가리키는 참조도 같은 표로 고친다)
@@ -262,9 +267,14 @@ export function mergeGenerals(
     const copied = new Set(o.copies);
     for (const a of own) {
       const title = foldTitle(a.title);
-      const b = idMap.has(a.id) && !copied.has(title) ? baseByTitle.get(o.aliases?.[title] ?? title) : undefined;
+      const candidate = baseByTitle.get(o.aliases?.[title] ?? title);
+      // 바탕 조에 이은 조만 견준다(앞 판 변형 · 앞 판이 넣은 조에 이은 조는 바탕 조와 다른 조다)
+      const b = idMap.get(a.id) === candidate?.id && !copied.has(title) ? candidate : undefined;
       if (b && refLabels(a, o.tree).join("|") !== refLabels(b, base.tree).join("|")) refMismatches.push({ general: o.code, article: title });
     }
+    const mine = new Map<string, ArticleNode>();
+    for (const u of units) if (isVariant(u)) for (const a of u.articles) if (inserted.includes(a.id)) mine.set(foldTitle(a.title), remapIds(a, idMap, codeMap));
+    variantsOf.set(o.code, mine);
     for (const u of units) {
       if (isVariant(u)) continue;
       for (const a of u.articles) if (inserted.includes(a.id) && !addedByTitle.has(foldTitle(a.title))) addedByTitle.set(foldTitle(a.title), remapIds(a, idMap, codeMap));

@@ -13,10 +13,10 @@ import { createTestDb, snapshotTestDb, type TestDb } from "@/db/test-utils";
 import { createServices } from "@/services/container";
 
 import { autoFixtures } from "../../../scripts/terms/auto";
-import { ALPHA2607_AUTO, ALPHA2610, BRAIN2610, SA2610 } from "../../../scripts/terms/config";
+import { ALPHA2607_AUTO, ALPHA2610, BRAIN2610, GOODALPHA2610, SA2610 } from "../../../scripts/terms/config";
 import { productGeneral, type ProductGeneralSetting } from "../../../scripts/terms/merge";
 
-import { ALPHA_SIBLINGS, BRAIN2610_SHARED, expectedLines, KNOWN_DIFFERENCES, SA2610_SHARED, SHARED_2607_IN_2610 } from "./knownDifferences";
+import { ALPHA_SIBLINGS, BRAIN2610_SHARED, expectedLines, GOOD_SIBLINGS, GOODALPHA2610_SHARED, KNOWN_DIFFERENCES, SA2610_SHARED, SHARED_2607_IN_2610 } from "./knownDifferences";
 import { loadAlphaPlus } from "./load";
 
 /**
@@ -43,6 +43,8 @@ const SA2610_FIXTURES: [string, string][] = [
 ];
 /** 원문이 제 조를 다른 제목으로 가리키는 자리 — 변환기가 풀지 못해 원문 글 그대로 남는다(알려진 차이 — 원문 표기). 파일 → 대조기 문구. */
 const KNOWN_REFERENCE_ISSUES: Record<string, string[]> = {
+  "갱신형_특정뇌동맥질환_뇌동맥류수술비(급여,_연간1회한)보장.md": ["조 참조 「제3조(「특정뇌동맥질환」의 정의 및 진단확정)」 — 제3조는 「특정뇌동맥질환의정의및진단확정」"],
+
   "자동차사고_변호사선임비용(Ⅲ)(변호사선임_현물급부_선택가능)보장.md": ["조 참조 「제5조(변호사선임 현물급부 지급에 관한 세부규정)」 — 제5조는 「변호사선임현물급부제공에관한세부규정」"],
 };
 /** 뇌심2610 특약 — 알파 담보를 그대로 탑재한 17 + 자동 탑재(기본계약 보장조항 셋은 제2절 블록이라 뺀다). */
@@ -50,8 +52,13 @@ const BRAIN2610_FIXTURES: [string, string][] = [
   ...BRAIN2610_SHARED.map(([title, file]): [string, string] => [title, file]),
   ...autoFixtures(BRAIN2610.specials.filter((s) => !s.auto?.base), (file) => readFileSync(path.join(FIXTURES, "뇌심2610", file), "utf8").split("\n")[0]),
 ];
+/** The좋은 알파Plus2610 특약 — 알파 담보를 그대로 탑재한 227 + 자동 탑재 11. */
+const GOODALPHA2610_FIXTURES: [string, string][] = [
+  ...GOODALPHA2610_SHARED.map(([title, file]): [string, string] => [title, file]),
+  ...autoFixtures(GOODALPHA2610.specials, (file) => readFileSync(path.join(FIXTURES, "The좋은알파2610", file), "utf8").split("\n")[0]),
+];
 /** 실물 재현 상품의 시드 코드 — 별표 대조가 쓴다(자동 탑재 상품은 참조한 별표 전부). */
-const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610", 뇌심2610: "br2610", 케어프리2610: "cf2610" };
+const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610", 뇌심2610: "br2610", 케어프리2610: "cf2610", The좋은알파2610: "ga2610", The좋은케어프리2610: "gc2610" };
 
 /** 상품마다 — 상품명 · 세목 조합 수 · 보통약관(픽스처 · 조 수) · 특약 (책자 제목 · 픽스처). */
 const PRODUCTS: { name: string; dir: string; plans: number; general: string; appendices: string[]; specials: [string, string][] }[] = [
@@ -180,6 +187,15 @@ const PRODUCTS: { name: string; dir: string; plans: number; general: string; app
 {
   const base = PRODUCTS.find((p) => p.dir === "알파2610")!;
   PRODUCTS.push({ ...base, name: "케어프리보험 M-Basket2610", dir: "케어프리2610" });
+  const good = {
+    name: "The좋은 알파Plus보장보험2610",
+    dir: "The좋은알파2610",
+    plans: 6,
+    general: "보통약관 54조(관 7)",
+    appendices: ["AX000002", "AX000001"],
+    specials: GOODALPHA2610_FIXTURES,
+  };
+  PRODUCTS.push(good, { ...good, name: "The좋은 케어프리보험 M-Basket2610", dir: "The좋은케어프리2610" });
 }
 
 /** 원문 → 기대 줄 — 인수기준 알려진 차이(`knownDifferences.ts`)를 얹는다. 대조기는 완화하지 않는다. */
@@ -311,7 +327,8 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
         }
         for (const l of d.lines) {
           expect(lines, d.why).toContain(normalizeLine(l));
-          if (!editioned.has(d.article)) expect(raw, d.why).not.toContain(normalizeLine(l));
+          // 조 본문 통째 바꾸기(생성 차이 — span)는 바뀌지 않은 줄도 품는다: 줄마다 원문에 없을 것을 묻지 않는다
+          if (!editioned.has(d.article) && !d.span) expect(raw, d.why).not.toContain(normalizeLine(l));
         }
       }
     });
@@ -324,7 +341,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
       expect(new Set(codes).size).toBe(codes.length);
       const referenced = referencedAppendices(SEED_CODE[product.dir]);
       // 상해안심 — 알파 담보 공유 때문에 노출해 둔 납입면제 세 조(keepShown)는 조건으로 빠져 그 별표도 실리지 않는다: 실린 것 ⊂ 참조한 것
-      if (product.dir === "상해안심2610" || product.dir === "뇌심2610") return expect(codes.filter((c) => !referenced.has(c))).toEqual([]);
+      if (product.dir === "상해안심2610" || product.dir === "뇌심2610" || product.dir.startsWith("The좋은")) return expect(codes.filter((c) => !referenced.has(c))).toEqual([]);
       expect([...codes].sort()).toEqual([...referenced].sort());
     });
 
@@ -337,6 +354,8 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
         상해안심2610: ["상해 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
         뇌심2610: ["질병 관련 특별약관"],
         케어프리2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
+        The좋은알파2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
+        The좋은케어프리2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
         메리츠: ["상해 관련 특별약관", "질병 관련 특별약관"],
       };
       expect(titles).toEqual(expected[product.dir]);
@@ -366,6 +385,21 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
       const diff = diffArticlesUnordered(source("뇌심2610", `${doc.title.replace(/ /g, "_")}.md`), renderedToLines(doc));
       expect(diff, describeDiff(diff)).toEqual(clean);
     }
+  });
+
+  it.each(GOOD_SIBLINGS)("$name — The좋은 알파Plus2610 설정을 그대로 쓸 근거: 원문 fixture 전부가 The좋은 알파Plus2610 원문과 같다(상품명 · 공백 · 그림 쪽 번호만 다름)", ({ dir, name }) => {
+    const files = readdirSync(path.join(FIXTURES, dir)).filter((f) => f.endsWith(".md"));
+    expect(files.sort()).toEqual(readdirSync(path.join(FIXTURES, "The좋은알파2610")).filter((f) => f.endsWith(".md")).sort());
+    const body = (d: string, f: string) =>
+      readFileSync(path.join(FIXTURES, d, f), "utf8")
+        .split("\n")
+        .filter((l) => !/^> (출처|상품|통계):/.test(l))
+        .join("")
+        .replaceAll(name, "@")
+        .replaceAll("무배당 메리츠 The좋은 알파Plus보장보험2610", "@")
+        .replace(/ — 원문 PDF p\.\d+/g, "")
+        .replace(/\s+/g, "");
+    for (const f of files) expect(body(dir, f), f).toBe(body("The좋은알파2610", f));
   });
 
   it.each(ALPHA_SIBLINGS)("$name — 알파Plus2610 설정을 그대로 쓸 근거: 원문 fixture 전부가 알파Plus2610 원문과 같다(상품명 · 공백 · 그림 쪽 번호만 다름)", ({ dir, name }) => {

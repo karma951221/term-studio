@@ -4863,5 +4863,243 @@
       }
     ],
     "auto": true
+  },
+  {
+    "key": "ga-i35",
+    "code": "COV000311",
+    "name": "간호·간병통합서비스 사용 일반상해입원일당(181일이상) (요양,정신,한방병원제외)보장",
+    "benefitName": "간호·간병통합서비스 사용 일반상해입원일당(181일이상) (요양,정신,한방병원제외)보장",
+    "category": "V01",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "ga-d31",
+    "code": "COV000312",
+    "name": "특정간담췌질환진단비보장",
+    "benefitName": "특정간담췌질환진단비보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": false
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "ga-d46",
+    "code": "COV000313",
+    "name": "편마비진단비보장",
+    "benefitName": "편마비진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "ga-d53",
+    "code": "COV000314",
+    "name": "특정소화계질환진단비보장",
+    "benefitName": "특정소화계질환진단비보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "ga-d58",
+    "code": "COV000315",
+    "name": "암특정재활치료비(급여,1일1회한,연간20회한)보장",
+    "benefitName": "암특정재활치료비(급여,1일1회한,연간20회한)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 3
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": false
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      },
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "ga-d69",
+    "code": "COV000316",
+    "name": "6대심장질환진단비보장",
+    "benefitName": "6대심장질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "ga-d70",
+    "code": "COV000317",
+    "name": "6대심장질환진단비Ⅱ보장",
+    "benefitName": "6대심장질환진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
+  },
+  {
+    "key": "ga-d71",
+    "code": "COV000318",
+    "name": "부정맥질환특정수술비(급여,연간1회한)보장",
+    "benefitName": "부정맥질환특정수술비(급여,연간1회한)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "ga-d72",
+    "code": "COV000319",
+    "name": "특정뇌동맥질환 뇌동맥류수술비(급여, 연간1회한)보장",
+    "benefitName": "특정뇌동맥질환 뇌동맥류수술비(급여, 연간1회한)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "reduction.periods",
+        "value": [
+          {
+            "end": "V03",
+            "rate": 50
+          }
+        ]
+      },
+      {
+        "path": "reduction.after_rate",
+        "value": 100
+      },
+      {
+        "path": "reduction.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "ga-d73",
+    "code": "COV000320",
+    "name": "수면무호흡진단비보장",
+    "benefitName": "수면무호흡진단비",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [
+      {
+        "path": "exemption.months",
+        "value": 12
+      },
+      {
+        "path": "exemption.age15_only",
+        "value": false
+      },
+      {
+        "path": "exemption.new_only",
+        "value": true
+      }
+    ],
+    "auto": true
+  },
+  {
+    "key": "ga-b20",
+    "code": "COV000321",
+    "name": "수술비Ⅱ(1-5종)(체증형)보장",
+    "benefitName": "수술비Ⅱ(1-5종)(체증형)보장",
+    "category": "V02",
+    "coverageValues": [],
+    "benefitValues": [],
+    "auto": true
   }
 ]

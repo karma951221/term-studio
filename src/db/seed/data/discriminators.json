@@ -230,5 +230,18 @@
     "candidates": [
       "g-a5"
     ]
+  },
+  {
+    "code": "D0021",
+    "label": "준용예외(자동갱신)",
+    "description": "준용규정 함수조항의 「다만, … 은 제외합니다」 목록 — 결과 타입 「조 참조 목록」, 정의 = 후보(보통약관 템플릿 조), 값 = 조립이 특약 · 블록마다 판정한 조(ADR-0098). 후보 = 계약의 자동갱신 — The좋은 알파Plus2610 특약 준용규정",
+    "level": "coverage",
+    "expression": "",
+    "resultType": {
+      "kind": "list<ref>"
+    },
+    "candidates": [
+      "m-a25"
+    ]
   }
 ]

@@ -198,6 +198,7 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
       ["D0018", "준용예외(질병 · 납입면제)", "coverage", ""],
       ["D0019", "준용예외(자동갱신형)", "coverage", ""],
       ["D0020", "준용예외(지급하지 않는 사유)", "coverage", ""],
+      ["D0021", "준용예외(자동갱신)", "coverage", ""],
     ]);
     expect(defs.find((d) => d.code === "D0014")).toMatchObject({ resultType: { kind: "list<ref>" }, candidates: ["g-a9", "g-a10", "g-a38"] });
   });
@@ -417,20 +418,20 @@ describe("seedAlphaPlus — 실물 시드 두 상품(알파Plus · 메리츠) (P
     const impacts = r.rejection.impact.judgments ?? [];
     // 이 담보를 탑재한 상품마다 한 묶음 — 알파Plus 둘(준용예외) · 표본 기본계약 2개(절 형태 판정도 바뀐다)
     // 2610 · 상해안심2610 도 2604 담보를 그대로 탑재한다(2026-11-03 · 11-04)
-    expect(impacts.map((i) => i.productName)).toEqual(["메리츠 상해안심보험2610", ALPHA_PLUS_PRODUCT_NAME, `${ALPHA_PLUS_PRODUCT_NAME}2607`, `${ALPHA_PLUS_PRODUCT_NAME}2610`, "케어프리보험 M-Basket2610", "표본 — 기본계약 2개(주계약)"]);
-    expect(impacts[1]!.judgment.exclusions?.map((x) => [x.label, x.added.length, x.removed.map((a) => a.articleId)])).toEqual([
+    expect(impacts.map((i) => i.productName)).toEqual(["The좋은 알파Plus보장보험2610", "The좋은 케어프리보험 M-Basket2610", "메리츠 상해안심보험2610", ALPHA_PLUS_PRODUCT_NAME, `${ALPHA_PLUS_PRODUCT_NAME}2607`, `${ALPHA_PLUS_PRODUCT_NAME}2610`, "케어프리보험 M-Basket2610", "표본 — 기본계약 2개(주계약)"]);
+    expect(impacts[3]!.judgment.exclusions?.map((x) => [x.label, x.added.length, x.removed.map((a) => a.articleId)])).toEqual([
       [`${ALPHA_PLUS_PRODUCT_NAME} · 일반상해사망보장`, 0, ["g-a9"]],
       [`${ALPHA_PLUS_PRODUCT_NAME} · 일반상해사망보장 추가`, 0, ["g-a9"]],
     ]);
-    expect(impacts[5]!.judgment.verdicts.map((v) => `${v.before} → ${v.after}`)).toEqual(["마스터 → 특칙 1/2"]);
-    expect(impacts[1]!.judgment.exclusions?.[0]?.removed[0]?.label).toMatch(/^제\d+조\(/);
+    expect(impacts[7]!.judgment.verdicts.map((v) => `${v.before} → ${v.after}`)).toEqual(["마스터 → 특칙 1/2"]);
+    expect(impacts[3]!.judgment.exclusions?.[0]?.removed[0]?.label).toMatch(/^제\d+조\(/);
     // 1차는 아무것도 쓰지 않는다
     expect((await services.document.get(doc.id))?.version).toBe(doc.version);
     const saved = await services.document.save(admin, doc.id, { baseVersion: doc.version, ops, confirm: true });
     expect(saved.ok && saved.value.version).toBe(doc.version + 1);
     const preview = await services.assembly.preview(product.id);
     expect(preview.ok && preview.value.exclusions?.some((x) => x.name.startsWith("일반상해사망보장") && x.value.includes("g-a9"))).toBe(false);
-  });
+  }, 180_000); // 탑재한 상품마다 판정 변화를 견준다 — 실물 상품이 늘어 30초를 넘는다(2026-11-04)
 });
 
 /**
