@@ -112,4 +112,8 @@ export const PRESETS: Record<string, Preset> = {
       { src: `${GOODCAREFREE2610}/05_특별약관_Ⅳ_비용손해관련.md`, only: "all" },
     ],
   },
+  /** 뇌심2610 의 다른 세 판 — 세만기 맞춤간편 · 연만기 일반 · 연만기 맞춤간편(구성은 세만기 일반심사형 「뇌심2610」과 같다). */
+  뇌심세만기맞춤2610: { out: "tests/fixtures/terms/뇌심세만기맞춤2610", jobs: [{ src: "docs/_자료/올케어 꽉 채운 뇌심보험(세만기형)2610(맞춤간편심사형)/00_주계약/01_보통약관.md", only: "all" }] },
+  뇌심연만기일반2610: { out: "tests/fixtures/terms/뇌심연만기일반2610", jobs: [{ src: "docs/_자료/올케어 꽉 채운 뇌심보험(연만기형)2610(일반심사형)/00_주계약/01_보통약관.md", only: "all" }] },
+  뇌심연만기맞춤2610: { out: "tests/fixtures/terms/뇌심연만기맞춤2610", jobs: [{ src: "docs/_자료/올케어 꽉 채운 뇌심보험(연만기형)2610(맞춤간편심사형)/00_주계약/01_보통약관.md", only: "all" }] },
 };
