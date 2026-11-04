@@ -193,4 +193,14 @@ describe("autoMountPlan — 자동 탑재분의 탑재 · 특약 그룹 (함께 
     ]);
     expect(plan.groups).toEqual([{ category: "V01" }, { name: "상해 및 질병 관련 특별약관", coverages: ["a7-b1", "x3"] }, { category: "V03" }]);
   });
+
+  it("기본계약(base) — 탑재 섹션 base, 특약 그룹에는 들지 않는다 (절형 보통약관의 보장조항 문서 — 상해안심2610)", () => {
+    const plan = autoMountPlan([
+      { coverage: "sa-base", category: "V01", pair: false, renewal: true, base: true },
+      { coverage: "x1", category: "V03", pair: false, renewal: false },
+    ]);
+    expect(plan.mounts[0]).toEqual({ code: "sa-base", coverage: "sa-base", section: "base", attributes: [{ kindCode: "A0001", valueCode: "2" }], auto: true });
+    expect(plan.groups).toEqual([{ category: "V03" }]);
+  });
 });
+

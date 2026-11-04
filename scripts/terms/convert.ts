@@ -871,7 +871,16 @@ function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyM
       if (!meta) throw new Error(`${p.product.code}: 자동 탑재 ${spec.code} 의 문면이 없다 — 만든 상품의 specials 에 있어야 한다`);
       const { name, renewal } = coverageNameOf(meta.title);
       const shared = !own.has(spec.code);
-      entries.push({ coverage: spec.ownerCoverage, category: spec.auto!.category, ...(spec.auto!.group !== undefined ? { group: spec.auto!.group } : {}), pair: Boolean(spec.auto!.renewal), renewal, ...(shared ? { shared } : {}) });
+      const only = spec.auto!.mountOnly;
+      entries.push({
+        coverage: spec.ownerCoverage,
+        category: spec.auto!.category,
+        ...(spec.auto!.group !== undefined ? { group: spec.auto!.group } : {}),
+        pair: Boolean(spec.auto!.renewal) && only === undefined,
+        renewal: only === undefined ? renewal : only === "renewal",
+        ...(shared ? { shared } : {}),
+        ...(spec.auto!.base ? { base: true } : {}),
+      });
       if (shared || created.has(spec.ownerCoverage)) continue;
       created.add(spec.ownerCoverage);
       next.push({
@@ -896,7 +905,7 @@ function writeAutoSeeds(products: readonly BuiltProduct[], exemptions: ReadonlyM
       else delete product.copies;
     }
     if (product) {
-      product.mounts = [...product.mounts.filter((m) => !m.auto), ...mounts];
+      product.mounts = [...product.mounts.filter((m) => !m.auto), ...mounts].sort((a, b) => (a.section === "base" ? 0 : 1) - (b.section === "base" ? 0 : 1));
       if (groups.some((g) => "name" in g)) product.groups = groups;
       else delete product.groups;
     }

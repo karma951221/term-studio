@@ -202,13 +202,15 @@ export function mergeGenerals(
   const owned = new Map<string, Set<Id>>([[base.code, new Set(articlesOf(base.tree).map((a) => a.id))]]);
   /** 사본으로 고르지 않았는데 템플릿 조와 다른 대상을 가리키는 그 판의 조 — 글이 같아도 그 판의 조립이 달라진다(사본으로 골라야 한다). */
   const refMismatches: { general: string; article: string }[] = [];
+  /** 앞 판이 넣은(바탕 판에 없는) 조 — 뒤 판의 같은 조는 이것에 잇는다(변형은 빼고). */
+  const addedByTitle = new Map<string, ArticleNode>();
 
   for (const o of others) {
     const own = articlesOf(o.tree);
     const variants = new Set(o.variants ?? []);
     const idMap = new Map<Id, Id>();
     for (const a of own) {
-      const b = variants.has(foldTitle(a.title)) ? undefined : baseByTitle.get(foldTitle(a.title));
+      const b = variants.has(foldTitle(a.title)) ? undefined : (baseByTitle.get(foldTitle(a.title)) ?? addedByTitle.get(foldTitle(a.title)));
       if (b) idMap.set(a.id, b.id);
     }
     // 사본 — 템플릿 조에 없는 자리의 P 코드는 PZ 로 (그 자리를 가리키는 참조도 같은 표로 고친다)
@@ -259,6 +261,10 @@ export function mergeGenerals(
       const title = foldTitle(a.title);
       const b = idMap.has(a.id) && !copied.has(title) ? baseByTitle.get(title) : undefined;
       if (b && refLabels(a, o.tree).join("|") !== refLabels(b, base.tree).join("|")) refMismatches.push({ general: o.code, article: title });
+    }
+    for (const u of units) {
+      if (isVariant(u)) continue;
+      for (const a of u.articles) if (inserted.includes(a.id) && !addedByTitle.has(foldTitle(a.title))) addedByTitle.set(foldTitle(a.title), remapIds(a, idMap, codeMap));
     }
     products.set(o.code, { idMap, codeMap, hidden: [], copies });
     owned.set(o.code, new Set([...idMap.values(), ...inserted]));
