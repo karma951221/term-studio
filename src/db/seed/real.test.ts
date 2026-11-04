@@ -16,7 +16,7 @@ import { autoFixtures } from "../../../scripts/terms/auto";
 import { ALPHA2607_AUTO, ALPHA2610, BRAIN2610, GOODALPHA2610, SA2610 } from "../../../scripts/terms/config";
 import { productGeneral, type ProductGeneralSetting } from "../../../scripts/terms/merge";
 
-import { ALPHA_SIBLINGS, BRAIN2610_SHARED, expectedLines, GOOD_SIBLINGS, GOODALPHA2610_SHARED, KNOWN_DIFFERENCES, SA2610_SHARED, SHARED_2607_IN_2610 } from "./knownDifferences";
+import { ALPHA_SIBLINGS, BRAIN2610_SHARED, expectedLines, GOOD_SIBLINGS, GOODALPHA2610_SHARED, KNOWN_DIFFERENCES, noticeVariantFiles, SA2610_SHARED, SHARED_2607_IN_2610 } from "./knownDifferences";
 import { loadAlphaPlus } from "./load";
 
 /**
@@ -50,7 +50,44 @@ const KNOWN_REFERENCE_ISSUES: Record<string, string[]> = {
 /** 뇌심2610 특약 — 알파 담보를 그대로 탑재한 17 + 자동 탑재(기본계약 보장조항 셋은 제2절 블록이라 뺀다). */
 const BRAIN2610_FIXTURES: [string, string][] = [
   ...BRAIN2610_SHARED.map(([title, file]): [string, string] => [title, file]),
-  ...autoFixtures(BRAIN2610.specials.filter((s) => !s.auto?.base), (file) => readFileSync(path.join(FIXTURES, "뇌심2610", file), "utf8").split("\n")[0]),
+  // 갱신형 짝(연만기 판 원문 — 「../뇌심연만기일반2610/…」)은 세만기 책자에 실리지 않는다
+  ...autoFixtures(BRAIN2610.specials.filter((s) => !s.auto?.base), (file) => readFileSync(path.join(FIXTURES, "뇌심2610", file), "utf8").split("\n")[0]).filter(([, file]) => !file.startsWith("../")),
+];
+
+/**
+ * 뇌심2610 나머지 세 판 — 세만기 일반심사 판(뇌심2610)의 책자 제목 · fixture 에서 만든다. 연만기는 갱신형(「갱신형 」 · 「갱신형_」),
+ * 맞춤간편은 상품담보명 「[담보명][고지 접사]」(「 특별약관」 앞에 「(맞춤간편가입)」) · fixture 는 접사를 뗀 이름으로 짝(noticeVariantFiles).
+ */
+const BRAIN_BASES = ["뇌혈관질환관혈수술비(연간1회한)보장", "심장관련질환관혈수술비(연간1회한)보장", "2대질환 중증치료비(급여,연간1회한)보장"];
+const withAffix = (title: string) => title.replace(/( 특별약관)?$/, "(맞춤간편가입)$1");
+const renewalOf = ([title, file]: [string, string]): [string, string] => [`갱신형 ${title}`, `갱신형_${file}`];
+const pairsOf = (dir: string, baseDir: string) => new Map(noticeVariantFiles(dir, baseDir).map(([own, base]) => [base, own]));
+const BRAIN_M_PAIRS = pairsOf("뇌심세만기맞춤2610", "뇌심2610");
+const BRAIN_RM_PAIRS = pairsOf("뇌심연만기맞춤2610", "뇌심연만기일반2610");
+const BRAIN2610R_FIXTURES = BRAIN2610_FIXTURES.map(renewalOf);
+/** [상품명, fixture 폴더, 세목 조합 수, 특약, 기본계약 블록 [제목, fixture]] */
+const BRAIN_VARIANTS: { name: string; dir: string; plans: number; specials: [string, string][]; bases: [string, string][] }[] = [
+  {
+    name: "올케어 꽉 채운 뇌심보험(세만기형)2610(맞춤간편심사형)",
+    dir: "뇌심세만기맞춤2610",
+    plans: 4,
+    specials: BRAIN2610_FIXTURES.map(([t, f]) => [withAffix(t), BRAIN_M_PAIRS.get(f)!]),
+    bases: BRAIN_BASES.map((t) => [withAffix(t), BRAIN_M_PAIRS.get(`${t.replace(/ /g, "_")}.md`)!]),
+  },
+  {
+    name: "올케어 꽉 채운 뇌심보험(연만기형)2610(일반심사형)",
+    dir: "뇌심연만기일반2610",
+    plans: 2,
+    specials: BRAIN2610R_FIXTURES,
+    bases: BRAIN_BASES.map((t) => [`갱신형 ${t}`, `갱신형_${t.replace(/ /g, "_")}.md`]),
+  },
+  {
+    name: "올케어 꽉 채운 뇌심보험(연만기형)2610(맞춤간편심사형)",
+    dir: "뇌심연만기맞춤2610",
+    plans: 4,
+    specials: BRAIN2610R_FIXTURES.map(([t, f]) => [withAffix(t), BRAIN_RM_PAIRS.get(f)!]),
+    bases: BRAIN_BASES.map((t) => [withAffix(`갱신형 ${t}`), BRAIN_RM_PAIRS.get(`갱신형_${t.replace(/ /g, "_")}.md`)!]),
+  },
 ];
 /** The좋은 알파Plus2610 특약 — 알파 담보를 그대로 탑재한 227 + 자동 탑재 11. */
 const GOODALPHA2610_FIXTURES: [string, string][] = [
@@ -58,7 +95,7 @@ const GOODALPHA2610_FIXTURES: [string, string][] = [
   ...autoFixtures(GOODALPHA2610.specials, (file) => readFileSync(path.join(FIXTURES, "The좋은알파2610", file), "utf8").split("\n")[0]),
 ];
 /** 실물 재현 상품의 시드 코드 — 별표 대조가 쓴다(자동 탑재 상품은 참조한 별표 전부). */
-const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610", 뇌심2610: "br2610", 케어프리2610: "cf2610", The좋은알파2610: "ga2610", The좋은케어프리2610: "gc2610" };
+const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610", 뇌심2610: "br2610", 뇌심세만기맞춤2610: "brm2610", 뇌심연만기일반2610: "brr2610", 뇌심연만기맞춤2610: "brrm2610", 케어프리2610: "cf2610", The좋은알파2610: "ga2610", The좋은케어프리2610: "gc2610" };
 
 /** 상품마다 — 상품명 · 세목 조합 수 · 보통약관(픽스처 · 조 수) · 특약 (책자 제목 · 픽스처). */
 const PRODUCTS: { name: string; dir: string; plans: number; general: string; appendices: string[]; specials: [string, string][] }[] = [
@@ -162,6 +199,8 @@ const PRODUCTS: { name: string; dir: string; plans: number; general: string; app
     appendices: ["AX000001"],
     specials: BRAIN2610_FIXTURES,
   },
+  // 뇌심2610 나머지 세 판 — 세만기 일반심사 판과 담보 · 템플릿을 함께 쓴다(맞춤간편은 고지 접사 · 연만기는 갱신형 짝)
+  ...BRAIN_VARIANTS.map((v) => ({ name: v.name, dir: v.dir, plans: v.plans, general: `보통약관 제1절 ${v.dir.includes("연만기") ? 50 : 48}조(관 7)`, appendices: ["AX000001"], specials: v.specials })),
   {
     name: "메리츠 통합간편건강보험(연만기형)",
     dir: "메리츠",
@@ -341,7 +380,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
       expect(new Set(codes).size).toBe(codes.length);
       const referenced = referencedAppendices(SEED_CODE[product.dir]);
       // 상해안심 — 알파 담보 공유 때문에 노출해 둔 납입면제 세 조(keepShown)는 조건으로 빠져 그 별표도 실리지 않는다: 실린 것 ⊂ 참조한 것
-      if (product.dir === "상해안심2610" || product.dir === "뇌심2610" || product.dir.startsWith("The좋은")) return expect(codes.filter((c) => !referenced.has(c))).toEqual([]);
+      if (product.dir === "상해안심2610" || product.dir.startsWith("뇌심") || product.dir.startsWith("The좋은")) return expect(codes.filter((c) => !referenced.has(c))).toEqual([]);
       expect([...codes].sort()).toEqual([...referenced].sort());
     });
 
@@ -353,6 +392,9 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
         알파2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
         상해안심2610: ["상해 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
         뇌심2610: ["질병 관련 특별약관"],
+        뇌심세만기맞춤2610: ["질병 관련 특별약관"],
+        뇌심연만기일반2610: ["질병 관련 특별약관"],
+        뇌심연만기맞춤2610: ["질병 관련 특별약관"],
         케어프리2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
         The좋은알파2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
         The좋은케어프리2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
@@ -384,6 +426,17 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
     for (const doc of blocks) {
       const diff = diffArticlesUnordered(source("뇌심2610", `${doc.title.replace(/ /g, "_")}.md`), renderedToLines(doc));
       expect(diff, describeDiff(diff)).toEqual(clean);
+    }
+  });
+
+  it.each(BRAIN_VARIANTS)("$name — 절 형태 · 제2절 보장조항 블록 셋이 원문과 같다 (세만기 일반심사 판 담보 공유)", (v) => {
+    const b = booklets.get(v.name)!;
+    expect(b.form).toBe("sectioned");
+    const blocks = (b.blocks ?? []).flatMap((g) => g.docs);
+    expect(blocks.map((d) => d.title)).toEqual(v.bases.map(([title]) => title));
+    for (const [i, [, file]] of v.bases.entries()) {
+      const diff = diffArticlesUnordered(source(v.dir, file), renderedToLines(blocks[i]!));
+      expect(diff, `${file}${describeDiff(diff)}`).toEqual(clean);
     }
   });
 

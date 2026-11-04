@@ -1407,12 +1407,18 @@ export const SA2610: ProductTerms = {
 
 // ───────────────────────────── 무배당 올케어 꽉 채운 뇌심보험(세만기형)2610(일반심사형) ─────────────────────────────
 
-const illnessBr = autoSpecialOf("br")("d", "V02");
+/**
+ * 연만기 판의 갱신형 원문 — 세만기 판 뇌심 담보의 갱신형 짝(템플릿 하나 · 갱신유형 조건, 2026-11-04). 세만기 판은 비갱신, 연만기 판은 갱신형 가지를 찍는다.
+ * 짝 원문은 연만기 폴더에 있어 세만기 폴더에서 한 칸 올라가 읽는다.
+ */
+const BRAIN_RENEWAL = (file: string) => `../뇌심연만기일반2610/갱신형_${file}`;
+const illnessBr = (no: number, file: string) => autoSpecialOf("br")("d", "V02")(no, file, BRAIN_RENEWAL(file));
+const brainBase = (no: number, file: string): SpecialSpec => ({ ...autoSpecialOf("br")("base", "V02")(no, file), auto: { category: "V02", base: true, renewal: BRAIN_RENEWAL(file) } });
 /** 뇌심2610 이 처음 실은 담보 — 기본계약 보장조항 셋(제2절 2-1 ~ 2-3, 섹션 base) + 특약. */
 export const BRAIN2610_AUTO: SpecialSpec[] = [
-  { ...autoSpecialOf("br")("base", "V02")(21, "뇌혈관질환관혈수술비(연간1회한)보장.md"), auto: { category: "V02", base: true } },
-  { ...autoSpecialOf("br")("base", "V02")(22, "심장관련질환관혈수술비(연간1회한)보장.md"), auto: { category: "V02", base: true } },
-  { ...autoSpecialOf("br")("base", "V02")(23, "2대질환_중증치료비(급여,연간1회한)보장.md"), auto: { category: "V02", base: true } },
+  brainBase(21, "뇌혈관질환관혈수술비(연간1회한)보장.md"),
+  brainBase(22, "심장관련질환관혈수술비(연간1회한)보장.md"),
+  brainBase(23, "2대질환_중증치료비(급여,연간1회한)보장.md"),
   illnessBr(1, "뇌경색증진단비보장.md"),
   illnessBr(2, "중증뇌경색증진단비보장.md"),
   illnessBr(8, "뇌출혈진단_응급환자_응급실내원비(연간1회한)보장.md"),
@@ -1424,25 +1430,28 @@ export const BRAIN2610_AUTO: SpecialSpec[] = [
   illnessBr(24, "중등증이상허혈성심장질환진단비보장.md"),
 ];
 
-/** 뇌심2610 자동 탑재 순서 — 원문 순(보장조항 → 특약). 알파와 이름이 같은 특약 17 은 알파 담보 그대로(2026-11-04 사용자 결정). */
+/**
+ * 뇌심2610 자동 탑재 순서 — 원문 순(보장조항 → 특약). 알파와 이름이 같은 특약 17 은 알파 담보 그대로(2026-11-04 사용자 결정).
+ * 세만기라 전부 비갱신 탑재 하나(`mountOnly: "base"`) — 제 담보도 연만기 판 원문을 갱신형 짝으로 품는다.
+ */
 const BRAIN2610_ORDER: [string, ("renewal" | "base")?][] = [
-  ["br-base21"],
-  ["br-base22"],
-  ["br-base23"],
-  ["br-d1"],
-  ["br-d2"],
-  ["a7-d21"],
+  ["br-base21", "base"],
+  ["br-base22", "base"],
+  ["br-base23", "base"],
+  ["br-d1", "base"],
+  ["br-d2", "base"],
+  ["a7-d21", "base"],
   ["a10-d188", "base"],
   ["a10-d192", "base"],
   ["a10-d196", "base"],
   ["a10-d200", "base"],
-  ["br-d8"],
-  ["br-d9"],
-  ["br-d10"],
+  ["br-d8", "base"],
+  ["br-d9", "base"],
+  ["br-d10", "base"],
   ["a7-d126", "base"],
   ["a7-d130", "base"],
-  ["br-d13"],
-  ["br-d14"],
+  ["br-d13", "base"],
+  ["br-d14", "base"],
   ["a10-d221", "base"],
   ["a10-d222", "base"],
   ["a7-d110", "base"],
@@ -1451,10 +1460,10 @@ const BRAIN2610_ORDER: [string, ("renewal" | "base")?][] = [
   ["a7-d113", "base"],
   ["a7-d114", "base"],
   ["a7-d115", "base"],
-  ["br-d23"],
-  ["br-d24"],
-  ["a10-d213"],
-  ["a10-d214"],
+  ["br-d23", "base"],
+  ["br-d24", "base"],
+  ["a10-d213", "base"],
+  ["a10-d214", "base"],
 ];
 
 /**
@@ -1777,7 +1786,33 @@ export const GOODALPHA2610: ProductTerms = {
 const GOODCAREFREE2610_GENERAL: GeneralSpec = { ...GOODALPHA2610_GENERAL, code: "gc2610-general" };
 export const GOODCAREFREE2610: ProductTerms = { ...GOODALPHA2610, code: "gc2610", fixtureDir: "tests/fixtures/terms/The좋은케어프리2610", general: GOODCAREFREE2610_GENERAL, specials: [] };
 
-export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610, CAREFREE2610, GOODALPHA2610, GOODCAREFREE2610];
+// ───────────────────────────── 뇌심2610 나머지 세 판 ─────────────────────────────
+
+/** 탑재 모양만 바꾼 뇌심2610 탑재 순서 — 연만기는 갱신형 하나. */
+const brainMounts = (only: "renewal" | "base") => (BRAIN2610.autoMounts ?? []).map((s) => ({ ...s, auto: { ...s.auto!, mountOnly: only } }));
+/**
+ * 뇌심2610 의 다른 세 판 — 세만기 일반심사형(뇌심2610)과 담보 · 템플릿을 모두 함께 쓴다(특약 26 · 기본계약 셋, `specials` 비움).
+ * - 맞춤간편: 심사형만 다른 담보는 담보약관 하나, 이름은 상품담보명 칩 「[고지 접사]」(「(맞춤간편가입)」 — 기능/상품 §3.3). 보통약관은 해약환급금 형이 더 있다.
+ * - 연만기: 만기만 다른 담보도 하나 — 뇌심 담보는 연만기 원문이 갱신형 짝(`BRAIN_RENEWAL`), 알파 담보는 그 갱신형 가지 · 짝이 없으면 비갱신 템플릿. 보통약관은
+ *   메리츠 통합간편이 넣은 「계약의 자동갱신」 · 「갱신계약 … 해제」가 더 있다(50조).
+ */
+const BRAIN2610M_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brm2610-general", idPrefix: "bm" };
+const BRAIN2610R_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brr2610-general", idPrefix: "bn" };
+const BRAIN2610RM_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brrm2610-general", idPrefix: "bq" };
+const brainVariant = (code: string, dir: string, general: GeneralSpec, only: "renewal" | "base"): ProductTerms => ({
+  code,
+  line: "meritz",
+  fixtureDir: `tests/fixtures/terms/${dir}`,
+  appendixNumbers: BRAIN2610.appendixNumbers,
+  general,
+  specials: [],
+  autoMounts: brainMounts(only),
+});
+export const BRAIN2610M = brainVariant("brm2610", "뇌심세만기맞춤2610", BRAIN2610M_GENERAL, "base");
+export const BRAIN2610R = brainVariant("brr2610", "뇌심연만기일반2610", BRAIN2610R_GENERAL, "renewal");
+export const BRAIN2610RM = brainVariant("brrm2610", "뇌심연만기맞춤2610", BRAIN2610RM_GENERAL, "renewal");
+
+export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610, CAREFREE2610, GOODALPHA2610, GOODCAREFREE2610, BRAIN2610M, BRAIN2610R, BRAIN2610RM];
 export const SEED_DIR = "src/db/seed/data";
 
 /**
@@ -1809,6 +1844,38 @@ export const GENERAL_TEMPLATE = {
       "계약내용의 변경 등", "계약의 소멸", "제1회 보험료 및 회사의 보장개시", "법령 등의 개정에 따른 계약내용의 변경", "회사의 손해배상책임",
       // 상품의 사실이 글에 박힌 조 — 질병 보험의 목적 · 알릴 의무 · 보험나이 · 납입최고 · 부활(납입면제 사유 둘)
       "목적", "계약 전 알릴 의무", "약관교부 및 설명의무 등", "계약의 무효", "보험나이 등", "보험료의 납입이 연체되는 경우 납입최고(독촉)와 계약의 해지", "보험료의 납입을 연체하여 해지된 계약의 부활(효력회복)",
+    ],
+    // 뇌심 나머지 세 판 — 뇌심2610 과 같은 사본 + 형 · 갱신 조
+    [BRAIN2610M_GENERAL.code]: [
+      "보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "뇌졸중, 급성심근경색증의 정의 및 진단확정", "납입면제에 관한 세부규정",
+      // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
+      "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 등의 청구", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "알릴 의무 위반의 효과", "사기에 의한 계약",
+      "계약내용의 변경 등", "계약의 소멸", "제1회 보험료 및 회사의 보장개시", "법령 등의 개정에 따른 계약내용의 변경", "회사의 손해배상책임",
+      // 상품의 사실이 글에 박힌 조 — 질병 보험의 목적 · 알릴 의무 · 보험나이 · 납입최고 · 부활(납입면제 사유 둘)
+      "목적", "계약 전 알릴 의무", "약관교부 및 설명의무 등", "계약의 무효", "보험나이 등", "보험료의 납입이 연체되는 경우 납입최고(독촉)와 계약의 해지", "보험료의 납입을 연체하여 해지된 계약의 부활(효력회복)",
+      // 맞춤간편 — 해약환급금 형(① 2형 단서 · 유의사항 박스)
+      "해약환급금",
+    ],
+    [BRAIN2610R_GENERAL.code]: [
+      "보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "뇌졸중, 급성심근경색증의 정의 및 진단확정", "납입면제에 관한 세부규정",
+      // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
+      "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 등의 청구", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "알릴 의무 위반의 효과", "사기에 의한 계약",
+      "계약내용의 변경 등", "계약의 소멸", "제1회 보험료 및 회사의 보장개시", "법령 등의 개정에 따른 계약내용의 변경", "회사의 손해배상책임",
+      // 상품의 사실이 글에 박힌 조 — 질병 보험의 목적 · 알릴 의무 · 보험나이 · 납입최고 · 부활(납입면제 사유 둘)
+      "목적", "계약 전 알릴 의무", "약관교부 및 설명의무 등", "계약의 무효", "보험나이 등", "보험료의 납입이 연체되는 경우 납입최고(독촉)와 계약의 해지", "보험료의 납입을 연체하여 해지된 계약의 부활(효력회복)",
+      // 연만기 — 적립부분이 없어 갱신계약 제1회 「보험료」(메리츠 통합간편 판은 「보장보험료」)
+      "갱신계약 제1회 보험료의 납입연체와 계약의 해제",
+    ],
+    [BRAIN2610RM_GENERAL.code]: [
+      "보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "뇌졸중, 급성심근경색증의 정의 및 진단확정", "납입면제에 관한 세부규정",
+      // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
+      "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 등의 청구", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "알릴 의무 위반의 효과", "사기에 의한 계약",
+      "계약내용의 변경 등", "계약의 소멸", "제1회 보험료 및 회사의 보장개시", "법령 등의 개정에 따른 계약내용의 변경", "회사의 손해배상책임",
+      // 상품의 사실이 글에 박힌 조 — 질병 보험의 목적 · 알릴 의무 · 보험나이 · 납입최고 · 부활(납입면제 사유 둘)
+      "목적", "계약 전 알릴 의무", "약관교부 및 설명의무 등", "계약의 무효", "보험나이 등", "보험료의 납입이 연체되는 경우 납입최고(독촉)와 계약의 해지", "보험료의 납입을 연체하여 해지된 계약의 부활(효력회복)",
+      "갱신계약 제1회 보험료의 납입연체와 계약의 해제", "해약환급금",
+      // 해약환급금 사본의 항을 가리킨다
+      "위법계약의 해지",
     ],
     // 2610 — 용어의 정의 표 「영업일」의 「노동절」(2607 판 「근로자의 날」)
     [ALPHA2610_GENERAL.code]: ["용어의 정의"],
@@ -1845,6 +1912,9 @@ export const GENERAL_TEMPLATE = {
     [SA2610_GENERAL.code]: { "보험금의 청구": "보험금 등의 청구" },
     // 뇌심 정의 조는 사유 둘만 나열한 이름 — 템플릿 정의 조(일반 고정 제목, ADR-0088 결정 7)와 같은 자리
     [BRAIN2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
+    [BRAIN2610M_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
+    [BRAIN2610R_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
+    [BRAIN2610RM_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [GOODALPHA2610_GENERAL.code]: { "암(유사암제외), 뇌졸중, 급성심근경색증, 희귀난치성 7대질환, 만성당뇨합병증, 양성뇌종양의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [GOODCAREFREE2610_GENERAL.code]: { "암(유사암제외), 뇌졸중, 급성심근경색증, 희귀난치성 7대질환, 만성당뇨합병증, 양성뇌종양의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
   } as Record<string, Record<string, string>>,

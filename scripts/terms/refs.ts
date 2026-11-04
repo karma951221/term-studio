@@ -162,6 +162,14 @@ function resolve(token: Token, context: RefContext, env: RefEnv, raw: string): I
         general = true;
       }
     }
+    // 다른 판의 원문(연만기 판 갱신형 짝을 세만기 판 보통약관으로 푼다) — 보통약관 조 번호가 그 판과 달라도 제목이 하나로 맞으면 그 조다(2026-11-04)
+    if (general && env.generalFallback && (!entry || squash(entry.title) !== squash(token.title))) {
+      const byTitle = [...index.byNumber.values()].filter((e) => squash(e.title) === squash(token.title));
+      if (byTitle.length === 1) {
+        env.report.push(`보통약관 조 번호가 다른 판(제목으로 찾음): ${raw} → ${byTitle[0].id}`);
+        entry = byTitle[0];
+      }
+    }
     if (!entry) {
       env.report.push(`조 없음: ${raw}`);
       return undefined;
