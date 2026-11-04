@@ -568,7 +568,11 @@ function main(): void {
   const base = generals.find((g) => g.code === GENERAL_TEMPLATE.base)!;
   const others = generals.filter((g) => g !== base).map((g) => ({ ...g, copies: GENERAL_TEMPLATE.copies[g.code] ?? [], variants: GENERAL_TEMPLATE.variants[g.code] ?? [], aliases: GENERAL_TEMPLATE.aliases[g.code] ?? {}, ...(GENERAL_TEMPLATE.variantsFrom[g.code] ? { variantsFrom: GENERAL_TEMPLATE.variantsFrom[g.code] } : {}) }));
   const { tree: template, products: perGeneral, refMismatches } = mergeGenerals(base, others, { id: GENERAL_TEMPLATE.code, title: GENERAL_TEMPLATE.title });
-  issues.push(...refMismatches.map((m) => `${m.general}: 보통약관 조 「${m.article}」이(가) 템플릿과 다른 대상을 가리킨다 — GENERAL_TEMPLATE.copies 에 사본으로 고른다`));
+  issues.push(
+    ...refMismatches
+      .filter((m) => !(GENERAL_TEMPLATE.templateKept[m.general] ?? []).includes(GENERAL_TEMPLATE.aliases[m.general]?.[m.article] ?? m.article))
+      .map((m) => `${m.general}: 보통약관 조 「${m.article}」이(가) 템플릿과 다른 대상을 가리킨다 — GENERAL_TEMPLATE.copies 에 사본으로 고른다`),
+  );
   const idMap = new Map([...perGeneral.values()].flatMap((p) => [...p.idMap]));
   const codeMap = new Map([...perGeneral.values()].flatMap((p) => [...p.codeMap]));
   finalClauses.splice(0, finalClauses.length, ...remapIds(finalClauses, idMap, codeMap));

@@ -1774,7 +1774,11 @@ export const GOODALPHA2610: ProductTerms = {
 };
 
 
-export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610, CAREFREE2610, GOODALPHA2610];
+/** 메리츠 The좋은 케어프리보험 M-Basket2610 — The좋은 알파Plus2610 과 같은 구성(원문이 같다 — 보통약관 제목만). 설정을 그대로 쓴다. */
+const GOODCAREFREE2610_GENERAL: GeneralSpec = { ...GOODALPHA2610_GENERAL, code: "gc2610-general" };
+export const GOODCAREFREE2610: ProductTerms = { ...GOODALPHA2610, code: "gc2610", fixtureDir: "tests/fixtures/terms/The좋은케어프리2610", general: GOODCAREFREE2610_GENERAL, specials: [] };
+
+export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610, CAREFREE2610, GOODALPHA2610, GOODCAREFREE2610];
 export const SEED_DIR = "src/db/seed/data";
 
 /**
@@ -1812,18 +1816,30 @@ export const GENERAL_TEMPLATE = {
     [CAREFREE2610_GENERAL.code]: ["용어의 정의"],
     // The좋은 알파Plus2610 — 제3 · 4조는 알파 기본계약 대치 조 · 이 판 글의 납입면제 세 조(3종)
     [GOODALPHA2610_GENERAL.code]: [
-      "보험료의 납입면제", "암(유사암제외), 뇌졸중, 급성심근경색증, 희귀난치성 7대질환, 만성당뇨합병증, 양성뇌종양의 정의 및 진단확정", "납입면제에 관한 세부규정",
       // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
       "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 지급사유 등의 통지", "보험금 등의 청구", "보험금의 지급절차", "만기환급금의 지급", "주소변경통지", "사기에 의한 계약", "계약의 소멸",
-      "제1회 보험료 및 회사의 보장개시", "법령 등의 개정에 따른 계약내용의 변경", "회사의 손해배상책임",
+      "제1회 보험료 및 회사의 보장개시", "회사의 손해배상책임",
+    ],
+    [GOODCAREFREE2610_GENERAL.code]: [
+      // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
+      "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 지급사유 등의 통지", "보험금 등의 청구", "보험금의 지급절차", "만기환급금의 지급", "주소변경통지", "사기에 의한 계약", "계약의 소멸",
+      "제1회 보험료 및 회사의 보장개시", "회사의 손해배상책임",
     ],
     [MERITZ_GENERAL.code]: ["용어의 정의", "보험금을 지급하지 않는 사유", "보험금 지급사유 등의 통지", "보험금의 지급절차", "계약의 무효", "계약내용의 변경 등", "보험나이 등", "계약의 소멸", "위법계약의 해지", "해약환급금"],
   } as Record<string, string[]>,
   // 기본계약이 대치하는 두 조도 변형이다 — 기본계약(일반상해사망 · 일반상해80%이상후유장해)마다 항 구성이 달라 조립이 다른 조의 「제4조 제N항」을
   // 기본계약 항에 잇지 못하고(booklet `positionAliases` — 템플릿 조와 기본계약 조의 항 수가 같아야 한다), 조연결된 조의 사본은 잠긴다(ADR-0082 결정 10)
+  // 사본으로 두지 못해 템플릿 글로 찍는 조(그 판 글과 가리키는 자리가 달라도 받아들인다 — 알려진 차이).
+  // The좋은 알파Plus2610 납입면제 세 조: 그대로 탑재한 알파 담보(보험료납입지원(유사암진단))가 알파 납입면제 조의 항을 가리켜 사본으로 바꾸면 깨진다
+  // (시드 저장 거부) — 알파 납입면제 함수조항이 이 상품 종 · 사유 값으로 찍힌다(이 판 3종 · 희귀난치성 7대질환 글과 다르다)
+  templateKept: {
+    [GOODALPHA2610_GENERAL.code]: ["보험료의 납입면제", "납입면제에 관한 세부규정", "보험료 납입면제 사유의 정의 및 진단확정", "법령 등의 개정에 따른 계약내용의 변경"],
+    [GOODCAREFREE2610_GENERAL.code]: ["보험료의 납입면제", "납입면제에 관한 세부규정", "보험료 납입면제 사유의 정의 및 진단확정", "법령 등의 개정에 따른 계약내용의 변경"],
+  } as Record<string, string[]>,
   // 앞 판 변형을 함께 쓰는 판 — The좋은 알파Plus2610 의 일반상해사망 기본계약(통합간편 m-base-death)이 통합간편 변형 지급사유 · 세부규정에 조연결한다
   variantsFrom: {
     [GOODALPHA2610_GENERAL.code]: { from: MERITZ_GENERAL.code, titles: ["보험금의 지급사유", "보험금 지급에 관한 세부규정"] },
+    [GOODCAREFREE2610_GENERAL.code]: { from: MERITZ_GENERAL.code, titles: ["보험금의 지급사유", "보험금 지급에 관한 세부규정"] },
   } as Record<string, { from: string; titles: string[] }>,
   // 조 이름 별칭 — 그 판이 바탕 조를 다른 이름으로 쓴다(사본으로 제 이름 · 글을 지킨다)
   aliases: {
@@ -1831,6 +1847,7 @@ export const GENERAL_TEMPLATE = {
     // 뇌심 정의 조는 사유 둘만 나열한 이름 — 템플릿 정의 조(일반 고정 제목, ADR-0088 결정 7)와 같은 자리
     [BRAIN2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [GOODALPHA2610_GENERAL.code]: { "암(유사암제외), 뇌졸중, 급성심근경색증, 희귀난치성 7대질환, 만성당뇨합병증, 양성뇌종양의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
+    [GOODCAREFREE2610_GENERAL.code]: { "암(유사암제외), 뇌졸중, 급성심근경색증, 희귀난치성 7대질환, 만성당뇨합병증, 양성뇌종양의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
   } as Record<string, Record<string, string>>,
   variants: {
     [MERITZ_GENERAL.code]: ["보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "보험료 납입면제 사유의 정의 및 진단확정", "납입면제에 관한 세부규정"],
