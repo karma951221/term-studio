@@ -6123,6 +6123,34 @@
                                     "text": "도 제외합니다."
                                   }
                                 ]
+                              },
+                              {
+                                "id": "c-alpha-application-n8-n7-if-e",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-n8-n7-if-e-t",
+                                    "kind": "text",
+                                    "text": " 다만, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  },
+                                  {
+                                    "id": "c-alpha-application-n10-n7-none",
+                                    "kind": "articleRef",
+                                    "targets": [
+                                      {
+                                        "articleId": "g-a27_1"
+                                      },
+                                      {
+                                        "articleId": "g-a27_2"
+                                      }
+                                    ],
+                                    "connector": "및"
+                                  },
+                                  {
+                                    "id": "c-alpha-application-n8-n7-if-e-t2",
+                                    "kind": "text",
+                                    "text": "은 제외합니다."
+                                  }
+                                ]
                               }
                             ]
                           }
@@ -6628,6 +6656,34 @@
                                     "id": "c-alpha-application-disease-n6-b",
                                     "kind": "text",
                                     "text": "도 제외합니다."
+                                  }
+                                ]
+                              },
+                              {
+                                "id": "c-alpha-application-disease-n3-b-if-e",
+                                "children": [
+                                  {
+                                    "id": "c-alpha-application-disease-n3-b-if-e-t",
+                                    "kind": "text",
+                                    "text": " 다만, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  },
+                                  {
+                                    "id": "c-alpha-application-disease-n5-b-none",
+                                    "kind": "articleRef",
+                                    "targets": [
+                                      {
+                                        "articleId": "g-a27_1"
+                                      },
+                                      {
+                                        "articleId": "g-a27_2"
+                                      }
+                                    ],
+                                    "connector": "및"
+                                  },
+                                  {
+                                    "id": "c-alpha-application-disease-n3-b-if-e-t2",
+                                    "kind": "text",
+                                    "text": "은 제외합니다."
                                   }
                                 ]
                               }
@@ -12903,6 +12959,34 @@
                                     "id": "c-auto-117-n6-w-b",
                                     "kind": "text",
                                     "text": "도 제외합니다."
+                                  }
+                                ]
+                              },
+                              {
+                                "id": "c-auto-117-n3-b-if-e",
+                                "children": [
+                                  {
+                                    "id": "c-auto-117-n3-b-if-e-t",
+                                    "kind": "text",
+                                    "text": " 다만, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                  },
+                                  {
+                                    "id": "c-auto-117-n5-b-none",
+                                    "kind": "articleRef",
+                                    "targets": [
+                                      {
+                                        "articleId": "g-a27_1"
+                                      },
+                                      {
+                                        "articleId": "g-a27_2"
+                                      }
+                                    ],
+                                    "connector": "및"
+                                  },
+                                  {
+                                    "id": "c-auto-117-n3-b-if-e-t2",
+                                    "kind": "text",
+                                    "text": "은 제외합니다."
                                   }
                                 ]
                               }

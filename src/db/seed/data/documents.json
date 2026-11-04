@@ -21826,6 +21826,35 @@
                                   "text": "도 제외합니다."
                                 }
                               ]
+                            },
+                            {
+                              "id": "a7i25-a5-p1-x1-b-if-e",
+                              "children": [
+                                {
+                                  "id": "a7i25-a5-p1-x1-b-if-e-t",
+                                  "kind": "text",
+                                  "text": " 다만, 1종(보험료 납입면제 미적용형)으로 가입한 경우 "
+                                },
+                                {
+                                  "id": "a7i25-a5-p1-x2-b-none",
+                                  "kind": "articleRef",
+                                  "targets": [
+                                    {
+                                      "articleId": "g-a27_1"
+                                    },
+                                    {
+                                      "articleId": "g-a27_2"
+                                    }
+                                  ],
+                                  "connector": "및",
+                                  "scope": "general"
+                                },
+                                {
+                                  "id": "a7i25-a5-p1-x1-b-if-e-t2",
+                                  "kind": "text",
+                                  "text": "은 제외합니다."
+                                }
+                              ]
                             }
                           ]
                         }
