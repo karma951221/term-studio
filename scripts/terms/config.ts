@@ -1872,7 +1872,54 @@ export const BRAINSIMPLE2610: ProductTerms = {
   autoMounts: undefined,
 };
 
-export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610, CAREFREE2610, GOODALPHA2610, GOODCAREFREE2610, BRAINRENEW2610, BRAINSIMPLE2610];
+/** 무배당 올케어 꽉 채운 뇌심보험(연만기형)2610(맞춤간편심사형) — 세만기 맞춤간편의 담보를 갱신형으로 싣는 형제(연만기 일반 ↔ 뇌심2610 과 같은 꼴). */
+const BRAINSIMPLERENEW2610_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brsl2610-general" };
+const bySimple = new Map(BRAINSIMPLE2610_AUTO.map((s) => [s.ownerCoverage, s]));
+const BRAINSIMPLERENEW2610_ORDER: [string, ("renewal" | "base")?][] = [
+  ["bs-base21", "renewal"],
+  ["bs-base22", "renewal"],
+  ["bs-base23", "renewal"],
+  ["bs-d1", "renewal"],
+  ["bs-d2", "renewal"],
+  ["bs-d3", "renewal"],
+  ["bs-d4", "renewal"],
+  ["bs-d5", "renewal"],
+  ["bs-d6", "renewal"],
+  ["bs-d7", "renewal"],
+  ["bs-d8", "renewal"],
+  ["bs-d9", "renewal"],
+  ["bs-d10", "renewal"],
+  ["bs-d11", "renewal"],
+  ["bs-d12", "renewal"],
+  ["bs-d13", "renewal"],
+  ["bs-d14", "renewal"],
+  ["bs-d15", "renewal"],
+  ["bs-d16", "renewal"],
+  ["bs-d17", "renewal"],
+  ["bs-d18", "renewal"],
+  ["bs-d19", "renewal"],
+  ["bs-d20", "renewal"],
+  ["bs-d21", "renewal"],
+  ["bs-d22", "renewal"],
+  ["bs-d23", "renewal"],
+  ["bs-d24", "renewal"],
+  ["bs-d25", "renewal"],
+  ["bs-d26", "renewal"],
+];
+export const BRAINSIMPLERENEW2610: ProductTerms = {
+  ...BRAIN2610,
+  code: "brsl2610",
+  fixtureDir: "tests/fixtures/terms/뇌심연만기간편2610",
+  general: BRAINSIMPLERENEW2610_GENERAL,
+  specials: [],
+  autoMounts: BRAINSIMPLERENEW2610_ORDER.map(([key, only]) => {
+    const spec = bySimple.get(key);
+    if (!spec) throw new Error(`뇌심(연만기 맞춤간편)2610 자동 탑재 순서: ${key} 설정 없음`);
+    return only ? { ...spec, auto: { ...spec.auto!, mountOnly: only } } : spec;
+  }),
+};
+
+export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610, CAREFREE2610, GOODALPHA2610, GOODCAREFREE2610, BRAINRENEW2610, BRAINSIMPLE2610, BRAINSIMPLERENEW2610];
 export const SEED_DIR = "src/db/seed/data";
 
 /**
@@ -1898,6 +1945,14 @@ export const GENERAL_TEMPLATE = {
       "만기환급금의 지급", "상해보험계약 후 알릴 의무", "알릴 의무 위반의 효과", "계약내용의 변경 등", "회사의 파산선고와 해지", "중도인출"],
     // 뇌심2610 — 제2절에 지급사유를 맡기는 제3 · 4조 · 이 판 글의 납입면제 세 조(사유 둘)
     [BRAIN2610_GENERAL.code]: [
+      "보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "뇌졸중, 급성심근경색증의 정의 및 진단확정", "납입면제에 관한 세부규정",
+      // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
+      "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 등의 청구", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "알릴 의무 위반의 효과", "사기에 의한 계약",
+      "계약내용의 변경 등", "계약의 소멸", "제1회 보험료 및 회사의 보장개시", "법령 등의 개정에 따른 계약내용의 변경", "회사의 손해배상책임",
+      // 상품의 사실이 글에 박힌 조 — 질병 보험의 목적 · 알릴 의무 · 보험나이 · 납입최고 · 부활(납입면제 사유 둘)
+      "목적", "계약 전 알릴 의무", "약관교부 및 설명의무 등", "계약의 무효", "보험나이 등", "보험료의 납입이 연체되는 경우 납입최고(독촉)와 계약의 해지", "보험료의 납입을 연체하여 해지된 계약의 부활(효력회복)",
+    ],
+    [BRAINSIMPLERENEW2610_GENERAL.code]: [
       "보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "뇌졸중, 급성심근경색증의 정의 및 진단확정", "납입면제에 관한 세부규정",
       // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
       "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 등의 청구", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "알릴 의무 위반의 효과", "사기에 의한 계약",
@@ -1958,6 +2013,7 @@ export const GENERAL_TEMPLATE = {
     [BRAIN2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [BRAINRENEW2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [BRAINSIMPLE2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
+    [BRAINSIMPLERENEW2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [GOODALPHA2610_GENERAL.code]: { "암(유사암제외), 뇌졸중, 급성심근경색증, 희귀난치성 7대질환, 만성당뇨합병증, 양성뇌종양의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [GOODCAREFREE2610_GENERAL.code]: { "암(유사암제외), 뇌졸중, 급성심근경색증, 희귀난치성 7대질환, 만성당뇨합병증, 양성뇌종양의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
   } as Record<string, Record<string, string>>,

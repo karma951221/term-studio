@@ -16,7 +16,7 @@ import { autoFixtures } from "../../../scripts/terms/auto";
 import { ALPHA2607_AUTO, ALPHA2610, BRAIN2610, BRAINSIMPLE2610, GOODALPHA2610, SA2610 } from "../../../scripts/terms/config";
 import { productGeneral, type ProductGeneralSetting } from "../../../scripts/terms/merge";
 
-import { ALPHA_SIBLINGS, BRAIN2610_SHARED, BRAINRENEW2610_SHARED, expectedLines, GOOD_SIBLINGS, GOODALPHA2610_SHARED, KNOWN_DIFFERENCES, SA2610_SHARED, SHARED_2607_IN_2610 } from "./knownDifferences";
+import { ALPHA_SIBLINGS, BRAIN2610_SHARED, BRAINRENEW2610_SHARED, BRAINSIMPLERENEW2610_SHARED, expectedLines, GOOD_SIBLINGS, GOODALPHA2610_SHARED, KNOWN_DIFFERENCES, SA2610_SHARED, SHARED_2607_IN_2610 } from "./knownDifferences";
 import { loadAlphaPlus } from "./load";
 
 /**
@@ -58,7 +58,7 @@ const GOODALPHA2610_FIXTURES: [string, string][] = [
   ...autoFixtures(GOODALPHA2610.specials, (file) => readFileSync(path.join(FIXTURES, "The좋은알파2610", file), "utf8").split("\n")[0]),
 ];
 /** 실물 재현 상품의 시드 코드 — 별표 대조가 쓴다(자동 탑재 상품은 참조한 별표 전부). */
-const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610", 뇌심2610: "br2610", 케어프리2610: "cf2610", The좋은알파2610: "ga2610", The좋은케어프리2610: "gc2610", 뇌심연만기2610: "brl2610", 뇌심세만기간편2610: "brs2610" };
+const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610", 뇌심2610: "br2610", 케어프리2610: "cf2610", The좋은알파2610: "ga2610", The좋은케어프리2610: "gc2610", 뇌심연만기2610: "brl2610", 뇌심세만기간편2610: "brs2610", 뇌심연만기간편2610: "brsl2610" };
 
 /** 상품마다 — 상품명 · 세목 조합 수 · 보통약관(픽스처 · 조 수) · 특약 (책자 제목 · 픽스처). */
 const PRODUCTS: { name: string; dir: string; plans: number; general: string; appendices: string[]; specials: [string, string][] }[] = [
@@ -213,6 +213,15 @@ const PRODUCTS: { name: string; dir: string; plans: number; general: string; app
     general: "보통약관 제1절 48조(관 7)",
     appendices: ["AX000001"],
     specials: autoFixtures(BRAINSIMPLE2610.specials.filter((x) => !x.auto?.base), (file) => readFileSync(path.join(FIXTURES, "뇌심세만기간편2610", file), "utf8").split("\n")[0]),
+  });
+  // 뇌심(연만기 맞춤간편) — 세만기 맞춤간편 담보를 갱신형으로
+  PRODUCTS.push({
+    name: "올케어 꽉 채운 뇌심보험(연만기형)2610(맞춤간편심사형)",
+    dir: "뇌심연만기간편2610",
+    plans: 2,
+    general: "보통약관 제1절 50조(관 7)",
+    appendices: ["AX000001"],
+    specials: BRAINSIMPLERENEW2610_SHARED.filter(([title]) => title.endsWith("특별약관")).map(([title, file]): [string, string] => [title, file]),
   });
 }
 
@@ -373,6 +382,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
         뇌심2610: ["질병 관련 특별약관"],
         뇌심연만기2610: ["질병 관련 특별약관"],
         뇌심세만기간편2610: ["질병 관련 특별약관"],
+        뇌심연만기간편2610: ["질병 관련 특별약관"],
         케어프리2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
         The좋은알파2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
         The좋은케어프리2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
@@ -440,6 +450,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
   it.each([
     ["올케어 꽉 채운 뇌심보험(연만기형)2610(일반심사형)", "뇌심연만기2610"],
     ["올케어 꽉 채운 뇌심보험(세만기형)2610(맞춤간편심사형)", "뇌심세만기간편2610"],
+    ["올케어 꽉 채운 뇌심보험(연만기형)2610(맞춤간편심사형)", "뇌심연만기간편2610"],
   ])("%s — 절 형태 · 제2절 보장조항 블록 셋이 기대 줄과 같다", (name, dir) => {
     const b = booklets.get(name)!;
     expect(b.form).toBe("sectioned");

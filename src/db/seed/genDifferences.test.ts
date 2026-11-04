@@ -46,10 +46,10 @@ it.skipIf(!process.env.GEN_PRODUCT)("원문 대조 실패 모으기", async () =
   const byTitle = new Map<string, string>();
   for (const f of readdirSync(path.join(F, D))) {
     if (!f.endsWith(".md")) continue;
-    for (const [t] of autoFixtures([{ file: f, auto: {} }], (x) => readFileSync(path.join(F, D, x), "utf8").split("\n")[0])) byTitle.set(t, f);
+    for (const [t] of autoFixtures([{ file: f, auto: {} }], (x) => readFileSync(path.join(F, D, x), "utf8").split("\n")[0])) byTitle.set(t.replace(/\s+/g, ""), f);
   }
   for (const doc of b.specials.flatMap((g) => g.docs)) {
-    const file = byTitle.get(doc.title);
+    const file = byTitle.get(doc.title.replace(/\s+/g, ""));
     if (!file) { out.push({ missingFixture: doc.title }); continue; }
     cmp(file, renderedToLines(doc));
   }

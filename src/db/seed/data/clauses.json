@@ -37418,10 +37418,10 @@
                     "kind": "articleRef",
                     "targets": [
                       {
-                        "articleId": "g-a27_1"
+                        "articleId": "g-a27"
                       },
                       {
-                        "articleId": "g-a27_2"
+                        "articleId": "g-a27_3"
                       }
                     ],
                     "connector": "및"
@@ -37638,10 +37638,10 @@
                     "kind": "articleRef",
                     "targets": [
                       {
-                        "articleId": "g-a27_1"
+                        "articleId": "g-a27"
                       },
                       {
-                        "articleId": "g-a27_2"
+                        "articleId": "g-a27_3"
                       }
                     ],
                     "connector": "및"
@@ -38494,7 +38494,7 @@
             "kind": "articleRef",
             "targets": [
               {
-                "articleId": "g-a29"
+                "articleId": "g-a28"
               }
             ],
             "connector": "및"
