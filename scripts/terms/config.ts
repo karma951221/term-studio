@@ -1777,7 +1777,56 @@ export const GOODALPHA2610: ProductTerms = {
 const GOODCAREFREE2610_GENERAL: GeneralSpec = { ...GOODALPHA2610_GENERAL, code: "gc2610-general" };
 export const GOODCAREFREE2610: ProductTerms = { ...GOODALPHA2610, code: "gc2610", fixtureDir: "tests/fixtures/terms/The좋은케어프리2610", general: GOODCAREFREE2610_GENERAL, specials: [] };
 
-export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610, CAREFREE2610, GOODALPHA2610, GOODCAREFREE2610];
+/**
+ * 무배당 올케어 꽉 채운 뇌심보험(연만기형)2610(일반심사형) — 뇌심2610 의 담보를 갱신형으로 싣는 형제(보장조항 셋 · 특약 26 모두 같은 이름).
+ * 담보 · 템플릿을 새로 만들지 않는다 — 템플릿은 비갱신 글이라 갱신형 원문과의 차이는 알려진 차이. 보통약관은 연만기라 계약의 자동갱신 · 갱신계약 해제가 더 있다.
+ */
+const BRAINRENEW2610_GENERAL: GeneralSpec = { ...BRAIN2610_GENERAL, code: "brl2610-general" };
+const BRAINRENEW2610_ORDER: [string, ("renewal" | "base")?][] = [
+  ["br-base21", "renewal"],
+  ["br-base22", "renewal"],
+  ["br-base23", "renewal"],
+  ["br-d1", "renewal"],
+  ["br-d2", "renewal"],
+  ["a7-d21", "renewal"],
+  ["a10-d188", "renewal"],
+  ["a10-d192", "renewal"],
+  ["a10-d196", "renewal"],
+  ["a10-d200", "renewal"],
+  ["br-d8", "renewal"],
+  ["br-d9", "renewal"],
+  ["br-d10", "renewal"],
+  ["a7-d126", "renewal"],
+  ["a7-d130", "renewal"],
+  ["br-d13", "renewal"],
+  ["br-d14", "renewal"],
+  ["a10-d221", "renewal"],
+  ["a10-d222", "renewal"],
+  ["a7-d110", "renewal"],
+  ["a7-d111", "renewal"],
+  ["a7-d112", "renewal"],
+  ["a7-d113", "renewal"],
+  ["a7-d114", "renewal"],
+  ["a7-d115", "renewal"],
+  ["br-d23", "renewal"],
+  ["br-d24", "renewal"],
+  ["a10-d213", "renewal"],
+  ["a10-d214", "renewal"],
+];
+export const BRAINRENEW2610: ProductTerms = {
+  ...BRAIN2610,
+  code: "brl2610",
+  fixtureDir: "tests/fixtures/terms/뇌심연만기2610",
+  general: BRAINRENEW2610_GENERAL,
+  specials: [],
+  autoMounts: BRAINRENEW2610_ORDER.map(([key, only]) => {
+    const spec = byBrain.get(key);
+    if (!spec) throw new Error(`뇌심(연만기)2610 자동 탑재 순서: ${key} 설정 없음`);
+    return only ? { ...spec, auto: { ...spec.auto!, mountOnly: only } } : spec;
+  }),
+};
+
+export const PRODUCTS: ProductTerms[] = [ALPHA, MERITZ, ALPHA2607, ALPHA2610, SA2610, BRAIN2610, CAREFREE2610, GOODALPHA2610, GOODCAREFREE2610, BRAINRENEW2610];
 export const SEED_DIR = "src/db/seed/data";
 
 /**
@@ -1803,6 +1852,14 @@ export const GENERAL_TEMPLATE = {
       "만기환급금의 지급", "상해보험계약 후 알릴 의무", "알릴 의무 위반의 효과", "계약내용의 변경 등", "회사의 파산선고와 해지", "중도인출"],
     // 뇌심2610 — 제2절에 지급사유를 맡기는 제3 · 4조 · 이 판 글의 납입면제 세 조(사유 둘)
     [BRAIN2610_GENERAL.code]: [
+      "보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "뇌졸중, 급성심근경색증의 정의 및 진단확정", "납입면제에 관한 세부규정",
+      // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
+      "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 등의 청구", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "알릴 의무 위반의 효과", "사기에 의한 계약",
+      "계약내용의 변경 등", "계약의 소멸", "제1회 보험료 및 회사의 보장개시", "법령 등의 개정에 따른 계약내용의 변경", "회사의 손해배상책임",
+      // 상품의 사실이 글에 박힌 조 — 질병 보험의 목적 · 알릴 의무 · 보험나이 · 납입최고 · 부활(납입면제 사유 둘)
+      "목적", "계약 전 알릴 의무", "약관교부 및 설명의무 등", "계약의 무효", "보험나이 등", "보험료의 납입이 연체되는 경우 납입최고(독촉)와 계약의 해지", "보험료의 납입을 연체하여 해지된 계약의 부활(효력회복)",
+    ],
+    [BRAINRENEW2610_GENERAL.code]: [
       "보험금의 지급사유", "보험금 지급에 관한 세부규정", "보험료의 납입면제", "뇌졸중, 급성심근경색증의 정의 및 진단확정", "납입면제에 관한 세부규정",
       // 가리키는 자리가 이 판의 것인 조(변환기 refMismatches)
       "용어의 정의", "보험금을 지급하지 않는 사유", "보험금 등의 청구", "보험금의 지급절차", "보험금 받는 방법의 변경", "주소변경통지", "알릴 의무 위반의 효과", "사기에 의한 계약",
@@ -1845,6 +1902,7 @@ export const GENERAL_TEMPLATE = {
     [SA2610_GENERAL.code]: { "보험금의 청구": "보험금 등의 청구" },
     // 뇌심 정의 조는 사유 둘만 나열한 이름 — 템플릿 정의 조(일반 고정 제목, ADR-0088 결정 7)와 같은 자리
     [BRAIN2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
+    [BRAINRENEW2610_GENERAL.code]: { "뇌졸중, 급성심근경색증의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [GOODALPHA2610_GENERAL.code]: { "암(유사암제외), 뇌졸중, 급성심근경색증, 희귀난치성 7대질환, 만성당뇨합병증, 양성뇌종양의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
     [GOODCAREFREE2610_GENERAL.code]: { "암(유사암제외), 뇌졸중, 급성심근경색증, 희귀난치성 7대질환, 만성당뇨합병증, 양성뇌종양의 정의 및 진단확정": "보험료 납입면제 사유의 정의 및 진단확정" },
   } as Record<string, Record<string, string>>,

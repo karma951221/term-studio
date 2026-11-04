@@ -16,7 +16,7 @@ import { autoFixtures } from "../../../scripts/terms/auto";
 import { ALPHA2607_AUTO, ALPHA2610, BRAIN2610, GOODALPHA2610, SA2610 } from "../../../scripts/terms/config";
 import { productGeneral, type ProductGeneralSetting } from "../../../scripts/terms/merge";
 
-import { ALPHA_SIBLINGS, BRAIN2610_SHARED, expectedLines, GOOD_SIBLINGS, GOODALPHA2610_SHARED, KNOWN_DIFFERENCES, SA2610_SHARED, SHARED_2607_IN_2610 } from "./knownDifferences";
+import { ALPHA_SIBLINGS, BRAIN2610_SHARED, BRAINRENEW2610_SHARED, expectedLines, GOOD_SIBLINGS, GOODALPHA2610_SHARED, KNOWN_DIFFERENCES, SA2610_SHARED, SHARED_2607_IN_2610 } from "./knownDifferences";
 import { loadAlphaPlus } from "./load";
 
 /**
@@ -58,7 +58,7 @@ const GOODALPHA2610_FIXTURES: [string, string][] = [
   ...autoFixtures(GOODALPHA2610.specials, (file) => readFileSync(path.join(FIXTURES, "The좋은알파2610", file), "utf8").split("\n")[0]),
 ];
 /** 실물 재현 상품의 시드 코드 — 별표 대조가 쓴다(자동 탑재 상품은 참조한 별표 전부). */
-const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610", 뇌심2610: "br2610", 케어프리2610: "cf2610", The좋은알파2610: "ga2610", The좋은케어프리2610: "gc2610" };
+const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610", 뇌심2610: "br2610", 케어프리2610: "cf2610", The좋은알파2610: "ga2610", The좋은케어프리2610: "gc2610", 뇌심연만기2610: "brl2610" };
 
 /** 상품마다 — 상품명 · 세목 조합 수 · 보통약관(픽스처 · 조 수) · 특약 (책자 제목 · 픽스처). */
 const PRODUCTS: { name: string; dir: string; plans: number; general: string; appendices: string[]; specials: [string, string][] }[] = [
@@ -196,6 +196,15 @@ const PRODUCTS: { name: string; dir: string; plans: number; general: string; app
     specials: GOODALPHA2610_FIXTURES,
   };
   PRODUCTS.push(good, { ...good, name: "The좋은 케어프리보험 M-Basket2610", dir: "The좋은케어프리2610" });
+  // 뇌심(연만기) — 뇌심2610 담보를 갱신형으로(특약 26 · 보장조항 셋은 블록 대조)
+  PRODUCTS.push({
+    name: "올케어 꽉 채운 뇌심보험(연만기형)2610(일반심사형)",
+    dir: "뇌심연만기2610",
+    plans: 2,
+    general: "보통약관 제1절 50조(관 7)",
+    appendices: ["AX000001"],
+    specials: BRAINRENEW2610_SHARED.filter(([title]) => title.endsWith("특별약관")).map(([title, file]): [string, string] => [title, file]),
+  });
 }
 
 /** 원문 → 기대 줄 — 인수기준 알려진 차이(`knownDifferences.ts`)를 얹는다. 대조기는 완화하지 않는다. */
@@ -341,7 +350,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
       expect(new Set(codes).size).toBe(codes.length);
       const referenced = referencedAppendices(SEED_CODE[product.dir]);
       // 상해안심 — 알파 담보 공유 때문에 노출해 둔 납입면제 세 조(keepShown)는 조건으로 빠져 그 별표도 실리지 않는다: 실린 것 ⊂ 참조한 것
-      if (product.dir === "상해안심2610" || product.dir === "뇌심2610" || product.dir.startsWith("The좋은")) return expect(codes.filter((c) => !referenced.has(c))).toEqual([]);
+      if (product.dir === "상해안심2610" || product.dir.startsWith("뇌심") || product.dir.startsWith("The좋은")) return expect(codes.filter((c) => !referenced.has(c))).toEqual([]);
       expect([...codes].sort()).toEqual([...referenced].sort());
     });
 
@@ -353,6 +362,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
         알파2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
         상해안심2610: ["상해 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
         뇌심2610: ["질병 관련 특별약관"],
+        뇌심연만기2610: ["질병 관련 특별약관"],
         케어프리2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관", "기타 특별약관"],
         The좋은알파2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
         The좋은케어프리2610: ["상해 관련 특별약관", "질병 관련 특별약관", "상해 및 질병 관련 특별약관", "비용손해 관련 특별약관"],
@@ -415,6 +425,17 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
         .replace(/ — 원문 PDF p\.\d+/g, "")
         .replace(/\s+/g, "");
     for (const f of files) expect(body(dir, f), f).toBe(body("알파2610", f));
+  });
+
+  it("올케어 꽉 채운 뇌심보험(연만기형)2610 — 절 형태 · 제2절 보장조항 블록 셋(갱신형으로 실은 뇌심2610 보장)이 기대 줄과 같다", () => {
+    const b = booklets.get("올케어 꽉 채운 뇌심보험(연만기형)2610(일반심사형)")!;
+    expect(b.form).toBe("sectioned");
+    const blocks = (b.blocks ?? []).flatMap((g) => g.docs);
+    expect(blocks).toHaveLength(3);
+    for (const doc of blocks) {
+      const diff = diffArticlesUnordered(source("뇌심연만기2610", `${doc.title.replace(/ /g, "_")}.md`), renderedToLines(doc));
+      expect(diff, describeDiff(diff)).toEqual(clean);
+    }
   });
 
   it.each(SHARED_2607_IN_2610)("알파Plus2610 「%s」 — 2607 담보를 그대로 탑재할 근거: 2610 원문 = 2607 원문(공백 · 그림 쪽 번호만 다름)", (file) => {
