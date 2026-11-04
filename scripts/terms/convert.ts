@@ -566,7 +566,7 @@ function main(): void {
 
   // ── 보통약관 합치기 — 템플릿 「보통약관(일반)」 하나 + 상품별 조 노출 끔 · 조 사본 (merge.ts). 그 판의 담보약관 · 함수조항 참조를 템플릿 조 id 로 고친다
   const base = generals.find((g) => g.code === GENERAL_TEMPLATE.base)!;
-  const others = generals.filter((g) => g !== base).map((g) => ({ ...g, copies: GENERAL_TEMPLATE.copies[g.code] ?? [], variants: GENERAL_TEMPLATE.variants[g.code] ?? [] }));
+  const others = generals.filter((g) => g !== base).map((g) => ({ ...g, copies: GENERAL_TEMPLATE.copies[g.code] ?? [], variants: GENERAL_TEMPLATE.variants[g.code] ?? [], aliases: GENERAL_TEMPLATE.aliases[g.code] ?? {} }));
   const { tree: template, products: perGeneral, refMismatches } = mergeGenerals(base, others, { id: GENERAL_TEMPLATE.code, title: GENERAL_TEMPLATE.title });
   issues.push(...refMismatches.map((m) => `${m.general}: 보통약관 조 「${m.article}」이(가) 템플릿과 다른 대상을 가리킨다 — GENERAL_TEMPLATE.copies 에 사본으로 고른다`));
   const idMap = new Map([...perGeneral.values()].flatMap((p) => [...p.idMap]));

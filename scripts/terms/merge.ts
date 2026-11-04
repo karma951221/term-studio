@@ -26,6 +26,8 @@ export interface GeneralSource {
 export interface OtherGeneral extends GeneralSource {
   /** 그 판의 글로 상품 조 사본을 만들 조 — 조 명. */
   copies: readonly string[];
+  /** 조 이름 별칭 — 그 판 조 명 → 바탕 판 조 명(같은 조를 판이 다른 이름으로 쓴다 — 상해안심2610 「보험금의 청구」). 사본은 그 판 이름 그대로다. */
+  aliases?: Readonly<Record<string, string>>;
   /** 그 판의 조째 템플릿에 함께 둘 조 — 조 명. 바탕 판의 같은 조와 서로 조 노출을 끈다. */
   variants?: readonly string[];
 }
@@ -210,13 +212,14 @@ export function mergeGenerals(
     const variants = new Set(o.variants ?? []);
     const idMap = new Map<Id, Id>();
     for (const a of own) {
-      const b = variants.has(foldTitle(a.title)) ? undefined : (baseByTitle.get(foldTitle(a.title)) ?? addedByTitle.get(foldTitle(a.title)));
+      const t = o.aliases?.[foldTitle(a.title)] ?? foldTitle(a.title);
+      const b = variants.has(foldTitle(a.title)) ? undefined : (baseByTitle.get(t) ?? addedByTitle.get(t));
       if (b) idMap.set(a.id, b.id);
     }
     // 사본 — 템플릿 조에 없는 자리의 P 코드는 PZ 로 (그 자리를 가리키는 참조도 같은 표로 고친다)
     const picked = o.copies.map((title) => {
       const a = own.find((x) => foldTitle(x.title) === title);
-      const b = baseByTitle.get(title);
+      const b = baseByTitle.get(o.aliases?.[title] ?? title);
       if (!a || !b) throw new Error(`보통약관 합치기: ${o.code} 의 사본 조 「${title}」 이(가) ${a ? "바탕 판" : "그 판"}에 없다`);
       return { a, b };
     });
@@ -259,7 +262,7 @@ export function mergeGenerals(
     const copied = new Set(o.copies);
     for (const a of own) {
       const title = foldTitle(a.title);
-      const b = idMap.has(a.id) && !copied.has(title) ? baseByTitle.get(title) : undefined;
+      const b = idMap.has(a.id) && !copied.has(title) ? baseByTitle.get(o.aliases?.[title] ?? title) : undefined;
       if (b && refLabels(a, o.tree).join("|") !== refLabels(b, base.tree).join("|")) refMismatches.push({ general: o.code, article: title });
     }
     for (const u of units) {

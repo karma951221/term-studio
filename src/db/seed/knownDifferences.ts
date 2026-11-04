@@ -35,6 +35,8 @@ export interface KnownDifference {
    * `article` 이 「*」 이면 **파일 판 대조** — 파일째 그 판의 기대 줄이다(담보 템플릿이 다른 판 원문으로 만들어진 특약, 알파Plus2607 ↔ 2610). 다른 차이는 얹지 않는다.
    */
   edition?: string;
+  /** 파일 판 대조(「*」 + edition) 위에 얹는 글 바꾸기 — `everywhere` 와 함께. 그 판 기대 줄을 이 상품 문맥으로 고친다(상해안심2610 위치 호칭 등). */
+  onEdition?: true;
   /** 파일 판 대조에서 그 판의 파일 이름이 다를 때(상해안심 「갱신형_X」 ↔ 알파 「X」 — 갱신형으로 탑재한 비갱신 담보). */
   editionFile?: string;
   /** 인수기준의 차이 이름 — 사람이 읽는다. */
@@ -508,6 +510,7 @@ SA2610_DIFFERENCES.push(
     after,
     lines: [to],
     everywhere: true,
+    onEdition: true,
     why:
       kind === "position"
         ? "절 형태 특약의 위치 호칭 — 기본계약 보장조항 블록이 있어 특약의 보통약관 참조는 「보통약관 제1절 일반조항」으로 찍힌다(ADR-0082 · ADR-0100)"
@@ -546,7 +549,7 @@ export function expectedLines(dir: string, file: string, source: readonly string
     const theirs = whole.editionFile ?? file;
     const out = expectedLines(whole.edition!, theirs, read(whole.edition!, theirs), list, read);
     // 그 판 글 위에 이 상품 문맥에서 달라지는 글 바꾸기(everywhere)만 얹는다 — 위치 호칭 · 납입면제 없는 상품의 준용예외(상해안심2610)
-    for (const d of mine.filter((x) => x.everywhere)) {
+    for (const d of mine.filter((x) => x.everywhere && x.onEdition)) {
       const before = out.join("\n");
       for (let i = 0; i < out.length; i++) out[i] = out[i].split(d.after).join(d.lines[0]);
       if (out.join("\n") === before) throw new Error(`알려진 차이 「${d.why}」: 파일 「${file}」(${whole.edition}) 안에 「${d.after}」가 없다`);

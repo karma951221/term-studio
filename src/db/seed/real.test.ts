@@ -41,6 +41,10 @@ const SA2610_FIXTURES: [string, string][] = [
   ...SA2610_SHARED.map(([title, file]): [string, string] => [title, file]),
   ...autoFixtures(SA2610.specials.filter((s) => !s.auto?.base), (file) => readFileSync(path.join(FIXTURES, "상해안심2610", file), "utf8").split("\n")[0]),
 ];
+/** 원문이 제 조를 다른 제목으로 가리키는 자리 — 변환기가 풀지 못해 원문 글 그대로 남는다(알려진 차이 — 원문 표기). 파일 → 대조기 문구. */
+const KNOWN_REFERENCE_ISSUES: Record<string, string[]> = {
+  "자동차사고_변호사선임비용(Ⅲ)(변호사선임_현물급부_선택가능)보장.md": ["조 참조 「제5조(변호사선임 현물급부 지급에 관한 세부규정)」 — 제5조는 「변호사선임현물급부제공에관한세부규정」"],
+};
 /** 실물 재현 상품의 시드 코드 — 별표 대조가 쓴다(자동 탑재 상품은 참조한 별표 전부). */
 const SEED_CODE: Record<string, string> = { 알파2607: "alpha2607", 알파2610: "alpha2610", 상해안심2610: "sa2610" };
 
@@ -254,7 +258,7 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
       const lines = renderedToLines(doc!);
       const diff = diffArticlesUnordered(source(product.dir, file), lines);
       expect(diff, describeDiff(diff)).toEqual(clean);
-      expect(referenceNumberIssues(lines, articleTitles(renderedToLines(booklet().general!)))).toEqual([]);
+      expect(referenceNumberIssues(lines, articleTitles(renderedToLines(booklet().general!))).filter((i) => !(KNOWN_REFERENCE_ISSUES[file] ?? []).includes(i))).toEqual([]);
     });
 
     it("알려진 차이는 원문과 정말 다르다 — 차이마다 조립에 그 줄이 있고 원문에는 없다(목록이 낡으면 지운다)", () => {
@@ -296,7 +300,10 @@ describe("★ 실물 재현 — 실물 시드 → 조립 → 원문 대조", () 
       // 알파Plus2607 — 보통약관 아홉이 먼저, 겹치지 않고, 상품이 탑재한 문면(+ 그 문면 · 보통약관이 쓰는 함수조항)이 참조한 별표 전부
       expect(codes.slice(0, product.appendices.length)).toEqual(product.appendices);
       expect(new Set(codes).size).toBe(codes.length);
-      expect([...codes].sort()).toEqual([...referencedAppendices(SEED_CODE[product.dir])].sort());
+      const referenced = referencedAppendices(SEED_CODE[product.dir]);
+      // 상해안심 — 알파 담보 공유 때문에 노출해 둔 납입면제 세 조(keepShown)는 조건으로 빠져 그 별표도 실리지 않는다: 실린 것 ⊂ 참조한 것
+      if (product.dir === "상해안심2610") return expect(codes.filter((c) => !referenced.has(c))).toEqual([]);
+      expect([...codes].sort()).toEqual([...referenced].sort());
     });
 
     it("특약 그룹 — 원문 특별약관 묶음 순서(Ⅰ ~ Ⅴ): 기본 그룹(담보분류)과 2607 의 사용자 그룹(상해 및 질병 · 기타)이 한 목록 (ADR-0090)", () => {

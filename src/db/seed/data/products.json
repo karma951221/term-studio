@@ -216,7 +216,6 @@
     "hiddenArticles": [
       "m-a3",
       "m-a4",
-      "sa-a7",
       "m-a25",
       "m-a29",
       "m-a30",
@@ -2511,7 +2510,6 @@
     "hiddenArticles": [
       "g-a3",
       "g-a4",
-      "sa-a7",
       "g-a27_1",
       "g-a27_2",
       "g-a27_3"
@@ -5140,7 +5138,6 @@
     "hiddenArticles": [
       "m-a3",
       "m-a4",
-      "sa-a7",
       "m-a25",
       "m-a29",
       "m-a30",
@@ -8298,7 +8295,6 @@
     "hiddenArticles": [
       "m-a3",
       "m-a4",
-      "sa-a7",
       "m-a25",
       "m-a29",
       "m-a30",
@@ -9631,7 +9627,6 @@
     "hiddenArticles": [
       "m-a3",
       "m-a4",
-      "g-a7",
       "m-a29",
       "m-a30",
       "m-a31"
@@ -10283,6 +10278,113 @@
         }
       },
       {
+        "article": "g-a7",
+        "replace": {
+          "id": "g-a7",
+          "kind": "article",
+          "title": [
+            {
+              "id": "g-a7.title",
+              "kind": "text",
+              "text": "보험금의 청구"
+            }
+          ],
+          "children": [
+            {
+              "id": "g-a7-p1",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a7-p1-x1",
+                  "kind": "text",
+                  "text": "보험수익자는 다음의 서류를 제출하고 보험금을 청구하여야 합니다."
+                }
+              ],
+              "items": [
+                {
+                  "id": "g-a7-p1-i1",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a7-p1-i1-x1",
+                      "kind": "text",
+                      "text": "청구서(회사양식)"
+                    }
+                  ],
+                  "code": "PZ0300"
+                },
+                {
+                  "id": "g-a7-p1-i2",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a7-p1-i2-x1",
+                      "kind": "text",
+                      "text": "사고증명서(진단서, 진료비계산서, 사망진단서, 장해진단서, 입원치료확인서, 의사처방전(처방조제비) 등)"
+                    }
+                  ],
+                  "code": "PZ0400"
+                },
+                {
+                  "id": "g-a7-p1-i3",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a7-p1-i3-x1",
+                      "kind": "text",
+                      "text": "신분증(주민등록증이나 운전면허증 등 사진이 붙은 정부기관발행 신분증, 본인이 아닌 경우에는 본인의 인감증명서, 본인서명사실확인서 또는 안전성과 신뢰성이 확보된 전자적 수단을 활용한 보험수익자 의사표시의 확인방법 포함)"
+                    }
+                  ],
+                  "code": "PZ0500"
+                },
+                {
+                  "id": "g-a7-p1-i4",
+                  "kind": "item",
+                  "children": [
+                    {
+                      "id": "g-a7-p1-i4-x1",
+                      "kind": "text",
+                      "text": "기타 보험수익자가 보험금의 수령에 필요하여 제출하는 서류"
+                    }
+                  ],
+                  "code": "PZ0600"
+                }
+              ],
+              "code": "PZ0100"
+            },
+            {
+              "id": "g-a7-p2",
+              "kind": "paragraph",
+              "children": [
+                {
+                  "id": "g-a7-p2-x1",
+                  "kind": "articleRef",
+                  "targets": [
+                    {
+                      "articleId": "g-a7",
+                      "code": "PZ0400"
+                    }
+                  ],
+                  "connector": "및",
+                  "scope": "self"
+                },
+                {
+                  "id": "g-a7-p2-x2",
+                  "kind": "text",
+                  "text": "의 사고증명서는 의료법 제3조(의료기관)에서 규정한 국내의 병원이나 의원 또는 국외의 의료관련법에서 정한 의료기관에서 발급한 것이어야 합니다."
+                }
+              ],
+              "code": "PZ0200"
+            },
+            {
+              "id": "g-a7-b1-k",
+              "kind": "boxRef",
+              "boxCode": "BX000050"
+            }
+          ]
+        }
+      },
+      {
         "article": "g-a4",
         "replace": {
           "id": "g-a4",
@@ -10365,7 +10467,7 @@
                   "kind": "articleRef",
                   "targets": [
                     {
-                      "articleId": "sa-a7"
+                      "articleId": "g-a7"
                     }
                   ],
                   "connector": "및",
@@ -10410,7 +10512,7 @@
                   "kind": "articleRef",
                   "targets": [
                     {
-                      "articleId": "sa-a7"
+                      "articleId": "g-a7"
                     }
                   ],
                   "connector": "및",
