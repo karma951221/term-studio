@@ -73,3 +73,24 @@ describe("문구 함수조항 「기준일 문구」 (ADR-0086 결정 6)", () =>
     expect(JSON.stringify(all(tree, (x) => x.kind === "inlineCond"))).not.toContain("최초계약일");
   });
 });
+
+describe("guardRenewalTerm — 갱신형 가지의 「보험기간」 조는 갱신형 상품에서 빠진다 (2026-11-05)", () => {
+  const article = (id: string, title: string) => ({ id, kind: "article", title: [{ id: `${id}.title`, kind: "text", text: title }], children: [] });
+  it("갱신형 조건 가지 안의 「보험기간」 조만 「갱신형 상품 = 아니오」로 감싼다", async () => {
+    const { guardRenewalTerm } = await import("./renewal");
+    const when = "exist(attr.A0001) and attr.A0001 = '2'";
+    const tree = {
+      children: [
+        article("a1", "보험금의 지급사유"),
+        article("a2", "보험기간"),
+        { id: "c", kind: "condBlock", branches: [{ id: "c-t", when, children: [article("r3", "보험기간"), article("r4", "특별약관의 소멸")] }] },
+      ],
+    };
+    expect(guardRenewalTerm(tree, when)).toBe(1);
+    const branch = (tree.children[2] as { branches: { children: { kind: string; branches?: { when: string; children: { id: string }[] }[] }[] }[] }).branches[0];
+    expect(branch.children[0].kind).toBe("condBlock");
+    expect(branch.children[0].branches![0].when).toBe(`${RENEWABLE_PRODUCT} = false`);
+    expect(branch.children[0].branches![0].children[0].id).toBe("r3");
+    expect((tree.children[1] as { kind: string }).kind).toBe("article");
+  });
+});

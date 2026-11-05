@@ -42,7 +42,7 @@ import { mergeGenerals, remapIds } from "./merge";
 import { applyArticleCopies } from "../../src/domain/product/articleCopies";
 import { productRefIssues } from "../../src/domain/product/copyRefIntegrity";
 import { applyArticleConds, applyBoxConds, applyInlineClauses, applyInlineConds, articlesOf } from "./overlay";
-import { basisDateClause } from "./renewal";
+import { basisDateClause, guardRenewalTerm } from "./renewal";
 import { inlinesFromText, leftoverReferences, type ArticleEntry, type ArticleIndex, type ParagraphGroup, type RefEnv } from "./refs";
 import { applyAlphaWaiver, applyMeritzWaiver, guardAlphaApplication, guardDiseaseApplication, guardExcludeSentence, guardOwnWaiver, guardWaiverBlocks, guardWaiverMentions, resolveWaiverCodes } from "./waiver";
 
@@ -547,6 +547,8 @@ function main(): void {
     for (const spec of p.product.specials) {
       const b = p.specials.get(spec.code)!;
       applyArticleConds(b.tree, b.numberOf, spec.articleConds ?? [], report);
+      // 갱신형 특약의 「보험기간」 조 — 갱신형 상품(보통약관 계약의 자동갱신 조가 보험기간을 정한다)에서는 빠진다(renewal.ts). 조 자리 조건 오버레이 뒤(손 설정 특약은 그것이 갱신형 가지를 만든다)
+      guardRenewalTerm(b.tree, RENEWAL);
       b.tree = withCodes(b.tree);
       issues.push(...validate(b.tree, "special", p.general.tree).map((l) => `${spec.code}: ${l}`));
       documents.push({ code: spec.code, ownerCoverage: spec.ownerCoverage, general: p.product.general.code, tree: b.tree });

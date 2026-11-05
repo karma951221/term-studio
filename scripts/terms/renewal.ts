@@ -59,3 +59,30 @@ export function basisDateClause(): { key: string; record: ClauseRecord } {
     },
   };
 }
+
+/**
+ * 갱신형 특약의 「보험기간」 조는 갱신형 상품에서 빠진다 — 조 자리 조건 「갱신형 상품 = 아니오」(2026-11-05 — 갱신형 상품 다섯의 갱신형 특약 원문 545 에 보험기간 조가 하나도 없다).
+ * 세만기 상품(알파Plus)의 갱신형 특약은 제 보험기간 조(3 · 10 · 15 · 20년만기형)를 싣지만, 연만기(갱신형) 상품(메리츠 상해안심 · 통합간편 · 연만기 뇌심 · The좋은)의 특약은
+ * 싣지 않는다 — 보통약관 「계약의 자동갱신」 조가 갱신계약의 보험기간을 정한다. 같은 이름 담보를 여러 상품이 함께 쓰므로(2026-11-03 사용자 결정)
+ * 이 차이는 글이 아니라 상품 특성이다. 갱신형 가지(담보속성 갱신유형 = 갱신형 조건 블록) 안의 「보험기간」 조만 감싼다 — 감싼 수.
+ */
+export function guardRenewalTerm(tree: { children: unknown[] }, renewalWhen: string): number {
+  type Node = { id?: Id; kind?: string; title?: { text?: string }[]; children?: Node[]; branches?: { id?: Id; when: string; children: Node[] }[] };
+  let count = 0;
+  const visit = (list: Node[], inRenewal: boolean) => {
+    list.forEach((n, i) => {
+      if (n.kind === "article") {
+        const title = (n.title ?? []).map((t) => t.text ?? "").join("");
+        if (inRenewal && title === "보험기간") {
+          list[i] = { id: `${n.id}-rt`, kind: "condBlock", branches: [{ id: `${n.id}-rt-t`, when: `${RENEWABLE_PRODUCT} = false`, children: [n] }] } as Node;
+          count++;
+        }
+        return;
+      }
+      if (n.kind === "section" && n.children) visit(n.children, inRenewal);
+      if (n.kind === "condBlock") for (const b of n.branches ?? []) visit(b.children, inRenewal || b.when === renewalWhen);
+    });
+  };
+  visit(tree.children as Node[], false);
+  return count;
+}

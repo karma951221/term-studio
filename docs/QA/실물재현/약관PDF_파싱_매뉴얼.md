@@ -290,6 +290,7 @@ rm -rf .data && npm run db:seed
 - **심사형만 다른 판**(일반심사 · 맞춤간편): 담보 · 템플릿을 모두 함께 쓰고(`autoMounts` 그대로, `specials` 비움), 상품담보명 규칙에 「[고지 접사]」 칩 · 고지유형 간편심사 · 접사 값을 둔다.
   원문 대조는 `noticeVariantFiles`(접사를 뗀 이름으로 짝) · 일반심사 판 파일 판 대조. genDifferences 는 접사 붙은 제목으로 fixture 를 못 찾는다 — real.test 가 짝으로 대조한다.
 - 보통약관 사본은 앞 판이 넣은 조(메리츠 「갱신계약 … 해제」)도 고를 수 있다(merge.ts).
+- 갱신형 상품(갱신형여부 = 예)은 공유한 갱신형 특약의 「보험기간」 조가 빠진다(2026-11-05 — renewal.ts `guardRenewalTerm`, 조 자리 조건 「갱신형 상품 = 아니오」). 새 갱신형 상품의 픽스처 폴더는 `knownDifferences.ts` `RENEWABLE_PRODUCT_DIRS` 에 더한다.
 
 ## 8. 검수 체크리스트
 
