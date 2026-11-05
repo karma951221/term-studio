@@ -903,6 +903,12 @@ export const KNOWN_DIFFERENCES: readonly KnownDifference[] = [
   ...SIBLING_DIFFERENCES(() => [...new Set(siblingFiles())]),
 ];
 
+/**
+ * 갱신형 상품(상품특성 갱신형여부 = 예)의 픽스처 폴더 — 특약 「보험기간」 조가 조 자리 조건 「갱신형 상품 = 아니오」로 빠진다(2026-11-05).
+ * 이 상품들의 갱신형 특약 원문에는 보험기간 조가 없다(상해안심 30 · 연만기 뇌심 29 · The좋은 238 · 238 · 통합간편 8).
+ */
+const RENEWABLE_PRODUCT_DIRS: ReadonlySet<string> = new Set(["메리츠", "상해안심2610", "뇌심연만기일반2610", "뇌심연만기맞춤2610", "The좋은알파2610", "The좋은케어프리2610"]);
+
 const squash = (s: string) => s.replace(/\s+/g, "");
 
 /** 조 단위 차이(줄 안 · 줄 바꾸기 · 넣기)를 기대 줄에 얹는다. */
@@ -948,6 +954,11 @@ export function expectedLines(dir: string, file: string, source: readonly string
     if (!read) throw new Error(`알려진 차이 「${whole.why}」: 판 대조(${whole.edition})는 그 판 원문을 읽을 read 가 있어야 한다`);
     const theirs = whole.editionFile ?? file;
     const out = expectedLines(whole.edition!, theirs, read(whole.edition!, theirs), list, read);
+    // 갱신형 상품은 그 판(세만기 알파) 갱신형 특약의 「보험기간」 조가 빠진다 — 보통약관 계약의 자동갱신 조가 보험기간을 정한다(renewal.ts guardRenewalTerm)
+    if (RENEWABLE_PRODUCT_DIRS.has(dir)) {
+      const { heading, end } = articleSpan(out, "보험기간");
+      if (heading >= 0) out.splice(heading, end - heading);
+    }
     // 그 판 글 위에 이 상품 문맥에서 달라지는 글 바꾸기(everywhere)만 얹는다 — 위치 호칭 · 납입면제 없는 상품의 준용예외(상해안심2610)
     applyArticleDifferences(out, mine.filter((x) => x.onEdition && !x.everywhere));
     for (const d of mine.filter((x) => x.everywhere && x.onEdition)) {
